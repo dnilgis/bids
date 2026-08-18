@@ -1,4 +1,82 @@
-node_modules/
-.dev.vars
-.wrangler/
-.commit-message
+# Read Big River's Boyceville board and commit it when the price moves.
+#
+# CADENCE
+#
+# Every 10 minutes through the trading day, hourly at night, every 4 hours at
+# weekends. Their footer says prices are delayed 10 minutes and the page
+# self-refreshes every 5, so 10 is matched to the source rather than to a wish.
+#
+# BEST-EFFORT, AND YOU SHOULD KNOW IT. GitHub does not promise scheduled
+# workflows run on time. Under load they are delayed, and occasionally dropped
+# entirely. Ten to twenty minute lags at busy times are normal and not a fault.
+# If the cadence ever has to be dependable rather than typical, the poll moves
+# to a Cloudflare cron and commits here through the API; nothing else changes.
+#
+# This repo is PUBLIC, which is what makes this affordable: Actions minutes are
+# unmetered on public repos. On a private repo this schedule is about 1,650 runs
+# a month against a 2,000-minute allowance — 83%, or 165% if a run ever creeps
+# past 60 seconds. If you ever make this repo private, cut the cadence first.
+#
+# ONE READER AT A TIME. worker/ contains a Cloudflare Worker that does this
+# same job on a schedule Cloudflare actually honours. Both write the same file
+# through the same lib/, so they cannot corrupt each other, but running both
+# doubles the request rate on someone else's site for no gain. Pick one:
+# keep the `schedule:` block below, or deploy the Worker and delete it, leaving
+# workflow_dispatch here as the manual fallback.
+#
+# NO TESTS HERE, DELIBERATELY. The code does not change between polls, so
+# running the suite 1,650 times a month proves nothing and doubles the run time.
+# Tests run on push instead, in test.yml. A poll that finds no change writes
+# nothing and commits nothing.
+
+name: read boyceville
+
+on:
+  schedule:
+    # Every 10 minutes, 7am-4pm Central. 12:00-21:59 UTC covers that in both
+    # CST and CDT, so the clocks changing cannot quietly shift the window out
+    # of market hours.
+    - cron: "*/10 12-21 * * 1-5"
+    # Hourly the rest of the weekday, so an overnight move is picked up and a
+    # reader that has quietly died gets noticed before morning.
+    - cron: "25 0-11,22-23 * * 1-5"
+    # Weekends, every 4 hours. Mostly to notice breakage.
+    - cron: "25 */4 * * 6,0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: read-boyceville
+  cancel-in-progress: false     # never interrupt a run mid-write
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Exits non-zero on a bad read, which fails the run, emails you, and
+      # leaves data/boyceville.json exactly as it was. A stale file is safe:
+      # every consumer checks `checkedAt`. A wrong file is not.
+      - name: Read their board
+        run: node scripts/fetch.mjs
+
+      - name: Commit if the price moved
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add data/boyceville.json
+          git diff --cached --quiet && { echo "nothing moved"; exit 0; }
+          # The message carries the front month, so `git log --oneline` reads
+          # as a price history rather than a list of identical commits, and a
+          # heartbeat says so instead of impersonating a price change.
+          # Written by fetch.mjs via lib/decide.mjs -- the same function the
+          # Worker uses, so the two readers produce the same history.
+          git commit -F .commit-message
+          git push
