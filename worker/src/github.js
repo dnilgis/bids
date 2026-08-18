@@ -4,11 +4,25 @@
  * free from `actions/checkout` plus `git push`. Off a runner there is no
  * checkout, so a commit is: GET the file to learn its blob sha, PUT the new
  * content with that sha. The sha is the concurrency control — a PUT with a
- * stale sha is rejected with 409 rather than silently clobbering, which is
- * exactly the behaviour we want if two cron firings ever overlap.
+ * stale sha is rejected with 409 rather than silently clobbering.
  *
- * `fetchImpl` is injectable so the tests exercise the retry and the encoding
- * without a token or a network.
+ * THERE IS NO commit() HELPER HERE, DELIBERATELY.
+ *
+ * There was one, and it retried a 409 by re-reading the sha and re-PUTting the
+ * body it had already computed. That is wrong, and it was worse than no retry:
+ * losing the race means your decision was made against a file that no longer
+ * exists. Reproduced before it shipped — two overlapping cron firings, the
+ * loser re-PUT its stale body, the published price went BACKWARDS from 4.125
+ * to 4.075, and `pricedAt` then asserted the board had shown nothing different
+ * since midnight. The commit subject read "heartbeat, no change" and the cron
+ * invocation was green.
+ *
+ * A conflict invalidates the decision, not just the sha. So the retry lives in
+ * run() in index.js, where read -> decide -> write can be redone as a unit,
+ * and this module exposes only the two primitives.
+ *
+ * `fetchImpl` is injectable so the tests exercise the encoding and the error
+ * paths without a token or a network.
  */
 
 const API = "https://api.github.com";
@@ -62,20 +76,40 @@ export function makeRepo({ owner, repo, branch, path, token, userAgent, fetchImp
       // every write into a 409.
       cache: "no-store",
     });
-    if (res.status === 404) return { json: null, sha: null };   // first run
+    if (res.status === 404) return { json: null, sha: null, absent: true };  // first run
     if (!res.ok)
       throw new GitHubError(`GET ${path} -> HTTP ${res.status}`, res.status);
-    const body = await res.json();
-    let json = null;
+
+    let body;
     try {
-      json = JSON.parse(b64decode(body.content || ""));
-    } catch {
-      /* A file we cannot parse is treated as absent rather than fatal: the
-         next write replaces it. Refusing here would wedge the reader on a
-         file only a human could clear. */
-      json = null;
+      body = await res.json();
+    } catch (e) {
+      // A 200 that is not JSON is a maintenance page or a proxy, not an empty
+      // repo. Escaping as a bare SyntaxError would get it filed as a bug here.
+      throw new GitHubError(`GET ${path} -> HTTP 200 with a non-JSON body`, res.status);
     }
-    return { json, sha: body.sha ?? null };
+
+    /* "Absent" and "present but unreadable" are different facts and must not
+       collapse. Both leave `json` null, but only the first may be written
+       without a sha, and only the first means "first run". A 200 with no
+       content field is a directory, or a response shape we do not know. */
+    if (typeof body.content !== "string")
+      throw new GitHubError(`GET ${path} -> HTTP 200 with no file content ` +
+        `(is that path a directory?)`, res.status);
+
+    let json = null;
+    let unreadable = false;
+    try {
+      json = JSON.parse(b64decode(body.content));
+    } catch {
+      /* A file we cannot parse is treated as absent for the purpose of
+         writing — the next write replaces it — but it is FLAGGED, because
+         silently treating it as a first run resets pricedAt and republishes a
+         three-day-old price as newly priced. */
+      json = null;
+      unreadable = true;
+    }
+    return { json, sha: body.sha ?? null, absent: false, unreadable };
   }
 
   async function write({ content, message, sha }) {
@@ -91,31 +125,20 @@ export function makeRepo({ owner, repo, branch, path, token, userAgent, fetchImp
       }),
     });
     if (res.status === 409 || res.status === 422)
-      throw new GitHubError(`PUT ${path} -> HTTP ${res.status} (sha is stale)`, res.status);
+      throw new GitHubError(
+        `PUT ${path} -> HTTP ${res.status}` +
+        (sha ? " (the sha we wrote against is no longer current)"
+             : " (wrote without a sha, so the file already existed)"),
+        res.status);
     if (!res.ok)
       throw new GitHubError(`PUT ${path} -> HTTP ${res.status}`, res.status);
-    return res.json();
-  }
-
-  /* One retry, and only for the stale-sha case. Two cron firings overlapping
-     is the scenario; re-reading and re-writing is correct there. Anything
-     else — a bad token, a deleted repo — is not improved by trying twice.
-     
-     `sha` is passed in by the caller, which has already read the file to
-     decide whether to write at all. Re-reading it here would double the GET
-     rate against the API on every poll for no information: about 3,300 extra
-     calls a month to learn something we were told a moment ago. Omit it and
-     this reads first, for callers that have not. */
-  async function commit({ content, message, sha }) {
-    const first = sha === undefined ? (await read()).sha : sha;
     try {
-      return await write({ content, message, sha: first });
-    } catch (e) {
-      if (!(e instanceof GitHubError) || (e.status !== 409 && e.status !== 422)) throw e;
-      const again = await read();
-      return write({ content, message, sha: again.sha });
+      return await res.json();
+    } catch {
+      // The write landed; only the receipt is unreadable. Not worth failing.
+      return {};
     }
   }
 
-  return { read, write, commit };
+  return { read, write };
 }

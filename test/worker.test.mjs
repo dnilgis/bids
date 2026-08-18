@@ -251,3 +251,157 @@ test("an unparseable committed file is treated as absent, not fatal", async () =
   const s = await run(ENV, { now: NOW, fetchImpl });
   assert.equal(s.wrote, true, "the next write should replace it rather than wedge shut");
 });
+
+test("A LOST WRITE RACE RE-DECIDES, IT DOES NOT RE-PUT A STALE BODY", async () => {
+  /* The bug this replaces: the retry re-read only the sha and re-PUT the body
+     it had computed against the pre-conflict file. Two overlapping cron
+     firings, and the loser reverted the winner's price while its own commit
+     said "heartbeat, no change" and its invocation went green.
+
+     Realistic scenario: both firings read the same board, which has moved to
+     4.125. A commits first. B's PUT 409s. B must re-read, see that 4.125 is
+     already committed, and decide there is nothing left to do -- not re-post
+     its own body, and not commit the same price a second time. */
+  const h0 = harness();
+  await run(ENV, { now: "2026-08-17T06:30:00.000Z", fetchImpl: h0.fetchImpl });
+  const base = h0.stored;                            // 4.075, checked 06:30
+
+  const moved = html.replace(">4.0750<", ">4.1250<").replace(">-0.5200<", ">-0.4700<");
+  assert.notEqual(moved, html, "fixture shape changed; this test needs updating");
+
+  // Exactly what firing A would have committed.
+  const hA = harness({ page: moved });
+  await run(ENV, { now: "2026-08-17T07:00:00.000Z", fetchImpl: hA.fetchImpl });
+  const aFile = hA.stored;
+  assert.equal(aFile.bids[0].cash, 4.125);
+
+  let stored = JSON.parse(JSON.stringify(base));
+  let sha = "sha-a";
+  let puts = 0;
+  const bodies = [];
+  const fetchImpl = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) return ok(moved);
+    if ((opts.method || "GET") === "GET")
+      return ok({ sha, content: b64encode(JSON.stringify(stored)) });
+    puts++;
+    bodies.push(JSON.parse(b64decode(JSON.parse(opts.body).content)));
+    if (puts === 1) {
+      /* Firing A lands between our read and our write -- with the file the
+         reader would genuinely have built, not a hand-patched approximation.
+         Patching only bids[0].cash by hand leaves basisCents disagreeing and
+         the retry correctly sees a real difference, which would make this
+         test pass for the wrong reason. */
+      stored = { ...aFile, pricedAt: "2026-08-17T07:00:00.000Z",
+                 checkedAt: "2026-08-17T07:00:00.000Z" };
+      sha = "sha-b";
+      return new Response("conflict", { status: 409 });
+    }
+    stored = bodies[bodies.length - 1];
+    return ok({ content: { sha: "sha-c" } });
+  };
+
+  const s = await run(ENV, { now: "2026-08-17T07:00:05.000Z", fetchImpl });
+
+  assert.equal(s.retried, true, "the conflict must be retried, not swallowed");
+  assert.equal(puts, 1, "re-deciding against the new file leaves nothing to write");
+  assert.equal(s.wrote, false);
+  assert.equal(stored.bids[0].cash, 4.125, "the winner's price must survive");
+  assert.equal(stored.pricedAt, "2026-08-17T07:00:00.000Z",
+    "and pricedAt must not be walked back to claim the board has not moved");
+});
+
+test("but a conflict that leaves genuine news still writes it", async () => {
+  /* The mirror case, so the retry is not just 'give up quietly'. Another
+     firing commits something, we lose the race, and on re-reading we still
+     have a price the repo does not have. It must go in. */
+  const h0 = harness();
+  await run(ENV, { now: "2026-08-17T06:30:00.000Z", fetchImpl: h0.fetchImpl });
+  let stored = JSON.parse(JSON.stringify(h0.stored));
+  const moved = html.replace(">4.0750<", ">4.1250<").replace(">-0.5200<", ">-0.4700<");
+  let sha = "sha-a", puts = 0;
+  const fetchImpl = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) return ok(moved);
+    if ((opts.method || "GET") === "GET")
+      return ok({ sha, content: b64encode(JSON.stringify(stored)) });
+    puts++;
+    if (puts === 1) {   // someone commits an unrelated heartbeat, price unchanged
+      stored = { ...stored, checkedAt: "2026-08-17T07:00:00.000Z" };
+      sha = "sha-b";
+      return new Response("conflict", { status: 409 });
+    }
+    stored = JSON.parse(b64decode(JSON.parse(opts.body).content));
+    return ok({ content: { sha: "sha-c" } });
+  };
+  const s = await run(ENV, { now: "2026-08-17T07:00:05.000Z", fetchImpl });
+  assert.equal(s.retried, true);
+  assert.equal(s.wrote, true);
+  assert.equal(stored.bids[0].cash, 4.125, "the moved price must not be lost to a conflict");
+});
+
+test("the repo config is validated BEFORE their site is touched", async () => {
+  /* Big River agreed to this being read. A misconfigured Worker that hits
+     their page every ten minutes and only then dies on its own missing token
+     is a bad way to spend that. */
+  const hit = [];
+  const fetchImpl = async (url) => { hit.push(String(url)); return ok(html); };
+  await assert.rejects(() => run({ ...ENV, GITHUB_TOKEN: undefined }, { now: NOW, fetchImpl }),
+    (e) => e instanceof GitHubError && /no token/.test(e.message));
+  assert.deepEqual(hit, [], "nothing should have been fetched at all");
+});
+
+test("source.url names the URL actually read, not the one we hoped for", async () => {
+  let n = 0;
+  const fetchImpl = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) {
+      n++;
+      return n === 1 ? new Response("x", { status: 500 }) : ok(html);
+    }
+    if ((opts.method || "GET") === "GET") return new Response("{}", { status: 404 });
+    return ok({ content: { sha: "s" } });
+  };
+  const s = await run(ENV, { now: NOW, fetchImpl, dryRun: true });
+  assert.match(s.readFrom, /^https:\/\/www\./,
+    "the apex failed, so the www spelling served it");
+});
+
+test("absent and unreadable are different facts, and the second is flagged", async () => {
+  const mk = (ghGet) => async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) return ok(html);
+    if ((opts.method || "GET") === "GET") return ghGet();
+    return ok({ content: { sha: "s" } });
+  };
+  const absent = await run(ENV, { now: NOW, fetchImpl: mk(() => new Response("{}", { status: 404 })) });
+  assert.equal(absent.firstRun, true);
+  assert.equal(absent.previousUnreadable, false);
+
+  const broken = await run(ENV, {
+    now: NOW,
+    fetchImpl: mk(() => ok({ sha: "s1", content: b64encode("{ truncated") })),
+  });
+  assert.equal(broken.firstRun, false, "the file exists; this is not a first run");
+  assert.equal(broken.previousUnreadable, true, "and that has to be visible in the log line");
+});
+
+test("a 200 that is not a file is a GitHubError, not a stray TypeError", async () => {
+  const fetchImpl = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) return ok(html);
+    return ok({ message: "this is a directory listing, not a file" });
+  };
+  await assert.rejects(() => run(ENV, { now: NOW, fetchImpl }),
+    (e) => e instanceof GitHubError && /no file content/.test(e.message));
+});
+
+test("a 200 with a non-JSON body is a GitHubError, not a SyntaxError", async () => {
+  const fetchImpl = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("bigriverbids.com")) return ok(html);
+    return new Response("<html>maintenance</html>", { status: 200 });
+  };
+  await assert.rejects(() => run(ENV, { now: NOW, fetchImpl }),
+    (e) => e instanceof GitHubError && /non-JSON body/.test(e.message));
+});

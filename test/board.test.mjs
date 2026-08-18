@@ -128,3 +128,22 @@ test("the sanity band is a band, not a forecast", () => {
   assert.ok(CONFIG.floor < 3 && CONFIG.ceiling > 10,
     "narrowing this to the current market turns a decimal-point check into a price opinion");
 });
+
+test("THE GUARD CANNOT FAIL OPEN: a renamed futures header is refused", () => {
+  /* checkIdentity only tests rows that carry cash, basis AND a quoted future.
+     Rename their futures heading and every futuresPrice parses as null, so it
+     verifies nothing and reports nothing wrong. Zero failures then means "no
+     row was testable", which is a disabled guard wearing a passing guard's
+     clothes. Before this was fixed, the line below published 7 rows with
+     futuresPriceCents null on every one of them. */
+  const renamed = html.replace(/>\s*Futures\s*</gi, ">CME<");
+  assert.notEqual(renamed, html, "the fixture no longer has a Futures heading; update this test");
+  assert.throws(() => build(renamed),
+    (e) => e instanceof Refused && /could not run the cash - basis = futures check/.test(e.message));
+});
+
+test("the number of rows the guard actually verified is reported, not just failures", () => {
+  const { file, verified } = build();
+  assert.equal(verified, 7);
+  assert.equal(verified, file.count, "every published row should have been verifiable");
+});

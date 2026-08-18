@@ -107,44 +107,69 @@ export async function getPage(urls, { fetchImpl = fetch } = {}) {
   throw new Refused(`could not read their page. ${problems.join(" | ")}`);
 }
 
+/* One read -> decide -> write cycle. The sha comes from the read that made the
+   decision, so a normal poll is one GET and, when there is news, one PUT. */
+async function attempt(gh, file, dryRun) {
+  const { json: previous, sha, absent, unreadable } = await gh.read();
+  const verdict = decide(previous, file);
+  if (!verdict.write || dryRun) return { verdict, wrote: false, absent, unreadable };
+  await gh.write({
+    content: serialise(verdict.file),
+    message: commitMessage(verdict),
+    sha,
+  });
+  return { verdict, wrote: true, absent, unreadable };
+}
+
 /**
  * The whole job. Returns a summary; throws Refused or GitHubError on failure.
  * `dryRun` builds and decides but commits nothing.
  */
 export async function run(env, { now, fetchImpl = fetch, dryRun = false } = {}) {
   const cfg = config(env);
-  const stamp = now || new Date().toISOString();
 
-  const { html, url } = await getPage(cfg.urls, { fetchImpl });
-  const { file, dropped } = buildFile(html, { now: stamp, sourceUrl: cfg.urls[0] });
-
+  /* Validate the repo config BEFORE touching their site. Big River agreed to
+     this being read; a misconfigured Worker that hits their page every ten
+     minutes and then dies on its own missing token is a bad way to spend that
+     goodwill. makeRepo throws on an incomplete config without making a call. */
   const gh = makeRepo({ ...cfg, userAgent: USER_AGENT, fetchImpl });
-  const { json: previous, sha } = await gh.read();
 
-  const verdict = decide(previous, file);
-  const summary = {
+  const stamp = now || new Date().toISOString();
+  const { html, url } = await getPage(cfg.urls, { fetchImpl });
+
+  /* sourceUrl is the URL we ACTUALLY read, not the first one we would have
+     liked to. If the apex failed and the www fallback served the board, a file
+     claiming the apex is a small lie in a file whose whole job is provenance. */
+  const { file, dropped, verified } = buildFile(html, { now: stamp, sourceUrl: url });
+
+  let r;
+  try {
+    r = await attempt(gh, file, dryRun);
+  } catch (e) {
+    /* A conflict invalidates the DECISION, not just the sha: someone else
+       committed between our read and our write, so the file we decided
+       against is gone. Redo the whole cycle. Usually the other firing wrote
+       the same thing and this second pass decides to skip. */
+    if (!(e instanceof GitHubError) || (e.status !== 409 && e.status !== 422)) throw e;
+    r = await attempt(gh, file, dryRun);
+    r.retried = true;
+  }
+
+  return {
     ok: true,
     readFrom: url,
     rows: file.count,
     dropped,
-    changed: verdict.changed,
-    wrote: false,
-    pricedAt: verdict.file.pricedAt,
-    checkedAt: verdict.file.checkedAt,
-    reason: verdict.reason,
+    verified,
+    changed: r.verdict.changed,
+    wrote: r.wrote,
+    retried: !!r.retried,
+    firstRun: !!r.absent,
+    previousUnreadable: !!r.unreadable,
+    pricedAt: r.verdict.file.pricedAt,
+    checkedAt: r.verdict.file.checkedAt,
+    reason: r.verdict.reason,
   };
-
-  if (verdict.write && !dryRun) {
-    // The sha comes from the read above, so a normal poll is one GET and, when
-    // there is news, one PUT.
-    await gh.commit({
-      content: serialise(verdict.file),
-      message: commitMessage(verdict),
-      sha,
-    });
-    summary.wrote = true;
-  }
-  return summary;
 }
 
 export default {
@@ -152,8 +177,14 @@ export default {
      invocation as failed. waitUntil would let it resolve green. */
   async scheduled(event, env, ctx) {
     const s = await run(env);
+    /* Everything an operator would need to tell a good run from a suspicious
+       one, on one line. `verified` in particular: see lib/board.mjs for why a
+       row count alone is not enough. */
     console.log(
-      `boyceville ${s.rows} rows, ${s.wrote ? "wrote" : "skipped"} — ${s.reason}`
+      `boyceville ${s.rows} rows (${s.verified} identity-verified), ` +
+      `${s.wrote ? "wrote" : "skipped"} — ${s.reason}` +
+      (s.retried ? " [retried after a write conflict]" : "") +
+      (s.previousUnreadable ? " [WARNING: previous file was unreadable]" : "")
     );
   },
 

@@ -8,9 +8,19 @@
  * sites use for their own prices, and it is why this lives in a repo rather
  * than a database: you can open the file, and you can read the history.
  *
- *   node scripts/fetch.mjs                    read the live page
- *   node scripts/fetch.mjs --fixture <file>   read a saved copy instead
- *   node scripts/fetch.mjs --dry-run          print, write nothing
+ *   node scripts/fetch.mjs                    read the live page and write
+ *   node scripts/fetch.mjs --dry-run          read the live page, print only
+ *   node scripts/fetch.mjs --fixture <file>   read a saved copy, print only
+ *
+ * --fixture NEVER WRITES. It used to, and that was the worst bug in this repo.
+ * It only swapped the HTML source, so the obvious thing to type while checking
+ * the parser against a saved page -- `node scripts/fetch.mjs --fixture
+ * fixtures/bigriver-2121.html` -- committed the fixture's prices to
+ * data/boyceville.json stamped `checkedAt: <now>`. That is a fabricated price
+ * carrying a fabricated freshness claim, in the exact field both Emmert sites
+ * use to decide whether to keep publishing. The header here listed --fixture
+ * next to --dry-run as though both were read-only, which is presumably why
+ * nobody looked.
  *
  * EXITS NON-ZERO ON A BAD READ, ON PURPOSE. A failed run is a red X and an
  * email, and data/boyceville.json is left exactly as it was. Nothing here ever
@@ -24,7 +34,7 @@
  * they emitted. See lib/board.mjs.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFile, Refused, serialise } from "../lib/board.mjs";
@@ -50,10 +60,20 @@ const CONFIG = {
 };
 
 const args = process.argv.slice(2);
-const dryRun = args.includes("--dry-run");
-const fixture = args.includes("--fixture") ? args[args.indexOf("--fixture") + 1] : null;
 
 const die = (msg) => { console.error(`FAILED: ${msg}`); process.exit(1); };
+
+let fixture = null;
+if (args.includes("--fixture")) {
+  fixture = args[args.indexOf("--fixture") + 1] ?? null;
+  /* `--fixture` with no filename used to fall through to null and read their
+     LIVE page -- the opposite of what was asked for, silently. */
+  if (!fixture || fixture.startsWith("--"))
+    die("--fixture needs a filename. Refusing to fall back to their live page.");
+}
+
+/* Reading a fixture can never write. See the header. */
+const dryRun = args.includes("--dry-run") || fixture !== null;
 
 async function getPage() {
   if (fixture) return { html: readFileSync(fixture, "utf8"), url: `file://${fixture}` };
@@ -86,16 +106,29 @@ try {
   // other throw is a bug in the parser and should look like one.
   die(e instanceof Refused ? e.message : `the parser threw: ${e.message}`);
 }
-const { file: feed, dropped } = built;
+const { file: feed, dropped, verified } = built;
 
 if (dryRun) {
   console.log(serialise(feed));
-  console.log(`(dry run: ${feed.count} rows, ${dropped} other-location rows dropped)`);
+  console.log(`(dry run${fixture ? `, from ${fixture}` : ""}: ${feed.count} rows, ` +
+              `${verified} identity-verified, ${dropped} other-location rows dropped. ` +
+              `Nothing was written.)`);
   process.exit(0);
 }
 
+/* "The file is not there" and "the file is there and I cannot read it" are
+   different facts. Collapsing them into `previous = null` makes a truncated or
+   half-written file look like a first run, which resets pricedAt to now and
+   republishes a three-day-old price as newly priced -- silently. */
 let previous = null;
-try { previous = JSON.parse(readFileSync(OUT, "utf8")); } catch { /* first run */ }
+if (existsSync(OUT)) {
+  try {
+    previous = JSON.parse(readFileSync(OUT, "utf8"));
+  } catch (e) {
+    console.warn(`WARNING: ${OUT} exists but will not parse (${e.message}). ` +
+                 `Treating it as absent, which means pricedAt restarts from this read.`);
+  }
+}
 
 const verdict = decide(previous, feed);
 
@@ -107,6 +140,7 @@ if (!verdict.write) {
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, serialise(verdict.file));
 writeFileSync(MSG, commitMessage(verdict) + "\n");
-console.log(`${verdict.reason}: wrote ${feed.count} rows (priced ${verdict.file.pricedAt}), ` +
+console.log(`${verdict.reason}: wrote ${feed.count} rows ` +
+            `(${verified} identity-verified, priced ${verdict.file.pricedAt}), ` +
             `${dropped} other-location rows dropped`);
 for (const b of verdict.file.bids) console.log(`  ${b.delivery.padEnd(10)} ${b.cash}  ${b.basisDollars}`);
