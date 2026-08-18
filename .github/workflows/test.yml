@@ -1,6 +1,6 @@
 # The gate. Runs on every push, and only on push.
 #
-# It covers lib/, scripts/ and worker/ -- both readers and the shared core.
+# It covers lib/ and scripts/ -- the reader, the guards and the dashboard baker.
 #
 # It lives apart from poll.yml on purpose: the reader's code does not change
 # between polls, so running the suite on every one of ~1,650 monthly polls
@@ -14,7 +14,6 @@ on:
     paths:
       - 'lib/**'
       - 'scripts/**'
-      - 'worker/**'
       - 'test/**'
       - 'fixtures/**'
       - 'package.json'

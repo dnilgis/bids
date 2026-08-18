@@ -1,0 +1,66 @@
+# Bake index.html — the Boyceville dashboard — whenever the data changes.
+#
+# NOT part of the poll. The poller runs every ten minutes through the trading
+# day and writes nothing most of the time; the dashboard only needs rebaking
+# when data/boyceville.json actually moves, which is a price change or a
+# six-hourly heartbeat. Wiring this to the poll instead would be a few hundred
+# pointless runs a month baking a byte-identical page.
+#
+# poll.yml bakes and commits index.html itself, in the same run that records a
+# price. This workflow exists for the two cases it cannot cover: someone edited
+# the baker, or a human wants a rebake on demand.
+
+name: dashboard
+
+# NOTE: the DATA path is handled inline by poll.yml, which bakes and commits
+# index.html in the same run that records a price. This workflow covers the two
+# cases poll.yml cannot: someone changed the baker itself, or a human wants a
+# rebake on demand. It deliberately does NOT listen for data/boyceville.json --
+# a push made with the Actions GITHUB_TOKEN cannot start another workflow
+# anyway, so listening for it would look like coverage and provide none.
+on:
+  push:
+    paths:
+      - 'scripts/dashboard.mjs'
+      - '.github/workflows/dashboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dashboard
+  cancel-in-progress: true    # only the newest bake matters; it is idempotent
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # THE CHART IS THE GIT HISTORY. A shallow clone is the default and it
+          # would bake a chart with one point on it, cheerfully and without an
+          # error. The baker says so in its footer if this is ever wrong.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Gate on the suite. The baker's own bug — points drawn off-canvas —
+      # rendered as a plausible flat line rather than failing, so the tests are
+      # the only thing standing between a wrong chart and the front page.
+      - name: Check the baker
+        run: npm test
+
+      - name: Bake the dashboard
+        run: node scripts/dashboard.mjs
+
+      - name: Commit if the page moved
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add index.html
+          git diff --cached --quiet && { echo "dashboard unchanged"; exit 0; }
+          git commit -m "dashboard: rebaked"
+          git push

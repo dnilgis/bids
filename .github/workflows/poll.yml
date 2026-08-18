@@ -1,0 +1,137 @@
+# Read Big River's Boyceville board and commit it when the price moves.
+#
+# CADENCE
+#
+# Every 10 minutes through the trading day, hourly at night, every 4 hours at
+# weekends. Their footer says prices are delayed 10 minutes and the page
+# self-refreshes every 5, so 10 is matched to the source rather than to a wish.
+#
+# BEST-EFFORT, AND YOU SHOULD KNOW IT. GitHub does not promise scheduled
+# workflows run on time. Under load they are delayed, and occasionally dropped
+# entirely. Ten to twenty minute lags at busy times are normal and not a fault.
+#
+# That is fine here and it is worth being explicit about why: every consumer
+# checks `checkedAt`, and the Emmert sites do not withdraw a price until it is
+# fourteen hours stale. A twenty-minute lag is inside the noise. The cadence is
+# matched to their board -- their footer says prices are delayed ten minutes --
+# not to a requirement that anything happen on a particular second.
+#
+# This repo is PUBLIC, which is what makes this affordable: Actions minutes are
+# unmetered on public repos. On a private repo this schedule is about 1,650 runs
+# a month against a 2,000-minute allowance — 83%, or 165% if a run ever creeps
+# past 60 seconds. If you ever make this repo private, cut the cadence first.
+#
+# THIS IS THE READER. There is no other one.
+#
+# A Cloudflare Worker version was built and then removed on 2026-08-17. It
+# bought punctuality that this system does not need -- a twenty-minute lag is
+# nothing against the fourteen-hour staleness threshold the Emmert sites
+# actually use -- and it cost a second vendor, secrets in two places, a runtime
+# that differs from Node in ways that already bit us once, and seven-day log
+# retention against GitHub's ninety. Actions also has no CPU ceiling, which is
+# the limit that would have bound first as more elevators are added.
+#
+# NO TESTS HERE, DELIBERATELY. The code does not change between polls, so
+# running the suite 1,650 times a month proves nothing and doubles the run time.
+# Tests run on push instead, in test.yml. A poll that finds no change writes
+# nothing and commits nothing.
+
+name: read boyceville
+
+on:
+  schedule:
+    # Every 10 minutes through the trading day. 12:00-21:59 UTC covers
+    # 7am-4pm Central in both CST and CDT, so the clocks changing cannot
+    # quietly shift the window out of market hours.
+    #
+    # WRITTEN OUT RATHER THAN AS */10, TO DODGE THE TOP OF THE HOUR.
+    # GitHub's scheduler is best effort and it is most congested on the exact
+    # minute -- :00 is when every cron on the platform fires at once, so a job
+    # asking for :00 waits behind all of them. Offsetting to :03 costs nothing
+    # and lands in a quieter queue. The spacing is still ten minutes.
+    - cron: "3,13,23,33,43,53 12-21 * * 1-5"
+    # Hourly the rest of the weekday, so an overnight move is picked up and a
+    # reader that has quietly died gets noticed before morning.
+    - cron: "25 0-11,22-23 * * 1-5"
+    # Weekends, every 3 hours. Deliberately NOT hourly: the board does not move
+    # at the weekend, and the heartbeat only writes every 6 hours, so hourly
+    # polling would produce zero additional commits and zero additional
+    # information while making requests to someone else's server for nothing.
+    #
+    # THREE AND NOT FOUR, for two reasons found on 2026-08-17.
+    # At 4-hourly the 4h poll is inside the 6h heartbeat and the 8h poll writes,
+    # so the natural weekend commit interval is EXACTLY 8.00 hours -- which is
+    # exactly the dashboard's gap threshold (HEARTBEAT_H + SLACK_H). With the
+    # 10-20 minute scheduler drift this file documents nine lines up, that flags
+    # a false gap on essentially every weekend, and the one signal that is meant
+    # to mean "the reader has been down since Friday" becomes weekly noise.
+    # And two consecutive dropped weekend runs reached 15.95h of staleness
+    # against the Emmert side's 14h withdrawal, so a quiet Saturday could pull a
+    # perfectly good price off both sites.
+    - cron: "25 */3 * * 6,0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: read-boyceville
+  cancel-in-progress: false     # never interrupt a run mid-write
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Exits non-zero on a bad read, which fails the run, emails you, and
+      # leaves data/boyceville.json exactly as it was. A stale file is safe:
+      # every consumer checks `checkedAt`. A wrong file is not.
+      - name: Read their board
+        run: node scripts/fetch.mjs
+
+      - name: Commit if the price moved, and rebake the dashboard
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add data/boyceville.json
+          git diff --cached --quiet && { echo "nothing moved"; exit 0; }
+
+          # THE DEEP FETCH HAPPENS HERE, NOT AT CHECKOUT.
+          #
+          # The dashboard's basis chart is drawn from this repo's git history,
+          # so baking it needs the full log. But checkout runs on every poll --
+          # about 1,650 a month -- while a commit happens only on a price
+          # change or a six-hourly heartbeat, a few dozen times a month. Doing
+          # the unshallow here means the expensive clone is paid on the runs
+          # that need it and no others.
+          git fetch --deepen=1000 --quiet || true
+
+          # THE DASHBOARD MUST NEVER BLOCK THE PRICE.
+          #
+          # This block runs under `bash -e`. A non-zero bake used to abort the
+          # step before `git commit`, and because the runner is ephemeral the
+          # price fetch.mjs had already written to the working tree was thrown
+          # away with it. Worse, a deterministic bake failure -- one bad
+          # basisDollars anywhere in the history the chart reads -- fails every
+          # subsequent poll identically, so `checkedAt` freezes and fourteen
+          # hours later both Emmert sites drop to "Call for today's price".
+          # Over a chart.
+          #
+          # READ-ME-FIRST calls the dashboard optional and deletable. This makes
+          # the workflow agree with that.
+          if node scripts/dashboard.mjs; then
+            git add index.html
+          else
+            echo "::warning::dashboard bake failed; committing the price without it"
+          fi
+          # The message carries the front month, so `git log --oneline` reads
+          # as a price history rather than a list of identical commits, and a
+          # heartbeat says so instead of impersonating a price change.
+          # Written by fetch.mjs via lib/decide.mjs.
+          git commit -F .commit-message
+          git push
