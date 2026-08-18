@@ -1,66 +1,51 @@
-# Bake index.html — the Boyceville dashboard — whenever the data changes.
+# Bake index.html from whatever is in data/.
 #
-# NOT part of the poll. The poller runs every ten minutes through the trading
-# day and writes nothing most of the time; the dashboard only needs rebaking
-# when data/boyceville.json actually moves, which is a price change or a
-# six-hourly heartbeat. Wiring this to the poll instead would be a few hundred
-# pointless runs a month baking a byte-identical page.
-#
-# poll.yml bakes and commits index.html itself, in the same run that records a
-# price. This workflow exists for the two cases it cannot cover: someone edited
-# the baker, or a human wants a rebake on demand.
+# Runs after the pollers, on a schedule and on any push that touches data.
+# It reads the directory, so adding an elevator means adding a poller that
+# writes data/<name>.json -- nothing here changes, and neither does the page.
 
-name: dashboard
+name: Dashboard
 
-# NOTE: the DATA path is handled inline by poll.yml, which bakes and commits
-# index.html in the same run that records a price. This workflow covers the two
-# cases poll.yml cannot: someone changed the baker itself, or a human wants a
-# rebake on demand. It deliberately does NOT listen for data/boyceville.json --
-# a push made with the Actions GITHUB_TOKEN cannot start another workflow
-# anyway, so listening for it would look like coverage and provide none.
 on:
-  push:
-    paths:
-      - 'scripts/dashboard.mjs'
-      - '.github/workflows/dashboard.yml'
+  schedule:
+    - cron: "35 * * * *"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "scripts/dashboard.mjs"
 
 permissions:
   contents: write
 
 concurrency:
   group: dashboard
-  cancel-in-progress: true    # only the newest bake matters; it is idempotent
+  cancel-in-progress: true
 
 jobs:
   bake:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          # THE CHART IS THE GIT HISTORY. A shallow clone is the default and it
-          # would bake a chart with one point on it, cheerfully and without an
-          # error. The baker says so in its footer if this is ever wrong.
-          fetch-depth: 0
-
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+        with: { node-version: "20" }
 
-      # Gate on the suite. The baker's own bug — points drawn off-canvas —
-      # rendered as a plausible flat line rather than failing, so the tests are
-      # the only thing standing between a wrong chart and the front page.
-      - name: Check the baker
-        run: npm test
+      # A page that reports on broken sources must not itself be broken.
+      - name: Test
+        run: node --test test/dashboard.test.mjs
 
-      - name: Bake the dashboard
+      - name: Bake
         run: node scripts/dashboard.mjs
 
-      - name: Commit if the page moved
+      - name: Commit if it changed
         run: |
-          git config user.name  "agsist-bot"
-          git config user.email "bot@agsist.com"
+          git config user.name  "dashboard"
+          git config user.email "actions@github.com"
           git add index.html
-          git diff --cached --quiet && { echo "dashboard unchanged"; exit 0; }
-          git commit -m "dashboard: rebaked"
-          git push
+          if git diff --staged --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "dashboard: $(TZ=America/Chicago date '+%-d %B %-I:%M%P')"
+            git push
+          fi
