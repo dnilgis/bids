@@ -114,11 +114,19 @@ try {
 
 const { file: feed, dropped, verified } = built;
 
+/* The log said "7 identity-verified" on a run that had just nulled two of the
+   seven quotes, because `verified` counted rows CARRYING all three figures,
+   not rows that balanced. That reading is what made the withdrawal downstream
+   look like it came out of nowhere. Count what actually held. */
+const balanced = feed.bids.filter((b) => b.futuresPriceCents != null).length;
+const unchecked = feed.count - balanced;
+
 if (dryRun) {
   console.log(serialise(feed));
+  const bal = feed.bids.filter((b) => b.futuresPriceCents != null).length;
   console.log(`(dry run${fixture ? `, from ${fixture}` : ""}: ${feed.count} rows, ` +
-              `${verified} identity-verified, ${dropped} other-location rows dropped. ` +
-              `Nothing was written.)`);
+              `${bal} identity-verified, ${feed.count - bal} without a quote, ` +
+              `${dropped} other-location rows dropped. Nothing was written.)`);
   process.exit(0);
 }
 
@@ -162,6 +170,8 @@ mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, serialise(verdict.file));
 writeFileSync(MSG, commitMessage(verdict) + "\n");
 console.log(`${verdict.reason}: wrote ${feed.count} rows ` +
-            `(${verified} identity-verified, priced ${verdict.file.pricedAt}), ` +
+            `(${balanced} identity-verified` +
+            (unchecked ? `, ${unchecked} published WITHOUT a quote` : "") +
+            `, priced ${verdict.file.pricedAt}), ` +
             `${dropped} other-location rows dropped`);
 for (const b of verdict.file.bids) console.log(`  ${b.delivery.padEnd(10)} ${b.cash}  ${b.basisDollars}`);
