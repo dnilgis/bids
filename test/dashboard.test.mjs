@@ -1,190 +1,185 @@
-/* The dashboard baker.
+/* The dashboard: status and data, and nothing that pretends.
  *
- * These exist because the first cut of scripts/dashboard.mjs shipped a chart
- * built from x coordinates around -518,000,000,000 and NOTHING COMPLAINED.
- * SVG drew the path far off-canvas, the panel rendered as a small dash, and a
- * dash on a basis chart reads as "the market has not moved" rather than as
- * "this chart is broken". It was caught by screenshotting the page, which is
- * not a repeatable check.
+ * The version this replaces drew basis sparklines from four hundred commits
+ * of git history. That is where its worst bug lived -- x-coordinates at minus
+ * five hundred billion, which rendered as a flat dash rather than an error --
+ * and none of it was asked for. There is no chart here and no history walk,
+ * so most of these tests are about the page telling the truth when a source
+ * is broken rather than about drawing anything.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSeries, sparkline, gaps, render } from "../scripts/dashboard.mjs";
+import { readSource, render, money } from "../scripts/dashboard.mjs";
 
-const bid = (delivery, seq, basis) => ({
-  seq, commodity: "Corn", delivery, futuresMonth: "Sep 26",
-  cash: Math.round((4.595 + basis) * 10000) / 10000,
-  basisDollars: basis, basisCents: Math.round(basis * 100), futuresPriceCents: 459.5,
+const NOW = new Date("2026-08-18T22:10:00.000Z");
+const hoursBefore = (h) => new Date(NOW.getTime() - h * 36e5).toISOString();
+const src = (o = {}) => JSON.stringify({
+  schema: "bigriver-boyceville/2",
+  source: { name: "Big River Resources", location: "Boyceville" },
+  checkedAt: hoursBefore(0.5), pricedAt: hoursBefore(3), status: "ok", count: 1,
+  bids: [{ delivery: "August", cash: 4.1125, basisDollars: -0.52,
+           futuresMonth: "Sep 26", futuresPriceCents: 463.25 }],
+  ...o,
+});
+const read = (o) => readSource("boyceville.json", src(o), NOW);
+
+/* ---- the states ---------------------------------------------------------- */
+
+test("a source read inside the heartbeat is live", () => {
+  assert.equal(read().state, "live");
+  assert.equal(read().why, null);
 });
 
-/* A commit as history() hands it on: git metadata plus the file at that sha. */
-const commit = (when, pricedAt, basis) => ({
-  sha: when, when, subject: "x",
-  doc: { checkedAt: when, pricedAt, count: 1, bids: [bid("August", 0, basis)] },
+test("past the heartbeat it is late, past the consumer's limit it is cold", () => {
+  assert.equal(read({ checkedAt: hoursBefore(7) }).state, "late");
+  assert.equal(read({ checkedAt: hoursBefore(20) }).state, "cold");
+  assert.match(read({ checkedAt: hoursBefore(20) }).why, /past the 14h/);
 });
 
-const H = (n) => new Date(Date.parse("2026-08-01T00:00:00.000Z") + n * 36e5).toISOString();
-
-test("THE HEARTBEAT BUG: a stale pricedAt must not walk the series backwards", () => {
-  /* pricedAt only moves when the price moves, so a heartbeat commit carries an
-     OLD pricedAt on purpose. Appending one point per commit in commit order
-     therefore goes backwards in x every time a heartbeat lands. */
-  const commits = [
-    commit(H(0), H(0), -0.52),     // price set
-    commit(H(1), H(0), -0.52),     // heartbeat, pricedAt still H(0)
-    commit(H(2), H(2), -0.50),     // price moves
-    commit(H(3), H(2), -0.50),     // heartbeat, pricedAt back at H(2)
-    commit(H(9), H(2), -0.50),     // heartbeat
-  ];
-  const { byMonth } = buildSeries(commits);
-  const s = byMonth.get("August");
-
-  assert.equal(s.length, 2, "five commits carrying two distinct prices is two points");
-  for (let i = 1; i < s.length; i++)
-    assert.ok(s[i].t > s[i - 1].t, `series went backwards at ${i}`);
-  assert.deepEqual(s.map((p) => p.v), [-0.52, -0.50]);
+test("A CLOCK AHEAD OF OURS IS BROKEN, NOT FRESH", () => {
+  /* The subtraction goes negative and every naive freshness test passes for
+     ever. It is the one state that looks healthiest while being worst. */
+  const s = read({ checkedAt: hoursBefore(-10) });
+  assert.equal(s.state, "broken");
+  assert.match(s.why, /10\.0 h ahead of ours/);
+  assert.doesNotMatch(s.why, /-/, "and it is not reported as a negative age");
 });
 
-test("commits arriving out of order still produce an ascending series", () => {
-  const { byMonth } = buildSeries([
-    commit(H(5), H(5), -0.44),
-    commit(H(1), H(1), -0.52),
-    commit(H(3), H(3), -0.48),
-  ]);
-  const s = byMonth.get("August");
-  assert.deepEqual(s.map((p) => p.v), [-0.52, -0.48, -0.44]);
+test("READER HEALTH OUTRANKS WHAT THE SOURCE IS POSTING", () => {
+  /* A board we have not reached in a day, posting nothing: "it is posting no
+     rows" would be a statement about yesterday dressed up as one about now.
+     Everything the file says about the board is a claim about when it was
+     last read. */
+  const s = readSource("x.json", src({ checkedAt: hoursBefore(26), bids: [], count: 0 }), NOW);
+  assert.equal(s.state, "cold");
+  const fresh = readSource("x.json", src({ bids: [], count: 0 }), NOW);
+  assert.equal(fresh.state, "withdrawn", "read recently and posting nothing is a different fact");
 });
 
-test("EVERY POINT LANDS INSIDE THE PANEL", () => {
-  const commits = Array.from({ length: 40 }, (_, i) =>
-    commit(H(i), H(i), -0.6 + (i % 7) * 0.02));
-  const s = buildSeries(commits).byMonth.get("August");
-  const svg = sparkline(s, { lo: -0.7, hi: -0.4 });
-  const pts = [...svg.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]);
-  assert.equal(pts.length, s.length);
-  for (const [x, y] of pts) {
-    assert.ok(x >= -1 && x <= 233, `x ${x} outside the 232-wide panel`);
-    assert.ok(y >= -1 && y <= 75, `y ${y} outside the 74-tall panel`);
+test("a status the reader itself flagged is surfaced, not swallowed", () => {
+  const s = read({ status: "manual" });
+  assert.equal(s.state, "flagged");
+  assert.match(s.why, /marked it "manual"/);
+});
+
+/* ---- files this page does not understand -------------------------------- */
+
+test("A FILE THAT WILL NOT PARSE IS SHOWN, NOT SKIPPED", () => {
+  /* Sources will arrive from platforms that are neither Big River nor
+     FarmCentric. The day one writes something unexpected, the page has to say
+     so by name -- a source that quietly vanishes from a status page is worse
+     than one shown as broken. */
+  const s = readSource("menomonie.json", "{ not json", NOW);
+  assert.equal(s.state, "unreadable");
+  assert.equal(s.id, "menomonie");
+  assert.match(s.why, /not valid JSON/);
+  assert.doesNotThrow(() => render([s], NOW));
+  assert.match(render([s], NOW), /menomonie/);
+});
+
+test("...and so is one with no readable clock", () => {
+  for (const v of [undefined, null, "", "whenever", 0]) {
+    const s = readSource("x.json", src({ checkedAt: v }), NOW);
+    assert.equal(s.state, "unreadable", String(v));
+    assert.match(s.why, /age cannot be known/);
   }
-  assert.ok(Math.max(...pts.map((p) => p[0])) > 200, "the line should span the panel, not bunch at the left");
 });
 
-test("the baker REFUSES rather than drawing a path off-canvas", () => {
-  /* The guard that would have turned the original bug into a red build
-     instead of a plausible-looking flat line. */
-  const bad = [{ t: 0, v: -0.5 }, { t: 1e15, v: -0.5 }, { t: 5, v: -0.5 }];
-  assert.throws(() => sparkline(bad, { lo: -1, hi: 0 }),
-    (e) => /not in time order|outside the/.test(e.message));
+test("a source with no bids array at all still renders", () => {
+  const s = readSource("x.json", JSON.stringify({ checkedAt: hoursBefore(1) }), NOW);
+  assert.doesNotThrow(() => render([s], NOW));
+  assert.match(render([s], NOW), /No rows posted/);
 });
 
-test("panels share one y-scale, so they can be compared by eye", () => {
-  /* Small multiples that each scale to their own data are a lie: a flat month
-     and a violent month look identical. */
-  const a = [{ t: 1, v: -0.60 }, { t: 2, v: -0.58 }];
-  const b = [{ t: 1, v: -0.45 }, { t: 2, v: -0.43 }];
-  const yOf = (svg) => [...svg.matchAll(/[ML](?:-?[\d.]+) (-?[\d.]+)/g)].map((m) => +m[1]);
-  const ya = yOf(sparkline(a, { lo: -0.7, hi: -0.4 }));
-  const yb = yOf(sparkline(b, { lo: -0.7, hi: -0.4 }));
-  assert.ok(Math.min(...yb) < Math.min(...ya),
-    "the higher-basis month must sit higher in its panel under a shared scale");
+/* ---- what it will not do ------------------------------------------------- */
+
+test("THERE IS NO CHART, NO SPARKLINE AND NO HISTORY WALK", () => {
+  const html = render([read()], NOW);
+  assert.doesNotMatch(html, /<svg|<canvas|polyline|sparkline/i);
+  const source = readSource.toString() + render.toString();
+  assert.doesNotMatch(source, /git log|execSync|child_process/i);
 });
 
-test("an empty series renders an empty panel rather than throwing", () => {
-  const svg = sparkline([], { lo: -1, hi: 0 });
-  assert.match(svg, /<svg/);
-  assert.doesNotMatch(svg, /class="line"/);
+test("no relative time is ever printed as if the page were live", () => {
+  /* The page is baked and then sits there. "4 minutes ago" is false the
+     moment it is written and worse all day; every age is stated against the
+     bake time and says so. */
+  const html = render([read()], NOW);
+  assert.doesNotMatch(html, /\bago\b(?!,)/);
+  assert.match(html, /before this page was made/);
+  assert.match(html, /page made/);
 });
 
-test("a heartbeat gap is detected, because a refusal leaves no commit", () => {
-  /* A failed read writes nothing at all. There is no positive record of it
-     anywhere in the repo. A missing heartbeat is the only trace. */
-  const quiet = [commit(H(0), H(0), -0.52), commit(H(30), H(0), -0.52)];
-  const g = gaps(quiet);
-  assert.equal(g.length, 1);
-  assert.ok(g[0].hours > 29);
-
-  const healthy = [commit(H(0), H(0), -0.52), commit(H(5), H(0), -0.52), commit(H(10), H(0), -0.52)];
-  assert.equal(gaps(healthy).length, 0);
+test("a quote the reader could not verify is a dash, never a number", () => {
+  const s = read({ bids: [{ delivery: "August", cash: 4.01, basisDollars: -0.62,
+                            futuresMonth: "Sep 26", futuresPriceCents: null }] });
+  assert.equal(s.unverified, 1);
+  const html = render([s], NOW);
+  assert.match(html, /not verified against cash minus basis/);
+  assert.match(html, /1 without a verified quote/);
 });
 
-test("THE PAGE PRINTS NO RELATIVE TIMES", () => {
-  /* A static file that says "checked 2 hours ago" says it forever, and it
-     stays reassuring long after it stops being true -- on the one page you
-     would open to find out whether the reader had died. */
-  const doc = {
-    checkedAt: H(0), pricedAt: H(0), count: 1, bids: [bid("August", 0, -0.52)],
-    source: { location: "Boyceville" },
-  };
-  const html = render(doc, { byMonth: new Map([["August", [{ t: Date.parse(H(0)), v: -0.52 }]]]), commits: [] });
-  assert.doesNotMatch(html, /\bago\b/i);
-  assert.doesNotMatch(html, /just now|moments|minutes old|hours old/i);
-  assert.match(html, /drop this price after/, "the freshness claim must be a deadline");
+test("MONEY IS SHOWN TO THE PRECISION IT WAS PUBLISHED AT", () => {
+  /* 4.44 * 100 is 444.00000000000006 in binary floating point, so testing the
+     remainder said "fractional" and put $4.4400 on the page -- a precision
+     nobody quoted. */
+  assert.equal(money(4.44), "$4.44");
+  assert.equal(money(4.1125), "$4.1125");
+  assert.equal(money(4), "$4.00");
+  assert.equal(money(4.5), "$4.50");
+  assert.equal(money(4.635), "$4.635");
+  for (const v of [null, undefined, NaN, "4.44"]) assert.equal(money(v), "—");
 });
 
-test("the page carries no script and makes no outside request", () => {
-  const doc = {
-    checkedAt: H(0), pricedAt: H(0), count: 1, bids: [bid("August", 0, -0.52)],
-    source: { location: "Boyceville" },
-  };
-  const html = render(doc, { byMonth: new Map(), commits: [] });
-  assert.doesNotMatch(html, /<script/i);
-  assert.doesNotMatch(html, /https?:\/\//, "no CDN, no web font, no remote image");
-  assert.doesNotMatch(html, /onclick|onload/i);
+/* ---- room to grow -------------------------------------------------------- */
+
+test("IT WORKS AT ONE SOURCE AND AT FORTY, WITH NO EDIT IN BETWEEN", () => {
+  const many = Array.from({ length: 40 }, (_, i) =>
+    readSource(`site-${i}.json`, src({ source: { name: `Elevator ${i}`, location: "Somewhere" } }), NOW));
+  const html = render(many, NOW);
+  assert.equal((html.match(/class="src"/g) || []).length, 40);
+  assert.match(html, /40 sources/);
 });
 
-test("the identity check is re-run on the published file and reported", () => {
-  const ok = {
-    checkedAt: H(0), pricedAt: H(0), count: 1, bids: [bid("August", 0, -0.52)],
-    source: { location: "Boyceville" },
-  };
-  assert.match(render(ok, { byMonth: new Map(), commits: [] }),
-    /All 1 verifiable rows satisfy cash minus basis equals futures/);
-
-  const broken = JSON.parse(JSON.stringify(ok));
-  broken.bids[0].cash = 9.99;                       // cash - basis no longer equals futures
-  assert.match(render(broken, { byMonth: new Map(), commits: [] }),
-    /fail cash minus basis equals futures/);
+test("and at none, without looking broken", () => {
+  const html = render([], NOW);
+  assert.match(html, /0 sources/);
+  assert.match(html, /appears here on its own/);
+  assert.doesNotMatch(html, /undefined|NaN/);
 });
 
-test("A BLANK UPSTREAM CELL IS UNVERIFIABLE, NOT A FAILURE", () => {
-  /* lib/board.mjs publishes a row missing one of the three values, because
-     checkIdentity skips it and the build only refuses when NO row is testable.
-     This page used to count that as a failure and render "Do not trust these
-     numbers" -- an alarm whose every clause was false -- on an ordinary N/A in
-     their Futures column. It is the panel that would have to carry a real
-     column-shift alarm, so it must not cry wolf on an upstream blank. */
-  const doc = {
-    checkedAt: H(0), pricedAt: H(0), count: 2, source: { location: "Boyceville" },
-    bids: [bid("August", 0, -0.52), { ...bid("September", 1, -0.46), futuresPriceCents: null }],
-  };
-  const html = render(doc, { byMonth: new Map(), commits: [] });
-  assert.doesNotMatch(html, /Do not trust these numbers/);
-  assert.doesNotMatch(html, /fail cash minus basis/);
-  assert.match(html, /All 1 verifiable rows satisfy/);
-  assert.match(html, /1 of 2 rows could not be checked/);
+test("ANYTHING NOT LIVE IS SHOWN FIRST", () => {
+  /* A page you glance at should put the thing that needs you at the top, and
+     no other ordering survives the list getting long. */
+  const list = [
+    readSource("a.json", src({ source: { name: "A live one" } }), NOW),
+    readSource("b.json", "{bad", NOW),
+    readSource("c.json", src({ source: { name: "C late" }, checkedAt: hoursBefore(8) }), NOW),
+  ];
+  const html = render(list, NOW);
+  /* Matched on the section tag, not on data-state anywhere: the stylesheet
+     names several states too, and a looser pattern reads those instead. */
+  const order = [...html.matchAll(/<section class="src" data-state="([a-z]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(order, ["unreadable", "late", "live"]);
 });
 
-test("the re-check tolerance matches board.mjs rather than being far tighter", () => {
-  /* board.mjs allows 0.05c of identity slack. A dashboard at 1e-9 dollars
-     rendered red on files board.mjs had deliberately published green. */
-  const doc = {
-    checkedAt: H(0), pricedAt: H(0), count: 1, source: { location: "Boyceville" },
-    bids: [{ ...bid("August", 0, -0.52), futuresPriceCents: 459.53 }],   // 0.03c off
-  };
-  assert.match(render(doc, { byMonth: new Map(), commits: [] }),
-    /All 1 verifiable rows satisfy/);
-});
+/* ---- the accessibility rule the status palette carries ------------------- */
 
-test("a weekend commit cadence does not read as a gap", () => {
-  /* At SLACK_H = 2 the threshold was 8.00h and the weekend cadence produced
-     commits at exactly 8.00h, so ordinary scheduler drift flagged a false gap
-     nearly every Monday. */
-  const weekend = [0, 8, 16, 24, 32].map((h) => commit(H(h), H(0), -0.52));
-  assert.equal(gaps(weekend).length, 0, "a clean 8h weekend cadence must be silent");
-
-  const drifted = [0, 8.3, 16.1, 24.4].map((h) => commit(H(h), H(0), -0.52));
-  assert.equal(gaps(drifted).length, 0, "and must stay silent through scheduler drift");
-
-  const dead = [commit(H(0), H(0), -0.52), commit(H(40), H(0), -0.52)];
-  assert.equal(gaps(dead).length, 1, "but a genuinely dead reader must still flag");
+test("A STATUS COLOUR NEVER CARRIES THE MEANING ON ITS OWN", () => {
+  /* Warning and serious are sub-3:1 on a light surface by design, and sit
+     only ΔE 13.6 apart to a full-colour reader. The palette's own mitigation
+     is the icon-and-label pairing, so every coloured dot on this page has its
+     word beside it -- in the tiles and on every card. */
+  const list = ["live", "late", "cold", "withdrawn", "broken"].map((st, i) =>
+    st === "broken"
+      ? readSource(`${i}.json`, src({ checkedAt: hoursBefore(-5) }), NOW)
+      : st === "cold" ? readSource(`${i}.json`, src({ checkedAt: hoursBefore(20) }), NOW)
+      : st === "late" ? readSource(`${i}.json`, src({ checkedAt: hoursBefore(8) }), NOW)
+      : st === "withdrawn" ? readSource(`${i}.json`, src({ bids: [], count: 0 }), NOW)
+      : readSource(`${i}.json`, src(), NOW));
+  const html = render(list, NOW);
+  for (const m of html.matchAll(/<span class="dot"[^>]*><\/span>([^<]*)/g))
+    assert.ok(m[1].trim().length > 0, "a dot with no word after it");
+  for (const word of ["Live", "Late", "Cold", "No rows", "Clock wrong"])
+    assert.match(html, new RegExp(word));
 });

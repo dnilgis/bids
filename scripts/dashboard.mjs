@@ -1,522 +1,330 @@
 #!/usr/bin/env node
-/**
- * Bake index.html — the Boyceville board dashboard — from data/boyceville.json
- * plus this repo's own git history.
+/* Bake index.html: what every elevator is posting, and whether we are still
+ * reading it.
  *
- *     node scripts/dashboard.mjs            write index.html
- *     node scripts/dashboard.mjs --check    verify only, exit 1 if stale
- *     node scripts/dashboard.mjs --out X    write somewhere else
+ * WHAT THIS IS FOR. This repository exists to read elevators that are not in
+ * the Barchart feed. That set only grows -- Emmert's own two join it the day
+ * they cancel their website service -- so the page has to work at one source
+ * and at forty without being rewritten in between.
  *
- * Run by .github/workflows/poll.yml, inside the same run that commits a price.
- * A push made with the Actions GITHUB_TOKEN cannot start another workflow, so a
- * dashboard.yml listening for data/boyceville.json would look like coverage and
- * provide none. dashboard.yml exists only for a manual rebake and for changes
- * to this file.
+ * WHAT IT IS NOT FOR. The version this replaces spent most of its four
+ * hundred lines drawing basis sparklines from four hundred commits of git
+ * history. That is a trends calculator, it was the source of the worst bug
+ * this page has had (x-coordinates at minus five hundred billion, rendered as
+ * a flat dash rather than an error), and nobody asked for it. There is no
+ * chart here and no history walk. Status and data, and nothing else.
  *
- * IT MUST NEVER BLOCK THE COMMIT. poll.yml runs this behind an `if` for that
- * reason: a deterministic bake failure used to abort the step before the price
- * was committed, and since the fault repeats, every later poll failed the same
- * way until both Emmert sites dropped their price. Over a chart.
- *
- *
- * WHY THE HISTORY COMES FROM GIT AND NOT FROM A FILE
- *
- * The repo's whole doctrine is that the git history of data/boyceville.json IS
- * the price record. A separate history.json would be a second copy of the same
- * facts that could disagree with the first. `git log` already has it. This is
- * why poll.yml deepens the clone before baking — on the shallow checkout
- * actions/checkout gives you by default, this would build a chart from one
- * commit and would not complain.
- *
- *
- * NO JAVASCRIPT, NO OUTSIDE REQUESTS, NO WEB FONTS.
- *
- * Everything is inlined and the chart is server-rendered SVG. Partly house
- * style, partly because a dashboard that needs a CDN to tell you whether your
- * price feed is alive has a second thing that can be dead.
- *
- *
- * NO RELATIVE TIMES. THIS IS THE IMPORTANT ONE.
- *
- * A static page cannot say "checked 2 hours ago" — it would say it forever,
- * and it would be a lie within minutes of the bake. Worse, it would be a
- * REASSURING lie on exactly the page you would open to find out whether the
- * reader had died.
- *
- * So every time here is absolute, and the freshness section is expressed as a
- * DEADLINE rather than an age: "the Emmert sites stop publishing this price
- * after <timestamp>". A deadline printed once stays true. The reader compares
- * it against their own clock, which is the one thing a static page can rely on
- * being current.
+ * HOW IT GROWS. Every data/<name>.json is a source. Adding an elevator means
+ * adding a poller that writes one; this file does not change. It reads what
+ * it finds, shows what it can, and says plainly when a file is not something
+ * it understands rather than guessing.
  */
+import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { execFileSync } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+const DATA = process.env.DATA_DIR || "data";
+const OUT = process.env.OUT_FILE || "index.html";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DATA = join(ROOT, "data", "boyceville.json");
+/* Both clocks, and what they mean. checkedAt is reader health; pricedAt is
+   the age of the price itself and is not a fault. A board can sit unchanged
+   all weekend and be perfectly correct on Monday. */
+const HEARTBEAT_H = 6;      // the reader writes at least this often
+const CONSUMER_MAX_H = 14;  // past this, the Emmert sites withdraw the price
 
-const args = process.argv.slice(2);
-const checkOnly = args.includes("--check");
-const OUT = args.includes("--out")
-  ? resolve(args[args.indexOf("--out") + 1])
-  : join(ROOT, "index.html");
+const esc = (s) => String(s ?? "")
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/* How far back the chart looks. A cap, not a policy: at a few price changes a
-   day this is months of board. */
-const MAX_COMMITS = 400;
-
-/* Must match lib/decide.mjs. If the heartbeat is retuned there and not here,
-   this page reports gaps that are not gaps. */
-const HEARTBEAT_H = 6;
-/* Must match the Emmert Worker's FEED_MAX_AGE_H. This is the number that
-   decides whether badgergrain.com and midwestcommodity.com keep showing a
-   price or fall back to "Call for today's price". */
-const FEED_MAX_AGE_H = 14;
-
-const esc = (s) =>
-  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
-           .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-const git = (...a) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 64e6 });
-
-/* ------------------------------------------------------------------ */
-/* history                                                             */
-/* ------------------------------------------------------------------ */
-
-export function seriesFrom(commits) {
-  return buildSeries(commits);
-}
-
-function history() {
-  let log;
-  try {
-    log = git("log", `-${MAX_COMMITS}`, "--format=%H\t%aI\t%s", "--", "data/boyceville.json");
-  } catch {
-    return { points: [], commits: [], shallow: true };
-  }
-  const rows = log.trim().split("\n").filter(Boolean).map((l) => {
-    const [sha, when, ...rest] = l.split("\t");
-    return { sha, when, subject: rest.join("\t") };
-  });
-
-  const commits = [];
-  for (const r of rows) {
-    let doc = null;
-    try { doc = JSON.parse(git("show", `${r.sha}:data/boyceville.json`)); } catch { continue; }
-    commits.push({ ...r, doc });
-  }
-  commits.reverse();                                    // oldest first
-
-  /* One series per delivery month, keyed by the label THEY use. A month only
-     appears while it is on their board, so series start and end at different
-     times.
-     
-     X IS pricedAt, AND THAT IS WHY THIS IS A MAP AND NOT A PUSH.
-     
-     pricedAt is when the board last showed something different, so a heartbeat
-     commit carries an OLD pricedAt on purpose. Appending one point per commit
-     in commit order therefore walks x BACKWARDS every time a heartbeat lands,
-     and adjacent-only dedupe does not catch it because the repeat is not
-     adjacent. The first cut of this file did exactly that and produced x
-     coordinates around -518,000,000,000. It did not throw; SVG happily drew a
-     path far off-canvas and the panel rendered as a small dash that looked
-     like a flat market.
-     
-     Keying on the timestamp collapses every repeat of a price to one point
-     wherever it appears in the log, and the explicit sort means the line is
-     drawn in time order rather than in commit order. */
-  /* "One commit so far" and "the clone was truncated" are different facts and
-     used to share a flag, so the very first index.html ever baked told you the
-     history was truncated and to set fetch-depth: 0 -- on a clone the workflow
-     had just deepened. Only claim truncation when we hit the cap. */
-  return { ...buildSeries(commits), commits, shallow: commits.length >= MAX_COMMITS };
-}
-
-/* Split out so the tests can drive it with a hand-built commit list. The bug
-   it exists to prevent shipped once and was invisible on the rendered page. */
-export function buildSeries(commits) {
-  const byMonth = new Map();
-  for (const c of commits) {
-    const t = Date.parse(c.doc.pricedAt ?? c.doc.checkedAt ?? c.when);
-    if (!Number.isFinite(t)) continue;
-    for (const b of c.doc.bids ?? []) {
-      if (b.basisDollars == null) continue;
-      if (!byMonth.has(b.delivery)) byMonth.set(b.delivery, new Map());
-      byMonth.get(b.delivery).set(t, b.basisDollars);
-    }
-  }
-  const series = new Map();
-  for (const [month, m] of byMonth) {
-    series.set(month, [...m.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([t, v]) => ({ t, v })));
-  }
-  return { byMonth: series };
-}
-
-/* ------------------------------------------------------------------ */
-/* reader health, inferred from what ISN'T there                       */
-/* ------------------------------------------------------------------ */
-
-export function gaps(commits) {
-  /* A refused read writes nothing, so a failure leaves NO commit. There is no
-     positive record of it anywhere in this repo. The only evidence a refusal
-     ever happened is a heartbeat that did not arrive.
-
-     So: walk consecutive commits and flag any interval longer than the
-     heartbeat plus slack. GitHub's scheduler is best effort and runs drift by
-     ten to twenty minutes under load, so the slack is generous — this is to catch
-     "the reader has been down since Friday", not "one poll ran late". */
-  /* Three, not two. At SLACK_H = 2 the threshold is 8.00h and the weekend
-     cadence produced commits at exactly 8.00h, so ordinary scheduler drift
-     flagged a false gap nearly every Monday. A gap alarm that fires weekly is
-     one nobody reads. */
-  const SLACK_H = 3;
-  const out = [];
-  for (let i = 1; i < commits.length; i++) {
-    const a = Date.parse(commits[i - 1].when);
-    const b = Date.parse(commits[i].when);
-    const h = (b - a) / 36e5;
-    if (h > HEARTBEAT_H + SLACK_H) out.push({ from: commits[i - 1].when, to: commits[i].when, hours: h });
-  }
-  return out;
-}
-
-/* ------------------------------------------------------------------ */
-/* svg small multiples                                                 */
-/* ------------------------------------------------------------------ */
-
-/* SEVEN DELIVERY MONTHS IS PAST THE POINT WHERE COLOR CAN CARRY IDENTITY.
- *
- * Seven lines on one axis needs seven distinguishable hues, and seven hues do
- * not survive colour-blind checking; the honest options are to fold the tail
- * into "Other" (meaningless here — every month is a real contract) or to
- * facet. So: one panel per delivery month, one series per panel, identity from
- * the panel title. No legend, no colour coding, nothing to tell apart.
- *
- * The panels share a y-scale so they can be compared by eye. That is the whole
- * point of small multiples and it is easy to get wrong by scaling each panel
- * to its own data. */
-export function sparkline(series, { w = 232, h = 74, lo, hi }) {
-  const padL = 4, padR = 4, padT = 10, padB = 12;
-  const iw = w - padL - padR, ih = h - padT - padB;
-  if (series.length === 0)
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="no data"></svg>`;
-
-  const t0 = series[0].t, t1 = series[series.length - 1].t;
-  const span = Math.max(t1 - t0, 1);
-  const range = Math.max(hi - lo, 0.01);
-  const x = (t) => padL + ((t - t0) / span) * iw;
-  const y = (v) => padT + (1 - (v - lo) / range) * ih;
-
-  const pts = series.map((p) => [x(p.t), y(p.v)]);
-
-  /* REFUSE TO DRAW A PATH THAT LEAVES THE PANEL.
-     A chart with a coordinate outside its own viewBox is not a chart with a
-     cosmetic problem, it is a chart built from the wrong numbers -- and SVG
-     will render it without complaint as something that looks like data. Fail
-     the bake instead; the workflow goes red and index.html keeps its last
-     good version. */
-  for (const [px, py] of pts) {
-    if (!Number.isFinite(px) || !Number.isFinite(py) || px < -1 || px > w + 1 || py < -1 || py > h + 1)
-      throw new Error(
-        `sparkline point (${px}, ${py}) falls outside the ${w}x${h} panel. ` +
-        `The series is not in time order, or a timestamp did not parse.`);
-  }
-  for (let i = 1; i < series.length; i++)
-    if (series[i].t < series[i - 1].t)
-      throw new Error("sparkline series is not sorted ascending by time");
-
-  const d = pts.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join("");
-
-  /* Zero line, because basis is a signed number against futures and "is it
-     wider or narrower than nothing" is the first thing the eye wants. Only
-     drawn when zero is actually inside the panel's range. */
-  const zero = lo <= 0 && hi >= 0
-    ? `<line class="zero" x1="${padL}" x2="${w - padR}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`
-    : "";
-
-  const last = pts[pts.length - 1];
-  /* One direct label, on the current value only. A number on every point is
-     the classic unreadable sparkline. */
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="basis history">
-${zero}<path class="line" d="${d}"/><circle class="dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5"/></svg>`;
-}
-
-/* ------------------------------------------------------------------ */
-/* render                                                              */
-/* ------------------------------------------------------------------ */
-
-const fmtT = (iso) => {
+/* ABSOLUTE TIMES, NEVER RELATIVE. This page is baked and then sits there. A
+   line reading "4 minutes ago" is a lie the moment it is written and gets
+   worse all day; a timestamp stays true for ever. Ages are computed against
+   the bake time and labelled as such. */
+const CT = { timeZone: "America/Chicago" };
+const stamp = (iso) => {
   const d = new Date(iso);
-  if (Number.isNaN(+d)) return String(iso);
-  return d.toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z");
-};
-const fmtCT = (iso) => {
-  const d = new Date(iso);
-  if (Number.isNaN(+d)) return "";
+  if (!Number.isFinite(d.getTime())) return null;
   return d.toLocaleString("en-US", {
-    timeZone: "America/Chicago", month: "short", day: "numeric",
-    hour: "numeric", minute: "2-digit", hour12: true,
-  }) + " CT";
+    ...CT, weekday: "short", day: "numeric", month: "short",
+    hour: "numeric", minute: "2-digit",
+  }).replace(",", "");
 };
-const money = (n) => (n == null ? "n/a" : (n < 0 ? "-" : "") + "$" + Math.abs(n).toFixed(4).replace(/0+$/, "").replace(/\.$/, ".00"));
-const basisStr = (n) => (n == null ? "n/a" : (n > 0 ? "+" : "") + n.toFixed(2));
+const hoursBetween = (a, b) => (a.getTime() - Date.parse(b)) / 36e5;
+const span = (h) =>
+  h < 1 ? `${Math.round(h * 60)} min`
+  : h < 48 ? `${h.toFixed(1)} h`
+  : `${Math.floor(h / 24)} d`;
+const ago = (h) => (h < 0 ? span(-h) : span(h));
+/* A clock ahead of ours is not "in the future before this page was made",
+   which is what gluing "ago" to a fixed suffix produced. */
+const relative = (h) =>
+  h < 0 ? `${span(-h)} AHEAD of when this page was made`
+        : `${span(h)} before this page was made`;
 
-export function render(doc, hist) {
-  const bids = (doc.bids ?? []).slice().sort((a, b) => a.seq - b.seq);
-  const checked = Date.parse(doc.checkedAt);
-  const deadline = Number.isFinite(checked)
-    ? new Date(checked + FEED_MAX_AGE_H * 36e5).toISOString()
-    : null;
-  const nextBeat = Number.isFinite(checked)
-    ? new Date(checked + HEARTBEAT_H * 36e5).toISOString()
-    : null;
+/* ---- reading one source ------------------------------------------------ */
 
-  /* Shared y-scale across every panel, padded so the line never touches the
-     edge. Small multiples that each scale to their own data are a lie. */
-  const all = [...(hist.byMonth?.values() ?? [])].flat().map((p) => p.v);
-  const lo0 = all.length ? Math.min(...all) : -1;
-  const hi0 = all.length ? Math.max(...all) : 0;
-  const pad = Math.max((hi0 - lo0) * 0.15, 0.02);
-  const lo = lo0 - pad, hi = hi0 + pad;
+/* Deliberately forgiving about shape and unforgiving about pretending. A
+   file this does not understand is shown as unreadable, with its name, not
+   skipped and not guessed at. Sources will arrive from platforms that are
+   not Big River and not FarmCentric; the day one of them writes something
+   unexpected, the page should say so. */
+export function readSource(name, text, now) {
+  const base = { id: name.replace(/\.json$/, ""), file: name };
+  let j;
+  try { j = JSON.parse(text); } catch (e) {
+    return { ...base, state: "unreadable", why: "the file is not valid JSON", bids: null };
+  }
+  if (!j || typeof j !== "object")
+    return { ...base, state: "unreadable", why: "the file is not an object", bids: null };
 
-  const panels = bids.map((b) => {
-    const s = (hist.byMonth?.get(b.delivery) ?? []);
-    const first = s.length ? s[0].v : null;   // oldest point, series is sorted
-    const move = first != null && s.length > 1 ? b.basisDollars - first : null;
-    return `      <figure class="panel">
-        <figcaption>
-          <span class="pm">${esc(b.delivery)}</span>
-          <span class="pv">${esc(basisStr(b.basisDollars))}</span>
-        </figcaption>
-        ${sparkline(s, { lo, hi })}
-        <div class="pf">${s.length > 1
-            ? `${s.length} readings${move != null ? ` &middot; ${move >= 0 ? "+" : ""}${move.toFixed(2)} over the window` : ""}`
-            : "first reading"}</div>
-      </figure>`;
-  }).join("\n");
+  const src = j.source ?? {};
+  const title = src.name || src.location || base.id;
+  const where = src.location && src.name ? src.location : null;
+  const checkedAt = typeof j.checkedAt === "string" ? j.checkedAt : null;
+  const pricedAt = typeof j.pricedAt === "string" ? j.pricedAt : (j.observed ?? null);
+  const bids = Array.isArray(j.bids) ? j.bids : [];
 
-  const rows = bids.map((b) => `        <tr>
-          <td class="n">${b.seq}</td>
-          <td><b>${esc(b.delivery)}</b></td>
-          <td class="num">${esc(money(b.cash))}</td>
-          <td class="num">${esc(basisStr(b.basisDollars))}</td>
-          <td>${esc(b.futuresMonth ?? "n/a")}</td>
-          <td class="num">${b.futuresPriceCents == null ? "n/a" : esc(b.futuresPriceCents.toFixed(2))}</td>
-        </tr>`).join("\n");
+  if (!checkedAt || !Number.isFinite(Date.parse(checkedAt)))
+    return { ...base, title, where, state: "unreadable",
+             why: "no readable checkedAt, so its age cannot be known", bids };
 
-  /* The identity check, re-run here on the published file. If this page ever
-     shows a row that fails, the guard in lib/board.mjs did not run. */
-  /* A ROW WITH A BLANK CELL IS UNVERIFIABLE, NOT FAILING.
-   *
-   * lib/board.mjs publishes a row that is missing one of the three values --
-   * checkIdentity skips it, and the build only refuses if NO row was testable.
-   * This re-check used to count a missing value as a failure, so an ordinary
-   * "N/A" in their Futures column produced a red banner reading "1 row(s) fail
-   * cash minus basis equals futures... Do not trust these numbers", every
-   * clause of which was false. This is the panel that would have to carry a
-   * real column-shift alarm; it must not cry wolf on an upstream blank.
-   *
-   * Tolerance matches board.mjs's 0.05c rather than being ten orders of
-   * magnitude tighter, for the same reason. */
-  const TOL = 0.05 / 100;
-  const verifiable = bids.filter(
-    (b) => b.cash != null && b.basisDollars != null && b.futuresPriceCents != null);
-  const unverifiable = bids.length - verifiable.length;
-  const idFails = verifiable.filter(
-    (b) => Math.abs((b.cash - b.basisDollars) - b.futuresPriceCents / 100) > TOL);
+  const checkAge = hoursBetween(now, checkedAt);
+  const priceAge = pricedAt && Number.isFinite(Date.parse(pricedAt))
+    ? hoursBetween(now, pricedAt) : null;
 
-  const g = gaps(hist.commits ?? []);
-  const recent = (hist.commits ?? []).slice(-12).reverse();
+  /* The order matters: a clock in the future is not fresh, it is broken, and
+     it used to read as perpetually current because the subtraction went
+     negative. */
+  let state, why;
+  /* ORDER MATTERS, AND IT IS NOT ARBITRARY.
+     Reader health outranks what the source is posting, because everything
+     the file says about the board is a claim about when it was last read. A
+     source we have not reached for a day is COLD; saying "it is posting no
+     rows" would be a statement about yesterday dressed up as one about now. */
+  if (checkAge < -0.25) { state = "broken"; why = `its clock is ${ago(checkAge)} ahead of ours`; }
+  else if (checkAge > CONSUMER_MAX_H) { state = "cold"; why = `last read ${ago(checkAge)} ago, past the ${CONSUMER_MAX_H}h any consumer will accept`; }
+  else if (!bids.length) { state = "withdrawn"; why = "it is posting no rows"; }
+  else if (j.status && j.status !== "ok") { state = "flagged"; why = `the reader marked it "${j.status}"`; }
+  else if (checkAge > HEARTBEAT_H) { state = "late"; why = `last read ${ago(checkAge)} ago, past the ${HEARTBEAT_H}h heartbeat`; }
+  else { state = "live"; why = null; }
 
-  const idBlock = idFails.length
-    ? `<p class="s-bad"><b>${idFails.length} row(s) fail cash minus basis equals futures.</b>
-       That should be impossible: <code>lib/board.mjs</code> refuses to build a file whose rows
-       fail this check. Seeing it here means the published file was written by something other
-       than that code path. Do not trust these numbers.</p>`
-    : `<p class="s-ok"><b>All ${verifiable.length} verifiable rows satisfy cash minus basis equals futures.</b>
-       Re-checked here against the published file, independently of the reader that wrote it.
-       This is the only check that proves a number came out of the right column rather than
-       merely looking like a price.</p>`
-      + (unverifiable
-        ? `<p class="s-warn"><b>${unverifiable} of ${bids.length} rows could not be checked</b> because their board left a cell blank.
-           That is normal and the rows are published as posted, but the column guard cannot
-           speak for them.</p>`
-        : "");
+  /* A quote we could not verify is published as null upstream. Counted, not
+     hidden: it is the difference between a row we can vouch for and one we
+     merely copied. */
+  const unverified = bids.filter((b) => b.futuresPriceCents == null).length;
 
-  const gapBlock = g.length
-    ? `<p class="s-warn"><b>${g.length} gap${g.length === 1 ? "" : "s"} longer than ${HEARTBEAT_H + 2} hours
-       in the record.</b> A refused read writes nothing at all, so a failure leaves no commit.
-       A missing heartbeat is the only trace it ever leaves.</p>
-       <ul class="gaps">${g.slice(-6).reverse().map((x) =>
-         `<li>${esc(fmtT(x.from))} to ${esc(fmtT(x.to))} &mdash; ${x.hours.toFixed(1)} hours</li>`).join("")}</ul>`
-    : `<p class="s-ok"><b>No heartbeat gaps in the last ${(hist.commits ?? []).length} commits.</b>
-       The reader has written at least every ${HEARTBEAT_H + 2} hours throughout the record below.</p>`;
+  return { ...base, title, where, state, why, checkedAt, pricedAt,
+           checkAge, priceAge, bids, unverified,
+           status: j.status ?? null, schema: j.schema ?? null };
+}
 
-  return `<!doctype html>
-<html lang="en">
+/* ---- rendering --------------------------------------------------------- */
+
+/* The reserved status palette. Every one of these ships with a word beside
+   it -- the colour never carries the meaning on its own, which matters on a
+   page somebody glances at, and matters more for the two steps that do not
+   clear 3:1 against a light surface. */
+const STATE = {
+  live:       { word: "Live",        tone: "good" },
+  late:       { word: "Late",        tone: "warning" },
+  flagged:    { word: "Flagged",     tone: "warning" },
+  cold:       { word: "Cold",        tone: "serious" },
+  withdrawn:  { word: "No rows",     tone: "serious" },
+  broken:     { word: "Clock wrong", tone: "critical" },
+  unreadable: { word: "Unreadable",  tone: "critical" },
+};
+
+/* Their boards carry quarter cents, so 4.1125 must survive; 4.44 must not
+   become $4.4400, which claims a precision nobody published. Written by
+   trimming rather than by testing `n * 100 % 1`, because 4.44 * 100 is
+   444.00000000000006 in binary floating point and that test says "fractional"
+   — which is exactly how $4.4400 got onto the page. */
+export function money(n) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  const t = n.toFixed(4).replace(/0+$/, "");
+  return "$" + (t.endsWith(".") ? t + "00" : /\.\d$/.test(t) ? t + "0" : t);
+}
+const basis = (n) => (typeof n === "number"
+  ? (n < 0 ? "−" : n > 0 ? "+" : "") + Math.abs(n).toFixed(2) : "—");
+
+function boardRows(s) {
+  /* A source that could not be read has no rows at all, not an empty list.
+     Guarded here rather than trusted upstream: this function is the last
+     thing between a malformed file and a blank page, and the whole point of
+     the unreadable state is that the page still renders and says so. */
+  const rows = Array.isArray(s.bids) ? s.bids : [];
+  if (!rows.length) return `<tr><td colspan="5" class="none">No rows posted.</td></tr>`;
+  return rows.map((b) => `
+        <tr><td class="mo">${esc(b.delivery ?? "—")}</td>
+            <td class="r">${money(b.cash)}</td>
+            <td class="r">${basis(b.basisDollars ?? b.basis)}</td>
+            <td>${esc(b.futuresMonth ?? "—")}</td>
+            <td class="r${b.futuresPriceCents == null ? " unver" : ""}">${
+              b.futuresPriceCents == null
+                ? '<span title="not verified against cash minus basis, so not published">—</span>'
+                : money(b.futuresPriceCents / 100)}</td></tr>`).join("");
+}
+
+function card(s, now) {
+  const st = STATE[s.state] ?? STATE.unreadable;
+  const lead = Array.isArray(s.bids) ? s.bids[0] : null;
+  return `
+    <section class="src" data-state="${s.state}">
+      <header>
+        <div class="who">
+          <h2>${esc(s.title ?? s.id)}</h2>
+          ${s.where ? `<p class="where">${esc(s.where)}</p>` : ""}
+        </div>
+        <span class="pill t-${st.tone}"><span class="dot" aria-hidden="true"></span>${st.word}</span>
+      </header>
+
+      ${s.why ? `<p class="why">${esc(s.why)}</p>` : ""}
+
+      <dl class="clocks">
+        <div><dt>Last read</dt><dd>${s.checkedAt ? esc(stamp(s.checkedAt)) : "—"}
+          ${s.checkAge != null ? `<span class="age">${relative(s.checkAge)}</span>` : ""}</dd></div>
+        <div><dt>Price last moved</dt><dd>${s.pricedAt ? esc(stamp(s.pricedAt)) : "—"}
+          ${s.priceAge != null ? `<span class="age">${relative(s.priceAge)}</span>` : ""}</dd></div>
+        <div><dt>Rows</dt><dd>${Array.isArray(s.bids) ? s.bids.length : "—"}
+          ${s.unverified ? `<span class="age">${s.unverified} without a verified quote</span>` : ""}</dd></div>
+        <div><dt>Front month</dt><dd>${lead ? esc(lead.delivery ?? "—") + " " + money(lead.cash) : "—"}</dd></div>
+      </dl>
+
+      <table class="board">
+        <thead><tr><th>Delivery</th><th class="r">Cash</th><th class="r">Basis</th>
+                   <th>Contract</th><th class="r">Futures</th></tr></thead>
+        <tbody>${boardRows(s)}</tbody>
+      </table>
+      <p class="file">${esc(s.file)}${s.schema ? " &middot; " + esc(s.schema) : ""}</p>
+    </section>`;
+}
+
+export function render(sources, now) {
+  const counted = Object.entries(
+    sources.reduce((a, s) => ((a[s.state] = (a[s.state] || 0) + 1), a), {})
+  ).sort((a, b) => b[1] - a[1]);
+
+  /* Anything not live first. A page you glance at should put the thing that
+     needs you at the top, and there is no other ordering that survives the
+     list getting long. */
+  const rank = { unreadable: 0, broken: 1, cold: 2, withdrawn: 3, flagged: 4, late: 5, live: 6 };
+  const ordered = [...sources].sort((a, b) =>
+    (rank[a.state] ?? 9) - (rank[b.state] ?? 9) ||
+    String(a.title ?? a.id).localeCompare(String(b.title ?? b.id)));
+
+  const tiles = counted.map(([state, n]) => {
+    const st = STATE[state] ?? STATE.unreadable;
+    return `<div class="tile t-${st.tone}"><span class="n">${n}</span>
+      <span class="lbl"><span class="dot" aria-hidden="true"></span>${st.word}</span></div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en" data-palette="#0ca30c,#fab219,#ec835a,#d03b3b">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Boyceville board ${esc(fmtT(doc.checkedAt))}</title>
+<title>Bids — what we are reading</title>
 <style>
-:root{--ink:#111;--bg:#fff;--grey:#f2f2f2;--rule:#e2e2e2;--mute:#666;--accent:#f5cf4e;
-      --ok:#15803d;--warn:#a16207;--bad:#b91c1c}
+:root{
+  --ink:#16150f; --ink-2:#4a4740; --ink-3:#75716a;
+  --surface:#fcfcfb; --card:#fff; --line:#e4e2dc; --line-2:#f0eee9;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --radius:10px;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-     font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:940px;margin:0 auto;padding:28px 20px 64px}
-h1{font-size:21px;margin:0 0 2px;letter-spacing:-.01em}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);
-   margin:36px 0 12px;font-weight:600}
-.sub{color:var(--mute);font-size:13px;margin:0 0 4px}
-.hero{display:flex;flex-wrap:wrap;gap:26px;align-items:baseline;
-      border-top:3px solid var(--ink);padding-top:16px;margin-top:16px}
-.hero .big{font-size:44px;line-height:1;font-weight:650;letter-spacing:-.02em}
-.hero .big small{font-size:15px;font-weight:400;color:var(--mute);letter-spacing:0}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule)}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
-td.num,th.num{text-align:right}
-td.n{color:var(--mute);width:1%}
-tbody tr:nth-child(odd){background:var(--grey)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:18px 16px}
-.panel{margin:0;border:1px solid var(--rule);padding:10px 10px 8px}
-figcaption{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.pm{font-weight:650;font-size:13px}
-.pv{font-variant-numeric:tabular-nums;font-size:13px;color:var(--mute)}
-.pf{font-size:11px;color:var(--mute);margin-top:2px}
-.spark{display:block;width:100%;height:auto;margin-top:4px}
-.spark .line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.spark .dot{fill:var(--ink)}
-.spark .zero{stroke:var(--rule);stroke-width:1}
-.k{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:14px;margin:0}
-.k dt{color:var(--mute)}
-.k dd{margin:0;font-variant-numeric:tabular-nums}
-p{margin:0 0 10px}
-.s-ok,.s-warn,.s-bad{border-left:3px solid;padding:9px 0 9px 13px;font-size:14px}
-.s-ok{border-color:var(--ok)} .s-ok b{color:var(--ok)}
-.s-warn{border-color:var(--warn)} .s-warn b{color:var(--warn)}
-.s-bad{border-color:var(--bad)} .s-bad b{color:var(--bad)}
-.gaps{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--mute)}
-code{background:var(--grey);padding:1px 4px;font-size:.9em}
-.log{font-size:13px;width:100%}
-.log td{padding:5px 10px}
-.log .subj{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-.note{color:var(--mute);font-size:13px;border-top:1px solid var(--rule);margin-top:40px;padding-top:14px}
+body{margin:0;background:var(--surface);color:var(--ink);
+  font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:74rem;margin:0 auto;padding:2.2rem 1.2rem 4rem}
+h1{font-size:1.5rem;margin:0 0 .2rem;letter-spacing:-.01em}
+.sub{color:var(--ink-3);margin:0 0 1.6rem;font-size:.95rem}
+
+/* The KPI row. Counts, not a chart: a bar chart of five integers is a table
+   with extra steps. */
+.tiles{display:flex;flex-wrap:wrap;gap:.7rem;margin:0 0 1.8rem}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:.7rem 1rem;min-width:7.5rem}
+.tile .n{display:block;font-size:1.9rem;font-weight:650;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.tile .lbl{display:flex;align-items:center;gap:.4rem;color:var(--ink-2);font-size:.85rem}
+
+/* Status colour never travels alone: every dot has its word beside it. */
+.dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--ink-3);flex:none}
+.t-good .dot{background:var(--good)} .t-warning .dot{background:var(--warning)}
+.t-serious .dot{background:var(--serious)} .t-critical .dot{background:var(--critical)}
+
+.src{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:1.1rem 1.2rem;margin:0 0 1rem}
+.src[data-state="unreadable"],.src[data-state="broken"]{border-color:var(--critical)}
+.src[data-state="cold"],.src[data-state="withdrawn"]{border-color:var(--serious)}
+.src>header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.src h2{font-size:1.12rem;margin:0;letter-spacing:-.01em}
+.where{margin:.1rem 0 0;color:var(--ink-3);font-size:.9rem}
+.pill{display:inline-flex;align-items:center;gap:.45rem;white-space:nowrap;
+  border:1px solid var(--line);border-radius:999px;padding:.22rem .7rem;
+  font-size:.85rem;font-weight:600;color:var(--ink-2);background:var(--surface)}
+.why{margin:.7rem 0 0;color:var(--ink-2);font-size:.92rem}
+
+.clocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));
+  gap:.9rem;margin:1rem 0 0;padding:0}
+.clocks div{margin:0}
+.clocks dt{color:var(--ink-3);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+.clocks dd{margin:.15rem 0 0;font-variant-numeric:tabular-nums}
+.age{display:block;color:var(--ink-3);font-size:.82rem;font-variant-numeric:tabular-nums}
+
+.board{width:100%;border-collapse:collapse;margin:1.1rem 0 0;font-size:.94rem}
+.board th{text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-3);font-weight:600;padding:.4rem .55rem;border-bottom:1px solid var(--line)}
+.board td{padding:.42rem .55rem;border-bottom:1px solid var(--line-2);
+  font-variant-numeric:tabular-nums}
+.board tr:last-child td{border-bottom:0}
+.board .mo{font-weight:600}
+.board .r{text-align:right}
+.board .unver{color:var(--ink-3)}
+.board .none{color:var(--ink-3);text-align:center;padding:1.1rem}
+.file{margin:.9rem 0 0;color:var(--ink-3);font-size:.78rem;font-family:ui-monospace,monospace}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);
+  padding:2rem;text-align:center;color:var(--ink-2)}
+@media(max-width:640px){
+  .src>header{flex-direction:column}
+  .board{font-size:.88rem}
+  .board th:nth-child(4),.board td:nth-child(4){display:none}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <h1>What we are reading</h1>
+  <p class="sub">${sources.length} source${sources.length === 1 ? "" : "s"} &middot;
+     page made ${esc(stamp(now.toISOString()))} Central</p>
 
-<h1>Big River Resources, Boyceville</h1>
-<p class="sub">Posted cash corn board, read by arrangement. This page is baked from
-<code>data/boyceville.json</code> and this repo's git history. It carries no JavaScript and makes
-no outside requests.</p>
+  <div class="tiles">${tiles || ""}</div>
 
-<div class="hero">
-  <div>
-    <div class="big">${esc(basisStr(bids[0]?.basisDollars))}<small> basis</small></div>
-    <p class="sub">${esc(bids[0]?.delivery ?? "n/a")} delivery, the front month</p>
-  </div>
-  <div>
-    <div class="big">${esc(money(bids[0]?.cash))}<small> cash</small></div>
-    <p class="sub">against ${esc(bids[0]?.futuresMonth ?? "n/a")} at ${
-      bids[0]?.futuresPriceCents == null ? "n/a" : esc(bids[0].futuresPriceCents.toFixed(2)) }c</p>
-  </div>
-</div>
-
-<h2>The two clocks</h2>
-<dl class="k">
-  <dt>Price last moved</dt><dd>${esc(fmtT(doc.pricedAt))} &nbsp;<span style="color:var(--mute)">${esc(fmtCT(doc.pricedAt))}</span></dd>
-  <dt>Board last read</dt><dd>${esc(fmtT(doc.checkedAt))} &nbsp;<span style="color:var(--mute)">${esc(fmtCT(doc.checkedAt))}</span></dd>
-  <dt>Next heartbeat due</dt><dd>${nextBeat ? esc(fmtT(nextBeat)) : "n/a"}</dd>
-  <dt>Emmert sites drop this price after</dt><dd><b>${deadline ? esc(fmtT(deadline)) : "n/a"}</b> &nbsp;<span style="color:var(--mute)">${deadline ? esc(fmtCT(deadline)) : ""}</span></dd>
-</dl>
-<p class="sub" style="margin-top:10px">Every time on this page is absolute, deliberately. This is a
-static file, so any elapsed-time phrasing would be frozen at the moment it was baked and would go on
-reassuring you long after it stopped being true &mdash; on the one page you would open to find out
-whether the reader had died. Compare the deadline above against your own clock.</p>
-<p class="sub">A price being old is normal; their board sits still most of the day and all weekend.
-Not having <i>looked</i> is the problem, which is why the two clocks are separate.</p>
-
-<h2>Basis by delivery month</h2>
-<div class="grid">
-${panels}
-</div>
-<p class="sub" style="margin-top:14px">One panel per delivery month, all on the same vertical
-scale so they can be compared by eye. Faint horizontal rule is zero basis. The dot is the most recent
-reading in the record. Seven months is more than colour can tell apart reliably, so identity comes from the panel
-title rather than from seven hues.</p>
-
-<h2>The board</h2>
-<table>
-  <thead><tr><th>#</th><th>Delivery</th><th class="num">Cash</th><th class="num">Basis</th><th>Futures</th><th class="num">Quote, cents</th></tr></thead>
-  <tbody>
-${rows}
-  </tbody>
-</table>
-<p class="sub" style="margin-top:10px">In their page order, nearest delivery first. Not sorted by
-month name: alphabetical order puts April first and would price the wrong month in ten months of
-the year.</p>
-
-<h2>Reader health</h2>
-${idBlock}
-${gapBlock}
-
-<table class="log">
-  <thead><tr><th>When</th><th>Commit</th></tr></thead>
-  <tbody>
-${recent.map((c) => `    <tr><td>${esc(fmtT(c.when))}</td><td class="subj">${esc(c.subject)}</td></tr>`).join("\n")}
-  </tbody>
-</table>
-<p class="sub" style="margin-top:10px">A commit naming a price is a price change. A commit saying
-heartbeat means the board was read and had not moved. There is no commit for a failed read, by
-design &mdash; a bad read writes nothing and leaves the last good price in place.</p>
-
-<p class="note">Cash and basis are Big River's own posted numbers. The futures quote is carried only
-so a consumer can re-check cash minus basis. Baked ${esc(fmtT(new Date().toISOString()))} from
-${(hist.commits ?? []).length} commits${hist.shallow ? " (shallow clone: history is truncated, set fetch-depth: 0)" : ""}.</p>
-
+  ${sources.length ? ordered.map((s) => card(s, now)).join("") : `
+  <div class="empty">No sources yet. Every <code>data/*.json</code> a poller writes
+  appears here on its own; nothing needs adding to this page.</div>`}
 </div>
 </body>
 </html>
 `;
 }
 
-/* ------------------------------------------------------------------ */
-/* cli                                                                 */
-/* ------------------------------------------------------------------ */
+/* ---- what runs --------------------------------------------------------- */
 
-/* Guarded so the tests can import the functions above without the module
-   writing index.html as a side effect of being imported. */
-const isCli = process.argv[1] && process.argv[1].endsWith("dashboard.mjs");
-if (!isCli) { /* imported for tests */ } else {
-
-if (!existsSync(DATA)) {
-  console.error(`FAILED: ${DATA} does not exist`);
-  process.exit(1);
-}
-const doc = JSON.parse(readFileSync(DATA, "utf8"));
-const hist = history();
-const html = render(doc, hist);
-
-if (checkOnly) {
-  const cur = existsSync(OUT) ? readFileSync(OUT, "utf8") : "";
-  /* The bake stamp moves every run, so compare everything else. */
-  const strip = (s) => s.replace(/Baked [^<]*/, "");
-  if (strip(cur) === strip(html)) { console.log("index.html in sync."); process.exit(0); }
-  console.log("index.html OUT OF SYNC with data/boyceville.json — run the baker.");
-  process.exit(1);
+export function collect(dir, now, fs = { readdirSync, readFileSync }) {
+  return fs.readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .sort()
+    .map((f) => readSource(f, fs.readFileSync(join(dir, f), "utf8"), now));
 }
 
-writeFileSync(OUT, html);
-console.log(`Baked ${OUT} — ${doc.count} rows, ${(hist.commits ?? []).length} commits, ` +
-            `${[...(hist.byMonth?.keys() ?? [])].length} delivery months charted.`);
-
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const now = new Date();
+  const sources = collect(DATA, now);
+  writeFileSync(OUT, render(sources, now));
+  const by = sources.reduce((a, s) => ((a[s.state] = (a[s.state] || 0) + 1), a), {});
+  console.log(`${OUT}: ${sources.length} source(s) — ` +
+    Object.entries(by).map(([k, v]) => `${v} ${k}`).join(", "));
+  for (const s of sources.filter((x) => x.state !== "live"))
+    console.log(`  ${s.state.toUpperCase().padEnd(11)} ${s.title ?? s.id}: ${s.why ?? ""}`);
 }
