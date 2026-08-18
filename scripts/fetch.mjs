@@ -37,8 +37,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildFile, checkMove, Refused, TornRead, TORN_MAX_CENTS, serialise, MAX_MOVE }
-  from "../lib/board.mjs";
+import { buildFile, checkMove, Refused, serialise, MAX_MOVE } from "../lib/board.mjs";
 import { decide, commitMessage } from "../lib/decide.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -96,59 +95,22 @@ async function getPage() {
   die(`could not read their page.\n  ${problems.join("\n  ")}`);
 }
 
-/* A TORN READ IS LOOKED AT AGAIN. A COLUMN SHIFT IS NOT.
- *
- * Their board recomputes cash and futures in separate cells, so a page fetched
- * mid-tick can be internally out by a quarter cent -- one corn tick -- with
- * nothing wrong at either end. That happened on 2026-08-18: August cash 4.1125
- * against a quoted 463c, off by 0.25c, and the next scheduled run was clean.
- *
- * lib/board.mjs tells the two apart by size and throws TornRead for the small
- * one. Here we simply look again. The check that runs on the retry is the same
- * check at the same strictness -- the identity still has to balance exactly
- * before a single number is written. All this buys is not calling a board
- * caught mid-update a structural failure.
- *
- * A fixture is a static file, so retrying one would just fail identically
- * three times; it reports at once.
- */
-const TORN_RETRIES = 2;
-const TORN_WAIT_MS = 20_000;
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const { html } = await getPage();
+const now = new Date().toISOString();
+let built;
+try {
+  built = buildFile(html, { now, sourceUrl: CONFIG.urls[0] });
+} catch (e) {
+  /* Refused carries a message written for whoever reads the failed run. Any
+     other throw is a bug in the parser and should look like one.
 
-let built, now, torn = null;
-for (let attempt = 0; attempt <= (fixture ? 0 : TORN_RETRIES); attempt++) {
-  if (attempt) {
-    console.warn(`  their board was mid-update; waiting ${TORN_WAIT_MS / 1000}s and ` +
-                 `reading again (attempt ${attempt + 1} of ${TORN_RETRIES + 1})`);
-    await wait(TORN_WAIT_MS);
-  }
-  const { html } = await getPage();
-  now = new Date().toISOString();
-  try {
-    built = buildFile(html, { now, sourceUrl: CONFIG.urls[0] });
-    torn = null;
-    break;
-  } catch (e) {
-    if (e instanceof TornRead) { torn = e; continue; }
-    // Refused carries a message written for whoever reads the failed run. Any
-    // other throw is a bug in the parser and should look like one.
-    die(e instanceof Refused ? e.message : `the parser threw: ${e.message}`);
-  }
+     There was briefly a retry here, for boards caught mid-update. It was the
+     right idea against the wrong cause: their front-month futures cell lags
+     by a tick for far longer than a retry can wait, and lib/board.mjs now
+     accepts that case and marks the row rather than refusing the board. What
+     reaches this catch is a real refusal. */
+  die(e instanceof Refused ? e.message : `the parser threw: ${e.message}`);
 }
-
-/* Still torn after three reads spread over most of a minute. Nothing was
-   written and the committed price stands, so this is not urgent -- but it is
-   not ignored either: a board that has permanently changed how it rounds its
-   futures column would otherwise never publish again and the Emmert sites
-   would simply go dark in fourteen hours with nobody told why. */
-if (torn)
-  die(`${torn.message}\n  Still out by no more than ${TORN_MAX_CENTS}c after ` +
-      `${TORN_RETRIES + 1} reads. Nothing was written and the committed price stands. ` +
-      `If the next run is clean this was a busy board and needs no action. If it ` +
-      `keeps happening, look at whether their futures column has started rounding ` +
-      `to the whole cent -- and fix it there, in checkIdentity, rather than by ` +
-      `widening the tolerance here.`);
 
 const { file: feed, dropped, verified } = built;
 

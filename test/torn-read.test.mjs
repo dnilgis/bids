@@ -1,121 +1,126 @@
-/* Told apart by size: a board read mid-tick, versus columns in the wrong place.
+/* A lagging futures cell is not a column shift, and the difference is size.
  *
- * On 2026-08-18 a scheduled run failed with "August: 4.1125 - (-0.52) =
- * 463.25c but the page quotes 463c, off by 0.25c. Columns have moved." The
- * columns had not moved. Their board recomputes cash and futures in separate
- * cells and the page was fetched between the two writes, so the identity was
- * out by exactly one corn tick. The next run was clean.
+ * On 2026-08-18 three scheduled runs failed with identical numbers hours
+ * apart. The log was widened to print every failing row with its contract
+ * month, and it answered the question outright:
  *
- * A column shift cannot be a quarter of a cent. Cash, basis and a futures
- * quote hold numbers of completely different sizes, so reading one out of
- * another's column puts the identity out by tens of cents. That difference in
- * magnitude is the whole test.
+ *     August     Sep 26   4.1125 - (-0.52) -> 463.25c but quoted 463c
+ *     September  Sep 26   4.1725 - (-0.46) -> 463.25c but quoted 463c
+ *     5 of 7 row(s) balanced.
+ *
+ * Every failure on the front month; every deferred month exact, including
+ * ones carrying quarter cents of their own. Their Sep 26 cell lags its cash.
+ * Refusing the whole board over it meant both sites going dark in fourteen
+ * hours because of a quarter of a cent on a column that exists to be checked
+ * against.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildFile, Refused, TornRead, TORN_MAX_CENTS, TICK_CENTS } from "../lib/board.mjs";
+import { buildFile, Refused, TORN_MAX_CENTS, TICK_CENTS, classifyIdentity }
+  from "../lib/board.mjs";
 
 const HTML = readFileSync(new URL("../fixtures/bigriver-2121.html", import.meta.url), "utf8");
 const build = (html) =>
-  buildFile(html, { now: "2026-08-18T18:56:41.000Z", sourceUrl: "https://example.invalid/x" });
-
+  buildFile(html, { now: "2026-08-18T21:00:38.000Z", sourceUrl: "https://example.invalid/x" });
 /* Their futures column is quoted in eighths: 459-4 is 459 and 4/8, or 459.50c.
    Corn's minimum tick is a quarter cent, which is two eighths. */
-const eighths = (s, n) => HTML.replace("459-4", `459-${n}`);
+const eighths = (n) => HTML.replace("459-4", "459-" + n);
 
-test("the fixture is clean to begin with", () => {
+test("the fixture is clean to begin with, and every row keeps its quote", () => {
   const { file } = build(HTML);
   assert.equal(file.count, 7);
-  assert.equal(file.status, "ok");
+  assert.ok(file.bids.every((b) => b.futuresPriceCents != null));
 });
 
-test("A ONE-TICK DISCREPANCY IS A TORN READ, NOT A COLUMN SHIFT", () => {
-  /* 459-2 is 459.25c against a cash and basis that come to 459.50c. Exactly
-     the shape of the run that failed. */
-  assert.throws(() => build(eighths(HTML, 2)), (e) => {
-    assert.ok(e instanceof TornRead, "must be classified as a torn read");
-    assert.match(e.message, /read while it was updating/);
-    assert.match(e.message, /1 tick/);
-    assert.doesNotMatch(e.message, /Columns have moved/,
-      "the alarming wording is exactly what was wrong with the old message");
-    return true;
-  });
+test("A LAGGING CELL NO LONGER TAKES THE WHOLE BOARD DOWN", () => {
+  const { file } = build(eighths(2));               // one row a tick out
+  assert.equal(file.count, 7, "the board still publishes");
+  const aug = file.bids.find((b) => b.delivery === "August");
+  assert.equal(aug.cash, 4.075, "their cash is untouched");
+  assert.equal(aug.basisDollars, -0.52, "and so is their basis");
 });
 
-test("...and it is still a Refused, so nothing publishes and old callers still refuse", () => {
-  /* The subclass is the safe direction: anything catching Refused keeps
-     behaving as it did, and nothing is written either way. */
-  assert.throws(() => build(eighths(HTML, 2)), (e) => e instanceof Refused);
-  assert.ok(TornRead.prototype instanceof Refused);
+test("A QUOTE WE COULD NOT VERIFY IS NOT PUBLISHED AT ALL", () => {
+  /* No new field and no schema change: the one place this belongs is the
+     quote itself, and it was already nullable. The Emmert pages show a dash
+     for a null, so a figure we could not check cannot reach a customer. */
+  const { file } = build(eighths(2));
+  assert.equal(file.bids.find((b) => b.delivery === "August").futuresPriceCents, null);
+  for (const b of file.bids.filter((x) => x.delivery !== "August"))
+    assert.notEqual(b.futuresPriceCents, null, `${b.delivery} balanced and keeps its quote`);
 });
 
-test("A REAL COLUMN SHIFT IS STILL REFUSED AT ONCE AND STILL SAYS SO", () => {
-  const shifted = HTML.replace("459-4", "419-4");     // out by 40 cents
-  assert.throws(() => build(shifted), (e) => {
+test("the published shape is unchanged, so nothing downstream has to be told", () => {
+  const clean = build(HTML).file.bids[0];
+  const marked = build(eighths(2)).file.bids[0];
+  assert.deepEqual(Object.keys(clean), Object.keys(marked));
+  assert.equal(build(HTML).file.schema, "bigriver-boyceville/2");
+});
+
+test("A REAL COLUMN SHIFT IS STILL REFUSED, AT ONCE AND LOUDLY", () => {
+  assert.throws(() => build(HTML.replace("459-4", "419-4")), (e) => {
     assert.ok(e instanceof Refused);
-    assert.ok(!(e instanceof TornRead), "40c cannot be a board caught mid-tick");
     assert.match(e.message, /Columns have moved/);
+    assert.match(e.message, /far more than a tick/);
     return true;
   });
 });
 
-test("the boundary is two ticks, and it is judged inclusively", () => {
-  assert.throws(() => build(eighths(HTML, 0)), (e) => e instanceof TornRead);  // 0.50c
-  assert.throws(() => build(HTML.replace("459-4", "458-6")), (e) =>            // 0.75c
-    e instanceof Refused && !(e instanceof TornRead));
+test("THE ROWS THAT PASS ARE WHAT DOES THE PROVING, SO THERE MUST BE ENOUGH OF THEM", () => {
+  /* This is what stops it being a softening. A tick-sized disagreement is
+     only forgiven because a majority of rows agreed to the cent; without
+     them nothing has been proved about the columns, and the board is refused
+     however small the discrepancy is. */
+  const T = TICK_CENTS;
+  assert.equal(classifyIdentity([], 7), "ok");
+  assert.equal(classifyIdentity([T, T], 7), "lagging", "2 of 7 is a minority");
+  assert.equal(classifyIdentity([T, T, T], 7), "lagging", "3 of 7 still is");
+  assert.equal(classifyIdentity([T, T, T, T], 7), "unproven", "4 of 7 is not");
+  assert.equal(classifyIdentity([T], 2), "unproven", "1 of 2 proves nothing");
+  assert.equal(classifyIdentity([T], 1), "unproven", "and neither does 1 of 1");
+  assert.equal(classifyIdentity([T], 3), "lagging");
+});
+
+test("size beats proportion: one huge row is a shift however many others pass", () => {
+  assert.equal(classifyIdentity([40], 7), "shift");
+  assert.equal(classifyIdentity([TICK_CENTS, 40], 20), "shift",
+    "a tick-sized row beside a huge one does not launder it");
+  assert.equal(classifyIdentity([TORN_MAX_CENTS], 7), "lagging", "the boundary is inclusive");
+  assert.equal(classifyIdentity([TORN_MAX_CENTS + 0.01], 7), "shift");
+});
+
+test("the boundary is two ticks, judged on the worst row", () => {
+  assert.doesNotThrow(() => build(eighths(0)));              // 0.50c, accepted and marked
+  assert.throws(() => build(HTML.replace("459-4", "458-6")), // 0.75c, refused
+    (e) => e instanceof Refused && /Columns have moved/.test(e.message));
   assert.equal(TORN_MAX_CENTS, TICK_CENTS * 2);
 });
 
-test("A TICK-SIZED ROW BESIDE A HUGE ONE IS A COLUMN SHIFT, NOT A TORN READ", () => {
-  /* Judged on the worst row, not the first one found. Otherwise a genuine
-     shift that happens to list a near-miss first would be waved through as a
-     busy board and quietly retried until it timed out. */
+test("a tick-sized row beside a huge one is a column shift, not a lagging cell", () => {
   const both = HTML.replace("459-4", "459-2").replace("484-0", "444-0");
-  assert.throws(() => build(both), (e) => {
-    assert.ok(e instanceof Refused);
-    assert.ok(!(e instanceof TornRead));
-    assert.match(e.message, /Columns have moved/);
-    return true;
-  });
+  assert.throws(() => build(both),
+    (e) => e instanceof Refused && /Columns have moved/.test(e.message));
 });
 
-test("nothing about this weakens the check: a clean board is still required", () => {
-  /* The retry re-runs exactly this. The identity has to balance to the cent
-     before a single number is written -- the classification only decides
-     whether to look again or to shout. */
-  for (const n of [0, 1, 2, 3, 5, 6, 7]) {
-    assert.throws(() => build(eighths(HTML, n)),
-      (e) => e instanceof Refused, `459-${n} must not publish`);
-  }
-  assert.doesNotThrow(() => build(eighths(HTML, 4)), "only the true value passes");
-});
-
-test("A TORN READ LOGS EVERY FAILING ROW AND ITS CONTRACT MONTH", () => {
-  /* It has happened twice with identical numbers two hours apart, which a
-     random mid-update read would not produce. Whether their front-month cell
-     lags its cash, or their board drops the odd quarter cent when printing,
-     is answerable from the data -- but only if the log carries all of it.
-     One example row was enough to say something was wrong and not enough to
-     say what. Do not widen the tolerance on a hunch; let the log decide. */
-  const two = HTML.replace("459-4", "459-2").replace("499-6", "499-4");
-  assert.throws(() => build(two), (e) => {
-    assert.ok(e instanceof TornRead);
+test("THE FAILURE MESSAGE NAMES EVERY ROW AND ITS CONTRACT MONTH", () => {
+  /* One example row was enough to say something was wrong and not enough to
+     say what. This is the line that identified the front month as the cause. */
+  const bad = HTML.replace("459-4", "419-4").replace("484-0", "444-0");
+  assert.throws(() => build(bad), (e) => {
     const lines = e.message.split("\n").filter((l) => /cash .* basis .* quoted/.test(l));
-    assert.equal(lines.length, 2, "both failing rows, not one example");
-    for (const l of lines)
-      assert.doesNotMatch(l, /\?\s/, "every row must name its contract month");
+    assert.equal(lines.length, 2);
+    for (const l of lines) assert.doesNotMatch(l, /\?\s/, "each row must name its contract");
     assert.match(e.message, /Sep 26/);
-    assert.match(e.message, /5 of 7 row\(s\) balanced/);
     return true;
   });
 });
 
-test("a single failing row still prints as one row, not as a list of one", () => {
-  assert.throws(() => build(eighths(HTML, 2)), (e) => {
-    const lines = e.message.split("\n").filter((l) => /cash .* basis .* quoted/.test(l));
-    assert.equal(lines.length, 1);
-    assert.match(e.message, /6 of 7 row\(s\) balanced/);
-    return true;
-  });
+test("nothing here lets a wrong number through: the passing rows still pass exactly", () => {
+  const { file } = build(eighths(2));
+  for (const b of file.bids.filter((x) => x.futuresPriceCents != null)) {
+    const derived = Math.round((b.cash - b.basisDollars) * 10000) / 10000;
+    assert.equal(Math.round(derived * 100 * 100) / 100, b.futuresPriceCents,
+      `${b.delivery} is marked verified and must balance to the cent`);
+  }
 });
