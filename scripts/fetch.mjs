@@ -27,17 +27,17 @@
  * overwrites a good price with a bad one: the worst case is that the file goes
  * stale, and every consumer checks its `checkedAt` timestamp for exactly that.
  *
- * THIS FILE IS NOW ONLY THE I/O. Every decision — what counts as a valid
- * board, what counts as a change, which pricedAt to carry — lives in ../lib,
- * shared byte for byte with the Cloudflare Worker in ../worker. Before that
- * split there were two implementations that had already drifted apart in what
- * they emitted. See lib/board.mjs.
+ * THIS FILE IS ONLY THE I/O. Every decision — what counts as a valid board,
+ * what counts as a change, which pricedAt to carry — lives in ../lib, pure and
+ * testable without a network or a clock. That split exists because there were
+ * once two readers with two implementations that had already drifted apart in
+ * what they emitted. See lib/board.mjs.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildFile, Refused, serialise } from "../lib/board.mjs";
+import { buildFile, checkMove, Refused, serialise, MAX_MOVE } from "../lib/board.mjs";
 import { decide, commitMessage } from "../lib/decide.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -128,6 +128,21 @@ if (existsSync(OUT)) {
     console.warn(`WARNING: ${OUT} exists but will not parse (${e.message}). ` +
                  `Treating it as absent, which means pricedAt restarts from this read.`);
   }
+}
+
+/* THE MAX-MOVE RAIL. Runs here rather than inside buildFile because it needs
+   the last committed read, and buildFile is pure by design. A refusal writes
+   nothing and exits non-zero, which is the same safe direction as every other
+   guard: the committed price is held, not replaced. */
+const moves = checkMove(previous, feed);
+if (moves.length) {
+  const w = moves[0];
+  die(`${moves.length} row(s) moved more than $${MAX_MOVE.toFixed(2)} since the last read. ` +
+      `e.g. ${w.delivery}: ${w.from} -> ${w.to} (${w.move > 0 ? "+" : ""}${w.move.toFixed(4)}). ` +
+      `Their board may be quoting a bad futures price. Cash minus basis can still ` +
+      `balance perfectly on a wrong number, so the identity check will not catch this. ` +
+      `Look at their page before doing anything. If the move is real, commit the new ` +
+      `data/boyceville.json by hand to re-baseline.`);
 }
 
 const verdict = decide(previous, feed);

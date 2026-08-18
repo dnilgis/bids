@@ -135,3 +135,105 @@ test("a heartbeat and a price change do not read the same in git log", () => {
   assert.match(changed, /August 4\.075 basis -0\.52/);
   assert.match(beat, /heartbeat/);
 });
+
+/* ---- guards added after the 2026-08-17 panel ---------------------------- */
+
+import { checkMove, MAX_MOVE, priceChanged } from "../lib/board.mjs";
+
+test("THE MAX-MOVE RAIL: a bad futures quote that satisfies the identity is refused", () => {
+  /* Their Dec futures prints 584 instead of 484 and their board recomputes
+     cash from it. Every existing guard passes: the identity balances exactly,
+     the value is inside the sanity band, the columns are right. Only the size
+     of the move gives it away. */
+  const prev = { bids: [{ delivery: "December", cash: 4.34, basisDollars: -0.50 }] };
+  const bad = { bids: [{ delivery: "December", cash: 5.34, basisDollars: -0.50 }] };
+  const hits = checkMove(prev, bad);
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].delivery, "December");
+  assert.ok(Math.abs(hits[0].move - 1.0) < 1e-9);
+
+  // and the identity really does balance on it, which is the whole point
+  const derived = Math.round((5.34 - -0.50) * 10000) / 10000;
+  assert.equal(derived, 5.84, "the wrong number is internally consistent");
+});
+
+test("the rail passes an ordinary day's movement", () => {
+  const prev = { bids: [{ delivery: "August", cash: 4.075, basisDollars: -0.52 }] };
+  for (const cash of [4.075, 4.125, 3.95, 4.40, 3.70]) {
+    const next = { bids: [{ delivery: "August", cash, basisDollars: -0.52 }] };
+    assert.equal(checkMove(prev, next).length, 0, `${cash} should pass`);
+  }
+  assert.ok(MAX_MOVE > 0.35 * 2,
+    "must clear two consecutive limit moves, or it will refuse a real market");
+});
+
+test("the rail never blocks a first run or a newly-appearing delivery month", () => {
+  const next = { bids: [{ delivery: "March", cash: 4.9, basisDollars: -0.6 }] };
+  assert.equal(checkMove(null, next).length, 0, "first run has nothing to compare");
+  assert.equal(checkMove({ bids: [] }, next).length, 0, "a new month has no previous reading");
+});
+
+test("A FROZEN SOURCE BOARD EVENTUALLY SAYS SO", () => {
+  /* The carry-forward had no ceiling. A board that stops updating polls fine
+     forever: checkedAt current, Emmert's 14h gate never trips, and both sites
+     publish a weeks-old bid as today's price. */
+  let committed = fileAt(T0);
+  let t = T0;
+  for (let i = 0; i < 120; i++) {
+    t = hoursLater(t, 6);
+    const v = decide(committed, fileAt(t, 4.075));
+    if (v.write) committed = v.file;
+  }
+  assert.equal(committed.pricedAt, T0, "the price never moved, so pricedAt must not");
+  assert.equal(committed.status, "stale");
+  assert.match(committed.staleReason, /shown the same numbers for \d+ days/);
+  assert.match(committed.staleReason, /The reader is healthy; the source is not moving/);
+});
+
+test("...and marking it stale does not itself look like a price change", () => {
+  /* The bug this replaces: priceChanged() compared `status`, which decide()
+     now writes. So the poll after the file went stale saw our own annotation
+     differ from buildFile's fresh "ok", called it a price change, and stamped
+     pricedAt as now -- erasing the very evidence it had just recorded. */
+  const stale = { ...fileAt(T0), status: "stale", staleReason: "x" };
+  const fresh = fileAt(hoursLater(T0, 6), 4.075);
+  assert.equal(priceChanged(stale, fresh), false,
+    "our own status annotation must not read as news");
+  const v = decide(stale, fresh);
+  assert.equal(v.changed, false);
+  assert.equal(v.file.pricedAt, T0, "pricedAt must survive the stale flag");
+});
+
+test("a real move after a frozen spell is still seen, and clears the flag", () => {
+  const stale = { ...fileAt(T0), status: "stale", staleReason: "x" };
+  const moved = fileAt(hoursLater(T0, 6), 4.30);
+  const v = decide(stale, moved);
+  assert.equal(v.changed, true);
+  assert.equal(v.file.status, "ok");
+  assert.equal(v.file.pricedAt, moved.pricedAt);
+});
+
+test("A FUTURE-DATED checkedAt WRITES rather than suppressing forever", () => {
+  /* A negative sinceCheck is finite and less than the heartbeat, so it used to
+     suppress every write until the wall clock caught up -- tested at 30 days.
+     And since nothing was written, the future stamp persisted, so consumers
+     computing now - checkedAt saw a negative number and read the feed as
+     perpetually fresh. The exact state the two clocks exist to expose. */
+  const future = fileAt(hoursLater(T0, 24 * 30));
+  const v = decide(future, fileAt(T0));
+  assert.equal(v.write, true);
+  assert.match(v.reason, /FUTURE/);
+});
+
+test("a previous file with no checkedAt does not invent a 26-year-old reading", () => {
+  /* `Date.parse(previous.checkedAt ?? 0)` is Date.parse("0") = 2000-01-01, not
+     NaN, so the log printed "heartbeat (last checked 233428.0h ago)" -- a
+     fabricated observation in a project whose first rule is not to invent
+     numbers. */
+  const noClock = { ...fileAt(T0) };
+  delete noClock.checkedAt;
+  const v = decide(noClock, fileAt(hoursLater(T0, 1)));
+  assert.equal(v.write, true);
+  assert.match(v.reason, /no readable checkedAt/);
+  assert.doesNotMatch(v.reason, /\d{4,}\.\dh/, "must not print an invented age");
+});
