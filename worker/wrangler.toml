@@ -1,0 +1,41 @@
+# Cloudflare Worker: the Boyceville bid reader.
+#
+# Deploy from THIS directory:
+#     cd worker && npx wrangler deploy
+#
+# SECRETS ARE NOT IN THIS FILE AND MUST NEVER BE. Set them once, per Worker:
+#     npx wrangler secret put GITHUB_TOKEN     # repo-scoped, contents: write
+#     npx wrangler secret put CHECK_KEY        # any long random string
+#
+# GITHUB_TOKEN needs write access to exactly one file in one repo. A
+# fine-grained PAT scoped to this repo with Contents: read and write is the
+# right shape. A classic `repo` token also works and grants far more than this
+# job needs.
+
+name = "bigriver-worker"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# The parser and the decision logic live one level up, shared with the GitHub
+# Actions reader. Wrangler bundles them; nothing extra is required.
+
+[triggers]
+# THREE EXPRESSIONS IS THE FREE-PLAN CEILING, NOT A STYLE CHOICE.
+# UTC. 12:00-21:59 UTC is 7am-4pm Central in both CST and CDT, so the clock
+# change cannot walk the market-hours window out of market hours.
+crons = [
+  "*/10 12-21 * * 1-5",     # every 10 min through the trading day
+  "25 0-11,22-23 * * 1-5",  # hourly the rest of the weekday
+  "25 */4 * * 6,0",         # every 4 hours at weekends, to notice breakage
+]
+
+[vars]
+GITHUB_OWNER  = "dnilgis"
+GITHUB_REPO   = "bigriver-bids"
+GITHUB_BRANCH = "main"
+DATA_PATH     = "data/boyceville.json"
+# Comma-separated. Leave unset to use the two defaults compiled into index.js.
+# SOURCE_URLS = "https://bigriverbids.com/cashbidssingle-2121,https://www.bigriverbids.com/cashbidssingle-2121"
+
+[observability]
+enabled = true
