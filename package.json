@@ -1,14 +1,13 @@
 {
-  "name": "bigriver-bids",
+  "name": "bids",
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Reads Big River Resources' posted Boyceville cash board and commits it as JSON. The git history is the record.",
+  "description": "Reads elevator cash bid boards and commits them as JSON. The git history is the record.",
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "fetch": "node scripts/fetch.mjs",
     "dry": "node scripts/fetch.mjs --fixture fixtures/bigriver-2121.html --dry-run",
-    "worker:deploy": "cd worker && npx wrangler deploy",
-    "worker:tail": "cd worker && npx wrangler tail"
+    "dashboard": "node scripts/dashboard.mjs"
   }
 }
