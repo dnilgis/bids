@@ -1,0 +1,106 @@
+# RECON. Run by hand, reads pages, prints what it finds, commits nothing.
+#
+# Three boards we want are JavaScript applications — StoneX Stonehedge (United
+# Cooperative, 24 locations), DTN's content-services cash-bids widget (Farmers
+# Cooperative Society, probably Albert Lea) — and a plain GET of those pages
+# returns a shell, not prices. The request that returns prices is a string
+# inside their bundle. scripts/probe.mjs walks the page, fetches every script it
+# loads, and prints every URL-shaped string with the code around it.
+#
+# It lives here rather than in the workspace it was written in because that
+# workspace sits behind an allowlist proxy that answers "Host not in allowlist"
+# for every elevator on earth. This runner has a normal internet connection.
+#
+# HOW TO USE IT
+#   Actions -> probe -> Run workflow -> (optionally paste your own URLs) -> Run.
+#   Then open the run, download the log, and send it over.
+#
+# It writes nothing, commits nothing, and touches no file in data/. Failing
+# steps do not stop the others: each target is independent evidence.
+
+name: probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Space-separated URLs to probe INSTEAD of the built-in targets (leave blank to use them)"
+        required: false
+        default: ""
+      referer:
+        description: "Referer/Origin header to send with your own URLs (an iframe's parent page)"
+        required: false
+        default: ""
+      all_origins:
+        description: "Also follow scripts hosted on other domains"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      # The inputs go through the environment rather than into the command line
+      # by template substitution: a URL is attacker-shaped text, and `${{ }}`
+      # inside `run:` is pasted into the shell before bash ever sees it.
+      - name: Your URLs
+        if: inputs.urls != ''
+        continue-on-error: true
+        env:
+          URLS: ${{ inputs.urls }}
+          REFERER: ${{ inputs.referer }}
+          ALL_ORIGINS: ${{ inputs.all_origins }}
+        run: |
+          args=""
+          [ -n "$REFERER" ] && args="$args --referer $REFERER"
+          [ "$ALL_ORIGINS" = "true" ] && args="$args --all-origins"
+          node scripts/probe.mjs $URLS $args
+
+      # ---- built-in targets, only when no URLs were supplied ----
+
+      - name: StoneX Stonehedge — United Cooperative's bids component
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins \
+            --referer 'https://www.unitedcooperative.com/grain/markets' \
+            'https://stonehedge.stonex.com/component/bids?key=AILQAFBJPWG59NXDNV00QPRSFTUA0EEU&cols=date%2Cbasis%2Ccash%2Cmonth&colNames=date%3ADelivery+Start+-+End+%2Cmonth%3AFutures+Month+%2Ccash%3ACash+Price&locs=8TG9IQ1J6TGRFBUP1XH0%2CMY33N2HTBP5KB5I5NXBT%2CR1N80EAHWPNYR9G1LMWR%2C8IV5F5A9QEAKE4XAY5QJ%2CPJYKE44BL0LHE6IS1AF5%2CQUDI1QXLIT8K10MNECJZ%2CO5O1O9ZPX53BEX76LRHV%2C40IKZBC9OB9IL1UXOBPP%2CRVVXG5L0XE3GI5AWB53Y%2C0K0P4SVDRQE05DC5OIVD%2CAA7H4HDBRE6BMUC39KTC%2CY9NCLQVOUU2XQAY1AMLF%2C19E1TL8I3EZCJV1QMG1Y%2CYGJURZBVAHT0YJG0XUWZ%2CJJTPQUKHOUZB0D9MWKAW%2CA9SZ4P52EX9GM1HFQJOF%2CDX1FS9P9TZKI31NV6UIS%2CX4Y28QJH3K7H7SSJZ3KS%2CBWRKFA2595KP9MZRGW4P%2CZNLUUX5HGF4BSYZN4LD1%2CN8ODQZQ1XHBNROPZIB2O%2CTCKSH80SNDFKUCVJG3SK%2CX49TS7URXU388M7EO84J%2CXPUH9SEA89OPQE7MBW5V&hideRows=true'
+
+      - name: United Cooperative's own pages (the /dtncashbidwidget door)
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins \
+            'https://www.unitedcooperative.com/grain/markets' \
+            'https://www.unitedcooperative.com/grain'
+
+      - name: DTN content-services widget — Farmers Cooperative Society
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins \
+            'https://www.farmerscoopsociety.com/cash-bids' \
+            'https://content-services.dtn.com/ui-widgets/cash-bids-table-widget/cash-bids-table-widget-1.0-latest.js'
+
+      - name: Albert Lea Elevator — same widget family, board URL unknown
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins 'https://albertleaelevator.com/markets/'
+
+      # Not a JavaScript board — this one answers a different question: whether
+      # the source shipped tonight can be read at all. Its https twin serves a
+      # certificate for another hostname, so http is primary and this is the
+      # first machine anywhere that has actually tried it.
+      - name: Northside Elevator — does the new AgHost source resolve?
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs 'http://grain.northsideelevator.com/index.cfm?show=11&mid=3'
