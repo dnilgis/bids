@@ -1,151 +1,97 @@
-<!DOCTYPE html>
-<html lang="en" data-palette="#0ca30c,#fab219,#ec835a,#d03b3b">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Bids — what we are reading</title>
+<title>Bid sources — 2 DOWN</title>
 <style>
-:root{
-  --ink:#16150f; --ink-2:#4a4740; --ink-3:#75716a;
-  --surface:#fcfcfb; --card:#fff; --line:#e4e2dc; --line-2:#f0eee9;
-  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
-  --radius:10px;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--surface);color:var(--ink);
-  font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:74rem;margin:0 auto;padding:2.2rem 1.2rem 4rem}
-h1{font-size:1.5rem;margin:0 0 .2rem;letter-spacing:-.01em}
-.sub{color:var(--ink-3);margin:0 0 1.6rem;font-size:.95rem}
-
-/* The KPI row. Counts, not a chart: a bar chart of five integers is a table
-   with extra steps. */
-.tiles{display:flex;flex-wrap:wrap;gap:.7rem;margin:0 0 1.8rem}
-.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:.7rem 1rem;min-width:7.5rem}
-.tile .n{display:block;font-size:1.9rem;font-weight:650;line-height:1.1;
-  font-variant-numeric:tabular-nums}
-.tile .lbl{display:flex;align-items:center;gap:.4rem;color:var(--ink-2);font-size:.85rem}
-
-/* Status colour never travels alone: every dot has its word beside it. */
-.dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--ink-3);flex:none}
-.t-good .dot{background:var(--good)} .t-warning .dot{background:var(--warning)}
-.t-serious .dot{background:var(--serious)} .t-critical .dot{background:var(--critical)}
-
-.src{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:1.1rem 1.2rem;margin:0 0 1rem}
-.src[data-state="unreadable"],.src[data-state="broken"]{border-color:var(--critical)}
-.src[data-state="cold"],.src[data-state="withdrawn"]{border-color:var(--serious)}
-.src>header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.src h2{font-size:1.12rem;margin:0;letter-spacing:-.01em}
-.where{margin:.1rem 0 0;color:var(--ink-3);font-size:.9rem}
-.pill{display:inline-flex;align-items:center;gap:.45rem;white-space:nowrap;
-  border:1px solid var(--line);border-radius:999px;padding:.22rem .7rem;
-  font-size:.85rem;font-weight:600;color:var(--ink-2);background:var(--surface)}
-.why{margin:.7rem 0 0;color:var(--ink-2);font-size:.92rem}
-
-.clocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));
-  gap:.9rem;margin:1rem 0 0;padding:0}
-.clocks div{margin:0}
-.clocks dt{color:var(--ink-3);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
-.clocks dd{margin:.15rem 0 0;font-variant-numeric:tabular-nums}
-.age{display:block;color:var(--ink-3);font-size:.82rem;font-variant-numeric:tabular-nums}
-
-.board{width:100%;border-collapse:collapse;margin:1.1rem 0 0;font-size:.94rem}
-.board th{text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--ink-3);font-weight:600;padding:.4rem .55rem;border-bottom:1px solid var(--line)}
-.board td{padding:.42rem .55rem;border-bottom:1px solid var(--line-2);
-  font-variant-numeric:tabular-nums}
-.board tr:last-child td{border-bottom:0}
-.board .mo{font-weight:600}
-.board .r{text-align:right}
-.board .unver{color:var(--ink-3)}
-.board .none{color:var(--ink-3);text-align:center;padding:1.1rem}
-.file{margin:.9rem 0 0;color:var(--ink-3);font-size:.78rem;font-family:ui-monospace,monospace}
-.empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);
-  padding:2rem;text-align:center;color:var(--ink-2)}
-@media(max-width:640px){
-  .src>header{flex-direction:column}
-  .board{font-size:.88rem}
-  .board th:nth-child(4),.board td:nth-child(4){display:none}
-}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>What we are reading</h1>
-  <p class="sub">1 source &middot;
-     page made Wed Aug 19, 4:04 PM Central</p>
-
-  <div class="tiles"><div class="tile t-good"><span class="n">1</span>
-      <span class="lbl"><span class="dot" aria-hidden="true"></span>Live</span></div></div>
-
+  :root{--bg:#141613;--card:#1c1f1b;--line:#2c302a;--ink:#e9ece7;--dim:#9aa295;
+        --live:#0ca30c;--late:#fab219;--down:#d03b3b;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
+       display:flex;flex-direction:column;padding:14px;gap:12px;overflow:hidden}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;flex:none}
+  h1{font:600 15px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;margin:0;color:var(--dim)}
+  .when{font:11px/1 var(--mono);color:var(--dim);margin-left:auto}
+  .verdict{font:700 15px/1 var(--mono);letter-spacing:.06em}
+  .verdict.live{color:var(--live)}.verdict.late{color:var(--late)}.verdict.down{color:var(--down)}
+  .tiles{display:flex;gap:8px;flex:none;flex-wrap:wrap}
+  .s{background:var(--card);border:1px solid var(--line);border-radius:10px;
+     padding:8px 14px;min-width:104px}
+  .s b{display:block;font:700 26px/1.1 var(--mono)}
+  .s span{font:11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  .s.live b{color:var(--live)}.s.late b{color:var(--late)}.s.down b{color:var(--down)}
+  .attn{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--late);
+        border-radius:8px;padding:8px 12px;flex:none;max-height:22vh;overflow:auto}
+  .attn h2{font:700 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+           color:var(--dim);margin:0 0 6px}
+  .attn li{list-style:none;font:12px/1.5 var(--mono);display:flex;gap:8px}
+  .attn ul{margin:0;padding:0}
+  .attn .id{color:var(--ink);min-width:16em}
+  .attn .msg{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* flex 0-1-auto and NOT 1-1-auto: a grid that grows reserves the whole
+     viewport and then draws its tiles at the top, which is where the acre of
+     empty space under three tiles came from. It shrinks when crowded, never
+     grows. The spacer below takes the slack and the legend pins to the floor. */
+  .grid{flex:0 1 auto;min-height:0;display:grid;gap:4px;align-content:start;overflow:auto;
+        grid-template-columns:repeat(auto-fill,minmax(215px,1fr))}
+  .spacer{flex:1 1 auto;min-height:0}
+  .t{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;
+     border-radius:6px;text-decoration:none;border:1px solid transparent;padding:8px}
+  .th{display:flex;align-items:center;gap:7px}
+  .to{font:11px/1.3 var(--mono);color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tm{font:11px/1.3 var(--mono);color:var(--dim);opacity:.8}
+  .t-live{background:color-mix(in srgb,var(--live) 22%,var(--card));border-color:color-mix(in srgb,var(--live) 45%,transparent);color:var(--live)}
+  .t-late{background:color-mix(in srgb,var(--late) 22%,var(--card));border-color:color-mix(in srgb,var(--late) 55%,transparent);color:var(--late)}
+  .t-down{background:color-mix(in srgb,var(--down) 26%,var(--card));border-color:color-mix(in srgb,var(--down) 60%,transparent);color:var(--down)}
+  .g{font:700 15px/1 var(--mono)}
+  .tn{font:11px/1.2 var(--mono);color:var(--ink);opacity:.85;max-width:100%;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .t{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:74px}.g{font-size:14px}
   
-    <section class="src" data-state="live">
-      <header>
-        <div class="who">
-          <h2>Big River Resources</h2>
-          <p class="where">Boyceville</p>
-        </div>
-        <span class="pill t-good"><span class="dot" aria-hidden="true"></span>Live</span>
-      </header>
+  
+  details{flex:0 1 auto;min-height:0;overflow:auto;border-top:1px solid var(--line);padding-top:8px}
+  summary{font:11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font:12px/1.5 var(--mono)}
+  th{text-align:left;color:var(--dim);font-weight:600;border-bottom:1px solid var(--line);padding:4px 8px 4px 0}
+  td{padding:3px 8px 3px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  td.n{text-align:right}td.m{color:var(--dim)}td.e{color:var(--late);max-width:34ch}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .d-live{background:var(--live)}.d-late{background:var(--late)}.d-down{background:var(--down)}
+  .legend{display:flex;gap:14px;font:11px/1 var(--mono);color:var(--dim);flex:none;align-items:center}
+  .legend b{font-weight:700}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  @media (max-width:640px){body{padding:10px;gap:9px}.s{min-width:78px;padding:6px 10px}.s b{font-size:20px}}
+</style></head><body>
+<header>
+  <h1>Bid sources</h1>
+  <span class="verdict down">2 DOWN</span>
+  <span class="when">read 2026-08-19 22:01:00Z</span>
+</header>
 
-      
-
-      <dl class="clocks">
-        <div><dt>Last read</dt><dd>Wed Aug 19, 4:04 PM
-          <span class="age">0 min before this page was made</span></dd></div>
-        <div><dt>Price last moved</dt><dd>Wed Aug 19, 4:04 PM
-          <span class="age">0 min before this page was made</span></dd></div>
-        <div><dt>Rows</dt><dd>7
-          </dd></div>
-        <div><dt>Front month</dt><dd>August $4.21</dd></div>
-      </dl>
-
-      <table class="board">
-        <thead><tr><th>Delivery</th><th class="r">Cash</th><th class="r">Basis</th>
-                   <th>Contract</th><th class="r">Futures</th></tr></thead>
-        <tbody>
-        <tr><td class="mo">August</td>
-            <td class="r">$4.21</td>
-            <td class="r">−0.52</td>
-            <td>Sep 26</td>
-            <td class="r">$4.73</td></tr>
-        <tr><td class="mo">September</td>
-            <td class="r">$4.27</td>
-            <td class="r">−0.46</td>
-            <td>Sep 26</td>
-            <td class="r">$4.73</td></tr>
-        <tr><td class="mo">October</td>
-            <td class="r">$4.43</td>
-            <td class="r">−0.55</td>
-            <td>Dec 26</td>
-            <td class="r">$4.98</td></tr>
-        <tr><td class="mo">November</td>
-            <td class="r">$4.43</td>
-            <td class="r">−0.55</td>
-            <td>Dec 26</td>
-            <td class="r">$4.98</td></tr>
-        <tr><td class="mo">December</td>
-            <td class="r">$4.48</td>
-            <td class="r">−0.50</td>
-            <td>Dec 26</td>
-            <td class="r">$4.98</td></tr>
-        <tr><td class="mo">January</td>
-            <td class="r">$4.5375</td>
-            <td class="r">−0.60</td>
-            <td>Mar 27</td>
-            <td class="r">$5.1375</td></tr>
-        <tr><td class="mo">February</td>
-            <td class="r">$4.5575</td>
-            <td class="r">−0.58</td>
-            <td>Mar 27</td>
-            <td class="r">$5.1375</td></tr></tbody>
-      </table>
-      <p class="file">boyceville.json &middot; bigriver-boyceville/2</p>
-    </section>
+<div class="tiles">
+  <div class="s live"><b>1</b><span>Live</span></div>
+  <div class="s "><b>0</b><span>Need a look</span></div>
+  <div class="s down"><b>2</b><span>Down</span></div>
+  <div class="s"><b>3</b><span>Sources</span></div>
 </div>
-</body>
-</html>
+
+
+<section class="attn"><h2>Needs attention</h2><ul><li><span class="g" aria-hidden="true">×</span><span class="id">flashgrain-granton</span><span class="msg">0 bids parsed; their page layout has changed, or that URL is no longer a bid board</span></li><li><span class="g" aria-hidden="true">×</span><span class="id">flashgrain-thorp</span><span class="msg">0 bids parsed; their page layout has changed, or that URL is no longer a bid board</span></li></ul></section>
+
+<main class="grid"><a class="t t-down" href="#r-flashgrain-granton" title="Flash Grain Granton · 0 rows · checked never · priced never · ERROR 0 bids parsed; their page layout has changed, or that URL is no longer a bid board"><span class="th"><span class="g" aria-hidden="true">×</span><span class="tn">Granton</span></span><span class="to">Flash Grain</span><span class="tm">0 rows · read Z</span><span class="sr">flashgrain-granton: down</span></a><a class="t t-down" href="#r-flashgrain-thorp" title="Flash Grain Thorp · 0 rows · checked never · priced never · ERROR 0 bids parsed; their page layout has changed, or that URL is no longer a bid board"><span class="th"><span class="g" aria-hidden="true">×</span><span class="tn">Thorp</span></span><span class="to">Flash Grain</span><span class="tm">0 rows · read Z</span><span class="sr">flashgrain-thorp: down</span></a><a class="t t-live" href="#r-boyceville" title="Big River Resources Boyceville · 7 rows · checked 2026-08-19 22:01:00Z · priced 2026-08-19 21:04:57Z"><span class="th"><span class="g" aria-hidden="true">✓</span><span class="tn">Boyceville</span></span><span class="to">Big River Resources</span><span class="tm">7 rows · read 22:01Z</span><span class="sr">boyceville: live</span></a></main>
+
+<details><summary>All 3 sources as a table</summary>
+<table><thead><tr><th>State</th><th>Operator</th><th>Location</th><th>Read</th>
+<th>Rows</th><th>Priced at (UTC)</th><th>Checked at (UTC)</th><th>Platform</th><th>Note</th></tr></thead>
+<tbody><tr id="r-flashgrain-granton"><td><span class="dot d-down" aria-hidden="true"></span>down</td><td>Flash Grain</td><td>Granton</td><td>refused</td><td class="n">0</td><td class="m">never</td><td class="m">never</td><td>aghost</td><td class="e">0 bids parsed; their page layout has changed, or that URL is no longer a bid board</td></tr><tr id="r-flashgrain-thorp"><td><span class="dot d-down" aria-hidden="true"></span>down</td><td>Flash Grain</td><td>Thorp</td><td>refused</td><td class="n">0</td><td class="m">never</td><td class="m">never</td><td>aghost</td><td class="e">0 bids parsed; their page layout has changed, or that URL is no longer a bid board</td></tr><tr id="r-boyceville"><td><span class="dot d-live" aria-hidden="true"></span>live</td><td>Big River Resources</td><td>Boyceville</td><td>live</td><td class="n">7</td><td class="m">2026-08-19 21:04:57Z</td><td class="m">2026-08-19 22:01:00Z</td><td>cashbidssingle</td><td class="e"></td></tr></tbody></table></details>
+
+<div class="spacer"></div>
+
+<div class="legend">
+  <span><b style="color:var(--live)">✓</b> live — read inside 6h</span>
+  <span><b style="color:var(--late)">!</b> needs a look — stale or refusing</span>
+  <span><b style="color:var(--down)">×</b> down — past 14h, consumers have withdrawn</span>
+</div>
+
+</body></html>
