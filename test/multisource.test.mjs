@@ -7,7 +7,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { urlsFor, loadSources, validateSource } from "../lib/sources.mjs";
-import { render, stateOf, density } from "../scripts/status.mjs";
+import { render, stateOf } from "../scripts/status.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const snap = () => existsSync(join(ROOT, "data"))
@@ -48,6 +48,39 @@ test("3. the workflow commits every source's file, not one hardcoded path", () =
     "fetch.mjs and poll.mjs both write data/boyceville.json -- only one may be scheduled");
 });
 
+test("3b. exactly one scheduled job writes index.html", () => {
+  /* ONE WRITER PER ARTEFACT.
+     poll.yml bakes status.mjs into index.html on every price change.
+     dashboard.yml, still scheduled at :35 past every hour, bakes
+     scripts/dashboard.mjs into the SAME file -- and dashboard.mjs is not in the
+     repo any more, so that job has nothing to run. Either way the file has two
+     claimants and the page can only show one. Deleting
+     .github/workflows/dashboard.yml is what makes this pass. */
+  const dir = join(ROOT, ".github/workflows");
+  const bakers = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).filter((f) => {
+    const y = readFileSync(join(dir, f), "utf8");
+    return /node scripts\/(status|dashboard)\.mjs/.test(y) && /index\.html/.test(y);
+  });
+  assert.deepEqual(bakers, ["poll.yml"],
+    `index.html is written by ${JSON.stringify(bakers)}; exactly one job may write it`);
+});
+
+test("3c. every npm script points at a file that exists", () => {
+  /* Deleting fetch.mjs and dashboard.mjs left `npm run dry` and
+     `npm run dashboard` pointing at nothing. Neither is on any hot path, which
+     is exactly why nobody would notice until the one time somebody reached for
+     them. */
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  for (const [name, cmd] of Object.entries(pkg.scripts || {})) {
+    for (const f of cmd.match(/(?:scripts|lib|test)\/[\w.\-\/]+\.mjs/g) || []) {
+      assert.ok(existsSync(join(ROOT, f)), `npm run ${name} runs ${f}, which does not exist`);
+    }
+    for (const f of cmd.match(/fixtures\/[\w.\-]+\.html/g) || []) {
+      assert.ok(existsSync(join(ROOT, f)), `npm run ${name} reads ${f}, which does not exist`);
+    }
+  }
+});
+
 test("4. read-health comes from `health` and from nothing else", () => {
   const now = Date.parse("2026-08-19T21:20:00Z");
   const fresh = "2026-08-19T21:15:00Z";
@@ -67,7 +100,7 @@ test("5. a board that read nothing is not an all-clear", () => {
   const html = render({ generated: "2026-08-19T21:00:00Z", sources: [] }, Date.now());
   assert.ok(!/ALL SOURCES LIVE/.test(html), "zero sources rendered as healthy");
   assert.match(html, /NO SOURCES READ/);
-  assert.match(html, /verdict down/);
+  assert.match(html, /class="v down"/);
   assert.match(html, /Nothing was read/);
 });
 
@@ -93,8 +126,19 @@ test("every shipped source row is valid", () => {
   assert.equal(boyceville.cashRoundingCents ?? 0, 0, "Boyceville posts full precision; it needs no tolerance");
 });
 
-test("the board stays on one screen as sources multiply", () => {
-  assert.equal(density(3).label, "full");
-  assert.equal(density(300).label, "micro");
-  assert.ok(density(300).min < density(3).min, "tiles must shrink, not the page grow");
+test("anything not live sorts to the top, whatever the count", () => {
+  // The table scrolls at three hundred rows. What must never scroll out of
+  // reach is the thing that is wrong.
+  const now = Date.parse("2026-08-19T21:20:00Z");
+  const fresh = "2026-08-19T21:15:00Z";
+  const rows = [];
+  for (let i = 0; i < 200; i++)
+    rows.push({ id: `ok-${i}`, operator: "Op", location: `L${i}`, health: "live", rows: 4, checkedAt: fresh });
+  rows.splice(150, 0, { id: "sick", operator: "Zeta", location: "Zed", health: "refused",
+                        rows: 0, checkedAt: fresh, error: "identity failed" });
+  const html = render({ generated: "2026-08-19T21:20:00Z", sources: rows }, now);
+  const order = [...html.matchAll(/<tr class="r-(\w+)"/g)].map((m) => m[1]);
+  assert.equal(order[0], "late", "the problem row is first despite sorting last by name");
+  assert.ok(order.slice(1).every((x) => x === "live"));
+  assert.match(html, /1 of 201 NEED A LOOK/);
 });

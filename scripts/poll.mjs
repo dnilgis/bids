@@ -173,6 +173,9 @@ for (const s of todo) {
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
     r.rows = verdict.file.count;
+    /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
+       it belongs on the board rather than only inside the file. */
+    r.commodities = [...new Set(verdict.file.bids.map((b) => b.commodity))];
     r.verified = built.verified;
     r.reason = verdict.reason;
     if (verdict.write && !dryRun) {
@@ -192,9 +195,17 @@ for (const s of todo) {
        means. Only an unexpected throw is "broken". */
     r.health = (e instanceof Refused || e?.constructor?.name === "AghostRefused") ? "refused" : "broken";
     r.status = r.health;
-    r.error = e.message.split("\n")[0].slice(0, 300);
-    console.error(`  ${r.health.padEnd(7)} ${s.id.padEnd(24)} ${r.error}`);
-    console.error(`::warning title=${s.id} ${r.health}::${r.error}`);
+    /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
+       index.json is read by the dashboard and wants a line, so it keeps the
+       300-character cut. The console does not: on 2026-08-19 the 300th
+       character landed in the middle of the diagnostic sample -- the refusal
+       printed `body starts: "x,decimal_plac` and stopped, so the one piece of
+       evidence the message existed to carry was the piece that got cut. Print
+       the full message first, then the summary. */
+    const full = e.message.replace(/\s+/g, " ").trim();
+    r.error = full.slice(0, 300);
+    console.error(`  ${r.health.padEnd(7)} ${s.id.padEnd(24)} ${full}`);
+    console.error(`::warning title=${s.id} ${r.health}::${full.slice(0, 900)}`);
   }
   results.push(r);
 }
