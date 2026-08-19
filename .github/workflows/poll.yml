@@ -91,14 +91,23 @@ jobs:
       # Exits non-zero on a bad read, which fails the run, emails you, and
       # leaves data/boyceville.json exactly as it was. A stale file is safe:
       # every consumer checks `checkedAt`. A wrong file is not.
-      - name: Read their board
-        run: node scripts/fetch.mjs
+      - name: Read every enabled source
+        # poll.mjs SUPERSEDES fetch.mjs. Both write data/boyceville.json, so only
+        # one may ever be scheduled -- two writers on one artefact has bitten
+        # this system three times. Delete scripts/fetch.mjs once this is live.
+        run: node scripts/poll.mjs
 
       - name: Commit if the price moved, and rebake the dashboard
         run: |
           git config user.name  "agsist-bot"
           git config user.email "bot@agsist.com"
-          git add data/boyceville.json
+          # EVERY SOURCE'S FILE, NOT ONE HARDCODED PATH.
+          # This said `git add data/boyceville.json`. With a second source that
+          # is a silent outage: poll.mjs writes data/<id>.json and
+          # data/index.json, the log says "3 ok, wrote 3", and only Boyceville
+          # ever reaches the repo. The dashboard reads index.json, so it would
+          # have gone stale while reporting everything healthy.
+          git add data/
           git diff --cached --quiet && { echo "nothing moved"; exit 0; }
 
           # THE DEEP FETCH HAPPENS HERE, NOT AT CHECKOUT.
@@ -124,7 +133,8 @@ jobs:
           #
           # READ-ME-FIRST calls the dashboard optional and deletable. This makes
           # the workflow agree with that.
-          if node scripts/dashboard.mjs; then
+          # status.mjs SUPERSEDES dashboard.mjs -- both write index.html.
+          if node scripts/status.mjs; then
             git add index.html
           else
             echo "::warning::dashboard bake failed; committing the price without it"
@@ -132,6 +142,6 @@ jobs:
           # The message carries the front month, so `git log --oneline` reads
           # as a price history rather than a list of identical commits, and a
           # heartbeat says so instead of impersonating a price change.
-          # Written by fetch.mjs via lib/decide.mjs.
+          # Written by poll.mjs via lib/decide.mjs.
           git commit -F .commit-message
           git push
