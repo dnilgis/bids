@@ -36,6 +36,10 @@ const OUT = join(ROOT, "index.html");
 export const LATE_H = 6;        // the heartbeat: fresher than this is normal
 export const WITHDRAW_H = 14;   // FEED_MAX_AGE_H downstream
 
+/* A clock more than this far ahead of ours is not fresh, it is wrong. Runner
+   clocks drift by seconds; a quarter of an hour is slack, not skew. */
+export const MAX_SKEW_H = 0.25;
+
 export function ageHours(iso, now) {
   if (!iso) return Infinity;
   const t = Date.parse(iso);
@@ -59,6 +63,12 @@ export function stateOf(s, now) {
     return ageHours(s.checkedAt, now) >= WITHDRAW_H ? "down" : "late";
   }
   const age = ageHours(s.checkedAt, now);
+  /* A CLOCK AHEAD OF OURS IS BROKEN, NOT FRESH.
+     A negative age sails past every "older than" test and lands on "live" --
+     the freshest possible verdict handed to the one file we have most reason
+     to distrust. The old dashboard test asserted this and was deleted with the
+     script it covered; status.mjs shipped without it. */
+  if (age < -MAX_SKEW_H) return "down";
   if (age >= WITHDRAW_H) return "down";
   if (age >= LATE_H) return "late";
   return "live";

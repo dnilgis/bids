@@ -118,7 +118,18 @@ const results = [];
 
 for (const s of todo) {
   const out = join(DATA, `${s.id}.json`);
-  const prev = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : null;
+  /* A FILE THAT WILL NOT PARSE MUST NOT KILL THE RUN.
+     This JSON.parse sat OUTSIDE the per-source try, so one corrupt
+     data/<id>.json threw before any catch and took every other source with it
+     -- destroying the isolation this whole restructure exists for. A corrupt
+     previous file is now that source's problem alone, and it is loud: treating
+     it as absent silently would let decide() call it a first run and stamp
+     pricedAt as now, overstating how fresh the price is. */
+  let prev = null, prevUnreadable = null;
+  if (existsSync(out)) {
+    try { prev = JSON.parse(readFileSync(out, "utf8")); }
+    catch (e) { prevUnreadable = e.message.slice(0, 160); }
+  }
   /* `health` and NOT `state`. The manifest's `state` is the US state ("WI");
      reusing the key for read-health silently dropped it and left status.mjs
      reading a field that means one thing on a manifest row and another on a
@@ -129,6 +140,10 @@ for (const s of todo) {
               platform: s.platform, url: s.url, provenance: s.provenance ?? "scraped",
               pricedAt: prev?.pricedAt ?? null, checkedAt: prev?.checkedAt ?? null,
               rows: prev?.count ?? 0, wrote: false };
+  if (prevUnreadable) {
+    r.note = `previous file unreadable (${prevUnreadable}); pricedAt will be restamped`;
+    console.error(`::warning title=${s.id} unreadable previous file::${prevUnreadable}`);
+  }
   try {
     const { html, url } = await getPage(s);
     const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s), extract: adapterFor(s.platform) });
@@ -152,7 +167,10 @@ for (const s of todo) {
        checkedAt therefore stops advancing, which is what makes the consumer's
        age threshold withdraw it on schedule. The refusal is loud here and in
        the Actions annotation; it is not loud in the data. */
-    r.health = e instanceof Refused ? "refused" : "broken";
+    /* An adapter's own refusal is a refusal, not a crash: it means we read a
+       page and it was not the board we wanted, which is exactly what Refused
+       means. Only an unexpected throw is "broken". */
+    r.health = (e instanceof Refused || e?.constructor?.name === "AghostRefused") ? "refused" : "broken";
     r.status = r.health;
     r.error = e.message.split("\n")[0].slice(0, 300);
     console.error(`  ${r.health.padEnd(7)} ${s.id.padEnd(24)} ${r.error}`);
