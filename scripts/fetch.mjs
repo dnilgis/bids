@@ -112,20 +112,35 @@ try {
   die(e instanceof Refused ? e.message : `the parser threw: ${e.message}`);
 }
 
-const { file: feed, dropped, verified } = built;
+const { file: feed, dropped, verified, boardAt } = built;
 
 /* The log said "7 identity-verified" on a run that had just nulled two of the
    seven quotes, because `verified` counted rows CARRYING all three figures,
    not rows that balanced. That reading is what made the withdrawal downstream
-   look like it came out of nowhere. Count what actually held. */
-const balanced = feed.bids.filter((b) => b.futuresPriceCents != null).length;
+   look like it came out of nowhere. Count what actually held.
+
+   COUNTED PROPERLY THIS TIME. This was `futuresPriceCents != null`, which was
+   the same thing as "balanced" only while the reader nulled the quote on a row
+   that did not. It stopped doing that on 2026-08-18, and from then on this
+   counted every published row as verified -- including the lagging one, which
+   is the single row the line exists to draw attention to. Do the arithmetic
+   rather than reading a proxy for it. */
+const balances = (b) =>
+  typeof b.futuresPriceCents === "number" &&
+  typeof b.cash === "number" && typeof b.basisDollars === "number" &&
+  Math.abs(Math.round((b.cash - b.basisDollars) * 10000) / 100 - b.futuresPriceCents) < 0.05;
+const balanced = feed.bids.filter(balances).length;
 const unchecked = feed.count - balanced;
+
+/* Their Last Trade column, when their board carries it. Logged and not stored:
+   see lib/board.mjs. On a run that goes wrong this is the first thing worth
+   knowing, and it is gone by the time anybody looks at the page. */
+const clock = boardAt && boardAt.length ? `, their board last traded ${boardAt.join(", ")}` : "";
 
 if (dryRun) {
   console.log(serialise(feed));
-  const bal = feed.bids.filter((b) => b.futuresPriceCents != null).length;
   console.log(`(dry run${fixture ? `, from ${fixture}` : ""}: ${feed.count} rows, ` +
-              `${bal} identity-verified, ${feed.count - bal} without a quote, ` +
+              `${balanced} identity-verified, ${unchecked} not balancing${clock}, ` +
               `${dropped} other-location rows dropped. Nothing was written.)`);
   process.exit(0);
 }
@@ -171,7 +186,7 @@ writeFileSync(OUT, serialise(verdict.file));
 writeFileSync(MSG, commitMessage(verdict) + "\n");
 console.log(`${verdict.reason}: wrote ${feed.count} rows ` +
             `(${balanced} identity-verified` +
-            (unchecked ? `, ${unchecked} published WITHOUT a quote` : "") +
-            `, priced ${verdict.file.pricedAt}), ` +
+            (unchecked ? `, ${unchecked} carrying a quote that did NOT balance` : "") +
+            `, priced ${verdict.file.pricedAt})${clock}, ` +
             `${dropped} other-location rows dropped`);
 for (const b of verdict.file.bids) console.log(`  ${b.delivery.padEnd(10)} ${b.cash}  ${b.basisDollars}`);

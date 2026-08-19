@@ -41,14 +41,53 @@ test("A LAGGING CELL NO LONGER TAKES THE WHOLE BOARD DOWN", () => {
   assert.equal(aug.basisDollars, -0.52, "and so is their basis");
 });
 
-test("A QUOTE WE COULD NOT VERIFY IS NOT PUBLISHED AT ALL", () => {
-  /* No new field and no schema change: the one place this belongs is the
-     quote itself, and it was already nullable. The Emmert pages show a dash
-     for a null, so a figure we could not check cannot reach a customer. */
+/* ===================================================================
+ * READ THIS BEFORE CHANGING THE TWO TESTS BELOW.
+ *
+ * They used to assert the opposite of what they assert now, and finding that
+ * out is the reason this comment exists.
+ *
+ * Until 2026-08-18 the reader NULLED the futures quote on any row whose
+ * identity did not balance, so a figure nobody had verified could not reach a
+ * customer. A later upload the same day reversed it -- see the long comment on
+ * `futuresPriceCents` in lib/board.mjs -- and published the lagging quote
+ * instead. The reversal did not update these two tests.
+ *
+ * SO THE SUITE WAS RED FROM 2026-08-18 UNTIL 2026-08-19 AND NOBODY SAW IT.
+ * test.yml runs on pushes touching lib/, scripts/, test/ or fixtures/, and
+ * every push in between was a bot data commit. A gate that only opens when
+ * you push code cannot tell you the code you already pushed is broken.
+ *
+ * These now pin WHAT THE READER ACTUALLY DOES. That is deliberately not the
+ * same thing as endorsing it, and the question is open:
+ *
+ *   FOR PUBLISHING IT (what the code does now). The consumer re-checks every
+ *   quote it receives against the same two-tick ruler
+ *   (update-prices.mjs IDENTITY_SLACK_CENTS). Stripping the quote on exactly
+ *   the rows that failed means the second line of defence never sees the row
+ *   that most needed checking. And the figure is Big River's own published
+ *   cell, half a cent behind their own cash, not a guess of ours.
+ *
+ *   FOR NULLING IT (what these tests used to say). Nothing unverified reaches
+ *   a customer, full stop. The reason given for the reversal -- that a null
+ *   read as a broken feed and took both Emmert sites dark at 21:47 on
+ *   2026-08-18 -- had ALREADY been fixed at the other end by then:
+ *   update-prices.mjs now carries a null row with no quote and prints a dash.
+ *   So the reversal was a second fix for a bug that was already fixed.
+ *
+ * That is a decision about what two live sites publish, and it is Sig's.
+ * Whichever way it goes, change lib/board.mjs and these tests together.
+ * =================================================================== */
+
+test("A QUOTE WE COULD NOT VERIFY IS STILL PUBLISHED, AS THEIR OWN CELL", () => {
   const { file } = build(eighths(2));
-  assert.equal(file.bids.find((b) => b.delivery === "August").futuresPriceCents, null);
-  for (const b of file.bids.filter((x) => x.delivery !== "August"))
-    assert.notEqual(b.futuresPriceCents, null, `${b.delivery} balanced and keeps its quote`);
+  const aug = file.bids.find((b) => b.delivery === "August");
+  assert.equal(aug.futuresPriceCents, 459.25, "their quote, carried verbatim");
+  const derived = Math.round((aug.cash - aug.basisDollars) * 10000) / 10000 * 100;
+  assert.ok(Math.abs(derived - aug.futuresPriceCents) <= TORN_MAX_CENTS,
+    "and it is within the two ticks that let the board publish at all");
+  for (const b of file.bids)
+    assert.notEqual(b.futuresPriceCents, null, `${b.delivery} carries a quote`);
 });
 
 test("the published shape is unchanged, so nothing downstream has to be told", () => {
@@ -58,11 +97,25 @@ test("the published shape is unchanged, so nothing downstream has to be told", (
   assert.equal(build(HTML).file.schema, "bigriver-boyceville/2");
 });
 
-test("A REAL COLUMN SHIFT IS STILL REFUSED, AT ONCE AND LOUDLY", () => {
+test("A WIDE GAP IS STILL REFUSED, AT ONCE AND LOUDLY", () => {
   assert.throws(() => build(HTML.replace("459-4", "419-4")), (e) => {
     assert.ok(e instanceof Refused);
-    assert.match(e.message, /Columns have moved/);
-    assert.match(e.message, /far more than a tick/);
+    assert.match(e.message, /not a torn read/);
+    return true;
+  });
+});
+
+test("AND THE REFUSAL NO LONGER NAMES A CAUSE IT HAS NOT ESTABLISHED", () => {
+  /* It used to end "Columns have moved." on the strength of one number: how
+     far the worst row was out. On 2026-08-19 it said that about a board whose
+     columns were in the right order and which balanced on every row seven
+     minutes later. The gap being too wide for a torn read is established. The
+     reason it is wide is not. */
+  assert.throws(() => build(HTML.replace("459-4", "419-4")), (e) => {
+    assert.doesNotMatch(e.message, /Columns have moved/);
+    assert.match(e.message, /does not say what it is/);
+    assert.match(e.message, /moved column, a stale futures column and a single bad quote/);
+    assert.match(e.message, /Refusing until it balances/);
     return true;
   });
 });
@@ -83,24 +136,43 @@ test("THE ROWS THAT PASS ARE WHAT DOES THE PROVING, SO THERE MUST BE ENOUGH OF T
 });
 
 test("size beats proportion: one huge row is a shift however many others pass", () => {
-  assert.equal(classifyIdentity([40], 7), "shift");
-  assert.equal(classifyIdentity([TICK_CENTS, 40], 20), "shift",
+  assert.equal(classifyIdentity([40], 7), "unexplained");
+  assert.equal(classifyIdentity([TICK_CENTS, 40], 20), "unexplained",
     "a tick-sized row beside a huge one does not launder it");
   assert.equal(classifyIdentity([TORN_MAX_CENTS], 7), "lagging", "the boundary is inclusive");
-  assert.equal(classifyIdentity([TORN_MAX_CENTS + 0.01], 7), "shift");
+  assert.equal(classifyIdentity([TORN_MAX_CENTS + 0.01], 7), "unexplained");
 });
 
 test("the boundary is two ticks, judged on the worst row", () => {
   assert.doesNotThrow(() => build(eighths(0)));              // 0.50c, accepted and marked
   assert.throws(() => build(HTML.replace("459-4", "458-6")), // 0.75c, refused
-    (e) => e instanceof Refused && /Columns have moved/.test(e.message));
+    (e) => e instanceof Refused && /not a torn read/.test(e.message));
   assert.equal(TORN_MAX_CENTS, TICK_CENTS * 2);
 });
 
-test("a tick-sized row beside a huge one is a column shift, not a lagging cell", () => {
+test("a tick-sized row beside a huge one is refused, not treated as a lagging cell", () => {
   const both = HTML.replace("459-4", "459-2").replace("484-0", "444-0");
   assert.throws(() => build(both),
-    (e) => e instanceof Refused && /Columns have moved/.test(e.message));
+    (e) => e instanceof Refused && /not a torn read/.test(e.message));
+});
+
+test("RENAMING THE VERDICT MOVED NOTHING: EVERY BOUNDARY IS WHERE IT WAS", () => {
+  /* The whole point of the 2026-08-19 change was that the MESSAGE was wrong,
+     not the decision. So pin the decision independently of what it is called:
+     refuse or publish, for every case the old rule covered. */
+  const refuses = (v) => v === "unexplained" || v === "unproven";
+  const T = TICK_CENTS;
+  assert.equal(refuses(classifyIdentity([], 7)), false, "a clean board publishes");
+  assert.equal(refuses(classifyIdentity([T, T], 7)), false, "2 of 7, a tick out: publishes");
+  assert.equal(refuses(classifyIdentity([T, T, T], 7)), false);
+  assert.equal(refuses(classifyIdentity([TORN_MAX_CENTS], 7)), false, "two ticks still publishes");
+  assert.equal(refuses(classifyIdentity([T, T, T, T], 7)), true, "4 of 7 refuses");
+  assert.equal(refuses(classifyIdentity([T], 1)), true, "1 of 1 refuses");
+  assert.equal(refuses(classifyIdentity([TORN_MAX_CENTS + 0.01], 7)), true, "past two ticks refuses");
+  assert.equal(refuses(classifyIdentity([40], 7)), true);
+  assert.doesNotThrow(() => build(HTML));
+  assert.doesNotThrow(() => build(eighths(0)));
+  assert.throws(() => build(HTML.replace("459-4", "458-6")), Refused);
 });
 
 test("THE FAILURE MESSAGE NAMES EVERY ROW AND ITS CONTRACT MONTH", () => {
@@ -116,11 +188,20 @@ test("THE FAILURE MESSAGE NAMES EVERY ROW AND ITS CONTRACT MONTH", () => {
   });
 });
 
-test("nothing here lets a wrong number through: the passing rows still pass exactly", () => {
+test("nothing here lets a wrong number through: EVERY OTHER ROW BALANCES EXACTLY", () => {
+  /* This is what stops the tolerance being a hole. Exactly one row may be out,
+     it may be out by no more than two ticks, and every other row on the board
+     has to agree to the cent -- those are what prove the columns are right. */
   const { file } = build(eighths(2));
-  for (const b of file.bids.filter((x) => x.futuresPriceCents != null)) {
+  let out = 0;
+  for (const b of file.bids) {
     const derived = Math.round((b.cash - b.basisDollars) * 10000) / 10000;
-    assert.equal(Math.round(derived * 100 * 100) / 100, b.futuresPriceCents,
-      `${b.delivery} is marked verified and must balance to the cent`);
+    const off = Math.abs(Math.round(derived * 100 * 100) / 100 - b.futuresPriceCents);
+    if (off > 1e-9) {
+      out++;
+      assert.equal(b.delivery, "August", "only the row we made lag may be out");
+      assert.ok(off <= TORN_MAX_CENTS, `${b.delivery} is ${off}c out, past the boundary`);
+    }
   }
+  assert.equal(out, 1, "one row out, six exact");
 });
