@@ -137,6 +137,18 @@ for (const s of todo) {
      confidently. */
   const r = { id: s.id, operator: s.operator, location: s.location,
               usState: s.state ?? null,
+              /* A DIRECT SOURCE WITHOUT COORDINATES IS INVISIBLE.
+                 cash-bids.html sorts by distance from the user. A row with no
+                 lat/lon cannot be placed, cannot be sorted, and never reaches
+                 the page -- it would sit in the merged file looking published
+                 while no farmer could ever see it. */
+              zip: s.zip ?? null, lat: s.lat ?? null, lon: s.lon ?? null,
+              phone: s.phone ?? null, email: s.email ?? null, website: s.website ?? null,
+              /* Whether this source belongs on the AGSIST map. Boyceville is
+                 read for the Emmert sites, which consume data/boyceville.json
+                 directly, but Barchart already carries it more fully -- so it
+                 is read and NOT merged. Two different jobs, one reader. */
+              inMerge: s.inMerge !== false,
               platform: s.platform, url: s.url, provenance: s.provenance ?? "scraped",
               pricedAt: prev?.pricedAt ?? null, checkedAt: prev?.checkedAt ?? null,
               rows: prev?.count ?? 0, wrote: false };
@@ -147,6 +159,14 @@ for (const s of todo) {
   try {
     const { html, url } = await getPage(s);
     const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s), extract: adapterFor(s.platform) });
+    /* A withheld commodity is something the elevator IS buying that we are not
+       publishing. It must never be a silent omission -- it goes in the index,
+       onto the status board, and into the Actions annotations. */
+    if (built.withheld?.length) {
+      r.withheld = built.withheld;
+      for (const w of built.withheld)
+        console.error(`::warning title=${s.id} withheld ${w.commodity}::${w.rows} row(s): ${w.why}`);
+    }
     const verdict = decide(prev, built.file);
     r.health = "live";
     r.status = "ok";
