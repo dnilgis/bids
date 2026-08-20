@@ -1,0 +1,27 @@
+{
+  "id": "albertlea",
+  "operator": "Albert Lea Elevator",
+  "location": "Albert Lea",
+  "state": "MN",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/albertleaelevator/cash-bids",
+  "locationId": "Albert Lea",
+  "companyToken": "albertleaelevator",
+  "bands": {
+    "corn": [2.0, 12.0],
+    "soybeans": [6.0, 25.0]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "DTN Grain Desk. Their page runs window.initGdCashBidsWidget(id, {companyToken: \"albertleaelevator\"}) and the widget's bundle calls GET <apiBase>/public-sites/<companyToken>/cash-bids with Accept: application/json. Public JSON, no key, no session. The company token is the company's own slug, so another elevator on this platform is a new source file and no new code. Their bundle carries a per-customer host override map (lockiefarms has its own), so a source may need an apiBase one day; Albert Lea is on the shared marketplace host. Cash is given to 4dp and cash minus basis equals the futures quote exactly, so cashRoundingCents is 0 and the identity guard is strict.",
+  "cashRoundingCents": 0,
+  "publicNote": "Their publicly posted cash board at Albert Lea, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "zip": "56007",
+  "lat": 43.655,
+  "lon": -93.36417,
+  "phone": "507-373-3133",
+  "email": null,
+  "website": "https://albertleaelevator.com/",
+  "inMerge": true
+}
