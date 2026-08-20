@@ -70,6 +70,11 @@ on:
     # perfectly good price off both sites.
     - cron: "25 */3 * * 6,0"
   workflow_dispatch:
+    inputs:
+      ping_sites:
+        description: "Tell the sites even if the price did not move (use this to prove EMMERT_DISPATCH_TOKEN works)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -198,7 +203,13 @@ jobs:
           TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
         run: |
           set -u
-          if ! grep -qx boyceville .changed-sources 2>/dev/null; then
+          # A WAY TO PROVE THE TOKEN WORKS WITHOUT WAITING FOR THE MARKET.
+          # Without this the only test is a real price move, which may be an
+          # hour away and which fails at the moment you are not watching. Run
+          # the workflow by hand with ping_sites ticked and the answer is
+          # immediate: both sites rebuild, or this step goes red and says why.
+          FORCE="${{ inputs.ping_sites }}"
+          if [ "$FORCE" != "true" ] && ! grep -qx boyceville .changed-sources 2>/dev/null; then
             echo "boyceville did not move this run; the sites have nothing to rebuild"
             exit 0
           fi
@@ -208,6 +219,7 @@ jobs:
             exit 1
           fi
 
+          [ "$FORCE" = "true" ] && echo "ping_sites was ticked: telling them regardless of whether the price moved"
           PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
           fail=""
           for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
