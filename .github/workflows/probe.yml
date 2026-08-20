@@ -65,43 +65,39 @@ jobs:
 
       # ---- built-in targets, only when no URLs were supplied ----
 
-      # THE GRAIN DESK BUNDLE HOLDS ITS ENDPOINT IN A TEMPLATE LITERAL.
-      #   window.ENV = {
-      #     AG_PRODUCER_API_URL: "https://agproducer.prd.ag.zones.dtn.com/api/v1",
-      #     GD_CASH_BIDS_API_URL: "https://marketplace.graindiscovery.com/api",
-      #     DEFAULT_COMPANY_TOKEN: "stLawrenceGrain" }
-      # so the call is `${GD_CASH_BIDS_API_URL}/…` and there is no quoted URL to
-      # find -- which is why the last run returned thirteen strings and none of
-      # them the one. --grep goes looking for the shape instead.
-      - name: DTN Grain Desk — grep the bundle for the call
+      # SOLVED, AND WORTH CAPTURING PROPERLY.
+      #   GET https://marketplace.graindiscovery.com/api/public-sites/<token>/cash-bids
+      # The adapter shipped against a SAMPLE that came back through a
+      # summarising reader, not raw bytes. This prints the real body so the
+      # fixture can be replaced with a capture -- the exact step skipped twice
+      # on Flash Grain, both times to our cost.
+      - name: DTN Grain Desk — capture Albert Lea's raw JSON
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs --context 200 \
-            --grep 'companyToken|GD_CASH_BIDS_API_URL|cash[-_]?bids|graphql|query [A-Za-z]+ ?\(' \
-            'https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js'
+          node scripts/probe.mjs --raw 400000 \
+            'https://marketplace.graindiscovery.com/api/public-sites/albertleaelevator/cash-bids'
 
-      # 92 chunks were named and half the budget went on relative twins that all
-      # returned the same 5,858-byte shell. v4 fetches the root form only and
-      # sorts bid/cash/component-sounding names to the front.
-      - name: StoneX Stonehedge — the chunks that sound like the board
+      # If the token really is just the slug, these answer too — and each one
+      # that does is an elevator added by writing a JSON file.
+      - name: DTN Grain Desk — do other slugs answer?
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs --all-origins --max-chunks 92 --context 160 \
-            --grep 'api\.stonehedge[^"'"'"'`]{0,80}|/bids[a-z/-]*|componentBids|publicBids' \
-            --referer 'https://www.unitedcooperative.com/grain/markets' \
-            'https://stonehedge.stonex.com/component/bids?key=AILQAFBJPWG59NXDNV00QPRSFTUA0EEU&cols=date%2Cbasis%2Ccash%2Cmonth&locs=8TG9IQ1J6TGRFBUP1XH0%2CMY33N2HTBP5KB5I5NXBT&hideRows=true'
+          for t in northsideelevator flashgrain unitedcooperative farmerscoopsociety \
+                   albertleaseedhouse stLawrenceGrain lockiefarms; do
+            echo "### $t"
+            node scripts/probe.mjs --raw 1200 \
+              "https://marketplace.graindiscovery.com/api/public-sites/$t/cash-bids" || true
+          done
 
-      # Farmers Cooperative Society is READ as of tonight -- the adapter and the
-      # source row are in this drop. What is still needed is the location ids
-      # for their other elevators, which their own locations page carries and
-      # which /ajax/pages/dtn-cash-bids?location=<id> then serves.
-      - name: Farmers Cooperative Society — the other locations' ids
+      # StoneX: the component's own call is still unfound, but the API publishes
+      # Swagger at /swagger/index.html and the document loads from somewhere.
+      # Read the UI page raw and follow whatever spec URL it names.
+      - name: StoneX — the swagger document
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs --raw 200000 \
-            --grep 'location=[0-9A-Za-z_-]+|dtn-cash-bids[^"]{0,60}' \
-            'https://www.farmerscoopsociety.com/locations?services=grain' \
-            'https://www.farmerscoopsociety.com/grain/grain-services'
+          node scripts/probe.mjs --all-origins --raw 60000 \
+            --grep 'swagger[^"]{0,60}\.json|openapi[^"]{0,60}\.json|urls: ?\[' \
+            'https://api.stonehedge.stonex.com/swagger/index.html'
