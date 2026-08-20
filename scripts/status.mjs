@@ -77,20 +77,60 @@ export function stateOf(s, now) {
 const GLYPH = { live: "✓", late: "!", down: "×" };
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const stamp = (iso) => (iso ? String(iso).replace("T", " ").replace(/\.\d+Z$/, "Z") : "never");
+/* THE BOARD IS READ IN WISCONSIN, SO IT KEEPS WISCONSIN TIME.
+ *
+ * Every timestamp in data/ is UTC and stays UTC -- that is the record, and it
+ * must not move. This is the display layer, and it was showing 22:47 for a
+ * board read at 5:47 in the afternoon. Nobody standing at an elevator does that
+ * subtraction in their head, and a five-hour error is exactly the size that
+ * makes a fresh read look like a stale one.
+ *
+ * The zone is named, not an offset: America/Chicago handles CDT and CST without
+ * anyone remembering to change anything in November. The abbreviation is read
+ * from the formatter rather than hardcoded, so the header says CDT today and
+ * CST in the winter, by itself.
+ *
+ * Everything that COMPARES times still works in UTC milliseconds -- stateOf,
+ * ageHours, the skew check. Only what a human reads is converted. */
+export const ZONE = "America/Chicago";
+
+const fmtParts = new Intl.DateTimeFormat("en-CA", {
+  timeZone: ZONE, hour12: false,
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit",
+});
+const fmtAbbr = new Intl.DateTimeFormat("en-US", { timeZone: ZONE, timeZoneName: "short" });
+
+/** An ISO instant as local wall time: `{ day: "2026-08-19", time: "19:47:53" }`. */
+export function local(iso) {
+  const ms = Date.parse(iso);
+  if (!iso || Number.isNaN(ms)) return null;
+  const p = Object.fromEntries(fmtParts.formatToParts(ms).map((x) => [x.type, x.value]));
+  /* en-CA gives 24-hour time but renders midnight as "24" in some ICU builds. */
+  const hour = p.hour === "24" ? "00" : p.hour;
+  return { day: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}:${p.second}` };
+}
+
+/** "CDT" or "CST", whichever is in force at that instant. */
+export function zoneAbbr(iso) {
+  const ms = Date.parse(iso);
+  const at = Number.isNaN(ms) ? Date.now() : ms;
+  return fmtAbbr.formatToParts(at).find((x) => x.type === "timeZoneName")?.value ?? "";
+}
+
+const stamp = (iso) => { const l = local(iso); return l ? `${l.day} ${l.time}` : "never"; };
 
 /* THE DATE IS THE SAME ON ALMOST EVERY ROW, SO STOP PRINTING IT.
  * Two full timestamps per row is 40 characters of which 22 are "2026-08-19"
  * twice over. Rows from the day of the read show the time alone; anything from
  * another day keeps its date, which is exactly the row you want to notice.
- * The reference date is stated once, in the header. */
+ * The reference date is stated once, in the header -- and both are now local,
+ * so a row that rolls past local midnight changes day when the elevator's day
+ * changes, not five hours early. */
 const clock = (iso, refDay) => {
-  if (!iso) return "never";
-  const t = String(iso).replace(/\.\d+Z$/, "Z");
-  const [day, time] = t.split("T");
-  if (!time) return t;
-  const hhmmss = time.replace("Z", "");
-  return day === refDay ? hhmmss : `${day.slice(5)} ${hhmmss.slice(0, 5)}`;
+  const l = local(iso);
+  if (!l) return iso ? String(iso) : "never";
+  return l.day === refDay ? l.time : `${l.day.slice(5)} ${l.time.slice(0, 5)}`;
 };
 
 export function render(index, nowMs) {
@@ -113,7 +153,7 @@ export function render(index, nowMs) {
   const headline = n === 0 ? "NO SOURCES READ"
     : problems ? `${problems} of ${n} NEED A LOOK` : `ALL ${n} LIVE`;
 
-  const refDay = String(index.generated ?? "").slice(0, 10);
+  const refDay = local(index.generated)?.day ?? String(index.generated ?? "").slice(0, 10);
   const note = (s) => {
     if (s.error) return esc(s.error);
     if (s.withheld?.length)
@@ -184,7 +224,7 @@ export function render(index, nowMs) {
     thead th:nth-child(6),thead th:nth-child(8),thead th:nth-child(9){display:none}}
 </style></head><body>
 <header><h1>Bid sources</h1><span class="v ${verdict}">${esc(headline)}</span>
-<span class="when">${esc(refDay)} · read ${clock(index.generated, refDay)} UTC</span></header>
+<span class="when">${esc(refDay)} · read ${clock(index.generated, refDay)} ${esc(zoneAbbr(index.generated))}</span></header>
 
 <div class="wrap">${n === 0
   ? `<div class="empty"><strong>Nothing was read.</strong> data/index.json lists no sources —

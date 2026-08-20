@@ -199,7 +199,17 @@ async function probe(url, referer) {
     return;
   }
 
-  line(`\n-- first 600 bytes --\n${res.body.slice(0, 600)}`);
+  /* PRINT THE FRAGMENT, NOT ITS FIRST 600 BYTES.
+     /ajax/homepage/dtn-cash-bids came back as 14,223 bytes of text/html with
+     every price in it, and the probe printed the opening <div> and stopped
+     because "HTML" meant "a page to be crawled". A server-rendered fragment IS
+     the answer. Anything under the raw budget is printed whole. */
+  const rawBudget = Number(flag("raw", 40_000));
+  if (res.bytes <= rawBudget) {
+    line(`\n-- body (${res.bytes} bytes, whole) --\n${res.body}`);
+  } else {
+    line(`\n-- first 600 of ${res.bytes} bytes (raise --raw to see more) --\n${res.body.slice(0, 600)}`);
+  }
 
   const { scripts, iframes, links } = assetsOf(res.body, res.finalUrl);
   line(`\n-- ${iframes.length} iframe(s) --`); iframes.forEach((u) => line(`  ${u}`));
@@ -225,9 +235,19 @@ async function probe(url, referer) {
 
     /* One level of chunks, deduped across the whole run, capped. A Vite app's
        interesting code is never in the entry bundle. */
-    const chunks = chunkNames(b.body)
-      .map((c) => { try { return new URL(c, b.finalUrl).href; } catch { return null; } })
-      .filter((u) => u && !seenChunks.has(u));
+    /* RESOLVE CHUNKS AGAINST THE SITE ROOT, NOT THE BUNDLE'S FOLDER.
+       The entry bundle is /assets/index-….js and the chunk names it stores are
+       "assets/App-….js" -- relative resolution gives /assets/assets/App-….js,
+       which is what run 87613396138 fetched 46 times and 404ed 46 times. The
+       app itself does `"/" + name`, so root is the base. Try root first and
+       keep the folder-relative form as a fallback for apps that really are
+       relative. */
+    const chunks = chunkNames(b.body).flatMap((c) => {
+      const out = [];
+      try { out.push(new URL(`/${c}`, b.finalUrl).href); } catch {}
+      try { const rel = new URL(c, b.finalUrl).href; if (!out.includes(rel)) out.push(rel); } catch {}
+      return out;
+    }).filter((u) => u && !seenChunks.has(u));
     if (!chunks.length) continue;
     line(`\n-- ${chunks.length} chunk(s) named by this bundle --`);
     for (const c of chunks.slice(0, MAX_CHUNKS)) {
@@ -236,6 +256,7 @@ async function probe(url, referer) {
       const k = await get(c, { referer: b.finalUrl });
       if (!k.ok) { line(`FAILED — ${k.error}`); continue; }
       line(`${k.status}  ${k.type}  ${k.bytes} bytes  ${k.ms}ms`);
+      if (k.status >= 400) { line("(not there — trying the other resolution if one was queued)"); continue; }
       if (k.bytes > MAX_BUNDLE_BYTES) { line("(too big, skipped)"); continue; }
       reportBundle(k.body, k.finalUrl);
     }
