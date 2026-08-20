@@ -50,6 +50,10 @@ on:
         description: "Company name, to save typing it into every skeleton"
         required: false
         default: ""
+      against:
+        description: "Paste the VERDICTS lines from a previous run to see which rounding modes agree"
+        required: false
+        default: ""
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -79,18 +83,28 @@ jobs:
         # can already press the button can reach this, so it was never the
         # sharpest risk in the repository; it is also the form people copy.
         env:
+          # ONE SNAPSHOT DOES NOT ESTABLISH A ROUNDING MODE. Four Country
+          # Partners locations read round-cent at 20:59 and floor-cent at 21:21
+          # on 2026-08-20, from identical row counts. Paste the previous run's
+          # VERDICTS lines in and this run says which of them agree.
+          AGAINST: ${{ inputs.against }}
           USE_LIST: ${{ inputs.list }}
           SITE: ${{ inputs.site }}
           PAGE: ${{ inputs.page }}
           OPERATOR: ${{ inputs.operator }}
         run: |
+          ARGS=""
+          if [ -n "$AGAINST" ]; then
+            printf '%s\n' "$AGAINST" > /tmp/prior-verdicts.txt
+            ARGS="--against /tmp/prior-verdicts.txt"
+          fi
           if [ "$USE_LIST" = "true" ]; then
-            node scripts/dtn-probe.mjs --list probe-lists/dtn-sites.txt
+            node scripts/dtn-probe.mjs --list probe-lists/dtn-sites.txt $ARGS
           elif [ -n "$SITE" ]; then
             if [ -n "$OPERATOR" ]; then
-              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE" --operator "$OPERATOR"
+              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE" --operator "$OPERATOR" $ARGS
             else
-              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE"
+              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE" $ARGS
             fi
           else
             echo "Nothing asked: turn the list box on, or give a site id."
