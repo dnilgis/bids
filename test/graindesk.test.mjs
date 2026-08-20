@@ -13,6 +13,13 @@ import { readFileSync } from "node:fs";
 import { extract, describe as describeBody, cashBidsUrl, num, GrainDeskRefused } from "../lib/adapters/graindesk.mjs";
 
 const SAMPLE = readFileSync(new URL("../fixtures/graindesk-albertlea-SAMPLE.json", import.meta.url), "utf8");
+/* THE REAL BYTES, captured off the wire by the probe on 2026-08-20 (run
+   87617854954). The SAMPLE above stays only for the case it covers that this
+   one does not -- an offer carrying a `comments` label. It is also the evidence
+   for why captures matter: the transcribed sample said 11.63 and −0.75 against
+   1238.00, and the wire says 11.6375 against 1238.75. Both balance, but only
+   one of them is what Albert Lea was bidding. */
+const LIVE = readFileSync(new URL("../fixtures/graindesk-albertlea-2026-08-20.json", import.meta.url), "utf8");
 const URL_ = "https://marketplace.graindiscovery.com/api/public-sites/albertleaelevator/cash-bids";
 
 test("the sample yields four rows and the identity is EXACT, not approximate", () => {
@@ -37,6 +44,32 @@ test("their own label is kept, with the dates beside it", () => {
   /* Two offers on one commodity must never collapse into one row. */
   const corn = rows.filter((r) => r.commodity === "Corn").map((r) => r.delivery);
   assert.equal(new Set(corn).size, corn.length);
+});
+
+test("the captured board reads, and its identity is exact to the cent", () => {
+  const rows = extract(LIVE, URL_);
+  assert.equal(rows.length, 4);
+  assert.deepEqual([...new Set(rows.map((r) => r.location))], ["Albert Lea"]);
+  const corn = rows.filter((r) => r.commodity === "Corn");
+  assert.equal(corn.length, 2);
+  assert.equal(corn[0].cash, 4.2925);
+  assert.equal(corn[0].basis, -0.45);
+  assert.equal(corn[0].futuresPrice, 474.25);
+  for (const r of rows) {
+    assert.equal(Math.round((r.cash - r.basis) * 10000) / 100, r.futuresPrice,
+      `${r.commodity} ${r.delivery}`);
+  }
+});
+
+test("an empty comments string does not become part of the delivery label", () => {
+  /* The wire sends `"comments": ""`, not an absent key. Concatenating it would
+     produce " (03 Aug 2026 to 31 Aug 2026)" with a leading space and an empty
+     label -- ugly, and worse, it would differ from the same row on a day when
+     they do set a comment, so the row would look like a new one. */
+  for (const r of extract(LIVE, URL_)) {
+    assert.ok(!r.delivery.startsWith(" "), JSON.stringify(r.delivery));
+    assert.ok(!/^\(/.test(r.delivery), JSON.stringify(r.delivery));
+  }
 });
 
 test("a body that is not JSON is refused, and says so", () => {
