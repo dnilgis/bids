@@ -1,9 +1,9 @@
 {
- "generated": "2026-08-20T03:22:06.070Z",
+ "generated": "2026-08-20T03:47:02.130Z",
  "counts": {
   "total": 6,
-  "live": 5,
-  "refused": 1,
+  "live": 6,
+  "refused": 0,
   "broken": 0
  },
  "sources": [
@@ -22,8 +22,8 @@
    "platform": "graindesk",
    "url": "https://marketplace.graindiscovery.com/api/public-sites/albertleaelevator/cash-bids",
    "provenance": "scraped",
-   "pricedAt": "2026-08-20T03:20:23.532Z",
-   "checkedAt": "2026-08-20T03:22:06.070Z",
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
    "rows": 4,
    "health": "live",
    "status": "ok",
@@ -32,7 +32,7 @@
     "Corn"
    ],
    "verified": 4,
-   "reason": "no change (checked 0.0h ago, heartbeat at 6h)"
+   "reason": "price moved"
   },
   {
    "id": "babgrain-auburn",
@@ -49,12 +49,39 @@
    "platform": "graindesk",
    "url": "https://marketplace.graindiscovery.com/api/public-sites/babgrain/cash-bids",
    "provenance": "scraped",
-   "pricedAt": null,
-   "checkedAt": null,
-   "rows": 0,
-   "health": "refused",
-   "status": "refused",
-   "error": "01 Jun 2026 to 30 Jun 2026 Soybeans is -0.3075, outside 6 to 25 (soybeans band), while 2 other Soybeans row(s) are inside it. One row out of a band its own commodity sits inside is a bad number."
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
+   "rows": 4,
+   "withheld": [
+    {
+     "commodity": "Soybeans",
+     "rows": 1,
+     "why": "01 Jun 2026 to 30 Jun 2026 quotes July 2026 at 0. A futures quote of zero is not a quote: it makes this row's cash figure equal its own basis (-0.3075) and turns the cash - basis = futures check into 0 == 0, which verifies nothing."
+    },
+    {
+     "commodity": "Soybeans",
+     "rows": 1,
+     "why": "01 Jul 2026 to 31 Jul 2026 quotes July 2026 at 0. A futures quote of zero is not a quote: it makes this row's cash figure equal its own basis (-0.2575) and turns the cash - basis = futures check into 0 == 0, which verifies nothing."
+    },
+    {
+     "commodity": "Corn",
+     "rows": 1,
+     "why": "01 Jun 2026 to 30 Jun 2026 quotes July 2026 at 0. A futures quote of zero is not a quote: it makes this row's cash figure equal its own basis (-0.08) and turns the cash - basis = futures check into 0 == 0, which verifies nothing."
+    },
+    {
+     "commodity": "Corn",
+     "rows": 1,
+     "why": "01 Jul 2026 to 31 Jul 2026 quotes July 2026 at 0. A futures quote of zero is not a quote: it makes this row's cash figure equal its own basis (-0.08) and turns the cash - basis = futures check into 0 == 0, which verifies nothing."
+    }
+   ],
+   "health": "live",
+   "status": "ok",
+   "commodities": [
+    "Soybeans",
+    "Corn"
+   ],
+   "verified": 4,
+   "reason": "first run"
   },
   {
    "id": "boyceville",
@@ -71,8 +98,8 @@
    "platform": "cashbidssingle",
    "url": "https://bigriverbids.com/cashbidssingle-2121",
    "provenance": "scraped",
-   "pricedAt": "2026-08-20T03:22:06.070Z",
-   "checkedAt": "2026-08-20T03:22:06.070Z",
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
    "rows": 7,
    "health": "live",
    "status": "ok",
@@ -97,8 +124,8 @@
    "platform": "fragment",
    "url": "https://www.farmerscoopsociety.com/ajax/homepage/dtn-cash-bids",
    "provenance": "scraped",
-   "pricedAt": "2026-08-20T03:22:06.070Z",
-   "checkedAt": "2026-08-20T03:22:06.070Z",
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
    "rows": 11,
    "health": "live",
    "status": "ok",
@@ -124,8 +151,8 @@
    "platform": "aghost",
    "url": "https://flashgrains.com/index.cfm?show=11&mid=3",
    "provenance": "scraped",
-   "pricedAt": "2026-08-20T03:22:06.070Z",
-   "checkedAt": "2026-08-20T03:22:06.070Z",
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
    "rows": 4,
    "health": "live",
    "status": "ok",
@@ -151,8 +178,8 @@
    "platform": "aghost",
    "url": "https://flashgrains.com/index.cfm?show=11&mid=3",
    "provenance": "scraped",
-   "pricedAt": "2026-08-20T03:22:06.070Z",
-   "checkedAt": "2026-08-20T03:22:06.070Z",
+   "pricedAt": "2026-08-20T03:47:02.130Z",
+   "checkedAt": "2026-08-20T03:47:02.130Z",
    "rows": 4,
    "health": "live",
    "status": "ok",
