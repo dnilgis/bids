@@ -115,8 +115,19 @@ jobs:
         # in this public repository -- and the variable gets a line here.
         # Forgetting that line is not silent: poll.mjs names the variable, the
         # sources that need it and the remedy, once, before it fetches anything.
-        env:
-          DTN_CS_API_KEY: ${{ secrets.DTN_CS_API_KEY }}
+        #
+        # THE DTN_CS_API_KEY LINE THAT USED TO BE HERE IS GONE, AND ITS ABSENCE
+        # IS THE POINT. The thirteen Ag Partners sources are dtn-cs, and dtn-cs
+        # is read through a BROWSER: their gateway answers every server-side
+        # request with "the api key is valid, but it is valid to be used within
+        # a browser only", so poll.mjs loads Ag Partners' own public page and
+        # reads the response their own widget asks for. We hold no key.
+        #
+        # The line survived that change and cost a wrong answer rather than a
+        # broken run: asked on 2026-08-20 why the thirteen were not live, I read
+        # this file, saw a secret being passed, and told Sig they were waiting
+        # on DTN_CS_API_KEY. They were already live. A dead wire that still
+        # looks connected is worse than no wire.
         run: node scripts/poll.mjs
 
       - name: Commit if the price moved, and rebake the dashboard

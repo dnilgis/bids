@@ -1,0 +1,79 @@
+# WHAT BOARD IS EACH OF THESE CO-OPERATIVES RUNNING?
+#
+# The sweep on 2026-08-20 turned up ninety-two operators across eight states and
+# a single fact that decides everything after it: almost none of them serve a
+# price in their HTML. The board is a JavaScript widget, and the widget belongs
+# to one of about six platforms. So the useful question is not "what is Nexus
+# Cooperative's corn bid" but "which platform is Nexus running", because one
+# adapter written against the platform with the most towns behind it opens
+# dozens of operators at once.
+#
+# This is that question, asked for a LIST of pages in one run.
+#
+# IT RUNS HERE AND NOT IN THE WORKSPACE. Measured 2026-08-20: curl from the
+# workspace to premiercooperative.com, api.dtn.com and agpartners.net all
+# returned 000 -- an allowlist proxy that answers for no elevator on earth.
+# The runner has open egress and the Chromium this needs already installed.
+#
+# IT WRITES NOTHING AND PUBLISHES NO NUMBER. permissions is read, so it cannot.
+# The output is the log.
+
+name: discover
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Space-separated pages to ask INSTEAD of the candidate list (blank = the list)"
+        required: false
+        default: ""
+      start:
+        description: "Skip this many entries of the candidate list (resume a batch)"
+        required: false
+        default: "0"
+      limit:
+        description: "Ask at most this many (0 = all of them; the list is 56 and takes a while)"
+        required: false
+        default: "20"
+
+permissions:
+  contents: read          # it writes nothing, so it may not write anything
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    # Fifty-six pages at up to 45 seconds each is forty minutes in the worst
+    # case. The default limit of 20 fits comfortably; this ceiling is for
+    # someone who sets limit to 0 and walks away.
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # A signature that has stopped matching turns an operator into "no known
+      # platform", which reads like an answer. Cheap, and it runs first.
+      - name: Test the guards
+        run: node --test test/discover.test.mjs test/cdp.test.mjs test/workflows.test.mjs
+
+      # THE ARGUMENTS GO THROUGH env AND NOT INTO THE COMMAND LINE. A
+      # workflow_dispatch input is a string a human typed, and
+      # `run: node x.mjs ${{ inputs.urls }}` substitutes it into the shell
+      # before bash sees it. The safe form costs nothing.
+      #
+      # The `run: |` is also not decoration. On 2026-08-20 a single-line
+      # `run: echo "a $B: $C"` stopped both Emmert repositories building for
+      # seventeen hours, because the `: ` inside it opened a YAML mapping and
+      # the file stopped parsing. test/workflows.test.mjs now checks for it.
+      - name: Ask
+        env:
+          URLS: ${{ inputs.urls }}
+          START: ${{ inputs.start }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          if [ -n "$URLS" ]; then
+            node scripts/discover.mjs $URLS
+          else
+            node scripts/discover.mjs --list probe-lists/discover-candidates.txt \
+              --start "${START:-0}" --limit "${LIMIT:-20}"
+          fi
