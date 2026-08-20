@@ -38,6 +38,7 @@
 import { readFileSync } from "node:fs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
 import { capture } from "../lib/cdp.mjs";
+import { destinationReason } from "../lib/place.mjs";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => { const i = args.indexOf(`--${n}`); return i === -1 ? d : args[i + 1] ?? d; };
@@ -104,8 +105,14 @@ export function skeleton(rows, { siteId, url, page, operator }) {
       else if (k.includes("wheat")) bands.wheat = [3.0, 20.0];
     }
     const slug = String(mine[0].location).toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 22);
+    /* IS THIS EVEN A TOWN? Half of what these boards call a "location" is a
+       processor or a terminal, and a geocoder will answer for "Bunge PDC"
+       without complaint. Flagged here so the person filling the manifest is
+       asked rather than left to notice. */
+    const notATown = destinationReason(mine[0].location);
     out.push({
       _rows: mine.length, _commodities: commodities, _evidence: ev,
+      _notATown: notATown,
       manifest: {
         id: `${slug}`,
         operator: operator ?? "SET THIS",
@@ -167,20 +174,36 @@ export async function ask(path, { key, base = BASE } = {}) {
   }
 }
 
+/* A LIST OF SITE IDS, BECAUSE THERE ARE EIGHT OF THEM NOW.
+ *
+ * The 2026-08-20 discover sweep turned up eight DTN site ids carrying
+ * ninety-eight locations between them, every one readable by the adapter that
+ * already exists. Eight button presses, eight logs to stitch together, is the
+ * kind of friction that stops the work rather than slows it.
+ *
+ * One line per site:   <siteId>  <the customer's public page>  <operator name>
+ *
+ * The operator is the REST of the line, not a third token, because companies
+ * have spaces in their names and "Country Partners Cooperative" is not three
+ * co-operatives.
+ */
+export function parseProbeList(text) {
+  const out = [];
+  for (const raw of String(text ?? "").split(/\r?\n/)) {
+    const line = raw.replace(/\s+#.*$/, "").trim();
+    if (!line || line.startsWith("#")) continue;
+    const m = line.match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/);
+    /* A LINE THAT DOES NOT PARSE IS REPORTED, NOT SKIPPED. Silently dropping
+       one is how a co-operative goes missing and nobody notices which. */
+    if (!m) { out.push({ bad: line }); continue; }
+    out.push({ siteId: m[1], page: m[2], operator: (m[3] ?? "").trim() || null });
+  }
+  return out;
+}
+
 /* ---- the script ---------------------------------------------------------- */
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const site = flag("site");
-  const fixture = flag("fixture");
-  const page = flag("page");
-  if (!site) { console.error("need --site <siteId>"); process.exit(2); }
-  if (!fixture && !page) {
-    console.error("need --page <the customer's public cash-bids page>, or --fixture <file>.\n" +
-      "A direct call cannot work: DTN answers \"The api key is valid, but it is valid to be " +
-      "used within a browser only\".");
-    process.exit(2);
-  }
-
+async function probeOne({ site, page, fixture, operator }) {
   const url = `${BASE}/sites/${site}/cash-bids?units=us`;
   let body, from = url;
 
@@ -193,8 +216,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     try {
       got = await capture({ pageUrl: page, target: `${BASE}/sites/${site}/cash-bids` });
     } catch (e) {
-      console.error(`::error title=nothing captured::${e.message}`);
-      process.exit(1);
+      /* ONE SITE FAILING MUST NOT END THE BATCH. Seven good answers are worth
+         more than a clean exit code. */
+      console.error(`::error title=nothing captured for ${site}::${e.message}`);
+      return { site, ok: false, why: e.message };
     }
     console.log(`captured HTTP ${got.status}, ${got.body.length} bytes from ${got.url}`);
     body = got.body;
@@ -203,7 +228,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   let rows;
   try { rows = extract(body, from); }
-  catch (e) { console.error(`the adapter refused it: ${e.message}`); process.exit(1); }
+  catch (e) { console.error(`the adapter refused ${site}: ${e.message}`); return { site, ok: false, why: e.message }; }
 
   const all = roundingEvidence(rows);
   console.log(`\n${rows.length} row(s), ${new Set(rows.map((r) => r.locationId)).size} location(s)`);
@@ -214,11 +239,55 @@ if (import.meta.url === `file://${process.argv[1]}`) {
                 : "NO RULE EXPLAINS EVERY ROW")));
   console.log(`residuals seen (cents): ${all.residuals.join(", ")}`);
 
-  const skels = skeleton(rows, { siteId: site, url, page, operator: flag("operator") });
+  const skels = skeleton(rows, { siteId: site, url, page, operator });
   for (const sk of skels) {
     console.log(`\n--- ${sk.manifest.location} (${sk.manifest.locationId}) — ${sk._rows} row(s): ` +
                 `${sk._commodities.join(", ")} — ${sk._evidence.mode ?? "rounding UNRESOLVED"}`);
+    if (sk._notATown) console.log(`    NOT A TOWN? ${sk._notATown}`);
     console.log(JSON.stringify(sk.manifest, null, 2));
   }
+  return { site, ok: true, rows: rows.length, locations: skels.length,
+           flagged: skels.filter((sk) => sk._notATown).length, mode: all.mode ?? null };
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const listPath = flag("list");
+  const jobs = listPath
+    ? parseProbeList(readFileSync(listPath, "utf8"))
+    : [{ siteId: flag("site"), page: flag("page"), fixture: flag("fixture"), operator: flag("operator") }];
+
+  const broken = jobs.filter((j) => j.bad);
+  for (const b of broken) console.error(`::error title=unreadable line::${b.bad}`);
+  const todo = jobs.filter((j) => !j.bad);
+
+  if (!todo.length || !todo[0].siteId) {
+    console.error("need --site <siteId> with --page <url> or --fixture <file>, or --list <file>.\n" +
+      "A direct call cannot work: DTN answers \"The api key is valid, but it is valid to be " +
+      "used within a browser only\".");
+    process.exit(2);
+  }
+  for (const j of todo)
+    if (!j.fixture && !j.page) { console.error(`${j.siteId}: no page and no fixture`); process.exit(2); }
+
+  const results = [];
+  for (const [i, j] of todo.entries()) {
+    console.log(`\n${"=".repeat(72)}\n[${i + 1}/${todo.length}] ${j.operator ?? j.siteId}  (${j.siteId})\n${"=".repeat(72)}`);
+    results.push(await probeOne({ site: j.siteId, page: j.page, fixture: j.fixture, operator: j.operator }));
+  }
+
+  console.log(`\n${"=".repeat(72)}\nTALLY`);
+  let towns = 0, flagged = 0;
+  for (const r of results) {
+    if (!r.ok) { console.log(`  FAILED   ${r.site}  ${r.why}`); continue; }
+    towns += r.locations;
+    flagged += r.flagged ?? 0;
+    console.log(`  ok       ${r.site.padEnd(10)} ${String(r.rows).padStart(4)} row(s)  ` +
+                `${String(r.locations).padStart(3)} location(s)` +
+                `${r.flagged ? `, ${r.flagged} not obviously a town` : ""}  rounding: ${r.mode ?? "UNRESOLVED — do not enable"}`);
+  }
+  console.log(`  ${towns} location(s) across ${results.filter((r) => r.ok).length} of ${todo.length} site(s)` +
+              (flagged ? `; ${flagged} need a human to say whether they are towns` : "") +
+              (broken.length ? `; ${broken.length} unreadable line(s)` : ""));
   console.log(`\nWrote nothing. Fill in every SET THIS, geocode each address, then enable.`);
+  if (results.some((r) => !r.ok) || broken.length) process.exitCode = 1;
 }

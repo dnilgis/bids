@@ -185,3 +185,83 @@ test("the skeleton states round-cent when that is what was measured", () => {
   const [s] = skeleton(rows, { siteId: "E0266901", url: "https://api.dtn.com/x", page: "https://p.test/b" });
   assert.equal(s.manifest.cashRounding, "round-cent");
 });
+
+/* ---- EIGHT SITE IDS, ONE RUN ---------------------------------------------
+ *
+ * The 2026-08-20 discover sweep found eight DTN site ids carrying ninety-eight
+ * locations between them, every one of them readable by the adapter that
+ * already exists. Probing them one at a time is eight button presses and eight
+ * logs to stitch together, which is the kind of friction that stops work
+ * rather than slowing it.
+ */
+import { parseProbeList } from "../scripts/dtn-probe.mjs";
+
+test("a line is a site id, a page, and the rest is the operator", () => {
+  // Companies have spaces in their names. "Country Partners Cooperative" is
+  // one co-operative, not three.
+  assert.deepEqual(
+    parseProbeList("E0149201 https://x.test/bids Country Partners Cooperative"),
+    [{ siteId: "E0149201", page: "https://x.test/bids", operator: "Country Partners Cooperative" }]);
+});
+
+test("an operator is optional", () => {
+  assert.deepEqual(parseProbeList("E1 https://x.test/b"),
+    [{ siteId: "E1", page: "https://x.test/b", operator: null }]);
+});
+
+test("comments and blank lines carry provenance and are not sites", () => {
+  const list = parseProbeList([
+    "# where these came from",
+    "",
+    "e0030901  https://x.test/a  Ag-Land FS   # 13 locations",
+    "   ",
+    "E0220701  https://y.test/b  United Quality Cooperative",
+  ].join("\n"));
+  assert.equal(list.length, 2);
+  assert.equal(list[0].operator, "Ag-Land FS", "the trailing count must not become part of the name");
+  assert.equal(list[1].siteId, "E0220701");
+});
+
+test("A LINE THAT DOES NOT PARSE IS REPORTED, NOT SKIPPED", () => {
+  // Silently dropping one is how a co-operative goes missing and nobody
+  // notices which one.
+  const list = parseProbeList("E1 https://x.test/a Fine Co\njustonetoken\nE2 https://y.test/b Also Fine");
+  assert.equal(list.length, 3);
+  assert.deepEqual(list[1], { bad: "justonetoken" });
+  assert.equal(list.filter((x) => x.bad).length, 1);
+});
+
+test("the shipped list parses, and every entry is usable", () => {
+  // The file itself, not a fixture of it: a list that has gone unparseable is
+  // a run that probes nothing.
+  const text = readFileSync(new URL("../probe-lists/dtn-sites.txt", import.meta.url), "utf8");
+  const list = parseProbeList(text);
+  assert.deepEqual(list.filter((x) => x.bad), [], "unreadable lines in the shipped list");
+  assert.ok(list.length >= 8, `expected the eight measured site ids, got ${list.length}`);
+  for (const e of list) {
+    assert.match(e.siteId, /^[eE]\d{7}$/, `${e.siteId} is not a DTN site id`);
+    assert.doesNotThrow(() => new URL(e.page), `${e.siteId}: ${e.page} is not a url`);
+    assert.ok(e.operator, `${e.siteId} has no operator name`);
+  }
+  const ids = list.map((e) => e.siteId.toLowerCase());
+  assert.equal(new Set(ids).size, ids.length, "the same site id is listed twice");
+  assert.ok(!ids.includes("e0172401"), "Ag Partners is already live and must not be re-probed");
+});
+
+test("THE SKELETON SAYS WHEN A LOCATION IS NOT OBVIOUSLY A TOWN", () => {
+  /* Ag Partners' own roster is the proof: "Red Wing Grain LLC" is a joint
+     venture's company name, and the source file that ships today says so in
+     its note -- worked out by hand at the time. The probe now asks the
+     question before a manifest is written rather than after a pin lands in
+     the wrong place. Goodhue beside it is a town and must stay unflagged, or
+     the warning means nothing. */
+  const body = readFileSync(new URL("../fixtures/dtn-cs-agpartners-e0172401.json", import.meta.url), "utf8");
+  const rows = extract(body, "https://api.dtn.com/markets/sites/e0172401/cash-bids");
+  const skels = skeleton(rows, { siteId: "e0172401", url: "u", page: "p", operator: "Ag Partners Cooperative" });
+
+  const byName = Object.fromEntries(skels.map((s) => [s.manifest.location, s]));
+  assert.ok(byName["Red Wing Grain LLC"]._notATown, "the joint venture was not flagged");
+  assert.match(byName["Red Wing Grain LLC"]._notATown, /Red Wing Grain LLC/);
+  for (const town of ["Goodhue", "Eyota", "Traverse"])
+    assert.equal(byName[town]._notATown, null, `${town} is a town and was flagged`);
+});

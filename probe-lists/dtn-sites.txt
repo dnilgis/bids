@@ -1,0 +1,26 @@
+# DTN CONTENT SERVICES SITE IDS, FOR scripts/dtn-probe.mjs --list
+#
+#   <siteId>  <the customer's own public cash-bids page>  <operator>
+#
+# Every line below was MEASURED by scripts/discover.mjs on 2026-08-20: the page
+# was loaded in a real browser and this is the site id its own widget asked
+# api.dtn.com for. None of it is guessed, and none of it is a key -- the key is
+# theirs, it is public in their page because a browser widget cannot work
+# otherwise, and we neither hold nor store it.
+#
+# Ag Partners (e0172401) is deliberately absent: it is already live.
+#
+# The counts are what discover saw in the payload, and they include DELIVERY
+# DESTINATIONS as well as the co-op's own elevators -- ADM, Bunge, Valero and
+# the ethanol plants quote through these boards too. A destination is not a
+# town and must not be geocoded as one. The probe's skeletons are where that
+# gets sorted out, one at a time.
+
+e0030901  https://fscooperatives.com/aglandfs/agriculture/cash-bids                         Ag-Land FS            # 13 locations
+E0149201  https://www.countrypartnerscoop.com/grain/cash-bids                               Country Partners Cooperative  # 13
+E0266901  https://www.premiercooperative.com/agricultural/detailed-cash-bids                Premier Cooperative   # 16
+e0067101  https://www.allied.coop/grain/cash-bids                                           Allied Cooperative    # 10
+e0274901  https://www.countryvisionscoop.com/grain/cash-bids                                Country Visions Cooperative  # 10
+E0415001  https://www.cliffordfarmerscoop.com/grain/cash-bids                               Clifford Farmers Coop Elevator  # 3
+E0031301  https://fscooperatives.com/insightfs/agriculture/grain-marketing/cash-bids        Insight FS            # 3
+E0220701  https://www.uqcoop.com/grain-cash-bids                                            United Quality Cooperative  # 1
