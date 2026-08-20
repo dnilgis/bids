@@ -37,11 +37,11 @@ import { captureAll } from "../lib/cdp.mjs";
  * knowing its key is a better answer than "unknown", because it says which
  * adapter to write next. */
 export const SIGNATURES = [
-  { platform: "dtn-cs", adapter: "lib/adapters/dtn-cs.mjs",
+  { platform: "dtn-cs", adapter: "lib/adapters/dtn-cs.mjs", family: /(^|\.)dtn\.com$/,
     test: (u) => /(^|\.)api\.dtn\.com$/.test(host(u)) && /\/markets\/sites\/[^/]+\/cash-bids/.test(path(u)),
     id: (u) => ({ siteId: path(u).match(/\/markets\/sites\/([^/]+)\/cash-bids/)?.[1] ?? null }) },
 
-  { platform: "graindesk", adapter: "lib/adapters/graindesk.mjs",
+  { platform: "graindesk", adapter: "lib/adapters/graindesk.mjs", family: /graindiscovery\.com$/,
     test: (u) => /graindiscovery\.com$/.test(host(u)) && /\/api\/public-sites\//.test(path(u)),
     id: (u) => ({ slug: path(u).match(/\/api\/public-sites\/([^/]+)/)?.[1] ?? null }) },
 
@@ -61,19 +61,24 @@ export const SIGNATURES = [
      sweep found these families on dozens of co-operatives each, so the next
      adapter written should be the one with the most towns behind it, and that
      is a question this log can answer instead of a guess. */
-  { platform: "stonehedge", adapter: null,
+  { platform: "stonehedge", adapter: null, family: /stonex\.com$/,
     test: (u) => /stonehedge\.stonex\.com$/.test(host(u)) || /stonex/i.test(host(u)),
     id: (u) => ({ key: param(u, "key") ? "<present>" : null }) },
 
-  { platform: "barchart", adapter: null,
+  { platform: "barchart", adapter: null, family: /barchart\.com$/,
     test: (u) => /barchart\.com$/.test(host(u)),
     id: () => ({}) },
 
   { platform: "bushel", adapter: null,
-    test: (u) => /bushelpowered\.com$/.test(host(u)) || /bushelsites\.com$/.test(host(u)),
+    /* bushelops.com TOO. The 2026-08-20 run watched Gateway FS call
+       centre.bushelops.com and futures.bushelops.com and reported "no known
+       platform", because this line listed only the two hostnames we had
+       already seen. Three brands, one company. */
+    test: (u) => /(bushelpowered|bushelsites|bushelops)\.com$/.test(host(u)),
+    family: /(bushelpowered|bushelsites|bushelops)\.com$/,
     id: () => ({}) },
 
-  { platform: "agricharts", adapter: null,
+  { platform: "agricharts", adapter: null, family: /agricharts\.com$/,
     test: (u) => /agricharts\.com$/.test(host(u)) || /\/markets\/cashgrid\.php/i.test(path(u)),
     id: () => ({}) },
 ];
@@ -97,8 +102,14 @@ export function findFeeds(result) {
   for (const r of result.responses ?? []) {
     const f = fingerprint(r.url);
     if (!f) continue;
+    /* bytes IS NULL WHEN THERE IS NO BODY, and 0 only when the body was read
+       and was empty. The 2026-08-20 run printed "0B" for StoneHedge, Barchart
+       and Pearl City alike; three of those never handed a body over and one
+       answered 403, and the log made them look like the same finding. This is
+       the null-is-not-zero rule that countLocations already follows. */
     out.push({ ...f, url: r.url, status: r.status, mime: r.mime,
-               bytes: r.body?.length ?? 0, body: r.body ?? null });
+               bytes: r.body == null ? null : r.body.length,
+               truncated: r.truncated === true, body: r.body ?? null });
   }
   return dedupe(out);
 }
@@ -112,9 +123,49 @@ function dedupe(feeds) {
   for (const f of feeds) {
     const { url, status, mime, bytes, body, ...key } = f;
     const k = JSON.stringify(key);
-    if (!seen.has(k) || (seen.get(k).bytes === 0 && bytes > 0)) seen.set(k, f);
+    /* PREFER A COPY THAT ACTUALLY HAS A BODY. This compared `bytes === 0`
+       until bytes learned to be null for "no body handed over", at which point
+       `null === 0` is false and the empty copy won every time. Ask the
+       question directly instead of through its old proxy. */
+    const better = !seen.has(k) || (seen.get(k).body == null && body != null);
+    if (better) seen.set(k, f);
   }
   return [...seen.values()];
+}
+
+/* WHAT DID THIS PAGE ACTUALLY TELL US?
+ *
+ * Three outcomes, and collapsing any two of them loses the batch's value:
+ *
+ *   feeds        we can name the platform; write or reuse an adapter
+ *   no-platform  the page loaded and runs something we do not recognise --
+ *                THIS IS THE QUEUE, and the hosts it did call are the lead
+ *   unreachable  the page never loaded; this says nothing about the operator
+ *                and belongs in a retry, not in a finding
+ *
+ * `no-platform` and `unreachable` both present as zero feeds, which is exactly
+ * why this is a function with a test rather than an `if` in a print statement.
+ */
+export function verdict(result, feeds = findFeeds(result)) {
+  if (feeds.length) return { kind: "feeds", feeds };
+  if (result?.navError) return { kind: "unreachable", why: result.navError };
+  if (result?.error) return { kind: "unreachable", why: result.error };
+  const hosts = [...new Set((result?.responses ?? []).map((r) => hostOf(r.url)).filter(Boolean))];
+  /* A NEAR MISS IS NOT A MISS. Five Star called api.dtn.com 204 times and this
+     reported "no known platform", because no response matched the ONE DTN path
+     we know. The host is the lead: it says which vendor they run and that our
+     signature for that vendor is too narrow. Losing that to a shrug is how a
+     readable board gets filed as unreadable. */
+  /* The lead CARRIES ITS HOST, because not every host in a vendor's domain is
+     a board: Topflight calls agwx.dtn.com, which is DTN's weather product and
+     no use to us. Naming the host lets that be dismissed in a glance instead
+     of costing a probe. */
+  const leads = [];
+  for (const sig of SIGNATURES) {
+    if (!sig.family) continue;
+    for (const h of hosts) if (sig.family.test(h)) leads.push({ platform: sig.platform, host: h });
+  }
+  return { kind: "no-platform", hosts, leads };
 }
 
 /* HOW MANY TOWNS ARE BEHIND THIS FEED?
@@ -136,6 +187,35 @@ export function countLocations(body) {
     const vals = rows.map((r) => r?.[key]).filter((v) => v != null);
     if (vals.length !== rows.length) continue;
     return new Set(vals.map((v) => (typeof v === "object" ? (v.id ?? v.name ?? JSON.stringify(v)) : v))).size;
+  }
+  return null;
+}
+
+function hostOf(u) { return host(u); }
+/* THE NAMES BEHIND THE FEED, not just how many.
+ *
+ * Ag-Land FS came back on 2026-08-20 as "dtn-cs, siteId e0030901, locations in
+ * payload: 13" -- correct, and not enough to write a single source file,
+ * because a source file needs the town. The bytes were already in hand; the
+ * log just did not say. Thirteen towns are thirteen source files.
+ *
+ * Returns null, never [], when the shape is not one it can read: an empty
+ * roster and an unreadable one are different findings. */
+export function roster(body) {
+  if (!body) return null;
+  let j; try { j = JSON.parse(body); } catch { return null; }
+  const rows = Array.isArray(j) ? j : (j.data ?? j.bids ?? j.results ?? j.items ?? null);
+  if (!Array.isArray(rows) || !rows.length) return null;
+  for (const key of ["location", "site", "locationName", "deliveryLocation", "elevator"]) {
+    const vals = rows.map((r) => r?.[key]).filter((v) => v != null);
+    if (vals.length !== rows.length) continue;
+    const seen = new Map();
+    for (const v of vals) {
+      const id = typeof v === "object" ? (v.id ?? v.name ?? null) : v;
+      const name = typeof v === "object" ? (v.name ?? String(v.id ?? "")) : String(v);
+      if (!seen.has(String(id))) seen.set(String(id), { id, name });
+    }
+    return [...seen.values()];
   }
   return null;
 }
@@ -200,38 +280,48 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   console.log(`asking ${urls.length} page(s), one at a time\n`);
   const tally = new Map();
-  let withFeed = 0;
+  let withFeed = 0, unreachable = 0;
 
   for (const [i, pageUrl] of urls.entries()) {
     console.log(`── [${i + 1}/${urls.length}] ${pageUrl}`);
     const result = await captureAll({ pageUrl });
     const feeds = findFeeds(result);
-    if (result.error) console.log(`   note: ${result.error}`);
+    const v = verdict(result, feeds);
     console.log(`   ${result.responses.length} response(s), ${feeds.length} feed(s)` +
                 `${result.quiet ? "" : ", network never went quiet"}`);
 
-    if (!feeds.length) {
-      /* A page with no recognised feed is the interesting case, so it gets the
-         evidence rather than a shrug: these hosts are the next signature. */
-      const hosts = [...new Set(result.responses.map((r) => host(r.url)).filter(Boolean))];
-      console.log(`   NO KNOWN PLATFORM. hosts seen: ${hosts.slice(0, 15).join(", ") || "none"}`);
+    if (v.kind === "unreachable") {
+      unreachable++;
+      console.log(`   THE PAGE DID NOT LOAD: ${v.why}`);
+      console.log(`   -- a retry, NOT a finding about this operator`);
+    } else if (v.kind === "no-platform") {
+      /* The interesting case, so it gets the evidence rather than a shrug:
+         these hosts are the next signature. */
+      console.log(`   NO KNOWN PLATFORM. hosts seen: ${v.hosts.slice(0, 15).join(", ") || "none"}`);
+      for (const l of v.leads)
+        console.log(`   LEAD: ${l.host} is ${l.platform}'s domain -- the vendor is right, our signature is too narrow`);
     } else withFeed++;
 
     for (const f of feeds) {
-      const { platform, adapter, url, status, mime, bytes, body, ...id } = f;
+      const { platform, adapter, url, status, mime, bytes, truncated, body, ...id } = f;
       const towns = countLocations(body);
+      const names = roster(body);
       tally.set(platform, (tally.get(platform) ?? 0) + 1);
       console.log(`   ${platform}${adapter ? "" : "  (NO ADAPTER YET)"}`);
-      console.log(`     ${status} ${mime} ${bytes}B  ${url}`);
+      const size = bytes == null ? "NO BODY HANDED OVER" : `${bytes}B${truncated ? " (TRUNCATED at the cap)" : ""}`;
+      console.log(`     ${status} ${mime} ${size}  ${url}`);
       const facts = Object.entries(id).filter(([, v]) => v != null);
       if (facts.length) console.log(`     ${facts.map(([k, v]) => `${k}=${v}`).join("  ")}`);
       console.log(`     locations in payload: ${towns ?? "not countable from this shape"}`);
+      if (names) for (const n of names) console.log(`       ${String(n.id).padStart(8)}  ${n.name}`);
     }
     console.log("");
   }
 
   console.log("── tally");
-  console.log(`pages asked: ${urls.length}; pages with a recognised feed: ${withFeed}`);
+  console.log(`pages asked: ${urls.length}; with a recognised feed: ${withFeed}; ` +
+              `unreachable (retry these): ${unreachable}; ` +
+              `loaded but unrecognised (the queue): ${urls.length - withFeed - unreachable}`);
   /* NO SILENT CAPS. A slice that covered 20 of 56 must say so, or the tally
      reads as a complete survey of the list. */
   if (urls.length < all.length)

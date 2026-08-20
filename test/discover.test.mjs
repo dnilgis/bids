@@ -151,3 +151,118 @@ test("the candidate list carries its own provenance", () => {
     readList("# a comment\n\nhttps://a.test/bids   # Someone Co-op, WI\n\n  https://b.test/x\n"),
     ["https://a.test/bids", "https://b.test/x"]);
 });
+
+/* THREE OUTCOMES, AND TWO OF THEM LOOK IDENTICAL IF YOU ONLY COUNT FEEDS.
+ *
+ * Found by inspection on 2026-08-20: pointed at a closed port, captureAll
+ * returned zero responses, no error, and a clean-looking result -- exactly
+ * what a page that loads fine and runs an unrecognised widget returns. Across
+ * a batch of fifty-six that is the difference between the adapter queue and a
+ * retry list. Page.navigate reports it; nothing was asking.
+ */
+import { verdict } from "../scripts/discover.mjs";
+
+const DTN = "https://api.dtn.com/markets/sites/e0172401/cash-bids?units=us";
+
+test("a recognised feed is a finding", () => {
+  const v = verdict({ responses: [{ url: DTN, status: 200, mime: "application/json", body: "[]" }] });
+  assert.equal(v.kind, "feeds");
+  assert.equal(v.feeds.length, 1);
+});
+
+test("a page that loaded but ran something unknown is THE QUEUE", () => {
+  const v = verdict({ responses: [
+    { url: "https://portal.bushelpowered.com/x/cash-bids", status: 200, mime: "application/json", body: "[]" },
+  ], navError: null });
+  // bushel has a signature, so use a host that has none:
+  const w = verdict({ responses: [
+    { url: "https://widgets.example.test/board", status: 200, mime: "text/html", body: "" },
+  ], navError: null });
+  assert.equal(w.kind, "no-platform");
+  assert.deepEqual(w.hosts, ["widgets.example.test"]);
+  assert.equal(v.kind, "feeds", "bushel is recognised even without an adapter");
+});
+
+test("a page that never loaded is NOT a finding about the operator", () => {
+  const v = verdict({ responses: [], navError: "net::ERR_NAME_NOT_RESOLVED" });
+  assert.equal(v.kind, "unreachable");
+  assert.equal(v.why, "net::ERR_NAME_NOT_RESOLVED");
+});
+
+test("a thrown capture is unreachable, not an empty page", () => {
+  const v = verdict({ responses: [], error: "the devtools socket never opened" });
+  assert.equal(v.kind, "unreachable");
+});
+
+test("a navigation error does not mask a feed that still arrived", () => {
+  // A page can report a nav error for a sub-resource path and still have
+  // delivered the board. The feed wins: we have the bytes.
+  const v = verdict({ responses: [{ url: DTN, status: 200, mime: "application/json", body: "[]" }],
+                      navError: "net::ERR_ABORTED" });
+  assert.equal(v.kind, "feeds");
+});
+
+test("no responses and no error at all is still the queue, not a retry", () => {
+  assert.equal(verdict({ responses: [] }).kind, "no-platform");
+});
+
+/* WHAT THE FIRST REAL RUN TAUGHT, 2026-08-20.
+ * Twenty co-operative pages on the runner. Six recognised feeds, and four
+ * defects in this script that only real traffic could have shown.
+ */
+import { roster } from "../scripts/discover.mjs";
+
+test("bushelops.com is Bushel too", () => {
+  // Gateway FS called centre.bushelops.com and futures.bushelops.com and was
+  // filed as "no known platform".
+  for (const h of ["https://centre.bushelops.com/x", "https://futures.bushelops.com/y",
+                   "https://portal.bushelpowered.com/z", "https://a.o.bushelsites.com/cash-bids"])
+    assert.equal(fingerprint(h)?.platform, "bushel", h);
+});
+
+test("a vendor's domain with no matching path is a LEAD, not a shrug", () => {
+  // Five Star called api.dtn.com 204 times; the run said "no known platform".
+  const v = verdict({ responses: [
+    { url: "https://api.dtn.com/some/other/path", status: 200, mime: "application/json" },
+    { url: "https://www.google-analytics.com/collect", status: 200, mime: "" },
+  ] });
+  assert.equal(v.kind, "no-platform");
+  assert.deepEqual(v.leads, [{ platform: "dtn-cs", host: "api.dtn.com" }]);
+});
+
+test("a lead names its host, so a weather widget can be dismissed", () => {
+  // Topflight calls agwx.dtn.com. Right vendor, wrong product.
+  assert.equal(verdict({ responses: [{ url: "https://agwx.dtn.com/w", status: 200, mime: "" }] })
+    .leads[0].host, "agwx.dtn.com");
+});
+
+test("NO BODY is not an EMPTY body", () => {
+  // The run printed "0B" for StoneHedge, Barchart and a 403 from Pearl City.
+  // Three handed over nothing; one answered with nothing. Same display.
+  const none  = findFeeds({ responses: [{ url: KNOWN.stonehedge, status: 200, mime: "text/html", body: null }] })[0];
+  const empty = findFeeds({ responses: [{ url: KNOWN.barchart,   status: 200, mime: "text/html", body: "" }] })[0];
+  assert.equal(none.bytes, null, "a body that never arrived");
+  assert.equal(empty.bytes, 0, "a body that arrived and was empty");
+});
+
+test("a truncated body says so", () => {
+  const f = findFeeds({ responses: [
+    { url: KNOWN.agricharts, status: 200, mime: "text/html", body: "x".repeat(400000), truncated: true }] })[0];
+  assert.equal(f.truncated, true);
+});
+
+test("the roster gives the towns, which is what a source file needs", () => {
+  const body = readFileSync(new URL("../fixtures/dtn-cs-agpartners-e0172401.json", import.meta.url), "utf8");
+  const names = roster(body);
+  assert.equal(names.length, countLocations(body));
+  assert.deepEqual(names.map((n) => n.name).sort(),
+    ["Eyota", "Goodhue", "Red Wing Grain LLC", "Traverse"]);
+  assert.ok(names.every((n) => n.id != null), "a town without its id cannot be keyed");
+});
+
+test("an unreadable roster is null, not an empty list", () => {
+  assert.equal(roster("[]"), null);
+  assert.equal(roster("not json"), null);
+  assert.equal(roster('[{"cash":1}]'), null);
+  assert.equal(roster(null), null);
+});

@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { redactUrl, matchesTarget, findBrowser, capture, BROWSER_CANDIDATES } from "../lib/cdp.mjs";
+import { redactUrl, matchesTarget, findBrowser, capture, captureAll, looksLikeData, BROWSER_CANDIDATES } from "../lib/cdp.mjs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
 import { transportOf, PLATFORM_TRANSPORT } from "../lib/sources.mjs";
 
@@ -153,4 +153,55 @@ test("CHROME_BIN is believed when it is real and ignored when it is not", () => 
   assert.equal(findBrowser({ CHROME_BIN: "/gone" }, (p) => p === "/usr/bin/chromium"), "/usr/bin/chromium");
   /* BIDS_BROWSER still wins, and still refuses to fall back if it is wrong. */
   assert.equal(findBrowser({ CHROME_BIN: "/gh/chrome", BIDS_BROWSER: "/mine" }, () => true), "/mine");
+});
+
+/* captureAll, against a real browser.
+ *
+ * The point of it is that it is NOT told what to look for, so a mock that
+ * replays a scripted socket would be testing the mock. */
+
+test("captureAll finds the feed without being told its url", { skip: browser ? false : "no browser on this machine" }, async () => {
+  const FEED = '[{"location":{"id":1,"name":"Alpha"},"cashPrice":4.11}]';
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/api/cash-bids")) {
+      res.writeHead(200, { "content-type": "application/json" }); return res.end(FEED);
+    }
+    if (req.url.startsWith("/hero.png")) { res.writeHead(200, {"content-type":"image/png"}); return res.end("x"); }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><img src="/hero.png"><script>
+      fetch("/api/cash-bids?apikey=THEIRPUBLICKEY&units=us").then(r=>r.json())</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 40000, quietMs: 1500 });
+    assert.equal(r.error, undefined, r.error);
+    assert.equal(r.navError, null, "the page loaded, so there is no navigation error");
+    const feed = r.responses.find((x) => x.url.includes("/api/cash-bids"));
+    assert.ok(feed, `feed not seen among ${r.responses.map((x) => x.url).join(", ")}`);
+    assert.equal(feed.body, FEED, "the body is kept, not just the url");
+    assert.ok(!JSON.stringify(r.responses).includes("THEIRPUBLICKEY"), "their key must not reach the log");
+  } finally { srv.close(); }
+});
+
+test("A PAGE THAT NEVER LOADED SAYS SO", { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* Zero feeds on a dead host and zero feeds on a page running an
+     unrecognised widget are the same output unless this is populated, and
+     across a batch that is the difference between a retry and the adapter
+     queue. The 2026-08-20 run hit it twice -- coopfe.com and ludlowcoop.com
+     both came back with "0 response(s) ... hosts seen: none".
+
+     A CLOSED PORT WE OWNED A MOMENT AGO, so the refusal is certain and the
+     port is a legal one -- Chromium answers ERR_UNSAFE_PORT for a few low
+     ports, which would pass this test for the wrong reason. */
+  const srv = createServer(() => {});
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const dead = `http://127.0.0.1:${srv.address().port}/`;
+  await new Promise((r) => srv.close(r));
+
+  const r = await captureAll({ pageUrl: dead, browser, timeoutMs: 15000, quietMs: 1000 });
+  assert.ok(r, "captureAll must never throw: one dead page must not lose the batch");
+  assert.ok(r.navError, `expected a navigation error, got ${JSON.stringify(r.navError)}`);
+  assert.match(r.navError, /ERR_CONNECTION_REFUSED/);
+  assert.equal(r.responses.length, 0);
 });
