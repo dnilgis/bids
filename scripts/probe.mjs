@@ -31,9 +31,18 @@ const flag = (name, dflt = null) => {
   return i === -1 ? dflt : args[i + 1];
 };
 const has = (name) => args.includes(`--${name}`);
-const urls = args.filter((a) => /^https?:\/\//.test(a));
+/* A FLAG'S VALUE IS NOT A TARGET.
+   `--referer https://…` put the referer itself in the URL list, so the first
+   run probed United Cooperative's own page before it got to the component it
+   was pointed at. Harmless there, misleading in general: the log claimed to
+   have read something nobody asked for. */
+const VALUED = ["referer", "context", "max-bundle-bytes", "raw"];
+const takenByFlag = new Set(VALUED.map((f) => args.indexOf(`--${f}`)).filter((i) => i !== -1).map((i) => i + 1));
+const urls = args.filter((a, i) => /^https?:\/\//.test(a) && !takenByFlag.has(i));
 
 const MAX_BUNDLE_BYTES = Number(flag("max-bundle-bytes", 8_000_000));
+const MAX_CHUNKS = Number(flag("max-chunks", 25));
+const seenChunks = new Set();
 const CONTEXT = Number(flag("context", 90));
 const REFERER = flag("referer");
 
@@ -68,6 +77,37 @@ export function assetsOf(html, base) {
     iframes: [...new Set(grab(/<iframe[^>]+src=["']([^"']+)["']/gi))],
     links: [...new Set(grab(/<link[^>]+href=["']([^"']+)["']/gi))],
   };
+}
+
+/* WHERE A WIDGET'S KEY ACTUALLY LIVES.
+   `var x = …` stops at the first newline, and every widget on earth is
+   configured with a multi-line object literal:
+       window.dtn.cashBids.createCashBidsWidget({
+         apiKey: '…', siteId: …, container: '#dtn-gd-cash-bids-container-…'
+       })
+   The first version reported the variable names around it and threw the
+   argument away. Print the whole call. */
+const CONFIG_SIGNAL = /(apiKey|api_key|siteId|site_id|customerId|token|createCashBids|createFutures|cashBids|dtn\.|stonex|widgetId)/i;
+
+/** Inline script blocks that look like widget configuration, lightly trimmed. */
+export function configBlocks(html, budget = 1500) {
+  const out = [];
+  for (const m of String(html).matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+    const body = m[1].trim();
+    if (!body || !CONFIG_SIGNAL.test(body)) continue;
+    out.push(body.length > budget ? `${body.slice(0, budget)}\n…[${body.length - budget} more chars]` : body);
+  }
+  return out;
+}
+
+/* CHUNK NAMES DO NOT START WITH A SLASH.
+   The StoneX component is a Vite app: its route handler lives in a chunk that
+   is imported at runtime, and the main bundle stores those chunk names WITHOUT
+   a leading slash -- `$ve = function(n){return "/"+n}` prepends it later. A
+   matcher that only accepts rooted paths therefore never sees the one file
+   that contains the call we are looking for. */
+export function chunkNames(text) {
+  return [...new Set([...String(text).matchAll(/["'`](?:\.?\/)?((?:assets|static\/js|_next\/static\/chunks|dist\/assets)\/[\w.@~/-]+\.js)["'`]/g)].map((m) => m[1]))];
 }
 
 /** Inline `window.x = …` / `var x = …` assignments, which is where widget config lives. */
@@ -146,8 +186,16 @@ async function probe(url, referer) {
 
   const isHtml = /html/i.test(res.type) || /^\s*<(!doctype|html)/i.test(res.body);
   if (!isHtml) {
-    line(`\n-- not HTML; treating the body as a bundle --`);
-    reportBundle(res.body);
+    /* PRINT THE BODY, NOT A SUMMARY OF IT.
+       An endpoint like /ajax/pages/dtn-cash-bids returns the answer itself --
+       a fragment or a blob of JSON. Scanning it for URLs and printing nothing
+       else is how the first run came back saying "0 URL-ish strings" about a
+       response that may well have had every price in it. */
+    const n = Number(flag("raw", res.bytes <= 200_000 ? res.bytes : 20_000));
+    line(`\n-- body (first ${Math.min(n, res.bytes)} of ${res.bytes} bytes) --`);
+    line(res.body.slice(0, n));
+    line(`\n-- and what looks like an endpoint inside it --`);
+    reportBundle(res.body, res.finalUrl);
     return;
   }
 
@@ -158,6 +206,9 @@ async function probe(url, referer) {
   line(`\n-- ${scripts.length} script(s) --`); scripts.forEach((u) => line(`  ${u}`));
   const cfg = inlineConfig(res.body);
   line(`\n-- ${cfg.length} inline assignment(s) --`); cfg.slice(0, 40).forEach((c) => line(`  ${c}`));
+  const blocks = configBlocks(res.body);
+  line(`\n-- ${blocks.length} inline block(s) that look like widget config --`);
+  blocks.forEach((b, i) => line(`\n  [block ${i + 1}]\n${b.split("\n").map((l) => `    ${l}`).join("\n")}`));
   if (links.length) { line(`\n-- ${links.length} link(s) --`); links.slice(0, 20).forEach((u) => line(`  ${u}`)); }
 
   const host = new URL(res.finalUrl).host;
@@ -170,11 +221,29 @@ async function probe(url, referer) {
     if (!b.ok) { line(`FAILED — ${b.error}`); continue; }
     line(`${b.status}  ${b.type}  ${b.bytes} bytes  ${b.ms}ms`);
     if (b.bytes > MAX_BUNDLE_BYTES) { line(`(over --max-bundle-bytes ${MAX_BUNDLE_BYTES}, skipped)`); continue; }
-    reportBundle(b.body);
+    reportBundle(b.body, b.finalUrl);
+
+    /* One level of chunks, deduped across the whole run, capped. A Vite app's
+       interesting code is never in the entry bundle. */
+    const chunks = chunkNames(b.body)
+      .map((c) => { try { return new URL(c, b.finalUrl).href; } catch { return null; } })
+      .filter((u) => u && !seenChunks.has(u));
+    if (!chunks.length) continue;
+    line(`\n-- ${chunks.length} chunk(s) named by this bundle --`);
+    for (const c of chunks.slice(0, MAX_CHUNKS)) {
+      seenChunks.add(c);
+      rule(`CHUNK  ${c}`);
+      const k = await get(c, { referer: b.finalUrl });
+      if (!k.ok) { line(`FAILED — ${k.error}`); continue; }
+      line(`${k.status}  ${k.type}  ${k.bytes} bytes  ${k.ms}ms`);
+      if (k.bytes > MAX_BUNDLE_BYTES) { line("(too big, skipped)"); continue; }
+      reportBundle(k.body, k.finalUrl);
+    }
+    if (chunks.length > MAX_CHUNKS) line(`\n(${chunks.length - MAX_CHUNKS} more chunk(s) not followed — raise --max-chunks)`);
   }
 }
 
-function reportBundle(text) {
+function reportBundle(text, from) {
   const eps = endpointStrings(text, CONTEXT);
   line(`\n-- ${eps.length} URL-ish string(s) --`);
   for (const e of eps) line(`  ${e.url}\n      …${e.ctx}…`);

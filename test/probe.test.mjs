@@ -72,3 +72,55 @@ test("a script WITH src contributes no inline config", () => {
   const html = `<script src="/x.js"></script><script>var a = 1</script>`;
   assert.deepEqual(inlineConfig(html), ["a = 1"]);
 });
+
+/* ---- v2: what the first run proved the probe was blind to ---- */
+import { configBlocks, chunkNames } from "../scripts/probe.mjs";
+
+test("a multi-line widget config call is captured whole", () => {
+  /* Albert Lea's page configures its board with an object literal spanning
+     several lines. The assignment matcher stopped at the first newline and
+     reported the variable name, throwing away the key that matters. */
+  const html = `<script>
+    var widgetId = 'dtn-gd-cash-bids-container-6a8640c03ac38';
+    window.dtn.cashBids.createCashBidsWidget({
+      container: '#' + widgetId,
+      apiKey: 'THE-KEY-WE-NEED',
+      siteId: 12345
+    });
+  </script>`;
+  const [block] = configBlocks(html);
+  assert.ok(block, "no config block found");
+  assert.match(block, /apiKey: 'THE-KEY-WE-NEED'/);
+  assert.match(block, /siteId: 12345/);
+});
+
+test("an inline script with no config signal is not reported as config", () => {
+  assert.deepEqual(configBlocks(`<script>var a=1;function b(){return 2}</script>`), []);
+});
+
+test("chunk names without a leading slash are found", () => {
+  /* The StoneX component is a Vite app: `$ve = function(n){return "/"+n}`
+     prepends the slash at runtime, so the chunk name is stored bare and a
+     rooted-path matcher never sees the file holding the call we want. */
+  const bundle = `const m={"src/pages/Bids.tsx":()=>Ac(()=>import("./assets/Bids-CkJ9x1.js"),[])};n("assets/vendor-Q1w2E3.js");p("/absolute/assets/no-Match.js")`;
+  const names = chunkNames(bundle);
+  assert.ok(names.includes("assets/Bids-CkJ9x1.js"), `got ${JSON.stringify(names)}`);
+  assert.ok(names.includes("assets/vendor-Q1w2E3.js"));
+});
+
+test("next.js and webpack chunk shapes are recognised too", () => {
+  const b = `a("_next/static/chunks/pages/bids-abc123.js");c("static/js/main.9f2a.js")`;
+  const names = chunkNames(b);
+  assert.ok(names.includes("_next/static/chunks/pages/bids-abc123.js"), `got ${JSON.stringify(names)}`);
+  assert.ok(names.includes("static/js/main.9f2a.js"));
+});
+
+test("a flag's value is never probed as a target", () => {
+  /* `--referer <url>` put the referer in the target list, so the first run
+     probed a page nobody asked for and labelled it as the requested one. */
+  const args = ["--referer", "https://example.com/parent", "https://example.com/target", "--all-origins"];
+  const VALUED = ["referer", "context", "max-bundle-bytes", "raw"];
+  const taken = new Set(VALUED.map((f) => args.indexOf(`--${f}`)).filter((i) => i !== -1).map((i) => i + 1));
+  const urls = args.filter((a, i) => /^https?:\/\//.test(a) && !taken.has(i));
+  assert.deepEqual(urls, ["https://example.com/target"]);
+});
