@@ -84,6 +84,45 @@ export function slugVariants(name) {
   return [...new Set([squashed, camel, hyphen, dropCoop, ...bothWays].filter((s) => s.length >= 4))];
 }
 
+/* THE CONTROL GROUP. Every token on this list is known to answer on the shared
+ * marketplace host, so a sweep that does not find them has not proved anything
+ * about the ones it also did not find.
+ *
+ * WHY THIS EXISTS. The 2026-08-20 sweep tried 1,252 tokens and reported five
+ * hits. `sunriseagcoop` -- confirmed working the day before -- was not among
+ * them, and the run looked exactly like a clean result. The cause was mundane:
+ * probe-lists/gd-candidates.txt says "Sunrise Cooperative" and the company is
+ * "Sunrise Ag Cooperative", so the token was never generated and never tried.
+ * Nothing in the output could have told you that. A sweep whose negative
+ * answer carries no information (a 401 is returned for private AND for
+ * nonexistent) has to prove it can still find what it already knows, or
+ * "no new hits" and "the sweep is broken" are the same log line.
+ *
+ * NOT lockiefarms: that customer is on its own API host -- see the Rf override
+ * map quoted in lib/adapters/graindesk.mjs -- so it is expected to fail here
+ * and would be a false alarm. */
+export const CONTROL_TOKENS = [
+  "albertleaelevator", "babgrain", "sunriseagcoop",
+  "stLawrenceGrain", "pinebluffsfeedandgrain", "ramseygrain",
+];
+
+/* A 401 is returned for a private token AND for one that does not exist, so it
+ * says nothing. Anything ELSE says something. On 2026-08-20 five candidates
+ * came back 500 with `{"error":"Error fetching bids"}` or `Error fetching
+ * configs` -- the server got as far as looking the company up and then failed,
+ * which a nonexistent token does not do. Those are leads, not noise. */
+export const isLead = (r) => r.status !== 401 && r.verdict !== "HIT";
+
+/* Did the sweep find what it already knows? Pure, and exported, because it was
+   written inside the script body first and nothing could reach it to test —
+   which is how the check that guards against a silent sweep became a silent
+   check. */
+export function controlReport(results, control = CONTROL_TOKENS) {
+  const found = new Set((results ?? []).filter((r) => r?.verdict === "HIT").map((r) => r.token));
+  const lost = control.filter((t) => !found.has(t));
+  return { ok: lost.length === 0, lost, checked: control.length };
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function ask(token, base = BASE) {
@@ -135,7 +174,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const lines = readFileSync(flag("file"), "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
     for (const l of lines) tokens.push(...(flag("as-names") !== null && args.includes("--as-names") ? slugVariants(l) : [l]));
   }
-  tokens = [...new Set(tokens)];
+  /* The control group rides along on every sweep. Six extra requests. */
+  const before = new Set(tokens);
+  tokens = [...new Set([...tokens, ...CONTROL_TOKENS])];
+  const added = CONTROL_TOKENS.filter((t) => !before.has(t));
+  if (added.length) console.log(`(adding ${added.length} control token(s): ${added.join(", ")})`);
   if (!tokens.length) {
     console.error("usage: node scripts/gd-sweep.mjs [--tokens a,b] [--names \"Some Co-op,Other\"] [--file list.txt [--as-names]] [--concurrency 4] [--delay 150]");
     process.exit(2);
@@ -146,10 +189,24 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const elevators = [...new Set(hits.flatMap((h) => h.destinations.map((d) => `${h.token}/${d}`)))];
   console.log(`\n${hits.length} token(s) answered, carrying ${elevators.length} destination(s):`);
   for (const h of hits) for (const d of h.destinations) console.log(`  ${d}  (token ${h.token})`);
-  const odd = results.filter((r) => r.status !== 401 && r.verdict !== "HIT");
+  const odd = results.filter(isLead);
   if (odd.length) {
-    console.log(`\n${odd.length} answer(s) that were neither a hit nor a plain 401 — worth a look:`);
+    console.log(`\n${odd.length} answer(s) that were neither a hit nor a plain 401. A 401 means ` +
+      `"private OR nonexistent" and says nothing; anything else means the server got somewhere, ` +
+      `so these are LEADS and worth trying again later:`);
     for (const o of odd) console.log(`  ${o.token}: ${o.verdict}${o.body ? ` — ${JSON.stringify(o.body)}` : ""}`);
+  }
+
+  /* THE CONTROL GROUP IS CHECKED LAST AND LOUDEST. */
+  const { ok: controlOk, lost } = controlReport(results);
+  if (!controlOk) {
+    console.log(`\n::error title=the sweep could not find what it already knows::` +
+      `${lost.length} control token(s) did not answer: ${lost.join(", ")}. Until that is ` +
+      `explained, "no new hits" from this run means nothing — the endpoint, the network or ` +
+      `this script may be the thing that changed.`);
+    process.exitCode = 1;
+  } else {
+    console.log(`\ncontrol: all ${CONTROL_TOKENS.length} known token(s) answered, so a miss above is a real miss.`);
   }
   console.log(`\nSUMMARY_JSON ${JSON.stringify({ tried: results.length, hits: hits.map((h) => ({ token: h.token, destinations: h.destinations, commodities: h.commodities, offers: h.offers })) })}`);
 }

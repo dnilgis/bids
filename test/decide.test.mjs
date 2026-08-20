@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide, commitMessage, HEARTBEAT_H } from "../lib/decide.mjs";
+import { decide, commitMessage, HEARTBEAT_H, movedSources } from "../lib/decide.mjs";
 
 const bid = (cash) => ({
   seq: 0, commodity: "Corn", delivery: "August", futuresMonth: "Sep 26",
@@ -236,4 +236,54 @@ test("a previous file with no checkedAt does not invent a 26-year-old reading", 
   assert.equal(v.write, true);
   assert.match(v.reason, /no readable checkedAt/);
   assert.doesNotMatch(v.reason, /\d{4,}\.\dh/, "must not print an invented age");
+});
+
+/* ---- which sources moved, for the step that tells the two sites ---------- */
+
+test("a move is reported and a heartbeat is not", () => {
+  /* This repository commits on EVERY run, because data/index.json carries
+     `generated: now`. So "did we commit" cannot mean "the price moved", and
+     the price moving is the only thing the Emmert sites need to hear about.
+     decide() already tells a move from a heartbeat; this is that answer per
+     source, in a form a shell step can read. */
+  assert.deepEqual(movedSources([
+    { id: "boyceville", wrote: true, changed: true },
+    { id: "albertlea", wrote: true, changed: false },   // heartbeat
+    { id: "flashgrain-thorp", wrote: false, changed: false },
+  ]), ["boyceville"]);
+});
+
+test("a source that refused is never reported as having moved", () => {
+  /* A refusal writes nothing and holds the last good file. Telling the sites
+     to rebuild off a file that did not change would be a rebuild for nothing,
+     and worse, would read in their log as a price move that never happened. */
+  assert.deepEqual(movedSources([
+    { id: "boyceville", health: "refused", wrote: false, changed: false },
+    { id: "babgrain-auburn", health: "broken", wrote: false },
+  ]), []);
+});
+
+test("it is total: no results, junk results, missing fields", () => {
+  assert.deepEqual(movedSources([]), []);
+  assert.deepEqual(movedSources(null), []);
+  assert.deepEqual(movedSources(undefined), []);
+  assert.deepEqual(movedSources([null, {}, { wrote: true }, { changed: true }]), []);
+  /* Truthy-but-not-true must not count: `wrote` and `changed` are booleans and
+     anything else is a bug upstream, not a licence to guess. */
+  assert.deepEqual(movedSources([{ id: "x", wrote: 1, changed: "yes" }]), []);
+});
+
+test("A DRY RUN NEVER TELLS THE SITES ANYTHING", () => {
+  /* This is the case `wrote` is carrying, and it is the whole reason the check
+     is on both fields. decide() never returns changed-without-write, so from
+     decide's side the two look redundant — but poll.mjs sets `wrote` only when
+     `verdict.write && !dryRun`, so on a dry run or a --fixture read a source is
+     `changed: true, wrote: false`.
+     Same doctrine as "a fixture can never write": test data must never be one
+     forgotten flag away from firing a rebuild of two live sites. */
+  assert.deepEqual(movedSources([{ id: "boyceville", wrote: false, changed: true }]), []);
+  assert.deepEqual(movedSources([
+    { id: "boyceville", wrote: false, changed: true },
+    { id: "albertlea", wrote: false, changed: true },
+  ]), []);
 });

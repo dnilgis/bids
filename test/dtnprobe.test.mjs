@@ -40,8 +40,13 @@ test("a rule that explains most rows explains none of them", () => {
   assert.equal(roundingEvidence([r(), r(), r({ futuresPrice: 479.75 })]).mode, "floor-cent");
   /* One row a whole cent out: floor cannot explain it, exact cannot either. */
   assert.equal(roundingEvidence([r(), r(), r({ futuresPrice: 480.5 })]).mode, null);
-  /* Cash a quarter cent HIGH is not anybody's rounding. */
-  assert.equal(roundingEvidence([r({ futuresPrice: 478.75 })]).mode, null);
+  /* This assertion USED TO READ "cash a quarter cent high is not anybody's
+     rounding", and it was wrong -- written when the only rules were `exact`
+     and `floor-cent`. A residual of -0.25 is precisely what rounding to the
+     nearest cent produces, and Premier Cooperative does it 161 rows out of
+     161. The old assertion was not weakened to make a new feature pass; it was
+     a claim about the world that the world corrected. */
+  assert.equal(roundingEvidence([r({ futuresPrice: 478.75 })]).mode, "round-cent");
 });
 
 test("a row with no quote is not counted as evidence for anything", () => {
@@ -131,4 +136,52 @@ test("a failure comes back as a value, not as a thrown error", () => {
       assert.match(r.error, /ENOTFOUND/);
     });
   } finally { globalThis.fetch = real; }
+});
+
+/* ---- Premier Cooperative rounds where Ag Partners floors ----------------- */
+
+test("a board that ROUNDS is named round-cent, and floor does not explain it", () => {
+  /* Found 2026-08-20 by running this probe against Premier Cooperative's own
+     page: 161 rows across 16 locations, `round 161/161`, `floor 89/161`,
+     residuals {-0.5, -0.25, 0, 0.25}. Two DTN customers on one platform round
+     their own cash cell two different ways, so the mode has to be measured per
+     source and can never be inherited from the platform. */
+  const r = (cash, basis, futuresPrice) => ({ cash, basis, futuresPrice });
+  const premier = [r(4.29, -0.5, 479.25), r(4.29, -0.5, 478.5), r(4.29, -0.5, 479), r(4.30, -0.5, 479.75)];
+  const ev = roundingEvidence(premier);
+  assert.equal(ev.mode, "round-cent");
+  assert.deepEqual(ev.modes, ["round-cent"]);
+  assert.equal(ev.round, 4);
+  assert.equal(ev.floor, 2, "floor cannot explain a cash cell that rounded DOWN's neighbour up");
+  assert.deepEqual(ev.residuals, [-0.5, -0.25, 0, 0.25]);
+});
+
+test("when two rules both explain every row it names neither, and says so", () => {
+  /* Residuals all inside [0, 0.5] fit floor-cent AND round-cent, and the two
+     are different promises: floor would go on to accept +0.9, round would go
+     on to accept -0.4. Picking one would be guessing about rows nobody has
+     seen yet. */
+  const r = (cash, basis, futuresPrice) => ({ cash, basis, futuresPrice });
+  const both = [r(4.29, -0.5, 479), r(4.29, -0.5, 479.25)];
+  const ev = roundingEvidence(both);
+  assert.deepEqual(ev.modes, ["floor-cent", "round-cent"]);
+  assert.equal(ev.mode, null, "ambiguous is not a mode");
+});
+
+test("an exactly-balancing board is `exact` and not reported as ambiguous", () => {
+  /* Every rule explains a residual of zero. That is not an ambiguity, it is
+     the strictest answer being available, and `exact` means the identity guard
+     stays strict — which is what boyceville, albertlea and flashgrain run on. */
+  const ev = roundingEvidence([{ cash: 4.29, basis: -0.5, futuresPrice: 479 }]);
+  assert.deepEqual(ev.modes, ["exact"]);
+  assert.equal(ev.mode, "exact");
+});
+
+test("the skeleton states round-cent when that is what was measured", () => {
+  const r = (cash, basis, futuresPrice) => ({
+    cash, basis, futuresPrice, locationId: "26480", location: "Westby", commodity: "Corn",
+  });
+  const rows = [r(4.29, -0.5, 479.25), r(4.29, -0.5, 478.5), r(4.30, -0.5, 479.75)];
+  const [s] = skeleton(rows, { siteId: "E0266901", url: "https://api.dtn.com/x", page: "https://p.test/b" });
+  assert.equal(s.manifest.cashRounding, "round-cent");
 });

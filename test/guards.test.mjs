@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import {
   buildFile, Refused, checkMove, bandFor, validBand, classifyIdentity,
   scaleFutures, futuresScale, rowKey, DEFAULT_BANDS, KNOWN_UNBANDED,
+  isRefusal, TornRead, CASH_ROUNDING,
 } from "../lib/board.mjs";
 import { basisToCents, filterLocation, normLocationId, parseTicks } from "../lib/parse.mjs";
 
@@ -362,4 +363,77 @@ test("a fraction outside the eighths grid refuses rather than guessing, in eithe
   /* parseNum() would happily return the leading integer for both of these. */
   for (const t of ["478'8", "478'9", "478-8", "478-9"])
     assert.equal(parseTicks(t), null, t);
+});
+
+/* ------------------------------------------------------------------ */
+/* 9. their page's fault, or ours                                      */
+/* ------------------------------------------------------------------ */
+
+test("every adapter's own refusal is a refusal, not a broken reader", () => {
+  /* The two answers go to different people. "refused" means we read a page and
+     it was not the board we wanted -- their side, hold the last good file.
+     "broken" means our reader threw where it did not expect to -- our side.
+     poll.mjs decided this with a list of ONE class name, written when there was
+     one adapter that had one. There are four, so three of them have been
+     reported as "broken" for what was in fact their page changing shape. */
+  class AghostRefused extends Error {}
+  class GrainDeskRefused extends Error {}
+  class FragmentRefused extends Error {}
+  class DtnCsRefused extends Error {}
+  for (const C of [AghostRefused, GrainDeskRefused, FragmentRefused, DtnCsRefused])
+    assert.equal(isRefusal(new C("their page changed")), true, C.name);
+  assert.equal(isRefusal(new Refused("x")), true);
+  assert.equal(isRefusal(new TornRead("x")), true, "a torn read is a Refused subclass and must stay one");
+});
+
+test("a real crash is NOT a refusal, or every bug we write becomes their fault", () => {
+  assert.equal(isRefusal(new TypeError("x is not a function")), false);
+  assert.equal(isRefusal(new Error("boom")), false);
+  assert.equal(isRefusal(new RangeError("boom")), false);
+  assert.equal(isRefusal(null), false);
+  assert.equal(isRefusal(undefined), false);
+  assert.equal(isRefusal("a string, which is not an error at all"), false);
+  assert.equal(isRefusal({ constructor: { name: "Refused" } }), true,
+    "a duck that says Refused is treated as one; adapters are the only things that throw these");
+  /* A class merely CONTAINING the word must not qualify, or "RefusedSomething"
+     and "NotRefusedYet" would drift in. */
+  class RefusedLater extends Error {}
+  assert.equal(isRefusal(new RefusedLater("x")), false);
+});
+
+test("round-cent takes half a cent EITHER way, and is not a wider floor-cent", () => {
+  /* Premier Cooperative rounds; Ag Partners floors. Two customers of one
+     platform, two different arithmetics, so the mode is a property of the
+     source and never of the platform. The two windows overlap but neither
+     contains the other, which is exactly why naming the wrong one is a real
+     mistake rather than a conservative one. */
+  const floor = CASH_ROUNDING["floor-cent"], round = CASH_ROUNDING["round-cent"];
+  assert.equal(round(-0.5), true);
+  assert.equal(round(0.5), false, "half rounds UP, so +0.5 is a residual their arithmetic never produces");
+  assert.equal(round(0.49), true);
+  assert.equal(round(-0.51), false);
+  assert.equal(round(0.51), false);
+  assert.equal(floor(-0.25), false, "floor never sees a negative residual");
+  assert.equal(floor(0.75), true);
+  assert.equal(round(0.75), false, "and round never sees three quarters");
+  assert.deepEqual(Object.keys(CASH_ROUNDING).sort(), ["exact", "floor-cent", "round-cent"]);
+});
+
+test("a rounded board publishes with round-cent and refuses without it", () => {
+  const row = (delivery, cash, basis, futuresPrice) => ({
+    seq: 0, source: "x", locationId: "1", location: "T", commodity: "Corn",
+    delivery, cash, basis, basisCents: Math.round(basis * 100), futures: "@C6U",
+    futuresPrice, futuresAt: null, futuresFlag: null, change: null,
+  });
+  const rows = [row("A", 4.29, -0.5, 479.25), row("B", 4.29, -0.5, 478.5),
+                row("C", 4.30, -0.5, 479.75), row("D", 4.29, -0.5, 479)];
+  const src = (o) => ({ locationId: "1", location: "T", operator: "Op", bands: { corn: [2, 12] }, ...o });
+  const build = (o) => buildFile("<html></html>", {
+    now: "2026-08-20T16:00:00.000Z", sourceUrl: "https://example.test/x",
+    source: src(o), extract: () => rows });
+  assert.equal(build({ cashRounding: "round-cent" }).file.count, 4);
+  assert.throws(() => build({}), Refused);
+  /* And declaring the WRONG one refuses too, which is what makes the knob safe
+     to set: the residuals stop fitting and the board says so. */
+  assert.throws(() => build({ cashRounding: "floor-cent" }), Refused);
 });

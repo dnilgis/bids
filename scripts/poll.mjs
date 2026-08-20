@@ -41,8 +41,8 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildFile, Refused, serialise } from "../lib/board.mjs";
-import { decide } from "../lib/decide.mjs";
+import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
+import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
 import { capture } from "../lib/cdp.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
@@ -249,6 +249,9 @@ for (const s of todo) {
     r.commodities = [...new Set(verdict.file.bids.map((b) => b.commodity))];
     r.verified = built.verified;
     r.reason = verdict.reason;
+    /* A move, as opposed to a heartbeat. The Emmert sites are told about the
+       first and not the second — see movedSources() in lib/decide.mjs. */
+    r.changed = verdict.changed;
     if (verdict.write && !dryRun) {
       mkdirSync(DATA, { recursive: true });
       writeFileSync(out, serialise(verdict.file));
@@ -264,7 +267,7 @@ for (const s of todo) {
     /* An adapter's own refusal is a refusal, not a crash: it means we read a
        page and it was not the board we wanted, which is exactly what Refused
        means. Only an unexpected throw is "broken". */
-    r.health = (e instanceof Refused || e?.constructor?.name === "AghostRefused") ? "refused" : "broken";
+    r.health = isRefusal(e) ? "refused" : "broken";
     r.status = r.health;
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the
@@ -298,6 +301,13 @@ if (!dryRun) {
   writeFileSync(join(DATA, "index.json"), JSON.stringify(index, null, 1) + "\n");
 }
 
+/* WHO MOVED, FOR THE STEP THAT TELLS THE SITES.
+   Written every run, empty when nothing moved, so the workflow step can read
+   one file rather than parse a log. Not written on a dry run, for the same
+   reason nothing else is. */
+const moved = movedSources(results);
+if (!dryRun) writeFileSync(join(ROOT, ".changed-sources"), moved.join("\n") + (moved.length ? "\n" : ""));
+
 const wrote = results.filter((r) => r.wrote);
 const summary = `${ok.length} ok, ${index.counts.refused} refused, ${index.counts.broken} broken`;
 if (!dryRun)
@@ -305,7 +315,8 @@ if (!dryRun)
     ? `bids: ${wrote.map((r) => r.id).join(", ")} (${summary})\n`
     : `bids: heartbeat (${summary})\n`);
 
-console.log(`\n${summary}${wrote.length ? ` | wrote ${wrote.length}` : " | no change"}`);
+console.log(`\n${summary}${wrote.length ? ` | wrote ${wrote.length}` : " | no change"}` +
+            `${moved.length ? ` | moved: ${moved.join(", ")}` : ""}`);
 
 /* Fail only when EVERY source refused. One elevator redesigning their page
    must never stop the other ninety-nine. */

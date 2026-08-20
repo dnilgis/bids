@@ -63,12 +63,22 @@ export function roundingEvidence(rows) {
   }
   /* Named only when a rule explains EVERY testable row. A rule that explains
      most of them explains none of them: the rows it misses are the ones that
-     would have told us something. */
-  let mode = null;
-  if (testable && exact === testable) mode = "exact";
-  else if (testable && floor === testable) mode = "floor-cent";
+     would have told us something.
+     AND ONLY WHEN EXACTLY ONE RULE DOES. A board whose residuals all sit in
+     [0, 0.5] is explained by floor-cent AND by round-cent, and the two are not
+     the same promise -- floor would go on to accept +0.9 and round would go on
+     to accept -0.4. Naming either one would be picking, and picking is what
+     this function exists not to do. Say both and let a person look. */
+  const explains = [];
+  if (testable && exact === testable) explains.push("exact");
+  if (testable && floor === testable) explains.push("floor-cent");
+  if (testable && round === testable) explains.push("round-cent");
+  /* `exact` subsumes the others by definition, so it is not an ambiguity. */
+  const modes = explains.includes("exact") ? ["exact"] : explains;
   return {
-    testable, exact, round, floor, mode,
+    testable, exact, round, floor,
+    modes,
+    mode: modes.length === 1 ? modes[0] : null,
     residuals: [...residuals].sort((a, b) => a - b),
   };
 }
@@ -198,7 +208,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const all = roundingEvidence(rows);
   console.log(`\n${rows.length} row(s), ${new Set(rows.map((r) => r.locationId)).size} location(s)`);
   console.log(`whole feed: exact ${all.exact}/${all.testable}, round ${all.round}/${all.testable}, ` +
-              `floor ${all.floor}/${all.testable} -> ${all.mode ?? "NO RULE EXPLAINS EVERY ROW"}`);
+              `floor ${all.floor}/${all.testable} -> ` +
+              (all.mode ?? (all.modes.length
+                ? `AMBIGUOUS: ${all.modes.join(" and ")} both explain every row`
+                : "NO RULE EXPLAINS EVERY ROW")));
   console.log(`residuals seen (cents): ${all.residuals.join(", ")}`);
 
   const skels = skeleton(rows, { siteId: site, url, page, operator: flag("operator") });
