@@ -43,7 +43,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFile, Refused, serialise } from "../lib/board.mjs";
 import { decide } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf } from "../lib/sources.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -79,11 +79,33 @@ const rows = readdirSync(join(ROOT, "sources"))
   .filter((f) => f.endsWith(".json"))
   .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")));
 
-const { sources: enabled, errors } = loadSources(rows);
+const { sources: enabled, errors, warnings } = loadSources(rows);
 for (const e of errors) console.error(`::error title=Bad source::${e}`);
+/* Things worth saying that must not cost an elevator its reading -- a source
+   with no coordinates is read and published and simply cannot be placed on the
+   map. These used to be on the same list as the fatal ones, which meant a
+   deliberate `lat: null` silently dropped the source at load. */
+for (const w of warnings ?? []) console.error(`::warning title=Source note::${w}`);
 /* A malformed source is dropped, not half-loaded -- but it must not pass
    quietly, or a typo silently removes an elevator from the site. */
 if (errors.length && !enabled.length) { console.error("FAILED: no usable sources"); process.exit(1); }
+
+/* WHICH SECRETS THIS RUN NEEDS, SAID ONCE AND UP FRONT.
+ *
+ * A source that needs a key and cannot find it refuses with a precise message,
+ * which is right -- but thirteen sources on one site id produce thirteen copies
+ * of it, and the first thing anybody does with thirteen identical refusals is
+ * look at the elevator instead of at the repository settings. So the answer is
+ * also given once, before any fetch, naming the variable and the remedy. */
+const needed = [...new Set(enabled.map((s) => s.apiKeyEnv).filter(Boolean))];
+for (const name of needed) {
+  if (process.env[name]) continue;
+  const who = enabled.filter((s) => s.apiKeyEnv === name).map((s) => s.id);
+  console.error(`::error title=${name} is not set::${who.length} source(s) need it and will ` +
+    `refuse: ${who.join(", ")}. Add ${name} as a repository secret AND pass it into the ` +
+    `poll step's env: in .github/workflows/poll.yml. It must never be written into a ` +
+    `manifest or a URL.`);
+}
 
 const todo = only ? enabled.filter((s) => s.id === only) : enabled;
 if (!todo.length) { console.error(`FAILED: no enabled source matches ${only ?? "(any)"}`); process.exit(1); }
@@ -97,12 +119,48 @@ async function getPage(s) {
   if (pages.has(key)) return pages.get(key);
   const p = (async () => {
     const problems = [];
+    const wire = wireOf(s.platform);
+    const headers = {
+      "User-Agent": UA,
+      Accept: wire === "json" ? "application/json" : "text/html",
+    };
+
+    /* A KEY IS A HEADER, NEVER A QUERY PARAMETER, AND NEVER A FILE.
+     *
+     * DTN Content Services accepts `apikey` either way. A header is the one to
+     * use: a query parameter ends up in the log line, in the error message
+     * poll.mjs prints when a fetch fails, in any redirect, and in
+     * `problems.join()` below -- and this is a public repository whose Actions
+     * logs anybody can read.
+     *
+     * A missing secret REFUSES rather than fetching without it. Fetching
+     * without it would come back 401, be reported as "their page is down", and
+     * send somebody looking at the elevator's website instead of at the repo
+     * settings. Saying which variable is unset ends that in one line. */
+    if (s.apiKeyEnv) {
+      const key = process.env[s.apiKeyEnv];
+      if (!key)
+        throw new Error(`needs ${s.apiKeyEnv} and it is not set. Add it as a repository ` +
+                        `secret and pass it into this step's env. It must never be written ` +
+                        `into a manifest or a URL.`);
+      headers.apikey = key;
+    }
+
     for (const url of urlsFor(s)) {
       try {
-        const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html" }, redirect: "follow" });
+        const res = await fetch(url, { headers, redirect: "follow" });
         if (!res.ok) { problems.push(`${url} -> HTTP ${res.status}`); continue; }
         const html = await res.text();
-        if (html.length < 500) { problems.push(`${url} -> ${html.length} bytes, too short`); continue; }
+        /* THE 500-BYTE FLOOR IS AN HTML ASSUMPTION. It exists to catch a shell
+           page served in place of a board. A JSON feed for a one-location
+           elevator can legitimately be three hundred bytes, and it would have
+           been thrown away with a message about their page having changed. The
+           JSON adapters each say something precise about an empty or malformed
+           body, so on those the body goes straight to them. */
+        if (wire !== "json" && html.length < 500) {
+          problems.push(`${url} -> ${html.length} bytes, too short`); continue;
+        }
+        if (!html.length) { problems.push(`${url} -> empty response`); continue; }
         return { html, url };
       } catch (e) { problems.push(`${url} -> ${e.message}`); }
     }
