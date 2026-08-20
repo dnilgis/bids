@@ -65,31 +65,40 @@ jobs:
 
       # ---- built-in targets, only when no URLs were supplied ----
 
-      # SOLVED, AND WORTH CAPTURING PROPERLY.
-      #   GET https://marketplace.graindiscovery.com/api/public-sites/<token>/cash-bids
-      # The adapter shipped against a SAMPLE that came back through a
-      # summarising reader, not raw bytes. This prints the real body so the
-      # fixture can be replaced with a capture -- the exact step skipped twice
-      # on Flash Grain, both times to our cost.
-      - name: DTN Grain Desk — capture Albert Lea's raw JSON
+      # HOW MANY ELEVATORS ARE WAITING BEHIND THAT ENDPOINT?
+      #
+      # There is no index: /api/public-sites is 404, /api/public-sites/<token>
+      # alone is 404, and an unknown token is 401 {"error":"Unauthorized"}. The
+      # only discovery surface is asking. So ask -- once per candidate, four at
+      # a time, 150ms apart -- using every operator name we have: the 266
+      # distinct facilities in today's Barchart pull plus every company met
+      # while mapping platforms tonight.
+      #
+      # A hit is worth more than one elevator: DTN's own default token,
+      # stLawrenceGrain, carries two destinations.
+      - name: DTN Grain Desk — sweep for company tokens
+        if: inputs.urls == ''
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          node scripts/gd-sweep.mjs --file probe-lists/gd-candidates.txt --as-names \
+            --concurrency 4 --delay 150
+
+      # DTN PUBLISHES A GRAIN BIDS REST API, AND A TEST KEY FOR IT.
+      #   spec: cp-docs.dtn.com/content-packages/api-specs/markets-grain-bids-api/
+      #         markets-grain-bids-oas-1.1.yaml
+      #   test key: oViXqthDGFNVw3IvAsnKrFG1AcfPyA6b  (documented, sample data)
+      # The docs say the key reaches "commodity, elevator, FIPS region and USDA
+      # region details" — an elevator directory, which is the thing this whole
+      # census has been missing. The spec came back as binary through every
+      # reader available in the workspace; fetch it raw here and I will read the
+      # paths off the log.
+      - name: DTN Markets Grain Bids — the OpenAPI spec, raw
         if: inputs.urls == ''
         continue-on-error: true
         run: |
           node scripts/probe.mjs --raw 400000 \
-            'https://marketplace.graindiscovery.com/api/public-sites/albertleaelevator/cash-bids'
-
-      # If the token really is just the slug, these answer too — and each one
-      # that does is an elevator added by writing a JSON file.
-      - name: DTN Grain Desk — do other slugs answer?
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          for t in northsideelevator flashgrain unitedcooperative farmerscoopsociety \
-                   albertleaseedhouse stLawrenceGrain lockiefarms; do
-            echo "### $t"
-            node scripts/probe.mjs --raw 1200 \
-              "https://marketplace.graindiscovery.com/api/public-sites/$t/cash-bids" || true
-          done
+            'https://cp-docs.dtn.com/content-packages/api-specs/markets-grain-bids-api/markets-grain-bids-oas-1.1.yaml'
 
       # StoneX: the component's own call is still unfound, but the API publishes
       # Swagger at /swagger/index.html and the document loads from somewhere.
