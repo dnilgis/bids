@@ -296,6 +296,43 @@ async function probeOne({ site, page, fixture, operator }) {
   console.log(`residuals seen (cents): ${all.residuals.join(", ")}`);
 
   const skels = skeleton(rows, { siteId: site, url, page, operator });
+
+  /* ONE SNAPSHOT DOES NOT ESTABLISH A ROUNDING MODE.
+   *
+   * Measured across three runs of this probe on 2026-08-20, twenty minutes
+   * apart: Country Partners' Cedar Rapids, Ord, North Loup and Merna each read
+   * ROUND-CENT at 20:59 and FLOOR-CENT at 21:21, from the same seventeen,
+   * eleven, seventeen and seventeen rows. Same board, same locations, opposite
+   * answer.
+   *
+   * The margin rule was necessary and is not sufficient. Cedar Rapids had
+   * seventeen rows and a clear margin and still flipped, because on one
+   * snapshot every residual happened to sit where both rules explain it and on
+   * the next it did not. A mode is a property of how they compute their board,
+   * so the only honest evidence for it is the SAME ANSWER ON A DIFFERENT DAY'S
+   * PRICES.
+   *
+   * This prints one machine-readable line per location so two runs can be
+   * compared without reading two logs by eye. Feed the previous run's lines
+   * back with --against and it says which agree. */
+  console.log(`\nVERDICTS ${site}`);
+  for (const sk of skels)
+    console.log(`  V ${site} ${sk.manifest.locationId} ${sk._evidence.confident ?? "-"} ` +
+                `${sk._evidence.testable} ${sk._evidence.margin}`);
+
+  if (PRIOR.size) {
+    let agree = 0, differ = 0, fresh = 0;
+    for (const sk of skels) {
+      const key = `${site} ${sk.manifest.locationId}`;
+      const was = PRIOR.get(key);
+      const now = sk._evidence.confident ?? "-";
+      if (!was) { fresh++; continue; }
+      if (was === now) { agree++; continue; }
+      differ++;
+      console.log(`  DISAGREES ${key}: last run said ${was}, this run says ${now} — NOT ESTABLISHED, do not enable`);
+    }
+    console.log(`  against the previous run: ${agree} agree, ${differ} disagree, ${fresh} not seen before`);
+  }
   for (const sk of skels) {
     console.log(`\n--- ${sk.manifest.location} (${sk.manifest.locationId}) — ${sk._rows} row(s): ` +
                 `${sk._commodities.join(", ")} — ${sk._evidence.confident
@@ -311,7 +348,26 @@ async function probeOne({ site, page, fixture, operator }) {
            flagged: skels.filter((sk) => sk._notATown).length, mode: all.confident ?? null };
 }
 
+/* Lines of the form `V <siteId> <locationId> <mode> <testable> <margin>`, as
+   printed by a previous run. Anything else in the file is ignored, so the
+   whole log can be pasted in. */
+export function parseVerdicts(text) {
+  const out = new Map();
+  for (const l of String(text ?? "").split(/\r?\n/)) {
+    const m = l.trim().match(/^V\s+(\S+)\s+(\S+)\s+(\S+)/);
+    if (m) out.set(`${m[1]} ${m[2]}`, m[3]);
+  }
+  return out;
+}
+
+const PRIOR = new Map();
+
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const against = flag("against");
+  if (against) {
+    for (const [k, v] of parseVerdicts(readFileSync(against, "utf8"))) PRIOR.set(k, v);
+    console.log(`comparing against ${PRIOR.size} verdict(s) from ${against}`);
+  }
   const listPath = flag("list");
   const jobs = listPath
     ? parseProbeList(readFileSync(listPath, "utf8"))

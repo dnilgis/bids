@@ -333,3 +333,46 @@ test("an ambiguous board states nothing, however many rows it has", () => {
   const [sk] = skeleton(rows, { siteId: "x", url: "u", page: "p" });
   assert.ok(!("cashRounding" in sk.manifest), "exact is the default and is not written down");
 });
+
+/* ---- ONE SNAPSHOT DOES NOT ESTABLISH A ROUNDING MODE ----------------------
+ *
+ * Measured across three runs of this probe on 2026-08-20, twenty minutes
+ * apart: Country Partners' Cedar Rapids, Ord, North Loup and Merna each read
+ * ROUND-CENT at 20:59 and FLOOR-CENT at 21:21, from the same 17, 11, 17 and 17
+ * rows. Same board, same locations, opposite answer.
+ *
+ * The margin rule was necessary and not sufficient — Cedar Rapids had
+ * seventeen rows and a clear margin and still flipped. A rounding mode is a
+ * property of how they compute their board, so the only honest evidence for it
+ * is the same answer on a different day's prices.
+ */
+import { parseVerdicts } from "../scripts/dtn-probe.mjs";
+
+test("a previous run's verdicts can be read back out of its log", () => {
+  const log = [
+    "some noise from the runner",
+    "VERDICTS E0149201",
+    "  V E0149201 16660 round-cent 17 4",
+    "  V E0149201 16665 - 11 0",
+    "::warning title=whatever::not a verdict",
+  ].join("\n");
+  const v = parseVerdicts(log);
+  assert.equal(v.size, 2);
+  assert.equal(v.get("E0149201 16660"), "round-cent");
+  assert.equal(v.get("E0149201 16665"), "-", "an unresolved verdict is still a verdict to compare");
+});
+
+test("the whole log can be pasted in; anything that is not a verdict is ignored", () => {
+  assert.equal(parseVerdicts("").size, 0);
+  assert.equal(parseVerdicts(null).size, 0);
+  assert.equal(parseVerdicts("V\nV x\nVV a b c\nvenue a b").size, 0,
+    "a line merely starting with V is not a verdict");
+});
+
+test("a location is keyed by site AND location, never by location alone", () => {
+  // Two co-operatives can and do use the same small integer for a location.
+  const v = parseVerdicts("V e0030901 4199 floor-cent 8 3\nV E0149201 4199 round-cent 8 3");
+  assert.equal(v.size, 2);
+  assert.equal(v.get("e0030901 4199"), "floor-cent");
+  assert.equal(v.get("E0149201 4199"), "round-cent");
+});
