@@ -113,3 +113,52 @@ test('MUTATION: the old regex reproduces the incident exactly', () => {
   assert.equal(failing.length, 2, 'exactly two rows fail under the old parser');
   assert.ok(failing.every((b) => /Mar 27/.test(b.futures || '')), 'and they are the Mar 27 pair');
 });
+
+/* ---- A SETTLE MARKER IS NOT ONLY EVER ON A TICK QUOTE ---------------------
+ *
+ * `tickFlag` matched `\d+-\d+` and nothing else, so it read the "s" on Big
+ * River's `513-6s` and dropped it from Ace Ethanol's `4.7875s` — the same
+ * vendor family, the same product, the same meaning, a different way of
+ * writing the number. Found 2026-08-20 from the served HTML Sig pasted for
+ * aceethanol.com/cashbidssingle-3578, where every one of fourteen rows carries
+ * the marker and not one of them was flagged.
+ */
+import { readFileSync as rfs } from "node:fs";
+import { extractBids as eb } from "../lib/parse.mjs";
+
+test("a settle marker on a DECIMAL quote is read", () => {
+  assert.equal(tickFlag("4.7875s"), "s");
+  assert.equal(tickFlag("5.0350s"), "s");
+});
+
+test("and on eighths written with an apostrophe", () => {
+  assert.equal(tickFlag("478’6s"), "s");
+});
+
+test("the tick form still works, which is what it was written for", () => {
+  assert.equal(tickFlag("513-6s"), "s");
+  assert.equal(tickFlag("459-2"), null);
+});
+
+test("A PLAIN NUMBER IS NOT A FLAG", () => {
+  // The widening must not start seeing markers that are not there.
+  for (const n of ["4.7875", "459", "-0.50", "+0-4", "0", ""])
+    assert.equal(tickFlag(n), null, n);
+});
+
+test("and neither is prose", () => {
+  assert.equal(tickFlag("abc"), null);
+  assert.equal(tickFlag("4.78 s"), null, "a space means these are two things");
+  assert.equal(tickFlag(null), null);
+});
+
+test("every row of Ace Ethanol's real board is flagged settled", () => {
+  const rows = eb(rfs(new URL("../fixtures/ace-3578.html", import.meta.url), "utf8"),
+                  "https://www.aceethanol.com/cashbidssingle-3578");
+  assert.equal(rows.length, 14, "the fixture changed");
+  assert.deepEqual([...new Set(rows.map((r) => r.futuresFlag))], ["s"]);
+  // And the VALUE is still the number, with the marker stripped.
+  assert.equal(rows[0].futuresPrice, 4.7875);
+  assert.equal(rows[0].cash, 4.29);
+  assert.equal(rows[0].basis, -0.5);
+});
