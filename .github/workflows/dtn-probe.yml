@@ -34,15 +34,22 @@ name: dtn probe
 on:
   workflow_dispatch:
     inputs:
+      list:
+        description: "Probe every site in probe-lists/dtn-sites.txt (8 of them). Leave the three boxes below blank."
+        type: boolean
+        default: true
       site:
-        description: "DTN site id, e.g. e0172401 or E0266901"
-        required: true
+        description: "Or ONE site id, e.g. e0172401 — only used when the box above is off"
+        required: false
+        default: ""
       page:
         description: "The customer's public cash-bids page, whose own widget asks for the feed"
-        required: true
+        required: false
+        default: ""
       operator:
         description: "Company name, to save typing it into every skeleton"
         required: false
+        default: ""
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -56,11 +63,36 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
+      # A signature or a rounding rule that has stopped working turns a good
+      # board into a refusal, or worse, a bad one into a manifest.
+      - name: Test the guards
+        run: node --test test/dtnprobe.test.mjs test/dtncs.test.mjs test/cdp.test.mjs
+
       - name: Ask
         # No secrets. The page carries the customer's own key, as it must for
         # the widget to work at all, and the browser sends it.
+        #
+        # THE INPUTS GO THROUGH env AND NOT INTO THE COMMAND LINE. These were
+        # interpolated with ${{ }} straight into `run:`, which substitutes what
+        # a human typed into the shell before bash ever sees it -- a page URL
+        # with a semicolon in it would have run as a command. Only someone who
+        # can already press the button can reach this, so it was never the
+        # sharpest risk in the repository; it is also the form people copy.
+        env:
+          USE_LIST: ${{ inputs.list }}
+          SITE: ${{ inputs.site }}
+          PAGE: ${{ inputs.page }}
+          OPERATOR: ${{ inputs.operator }}
         run: |
-          node scripts/dtn-probe.mjs \
-            --site "${{ inputs.site }}" \
-            --page "${{ inputs.page }}" \
-            ${{ inputs.operator && format('--operator "{0}"', inputs.operator) || '' }}
+          if [ "$USE_LIST" = "true" ]; then
+            node scripts/dtn-probe.mjs --list probe-lists/dtn-sites.txt
+          elif [ -n "$SITE" ]; then
+            if [ -n "$OPERATOR" ]; then
+              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE" --operator "$OPERATOR"
+            else
+              node scripts/dtn-probe.mjs --site "$SITE" --page "$PAGE"
+            fi
+          else
+            echo "Nothing asked: turn the list box on, or give a site id."
+            exit 2
+          fi
