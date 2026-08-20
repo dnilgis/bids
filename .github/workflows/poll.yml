@@ -162,3 +162,66 @@ jobs:
           # Written by poll.mjs via lib/decide.mjs.
           git commit -F .commit-message
           git push
+
+      # ---- TELL THE TWO SITES, INSTEAD OF LEAVING THEM TO ASK ----------------
+      #
+      # badgergrain.com and midwestcommodity.com both rebuild their price panel
+      # from data/boyceville.json in THIS repository, on their own ten-minute
+      # cron. On 2026-08-20 that cron was being honoured one to two times an
+      # hour against six asked -- measured here, where every run commits, so
+      # commits are an exact run count:
+      #
+      #   2026-08-19  hour 16 -> 14 runs   17 -> 9   18 -> 5   19 -> 6   20 -> 7
+      #   2026-08-20  hour 13 ->  1 run    14 -> 2
+      #
+      # Same cron, same repository. GitHub's scheduler is best effort and that
+      # day it was not delivering. At 10:45 Central the feed had moved at 10:25
+      # and badgergrain's page still said "as of 9:49am" -- nothing broken, the
+      # job simply had not run.
+      #
+      # So the sites are TOLD. A price move fires repository_dispatch at both,
+      # their prices workflow runs at once, and the page is current inside a
+      # minute instead of inside a cron nobody can promise.
+      #
+      # ONLY ON A MOVE. This repository commits on every run, because
+      # data/index.json carries `generated: now` -- so "did we commit" is not a
+      # signal. A heartbeat is not a move either. poll.mjs writes
+      # .changed-sources from decide()'s own `changed` verdict, which is the
+      # question already being answered correctly for the file itself.
+      #
+      # IT FAILS THE RUN IF IT CANNOT TELL THEM. The price is already committed
+      # and pushed by this point, so nothing is lost -- but a token that has
+      # quietly expired would leave both sites as late as they were before,
+      # with every run green. That is the failure this whole day has been about.
+      - name: Tell the sites their price moved
+        env:
+          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
+        run: |
+          set -u
+          if ! grep -qx boyceville .changed-sources 2>/dev/null; then
+            echo "boyceville did not move this run; the sites have nothing to rebuild"
+            exit 0
+          fi
+
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error title=EMMERT_DISPATCH_TOKEN is not set::boyceville's price moved and           neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
+            exit 1
+          fi
+
+          PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
+          fail=""
+          for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
+            code=$(curl -sS -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$repo/dispatches" \
+              -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
+            if [ "$code" = "204" ]; then
+              echo "told $repo (pricedAt $PRICED)"
+            else
+              echo "::error title=could not tell $repo::HTTP $code $(head -c 300 /tmp/dispatch-resp 2>/dev/null)"
+              fail=1
+            fi
+          done
+          [ -z "$fail" ] || exit 1
