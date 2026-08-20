@@ -1,0 +1,78 @@
+# Ask the DTN Grain Desk endpoint which company tokens exist.
+#
+#   GET https://marketplace.graindiscovery.com/api/public-sites/<token>/cash-bids
+#
+# A hit is the cheapest elevator in the system: the adapter is written, so a new
+# one is a source FILE and no code — and one token can carry several
+# destinations, each of which is a publishable board.
+#
+# WHY THIS IS A BUTTON AND NOT A SCHEDULE. There is no index to crawl:
+# /api/public-sites is 404 and so is /api/public-sites/<token> on its own. The
+# only route that answers is the board itself, and a token that does not exist
+# returns 401 exactly like one that is private. SO A 401 CARRIES NO
+# INFORMATION AND ONLY A 200 COUNTS — which means this is a guessing game, and
+# a guessing game does not belong on a timer pointed at someone else's server.
+# Run it when there is a new list worth trying.
+#
+# WHY IT RUNS HERE. The sandbox the assistant works in reaches GitHub and
+# nothing else, so a sweep from there is one candidate per tool call. On the
+# runner, probe-lists/gd-candidates.txt — 266 company names, roughly 800 token
+# variants — is a couple of minutes.
+#
+# IT WILL NOT HAMMER THEM. A small worker pool and a pause between requests,
+# both capped in the script. A sweep that gets us blocked costs more than the
+# elevators it finds. Defaults here are deliberately gentler than the script's.
+#
+# It writes nothing. Read the run log; the last line is SUMMARY_JSON.
+
+name: grain desk sweep
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Candidate list to sweep"
+        required: true
+        default: probe-lists/gd-candidates.txt
+      as_names:
+        description: "Treat each line as a COMPANY NAME and try its slug variants"
+        type: boolean
+        default: true
+      names:
+        description: "Or a few company names, comma separated (overrides the file)"
+        required: false
+      concurrency:
+        description: "Requests in flight"
+        required: true
+        default: "3"
+      delay:
+        description: "Milliseconds between requests, per worker"
+        required: true
+        default: "400"
+
+permissions:
+  contents: read          # it writes nothing, so it may not write anything
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Sweep
+        run: |
+          if [ -n "${{ inputs.names }}" ]; then
+            node scripts/gd-sweep.mjs \
+              --names "${{ inputs.names }}" \
+              --concurrency "${{ inputs.concurrency }}" \
+              --delay "${{ inputs.delay }}"
+          else
+            node scripts/gd-sweep.mjs \
+              --file "${{ inputs.file }}" \
+              ${{ inputs.as_names && '--as-names' || '' }} \
+              --concurrency "${{ inputs.concurrency }}" \
+              --delay "${{ inputs.delay }}"
+          fi

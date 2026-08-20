@@ -96,16 +96,20 @@ jobs:
         # one may ever be scheduled -- two writers on one artefact has bitten
         # this system three times. Delete scripts/fetch.mjs once this is live.
         #
-        # KEYS COME IN HERE AND NOWHERE ELSE. A source that needs one names the
-        # ENVIRONMENT VARIABLE in its manifest (`apiKeyEnv`), never the key, and
-        # poll.mjs sends it as an `apikey` HEADER -- so it stays out of the URL,
-        # out of the log line, out of every error message, and out of any
-        # redirect. This repository is public and its Actions logs are readable
-        # by anybody, which is what makes that distinction matter.
+# NO SOURCE NEEDS A KEY TODAY, and this block is the wiring for the first
+        # one that does. The only platform with a credential -- DTN Content
+        # Services -- is read through a BROWSER, on the customer's own page,
+        # because DTN answered a direct call with "The api key is valid, but it
+        # is valid to be used within a browser only". Their page carries their
+        # key in the clear, as it must for a browser widget to work, so we hold
+        # none.
         #
-        # ADDING A PLATFORM THAT NEEDS A KEY MEANS ADDING A LINE HERE. Forgetting
-        # is not silent: poll.mjs names the missing variable, the sources that
-        # need it and the remedy, once, before it fetches anything.
+        # WHEN ONE DOES: a source names the ENVIRONMENT VARIABLE in its manifest
+        # (`apiKeyEnv`), never the key, poll.mjs sends it as an `apikey` HEADER
+        # so it stays out of the URL and out of every log line and error message
+        # in this public repository -- and the variable gets a line here.
+        # Forgetting that line is not silent: poll.mjs names the variable, the
+        # sources that need it and the remedy, once, before it fetches anything.
         env:
           DTN_CS_API_KEY: ${{ secrets.DTN_CS_API_KEY }}
         run: node scripts/poll.mjs

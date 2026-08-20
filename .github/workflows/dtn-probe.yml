@@ -10,8 +10,21 @@
 # there carries no information about whether a path is real. On the runner it is
 # one button.
 #
-# NEXT ONE UP: Premier Cooperative, siteId E0266901, key already known. Whether
-# that is three towns or thirty is one run of this away.
+# IT LOADS A PAGE AND HOLDS NO KEY. The first version of this called the API
+# directly and DTN answered:
+#
+#   {"type":"Authorization","id":"AGW-403=002","status":403,
+#    "message":"The api key is valid, but it is valid to be used within a browser only."}
+#
+# The key was valid; their gateway scopes widget keys to browser use. So this
+# loads the customer's own page in the Chromium the runner already has, and
+# reads the response their own widget asked for. Their key is public in their
+# page, because that is the only way a browser widget can work — we do not need
+# a copy of it and do not keep one.
+#
+# NEXT ONE UP: Premier Cooperative, siteId E0266901, page
+# https://www.premiercooperative.com/agricultural/detailed-cash-bids
+# Whether that is three towns or thirty is one run of this away.
 #
 # It writes nothing. Fill in every SET THIS in the output, geocode each street
 # address, and only then commit a manifest and enable it.
@@ -24,10 +37,9 @@ on:
       site:
         description: "DTN site id, e.g. e0172401 or E0266901"
         required: true
-      key_env:
-        description: "Which repository secret holds that site's key"
+      page:
+        description: "The customer's public cash-bids page, whose own widget asks for the feed"
         required: true
-        default: DTN_CS_API_KEY
       operator:
         description: "Company name, to save typing it into every skeleton"
         required: false
@@ -45,15 +57,10 @@ jobs:
         with: { node-version: 22 }
 
       - name: Ask
-        # EVERY KEY THIS CAN USE HAS TO BE LISTED HERE, and adding a site means
-        # adding a line. The script names the missing variable and exits 2
-        # rather than asking without it, because a keyless request comes back
-        # 401 and reads exactly like the elevator being down.
-        env:
-          DTN_CS_API_KEY: ${{ secrets.DTN_CS_API_KEY }}
-          PREMIER_DTN_KEY: ${{ secrets.PREMIER_DTN_KEY }}
+        # No secrets. The page carries the customer's own key, as it must for
+        # the widget to work at all, and the browser sends it.
         run: |
           node scripts/dtn-probe.mjs \
             --site "${{ inputs.site }}" \
-            --key-env "${{ inputs.key_env }}" \
+            --page "${{ inputs.page }}" \
             ${{ inputs.operator && format('--operator "{0}"', inputs.operator) || '' }}
