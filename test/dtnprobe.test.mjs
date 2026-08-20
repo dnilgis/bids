@@ -265,3 +265,71 @@ test("THE SKELETON SAYS WHEN A LOCATION IS NOT OBVIOUSLY A TOWN", () => {
   for (const town of ["Goodhue", "Eyota", "Traverse"])
     assert.equal(byName[town]._notATown, null, `${town} is a town and was flagged`);
 });
+
+/* ---- ENOUGH ROWS TO HAVE MEASURED IT ------------------------------------
+ *
+ * Found by reading the 2026-08-20 batch log rather than by reasoning about it.
+ * Country Partners' Arnold posts corn and nothing else: two testable rows,
+ * floor explained both, round explained one, and the probe printed
+ * "floor-cent" in exactly the words it used for Ag Partners' Red Wing, where
+ * floor explained sixteen against round's six. One of those is a measurement
+ * and the other is a coin landing the same way twice.
+ *
+ * cashRounding decides whether the identity guard is exact or tolerant. Set it
+ * from one disagreeing row and a typo on somebody's board becomes a permanent
+ * loosening of the only check that proves cash, basis and futures agree.
+ */
+const row = (cash, basis, futuresPrice, extra = {}) => ({
+  cash, basis, futuresPrice, locationId: "1", location: "Somewhere", commodity: "Corn", ...extra,
+});
+
+test("the rules question and the manifest question are different", () => {
+  // One row can genuinely rule floor out — round is the only rule that
+  // explains it — and that is still not enough to publish under.
+  const one = roundingEvidence([row(4.29, -0.5, 478.75)]);
+  assert.equal(one.mode, "round-cent", "the rule that explains every row");
+  assert.equal(one.confident, null, "but not from a single row");
+  assert.equal(one.margin, 1);
+});
+
+test("A ONE-ROW MARGIN IS NOT STATED IN THE MANIFEST", () => {
+  // Ag Partners' Traverse, exactly: floor 2, round 1, of 2 testable.
+  const rows = [row(4.29, -0.5, 479.25), row(4.29, -0.5, 479.75)];
+  const ev = roundingEvidence(rows);
+  assert.equal(ev.mode, "floor-cent");
+  assert.equal(ev.margin, 1);
+  assert.equal(ev.confident, null);
+  const [sk] = skeleton(rows, { siteId: "e0172401", url: "u", page: "p" });
+  assert.ok(!("cashRounding" in sk.manifest),
+    "a mode nobody established must not reach the manifest");
+  assert.ok(sk._evidence.weak, "and the log must say why it was withheld");
+});
+
+test("a margin of two IS stated", () => {
+  const rows = [row(4.29, -0.5, 479.25), row(4.29, -0.5, 478.5), row(4.30, -0.5, 479.75)];
+  const ev = roundingEvidence(rows);
+  assert.equal(ev.margin, 2);
+  assert.equal(ev.confident, "round-cent");
+  const [sk] = skeleton(rows, { siteId: "E0266901", url: "u", page: "p" });
+  assert.equal(sk.manifest.cashRounding, "round-cent");
+});
+
+test("Ag Partners' real board still measures floor-cent, and strongly", () => {
+  // The whole point of a threshold is that it must not reject the measurement
+  // the project already made and shipped thirteen source files against.
+  const body = readFileSync(new URL("../fixtures/dtn-cs-agpartners-e0172401.json", import.meta.url), "utf8");
+  const ev = roundingEvidence(extract(body, "https://api.dtn.com/markets/sites/e0172401/cash-bids"));
+  assert.equal(ev.confident, "floor-cent");
+  assert.ok(ev.margin >= 10, `margin was only ${ev.margin}`);
+});
+
+test("an ambiguous board states nothing, however many rows it has", () => {
+  // Residuals all at zero: exact, floor and round all explain every row. More
+  // rows do not break the tie, and a margin must never be read as one.
+  const rows = Array.from({ length: 40 }, () => row(4.29, -0.5, 479));
+  const ev = roundingEvidence(rows);
+  assert.equal(ev.mode, "exact");
+  assert.equal(ev.confident, "exact");
+  const [sk] = skeleton(rows, { siteId: "x", url: "u", page: "p" });
+  assert.ok(!("cashRounding" in sk.manifest), "exact is the default and is not written down");
+});

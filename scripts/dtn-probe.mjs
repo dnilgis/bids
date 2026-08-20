@@ -76,10 +76,56 @@ export function roundingEvidence(rows) {
   if (testable && round === testable) explains.push("round-cent");
   /* `exact` subsumes the others by definition, so it is not an ambiguity. */
   const modes = explains.includes("exact") ? ["exact"] : explains;
+  const named = modes.length === 1 ? modes[0] : null;
+
+  /* HOW HARD DID THE WINNER HAVE TO WORK?
+   *
+   * "Exactly one rule explains every row" is necessary and, on a small board,
+   * nowhere near sufficient. Country Partners' Arnold posts corn and nothing
+   * else: two testable rows, floor explained both, round explained one, and
+   * the probe printed "floor-cent" with the same confidence it printed it for
+   * Ag Partners' twenty-five. One of those is a measurement.
+   *
+   * The margin is the number of rows that ACTIVELY RULED OUT the runner-up.
+   * Below three, the rules simply have not been made to disagree often enough
+   * to tell them apart, and cashRounding is left off the manifest -- which
+   * keeps the identity guard strict and makes the board refuse loudly rather
+   * than publish under a mode nobody really established.
+   *
+   * This is not the guard being softened. It is the guard declining to be set
+   * from two rows. */
+  const rival = named === "exact" ? 0 : (named === "floor-cent" ? round : floor);
+  const margin = named ? testable - rival : 0;
+
+  /* TWO SEPARATE QUESTIONS, AND THE FIRST DRAFT ASKED THEM AS ONE.
+   *
+   * `mode` answers "which rule explains every row" — a fact about the rules,
+   * and the thing the rest of the test suite is about. `confident` answers
+   * "is that enough to write into a manifest that will publish prices", which
+   * is a higher bar, and folding it into `mode` quietly changed the meaning of
+   * assertions written about the first question.
+   *
+   * The bar is the MARGIN: how many rows actively ruled the runner-up out.
+   * Country Partners' Arnold posts corn and nothing else — two testable rows,
+   * floor explained both, round explained one — and the probe printed
+   * "floor-cent" with the same confidence it printed it for Ag Partners'
+   * twenty-five. One of those is a measurement.
+   *
+   * Two, because one disagreeing row can be a typo in somebody's board and
+   * two independent ones are not. Below it, cashRounding is left OFF the
+   * manifest, which keeps the identity guard exact and makes the board refuse
+   * loudly rather than publish under a mode nobody established. That is the
+   * guard declining to be set from one row, not the guard being softened. */
+  const MIN_MARGIN = 2;
+  const confident = named && (named === "exact" || margin >= MIN_MARGIN) ? named : null;
+
   return {
     testable, exact, round, floor,
     modes,
-    mode: modes.length === 1 ? modes[0] : null,
+    mode: named,
+    margin,
+    confident,
+    weak: named && !confident ? { named, margin } : null,
     residuals: [...residuals].sort((a, b) => a - b),
   };
 }
@@ -129,7 +175,7 @@ export function skeleton(rows, { siteId, url, page, operator }) {
         /* Stated only when the evidence names it. Left out otherwise, which
            means the identity guard stays strict and the board will refuse
            loudly rather than publish under a mode nobody measured. */
-        ...(ev.mode && ev.mode !== "exact" ? { cashRounding: ev.mode } : {}),
+        ...(ev.confident && ev.confident !== "exact" ? { cashRounding: ev.confident } : {}),
         cadence: "grain-day",
         provenance: "scraped",
         enabled: false,
@@ -242,7 +288,11 @@ async function probeOne({ site, page, fixture, operator }) {
   const skels = skeleton(rows, { siteId: site, url, page, operator });
   for (const sk of skels) {
     console.log(`\n--- ${sk.manifest.location} (${sk.manifest.locationId}) — ${sk._rows} row(s): ` +
-                `${sk._commodities.join(", ")} — ${sk._evidence.mode ?? "rounding UNRESOLVED"}`);
+                `${sk._commodities.join(", ")} — ${sk._evidence.confident
+                    ?? (sk._evidence.weak
+                        ? `${sk._evidence.weak.named} but only by ${sk._evidence.weak.margin} row(s) — TOO FEW TO STATE`
+                        : "rounding UNRESOLVED")}` +
+                ` [${sk._evidence.testable} testable: exact ${sk._evidence.exact}, round ${sk._evidence.round}, floor ${sk._evidence.floor}]`);
     if (sk._notATown) console.log(`    NOT A TOWN? ${sk._notATown}`);
     console.log(JSON.stringify(sk.manifest, null, 2));
   }

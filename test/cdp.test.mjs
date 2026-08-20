@@ -141,7 +141,7 @@ test("a page that never asks for it gives up with what it DID ask for", { skip: 
   try {
     await assert.rejects(
       capture({ pageUrl: `${base}/cash-bids/`, target: `${base}/markets/sites/x/cash-bids`, browser, timeoutMs: 6000 }),
-      (e) => /no response matching/.test(e.message) && /something\/else/.test(e.message));
+      (e) => /no readable response matching/.test(e.message) && /something\/else/.test(e.message));
   } finally { srv.close(); }
 });
 
@@ -204,4 +204,62 @@ test("A PAGE THAT NEVER LOADED SAYS SO", { skip: browser ? false : "no browser o
   assert.ok(r.navError, `expected a navigation error, got ${JSON.stringify(r.navError)}`);
   assert.match(r.navError, /ERR_CONNECTION_REFUSED/);
   assert.equal(r.responses.length, 0);
+});
+
+/* ---- ONE UNREADABLE MATCH MUST NOT LOSE THE BOARD ------------------------
+ *
+ * Measured 2026-08-20 on the runner: probing Ag-Land FS and Insight FS, both
+ * fscooperatives.com, `capture` returned "the response matched but its body
+ * never became readable" — while `captureAll` had pulled 45,608 bytes off the
+ * same Ag-Land page minutes before. capture took the FIRST matching response,
+ * cleared its timeout, failed to read a body from it, and rejected with no way
+ * back. Two co-operatives and sixteen locations lost to it.
+ *
+ * These pages are also the production path: the thirteen live Ag Partners
+ * sources are read by this function on every poll.
+ */
+test("a matching response with no body does not end the capture", { skip: browser ? false : "no browser on this machine" }, async () => {
+  const REAL = '{"board":"this one"}';
+  let hits = 0;
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/markets/sites/x/cash-bids")) {
+      hits++;
+      /* First ask: a 204, which cannot carry a body. This is the shape that
+         used to be fatal. Second ask: the board. */
+      if (hits === 1) { res.writeHead(204); return res.end(); }
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(REAL);
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>
+      fetch("/markets/sites/x/cash-bids?first=1")
+        .then(() => fetch("/markets/sites/x/cash-bids?units=us"));
+    </script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const got = await capture({ pageUrl: `${base}/cash-bids/`,
+      target: `${base}/markets/sites/x/cash-bids`, browser, timeoutMs: 30000 });
+    assert.equal(got.status, 200, "resolved on the bodyless response");
+    assert.equal(got.body, REAL);
+    assert.equal(hits, 2, "the second request was never made");
+  } finally { srv.close(); }
+});
+
+test("when nothing readable ever arrives, the error says matches were seen", { skip: browser ? false : "no browser on this machine" }, async () => {
+  // "no response matched" and "several matched and none would open" are
+  // different faults with different fixes, and the log has to tell them apart.
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/markets/sites/x/cash-bids")) { res.writeHead(204); return res.end(); }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end('<!doctype html><script>fetch("/markets/sites/x/cash-bids?a=1")</script>');
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    await assert.rejects(
+      capture({ pageUrl: `${base}/cash-bids/`, target: `${base}/markets/sites/x/cash-bids`, browser, timeoutMs: 6000 }),
+      (e) => /no readable response matching/.test(e.message));
+  } finally { srv.close(); }
 });
