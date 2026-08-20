@@ -248,6 +248,16 @@ for (const s of todo) {
        it belongs on the board rather than only inside the file. */
     r.commodities = [...new Set(verdict.file.bids.map((b) => b.commodity))];
     r.verified = built.verified;
+    /* A BOARD QUIETLY LOSING A ROW MUST NOT LOOK LIKE ONE THAT NEVER HAD IT.
+       dtn-cs refuses an unreconcilable row rather than the whole co-operative
+       as of 2026-08-20 — one bad Oats line used to cost ten towns of corn.
+       That trade is only right while the refusal stays loud. */
+    if (built.unreconciled?.length) {
+      r.unreconciled = built.unreconciled;
+      console.log(`  ${s.id}: ${built.unreconciled.length} row(s) REFUSED and published nowhere`);
+      for (const u of built.unreconciled.slice(0, 5))
+        console.log(`    ${u.location} ${u.commodity} ${u.delivery}: ${u.why}`);
+    }
     r.reason = verdict.reason;
     /* A move, as opposed to a heartbeat. The Emmert sites are told about the
        first and not the second — see movedSources() in lib/decide.mjs. */

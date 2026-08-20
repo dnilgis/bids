@@ -182,7 +182,67 @@ test("a record with no bid on it is skipped, and a board of nothing but those re
   const noBid = { ...one, cashPrice: null, basisPrice: null, futuresQuote: null, primaryPrice: null };
   assert.equal(extract(JSON.stringify([one, noBid]), URL_).length, 1);
   assert.throws(() => extract(JSON.stringify([noBid]), URL_),
-    (e) => e instanceof DtnCsRefused && /1 record\(s\) came back but none carried/.test(e.message));
+    (e) => e instanceof DtnCsRefused && /1 record\(s\) came back but none survived/.test(e.message)
+        && /none carried/i.test(e.message));
+});
+
+/* ---- A ROW THAT WILL NOT RECONCILE IS REFUSED. THE BOARD IS NOT. ----------
+ *
+ * Measured 2026-08-20 across eight co-operatives: Allied Cooperative and
+ * Country Visions were each rejected in full — twenty locations of corn and
+ * soybeans between them — because ONE Oats row on each had a basis that would
+ * not reconcile against primaryPrice. The cash figures agreed exactly on both,
+ * only the basis diverged, and the two divergences are not the same ratio, so
+ * it is not one unit conversion we could learn.
+ */
+const mismatched = (over) => {
+  const one = JSON.parse(body)[0];
+  return { ...one, ...over };
+};
+
+test("an unreconcilable row does not reach the output", () => {
+  const one = JSON.parse(body)[0];
+  const bad = mismatched({ basisPrice: Number(one.basisPrice) + 0.065 });
+  const rows = extract(JSON.stringify([one, bad]), URL_);
+  assert.equal(rows.length, 1, "the bad row was published");
+  assert.equal(rows[0].basis, Math.round(Number(one.basisPrice) * 10000) / 10000);
+});
+
+test("AND ITS NEIGHBOURS SURVIVE", () => {
+  // The whole point. One oats row must not cost ten towns of corn.
+  const all = JSON.parse(body);
+  const bad = mismatched({ basisPrice: Number(all[0].basisPrice) + 0.065 });
+  const rows = extract(JSON.stringify([...all, bad]), URL_);
+  assert.equal(rows.length, all.length, `expected ${all.length} good rows, got ${rows.length}`);
+});
+
+test("the refusal is COUNTED and says why", () => {
+  // A board that starts quietly losing rows has to look different from one
+  // that never had them.
+  const one = JSON.parse(body)[0];
+  const bad = mismatched({ basisPrice: Number(one.basisPrice) + 0.065 });
+  const rows = extract(JSON.stringify([one, bad]), URL_);
+  assert.equal(rows.unreconciled.length, 1);
+  assert.match(rows.unreconciled[0].why, /do not match primaryPrice/);
+  assert.ok(rows.unreconciled[0].commodity, "which commodity was refused");
+  assert.ok(rows.unreconciled[0].location, "and where");
+});
+
+test("the count is a diagnostic, not a row", () => {
+  // It rides on the array so every existing caller is untouched. If it were
+  // enumerable it would be serialised into files as though it were a bid.
+  const rows = extract(body, URL_);
+  assert.deepEqual(rows.unreconciled, []);
+  assert.ok(!Object.keys(rows).includes("unreconciled"));
+  assert.equal(JSON.parse(JSON.stringify(rows)).length, rows.length);
+});
+
+test("a board where NOTHING reconciles still refuses outright", () => {
+  // Scoping the refusal to the row must not turn a wholly unreadable board
+  // into an empty-but-fine one.
+  const bad = mismatched({ basisPrice: Number(JSON.parse(body)[0].basisPrice) + 0.065 });
+  assert.throws(() => extract(JSON.stringify([bad]), URL_),
+    (e) => e instanceof DtnCsRefused && /did not reconcile against primaryPrice/.test(e.message));
 });
 
 test("the delayed flag is carried as a diagnostic and never published", () => {

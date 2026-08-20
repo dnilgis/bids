@@ -276,6 +276,16 @@ async function probeOne({ site, page, fixture, operator }) {
   try { rows = extract(body, from); }
   catch (e) { console.error(`the adapter refused ${site}: ${e.message}`); return { site, ok: false, why: e.message }; }
 
+  /* A REFUSED ROW IS NEWS, and the batch log is where it has to appear.
+     These are the oats rows that used to take a whole co-operative down. */
+  const refused = rows.unreconciled ?? [];
+  if (refused.length) {
+    console.log(`\n${refused.length} row(s) REFUSED — published nowhere, and not counted below:`);
+    for (const r of refused.slice(0, 8))
+      console.log(`    ${r.location} ${r.commodity} ${r.delivery}: ${r.why}`);
+    if (refused.length > 8) console.log(`    … and ${refused.length - 8} more`);
+  }
+
   const all = roundingEvidence(rows);
   console.log(`\n${rows.length} row(s), ${new Set(rows.map((r) => r.locationId)).size} location(s)`);
   console.log(`whole feed: exact ${all.exact}/${all.testable}, round ${all.round}/${all.testable}, ` +
@@ -297,7 +307,8 @@ async function probeOne({ site, page, fixture, operator }) {
     console.log(JSON.stringify(sk.manifest, null, 2));
   }
   return { site, ok: true, rows: rows.length, locations: skels.length,
-           flagged: skels.filter((sk) => sk._notATown).length, mode: all.mode ?? null };
+           refused: refused.length,
+           flagged: skels.filter((sk) => sk._notATown).length, mode: all.confident ?? null };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -333,6 +344,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     flagged += r.flagged ?? 0;
     console.log(`  ok       ${r.site.padEnd(10)} ${String(r.rows).padStart(4)} row(s)  ` +
                 `${String(r.locations).padStart(3)} location(s)` +
+                `${r.refused ? `, ${r.refused} row(s) refused` : ""}` +
                 `${r.flagged ? `, ${r.flagged} not obviously a town` : ""}  rounding: ${r.mode ?? "UNRESOLVED — do not enable"}`);
   }
   console.log(`  ${towns} location(s) across ${results.filter((r) => r.ok).length} of ${todo.length} site(s)` +

@@ -84,7 +84,7 @@ try { browser = findBrowser(); } catch { /* reported by the test below */ }
 
 test("a real browser captures the widget's own response, and the adapter reads it", { skip: browser ? false : "no browser on this machine" }, async () => {
   const json = readFileSync(new URL("../fixtures/dtn-cs-agpartners-e0172401.json", import.meta.url), "utf8");
-  let apiHits = 0, blockedHits = 0, refused = 0;
+  let apiHits = 0, blockedHits = 0, cssHits = 0, refused = 0;
   const srv = createServer((req, res) => {
     if (req.url.startsWith("/markets/sites/e0172401/cash-bids")) {
       apiHits++;
@@ -99,7 +99,8 @@ test("a real browser captures the widget's own response, and the adapter reads i
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(json);
     }
-    if (/\.(png|css)$/.test(req.url)) { blockedHits++; res.writeHead(200); return res.end(""); }
+    if (/\.png$/.test(req.url)) { blockedHits++; res.writeHead(200); return res.end(""); }
+    if (/\.css$/.test(req.url)) { cssHits++; res.writeHead(200, {"content-type":"text/css"}); return res.end("body{}"); }
     res.writeHead(200, { "content-type": "text/html" });
     res.end(`<!doctype html><html><body><img src="/logo.png"><link rel=stylesheet href="/a.css">
       <script>fetch("/markets/sites/e0172401/cash-bids?apikey=PUBLICKEYFROMTHEIRPAGE&units=us")
@@ -126,7 +127,12 @@ test("a real browser captures the widget's own response, and the adapter reads i
       ["Red Wing Grain LLC", "Goodhue", "Eyota", "Traverse"]);
     assert.equal(rows[0].futuresPrice, 478.75);
 
-    assert.equal(blockedHits, 0, "images and stylesheets are blocked: we want one JSON body, not their whole page");
+    assert.equal(blockedHits, 0, "images are blocked: we want one JSON body, not their whole page");
+    /* THE STYLESHEET IS ALLOWED THROUGH, and it is meant to be. Blocking it
+       cost Ag-Land FS and Insight FS entirely on 2026-08-20: starved of its
+       CSS, their Next.js app made 6,285 requests in forty-five seconds and
+       never once asked for the board. */
+    assert.equal(cssHits, 1, "the stylesheet must not be blocked");
     assert.ok(apiHits >= 1);
   } finally { srv.close(); }
 });
@@ -262,4 +268,24 @@ test("when nothing readable ever arrives, the error says matches were seen", { s
       capture({ pageUrl: `${base}/cash-bids/`, target: `${base}/markets/sites/x/cash-bids`, browser, timeoutMs: 6000 }),
       (e) => /no readable response matching/.test(e.message));
   } finally { srv.close(); }
+});
+
+test("A STYLESHEET IS NOT BLOCKED, AND THAT IS NOT A DETAIL", async () => {
+  /* Ag-Land FS and Insight FS, 2026-08-20: capture made 6,285 and 7,089
+     requests in forty-five seconds and never reached api.dtn.com, while
+     captureAll had read the same Ag-Land page in fifty-three requests and come
+     away with 45,608 bytes of board. The only difference in how the two
+     functions touch the network was `*.css` on this block list.
+     A test, not a comment, because the next person tidying this list will see
+     a stylesheet nobody reads and a bandwidth saving, and they will be wrong. */
+  const src = readFileSync(new URL("../lib/cdp.mjs", import.meta.url), "utf8");
+  /* The empty one is capture's deliberate reset -- `setBlockedURLs({urls: []})`
+     before it sets its own -- and it is not a block list. */
+  const lists = [...src.matchAll(/setBlockedURLs",\s*\{\s*urls:\s*\[([\s\S]*?)\]/g)]
+    .map((m) => m[1]).filter((l) => /"/.test(l));
+  assert.ok(lists.length >= 2, `expected both readers' block lists, found ${lists.length}`);
+  for (const l of lists) assert.ok(!/\.css/.test(l), `a reader still blocks css: ${l.trim()}`);
+  const tokens = lists.map((l) => [...l.matchAll(/"([^"]+)"/g)].map((m) => m[1]).sort().join(","));
+  assert.equal(new Set(tokens).size, 1,
+    `the two readers block different things and they meet the same pages:\n  ${tokens.join("\n  ")}`);
 });
