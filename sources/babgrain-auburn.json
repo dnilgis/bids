@@ -1,0 +1,27 @@
+{
+  "id": "babgrain-auburn",
+  "operator": "BAB Grain",
+  "location": "Auburn",
+  "state": "IL",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/babgrain/cash-bids",
+  "locationId": "Auburn",
+  "companyToken": "babgrain",
+  "bands": {
+    "corn": [2.0, 12.0],
+    "soybeans": [6.0, 25.0]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "DTN Grain Desk, same platform and same code path as albertlea - a new elevator here is a source file and no new code. Confirmed live 2026-08-19: the feed carries FOUR destinations - Auburn, Waverly Rail, DEL St. Louis Area and DEL ADM Decatur - across Soybeans and Corn. locationId is Auburn on purpose, so filterLocation keeps only the Auburn rows and the other three land in otherLocationsOnPage: recorded as seen, never published as Auburn's board. The two DEL rows are delivered-terminal bids at ADM Decatur and the St. Louis area, not a price at either BAB yard, and publishing them under a town would misstate where the price applies. Waverly Rail is a real second BAB location and deserves its own source file; it does not have one yet because a bare 'Waverly, IL' returns zero matches from the Census geocoder and no street address has been confirmed. Coordinates below are the Census geocoder's single exact match for 14273 Bab Rd, Auburn IL 62615 - one match, no guessing - where that street address comes from a business directory listing and is the one thing here that is single-sourced. An earlier note in this project carried 39.57889/-89.74889 for this source, which is the Auburn town centroid rather than the yard; the difference is about 1.4 miles.",
+  "cashRoundingCents": 0,
+  "publicNote": "Their publicly posted cash board at Auburn, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "zip": "62615",
+  "lat": 39.59214,
+  "lon": -89.71244,
+  "phone": null,
+  "email": null,
+  "website": "https://marketplace.graindiscovery.com/babgrain",
+  "inMerge": true
+}
