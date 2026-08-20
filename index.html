@@ -10,7 +10,10 @@
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:12px/1.4 var(--mono);
        display:flex;flex-direction:column;padding:10px 12px;gap:8px;overflow:hidden}
-  header{display:flex;align-items:baseline;gap:12px;flex:none}
+  /* WRAPS, so the cadence line gets a row of its own instead of fighting the
+     title for space on a narrow screen. flex-basis:100% on .tick only does
+     anything if the container is allowed to wrap. */
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 12px;flex:none}
   h1{font:600 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;margin:0;color:var(--dim)}
   .v{font:700 12px/1 var(--mono);letter-spacing:.06em}
   .v.live{color:var(--live)}.v.late{color:var(--late)}.v.down{color:var(--down)}
@@ -41,6 +44,11 @@
   .dim{color:var(--dim)}
   .no{color:var(--late);max-width:52ch}
   .r-live .no{color:var(--dim)}
+  /* THE CADENCE, IN WORDS, TICKING. Green answers "did the last read work".
+     It does not answer "when was it", and on 2026-08-20 every source was green
+     while the whole job ran at a sixth of its stated rate. */
+  .tick{flex-basis:100%;color:var(--dim);font-size:12px;margin-top:2px}
+  .tick.overdue{color:var(--late);font-weight:600}
   .legend{flex:none;display:flex;gap:14px;color:var(--dim);font-size:11px}
   .legend b{font-weight:700}
   .empty{padding:14px;color:var(--down)}
@@ -48,19 +56,75 @@
     thead th:nth-child(6),thead th:nth-child(8),thead th:nth-child(9){display:none}}
 </style></head><body>
 <header><h1>Bid sources</h1><span class="v live">ALL 7 LIVE</span>
-<span class="when">2026-08-20 · read 11:48:25 CDT</span></header>
+<span class="when">2026-08-20 · read 12:11:31 CDT</span>
+<span class="tick" id="tick"
+      data-read="2026-08-20T17:11:31.143Z"
+      data-due="2026-08-20T17:13:00.000Z"
+      data-every="10">read just now · next run due in a minute</span></header>
 
 <div class="wrap"><table><thead><tr>
 <th>State</th><th>Operator</th><th>Location</th><th>Commodities</th><th>Rows</th>
 <th>Priced</th><th>Checked</th><th>Platform</th><th>Phone</th><th>Note</th>
-</tr></thead><tbody><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Albert Lea Elevator</td><td class="lo">Albert Lea<span class="dim">, MN</span></td><td class="cm">Soybeans Corn</td><td class="n">4</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">graindesk</td><td class="ct">507-373-3133</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">BAB Grain</td><td class="lo">Auburn<span class="dim">, IL</span></td><td class="cm">Soybeans Corn</td><td class="n">4</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">graindesk</td><td class="ct"></td><td class="no">withheld: Soybeans (1), Soybeans (1), Corn (1), Corn (1)</td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Big River Resources</td><td class="lo">Boyceville<span class="dim">, WI</span></td><td class="cm">Corn</td><td class="n">7</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">cashbidssingle</td><td class="ct">715-643-3133</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Farmers Cooperative Society</td><td class="lo">Sioux Center<span class="dim">, IA</span></td><td class="cm">Corn Soybean</td><td class="n">11</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">fragment</td><td class="ct"></td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Flash Grain</td><td class="lo">Granton<span class="dim">, WI</span></td><td class="cm">CORN SOYBEANS</td><td class="n">4</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">aghost</td><td class="ct">715-653-6585</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Flash Grain</td><td class="lo">Thorp<span class="dim">, WI</span></td><td class="cm">CORN SOYBEANS</td><td class="n">4</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">aghost</td><td class="ct">715-653-6585</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Sunrise Ag Cooperative</td><td class="lo">Buckman<span class="dim">, MN</span></td><td class="cm">Soybeans Corn</td><td class="n">22</td><td class="m">11:48:25</td><td class="m">11:48:25</td><td class="pf">graindesk</td><td class="ct">320-468-6433</td><td class="no"></td></tr></tbody></table></div>
+</tr></thead><tbody><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Albert Lea Elevator</td><td class="lo">Albert Lea<span class="dim">, MN</span></td><td class="cm">Soybeans Corn</td><td class="n">4</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">graindesk</td><td class="ct">507-373-3133</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">BAB Grain</td><td class="lo">Auburn<span class="dim">, IL</span></td><td class="cm">Soybeans Corn</td><td class="n">4</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">graindesk</td><td class="ct"></td><td class="no">withheld: Soybeans (1), Soybeans (1), Corn (1), Corn (1)</td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Big River Resources</td><td class="lo">Boyceville<span class="dim">, WI</span></td><td class="cm">Corn</td><td class="n">7</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">cashbidssingle</td><td class="ct">715-643-3133</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Farmers Cooperative Society</td><td class="lo">Sioux Center<span class="dim">, IA</span></td><td class="cm">Corn Soybean</td><td class="n">11</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">fragment</td><td class="ct"></td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Flash Grain</td><td class="lo">Granton<span class="dim">, WI</span></td><td class="cm">CORN SOYBEANS</td><td class="n">4</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">aghost</td><td class="ct">715-653-6585</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Flash Grain</td><td class="lo">Thorp<span class="dim">, WI</span></td><td class="cm">CORN SOYBEANS</td><td class="n">4</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">aghost</td><td class="ct">715-653-6585</td><td class="no"></td></tr><tr class="r-live"><td class="st"><span class="g" aria-hidden="true">✓</span>live</td><td class="op">Sunrise Ag Cooperative</td><td class="lo">Buckman<span class="dim">, MN</span></td><td class="cm">Soybeans Corn</td><td class="n">22</td><td class="m">12:11:31</td><td class="m">12:11:31</td><td class="pf">graindesk</td><td class="ct">320-468-6433</td><td class="no"></td></tr></tbody></table></div>
 
 <div class="spacer"></div>
+
+<script>
+/* Ticks the two numbers in the header. Everything it needs is in the data-
+   attributes above: when the last run finished, when the schedule says the
+   next one is due, and how far apart the schedule puts them in this window.
+   No fetch, no clock but yours, and if it throws the baked-in words stay. */
+(function () {
+  try {
+    var el = document.getElementById("tick");
+    if (!el) return;
+    var read = Date.parse(el.getAttribute("data-read"));
+    var due = Date.parse(el.getAttribute("data-due"));
+    var every = Number(el.getAttribute("data-every"));
+    if (!read) return;
+    function ago(m) {
+      m = Math.max(0, Math.round(m));
+      if (m < 1) return "just now";
+      if (m === 1) return "1 minute ago";
+      if (m < 90) return m + " minutes ago";
+      var h = Math.floor(m / 60), r = m % 60;
+      return h + "h " + (r < 10 ? "0" : "") + r + "m ago";
+    }
+    function tick() {
+      var now = Date.now();
+      var since = (now - read) / 60000;
+      var text = "read " + ago(since);
+      var overdue = false;
+      if (due) {
+        var left = Math.round((due - now) / 60000);
+        if (left > 1) text += " · next run due in " + left + " minutes";
+        else if (left === 1) text += " · next run due in a minute";
+        else if (left === 0) text += " · next run due now";
+        else {
+          var late = Math.abs(left);
+          text += " · next run was due " + (late < 90 ? late + " minute" + (late === 1 ? "" : "s")
+                  : Math.floor(late / 60) + "h " + (late % 60 < 10 ? "0" : "") + (late % 60) + "m") + " ago";
+          /* One missed slot is GitHub being GitHub. Past two, say so in colour:
+             the schedule is not being honoured and the price is older than the
+             page implies. */
+          overdue = every > 0 ? late > every : late > 5;
+        }
+      }
+      el.textContent = text;
+      el.className = "tick" + (overdue ? " overdue" : "");
+    }
+    tick();
+    setInterval(tick, 15000);
+  } catch (e) { /* the baked-in words were true when they were written */ }
+})();
+</script>
 
 <div class="legend">
   <span><b style="color:var(--live)">✓</b> live — read inside 6h</span>
   <span><b style="color:var(--late)">!</b> needs a look — stale or refusing</span>
   <span><b style="color:var(--down)">×</b> down — past 14h, consumers have withdrawn</span>
+  <span>“due” is what the schedule asks for; GitHub's scheduler is best effort and
+        drops runs under load</span>
   <span style="margin-left:auto">7 sources</span>
 </div>
 </body></html>
