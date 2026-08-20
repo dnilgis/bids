@@ -1,0 +1,26 @@
+{
+  "id": "farmerscoop-siouxcenter",
+  "operator": "Farmers Cooperative Society",
+  "location": "Sioux Center",
+  "state": "IA",
+  "platform": "fragment",
+  "url": "https://www.farmerscoopsociety.com/ajax/homepage/dtn-cash-bids",
+  "locationId": "Sioux Center",
+  "bands": {
+    "corn": [2.0, 12.0],
+    "soybean": [6.0, 25.0]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "Their own server renders this board and their page drops it straight in: U(\"js-dtn-bids\", \"/ajax/homepage/dtn-cash-bids\"). No widget, no key, no JavaScript. The per-location variant is /ajax/pages/dtn-cash-bids?location=<id> and is how the other FCS locations get added once their ids are read off the locations page; /ajax/pages/dtn-cash-bids with no location returned 70 bytes, so the id is not optional there. Their second heading drops the town -- \"Sioux Center Corn Bids\" then plain \"Soybean Bids\" -- and the adapter inherits it only because every heading that names a town names the same one. Cash is 2dp against quarter-cent futures, so rows sit up to half a cent off the identity; cashRoundingCents declares that.",
+  "cashRoundingCents": 0.5,
+  "publicNote": "Their publicly posted cash board at Sioux Center, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "zip": "51250",
+  "lat": 43.07667,
+  "lon": -96.17333,
+  "phone": null,
+  "email": null,
+  "website": "https://www.farmerscoopsociety.com/",
+  "inMerge": true
+}

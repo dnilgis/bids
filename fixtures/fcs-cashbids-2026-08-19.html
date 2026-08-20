@@ -1,0 +1,323 @@
+   
+
+
+
+
+
+            
+
+
+   <div x-data="{ activeTab: 0 }"
+        class="text-copy-dark border-1 flex flex-col mx-8 mb-8 ">
+      <div class="flex space-x-1 flex flex-wrap-reverse">
+                     <button
+               class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 bg-slate-300 font-black !text-copy-dark"
+               :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 0 }"
+               @click="activeTab = 0"
+               type="button"
+            >
+               Corn Bids
+            </button>
+                     <button
+               class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 "
+               :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 1 }"
+               @click="activeTab = 1"
+               type="button"
+            >
+               Soybean Bids
+            </button>
+               </div>
+
+      <div class="bg-white text-copy-dark outline outline-slate-200 rounded-sm overflow-hidden">
+                     <div
+               x-show="activeTab === 0"
+               class="p-0 overflow-x-scroll"
+            >
+                        <h1 class="text-3xl text-copy-dark bg-gray-100 font-bold px-5 py-2">Sioux Center Corn Bids</h1>
+                  <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+        <tr class="">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    delivery date
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    cash-price
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    basis
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    basis-month
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    futures-price
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    futures-change
+                </th>
+                    </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        Aug &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        4.58
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.15
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @C6U
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        472&#039;6
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         -0&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        New Crop &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        4.56
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.42
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @C6Z
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        497&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         -0&#039;4
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        December &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        4.56
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.42
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @C6Z
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        497&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         -0&#039;4
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        January &#039;27
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        4.61
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.52
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @C7H
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        513&#039;2
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         -0&#039;4
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        New Crop &#039;27
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        4.57
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.50
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @C7Z
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        506&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;0
+                    </td>
+                            </tr>
+                </tbody>
+    </table>
+
+   
+            </div>
+                     <div
+               x-show="activeTab === 1"
+               class="p-0 overflow-x-scroll"
+            >
+                        <div>
+      <h1 class="text-3xl text-copy-dark bg-gray-100 font-bold px-5 py-2">Soybean Bids</h1>
+                  <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+        <tr class="">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    delivery date
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    cash-price
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    basis
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    basis-month
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    futures-price
+                </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    futures-change
+                </th>
+                    </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        by Aug 21st
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        12.20
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.18
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S6X
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1237&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        LH Aug &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        12.04
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.34
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S6X
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1237&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        New Crop &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        11.73
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.65
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S6X
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1237&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        November &#039;26
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        11.73
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.65
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S6X
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1237&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        January &#039;27
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        11.81
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.72
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S7F
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1252&#039;4
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         1&#039;2
+                    </td>
+                            </tr>
+                    <tr class="">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        New Crop &#039;27
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        11.14
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        -0.80
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        @S7X
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                        1193&#039;6
+                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                         0&#039;0
+                    </td>
+                            </tr>
+                </tbody>
+    </table>
+
+   
+            </div>
+               </div>
+   </div>
+

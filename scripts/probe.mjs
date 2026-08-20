@@ -36,7 +36,7 @@ const has = (name) => args.includes(`--${name}`);
    run probed United Cooperative's own page before it got to the component it
    was pointed at. Harmless there, misleading in general: the log claimed to
    have read something nobody asked for. */
-const VALUED = ["referer", "context", "max-bundle-bytes", "raw"];
+const VALUED = ["referer", "context", "max-bundle-bytes", "raw", "grep", "max-chunks"];
 const takenByFlag = new Set(VALUED.map((f) => args.indexOf(`--${f}`)).filter((i) => i !== -1).map((i) => i + 1));
 const urls = args.filter((a, i) => /^https?:\/\//.test(a) && !takenByFlag.has(i));
 
@@ -211,6 +211,8 @@ async function probe(url, referer) {
     line(`\n-- first 600 of ${res.bytes} bytes (raise --raw to see more) --\n${res.body.slice(0, 600)}`);
   }
 
+  reportGrep(res.body, res.finalUrl);
+
   const { scripts, iframes, links } = assetsOf(res.body, res.finalUrl);
   line(`\n-- ${iframes.length} iframe(s) --`); iframes.forEach((u) => line(`  ${u}`));
   line(`\n-- ${scripts.length} script(s) --`); scripts.forEach((u) => line(`  ${u}`));
@@ -242,12 +244,17 @@ async function probe(url, referer) {
        app itself does `"/" + name`, so root is the base. Try root first and
        keep the folder-relative form as a fallback for apps that really are
        relative. */
-    const chunks = chunkNames(b.body).flatMap((c) => {
-      const out = [];
-      try { out.push(new URL(`/${c}`, b.finalUrl).href); } catch {}
-      try { const rel = new URL(c, b.finalUrl).href; if (!out.includes(rel)) out.push(rel); } catch {}
-      return out;
-    }).filter((u) => u && !seenChunks.has(u));
+    /* ROOT ONLY, AND THE INTERESTING ONES FIRST.
+       Queuing both resolutions burned half of run 87615169391's chunk budget on
+       relative twins that each returned the same 5,858-byte SPA shell. Root is
+       what the app itself uses. And with 92 chunks named and a cap on how many
+       are worth fetching, a chunk called bidColumns is worth more than one
+       called EnvironmentWarningBanner. */
+    const rank = (u) => (/(bid|cash|price|quote|market|component|public|board)/i.test(u) ? 0 : 1);
+    const chunks = chunkNames(b.body)
+      .map((c) => { try { return new URL(`/${c}`, b.finalUrl).href; } catch { return null; } })
+      .filter((u) => u && !seenChunks.has(u))
+      .sort((x, y) => rank(x) - rank(y));
     if (!chunks.length) continue;
     line(`\n-- ${chunks.length} chunk(s) named by this bundle --`);
     for (const c of chunks.slice(0, MAX_CHUNKS)) {
@@ -264,7 +271,29 @@ async function probe(url, referer) {
   }
 }
 
+/* AN INSTRUMENT, NOT A FIXED HEURISTIC.
+   The Grain Desk bundle holds its endpoint as `${GD_CASH_BIDS_API_URL}/…` --
+   a template literal, so there is no quoted absolute URL to find and the URL
+   scan came back with thirteen strings and none of them the one. Rather than
+   grow the pattern list forever, let the caller say what to look for. */
+function reportGrep(text, from) {
+  const pat = flag("grep");
+  if (!pat) return;
+  let re;
+  try { re = new RegExp(pat, "gi"); }
+  catch (e) { line(`\n-- --grep ${JSON.stringify(pat)} is not a valid regex: ${e.message} --`); return; }
+  const hits = [];
+  for (const m of String(text).matchAll(re)) {
+    const at = m.index ?? 0;
+    hits.push(String(text).slice(Math.max(0, at - CONTEXT), at + m[0].length + CONTEXT * 2).replace(/\s+/g, " "));
+    if (hits.length >= 60) break;
+  }
+  line(`\n-- ${hits.length} match(es) for --grep ${JSON.stringify(pat)} --`);
+  hits.forEach((h) => line(`  …${h}…`));
+}
+
 function reportBundle(text, from) {
+  reportGrep(text, from);
   const eps = endpointStrings(text, CONTEXT);
   line(`\n-- ${eps.length} URL-ish string(s) --`);
   for (const e of eps) line(`  ${e.url}\n      …${e.ctx}…`);
@@ -283,6 +312,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   --referer      sent as the Referer header (an iframe's parent page)
   --all-origins  also fetch scripts served from other hosts (default: same host only)
+  --grep <re>    print every match of this regex, with context, in every body read
+  --raw <n>      how much of a body to print (default 40000)
+  --max-chunks   how many runtime chunks to follow (default 25)
 `);
     process.exit(2);
   }
