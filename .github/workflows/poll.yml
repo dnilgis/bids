@@ -95,6 +95,19 @@ jobs:
         # poll.mjs SUPERSEDES fetch.mjs. Both write data/boyceville.json, so only
         # one may ever be scheduled -- two writers on one artefact has bitten
         # this system three times. Delete scripts/fetch.mjs once this is live.
+        #
+        # KEYS COME IN HERE AND NOWHERE ELSE. A source that needs one names the
+        # ENVIRONMENT VARIABLE in its manifest (`apiKeyEnv`), never the key, and
+        # poll.mjs sends it as an `apikey` HEADER -- so it stays out of the URL,
+        # out of the log line, out of every error message, and out of any
+        # redirect. This repository is public and its Actions logs are readable
+        # by anybody, which is what makes that distinction matter.
+        #
+        # ADDING A PLATFORM THAT NEEDS A KEY MEANS ADDING A LINE HERE. Forgetting
+        # is not silent: poll.mjs names the missing variable, the sources that
+        # need it and the remedy, once, before it fetches anything.
+        env:
+          DTN_CS_API_KEY: ${{ secrets.DTN_CS_API_KEY }}
         run: node scripts/poll.mjs
 
       - name: Commit if the price moved, and rebake the dashboard

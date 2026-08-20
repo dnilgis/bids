@@ -1,0 +1,59 @@
+# What is behind a DTN Content Services site id?
+#
+# One site id can carry a whole co-operative — Ag Partners' e0172401 returns 176
+# records across THIRTEEN locations. This asks, and prints a manifest skeleton
+# per location with the rounding mode MEASURED rather than assumed.
+#
+# IT RUNS HERE AND NOT ANYWHERE ELSE BECAUSE OF WHERE api.dtn.com WILL ANSWER.
+# It returns 403 to every non-browser client on every path under /markets/,
+# existing or not, so none of this can be worked out from a sandbox and a 403
+# there carries no information about whether a path is real. On the runner it is
+# one button.
+#
+# NEXT ONE UP: Premier Cooperative, siteId E0266901, key already known. Whether
+# that is three towns or thirty is one run of this away.
+#
+# It writes nothing. Fill in every SET THIS in the output, geocode each street
+# address, and only then commit a manifest and enable it.
+
+name: dtn probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: "DTN site id, e.g. e0172401 or E0266901"
+        required: true
+      key_env:
+        description: "Which repository secret holds that site's key"
+        required: true
+        default: DTN_CS_API_KEY
+      operator:
+        description: "Company name, to save typing it into every skeleton"
+        required: false
+
+permissions:
+  contents: read          # it writes nothing, so it may not write anything
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Ask
+        # EVERY KEY THIS CAN USE HAS TO BE LISTED HERE, and adding a site means
+        # adding a line. The script names the missing variable and exits 2
+        # rather than asking without it, because a keyless request comes back
+        # 401 and reads exactly like the elevator being down.
+        env:
+          DTN_CS_API_KEY: ${{ secrets.DTN_CS_API_KEY }}
+          PREMIER_DTN_KEY: ${{ secrets.PREMIER_DTN_KEY }}
+        run: |
+          node scripts/dtn-probe.mjs \
+            --site "${{ inputs.site }}" \
+            --key-env "${{ inputs.key_env }}" \
+            ${{ inputs.operator && format('--operator "{0}"', inputs.operator) || '' }}
