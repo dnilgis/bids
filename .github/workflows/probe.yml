@@ -65,61 +65,48 @@ jobs:
 
       # ---- built-in targets, only when no URLs were supplied ----
 
-      # RUN 87604079618 FOUND THE HOST, NOT YET THE CALL.
-      # The component is a Vite app whose route handler lives in a chunk it
-      # imports at runtime; the entry bundle stores that chunk's name without a
-      # leading slash, so the first pass never fetched it. The API host is
-      # already known from the consent script that blocks it by name:
-      # api.stonehedge.stonex.com. This pass follows the chunks.
-      - name: StoneX Stonehedge — follow the chunks to the call
+      # RUN 87613396138: the chunks 404ed, 46 times, because the entry bundle is
+      # /assets/index-….js and stores chunk names as "assets/App-….js" — resolved
+      # against the bundle's folder that becomes /assets/assets/…. The app does
+      # `"/" + name`. v3 resolves against the root. Same URL, one fix away.
+      - name: StoneX Stonehedge — the chunks, resolved properly this time
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins --max-chunks 60 \
+            --referer 'https://www.unitedcooperative.com/grain/markets' \
+            'https://stonehedge.stonex.com/component/bids?key=AILQAFBJPWG59NXDNV00QPRSFTUA0EEU&cols=date%2Cbasis%2Ccash%2Cmonth&locs=8TG9IQ1J6TGRFBUP1XH0%2CMY33N2HTBP5KB5I5NXBT&hideRows=true'
+
+      # ALBERT LEA NAMED ITS PLATFORM AND ITS KEY.
+      #   window.initGdCashBidsWidget(widgetId, { companyToken: "albertleaelevator", … })
+      #   https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js
+      # A companyToken that IS the company's slug is the most promising thing
+      # found all night: one adapter, and every elevator on DTN Grain Desk is
+      # one string away. Read the bundle and find what it calls.
+      - name: DTN Grain Desk — the cash-bids bundle
         if: inputs.urls == ''
         continue-on-error: true
         run: |
           node scripts/probe.mjs --all-origins \
-            --referer 'https://www.unitedcooperative.com/grain/markets' \
-            'https://stonehedge.stonex.com/component/bids?key=AILQAFBJPWG59NXDNV00QPRSFTUA0EEU&cols=date%2Cbasis%2Ccash%2Cmonth&locs=8TG9IQ1J6TGRFBUP1XH0%2CMY33N2HTBP5KB5I5NXBT%2CR1N80EAHWPNYR9G1LMWR%2C8IV5F5A9QEAKE4XAY5QJ%2CPJYKE44BL0LHE6IS1AF5%2CQUDI1QXLIT8K10MNECJZ%2CO5O1O9ZPX53BEX76LRHV%2C40IKZBC9OB9IL1UXOBPP%2CRVVXG5L0XE3GI5AWB53Y%2C0K0P4SVDRQE05DC5OIVD%2CAA7H4HDBRE6BMUC39KTC%2CY9NCLQVOUU2XQAY1AMLF%2C19E1TL8I3EZCJV1QMG1Y%2CYGJURZBVAHT0YJG0XUWZ%2CJJTPQUKHOUZB0D9MWKAW%2CA9SZ4P52EX9GM1HFQJOF%2CDX1FS9P9TZKI31NV6UIS%2CX4Y28QJH3K7H7SSJZ3KS%2CBWRKFA2595KP9MZRGW4P%2CZNLUUX5HGF4BSYZN4LD1%2CN8ODQZQ1XHBNROPZIB2O%2CTCKSH80SNDFKUCVJG3SK%2CX49TS7URXU388M7EO84J%2CXPUH9SEA89OPQE7MBW5V&hideRows=true'
+            --referer 'https://albertleaelevator.com/markets/' \
+            'https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js'
 
-      # THE FRONT DOOR AT FARMERS COOPERATIVE SOCIETY.
-      # Their own page script does:
-      #   U("js-cash-bids-details", "/ajax/pages/dtn-cash-bids?location=" + id)
-      #   U("js-dtn-bids",          "/ajax/homepage/dtn-cash-bids")
-      # i.e. their server renders the board and hands back a fragment. No key,
-      # no widget, no JavaScript to defeat. Print the body.
-      - name: Farmers Cooperative Society — the server-rendered fragment
+      # The Sioux Center board came back whole: 14,223 bytes of server-rendered
+      # HTML with corn and beans in it. This re-reads it with the body printed
+      # in full so the parser can be written against the real markup, and asks
+      # the per-location variant the same question.
+      - name: Farmers Cooperative Society — the whole fragment
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs \
-            'https://www.farmerscoopsociety.com/ajax/pages/dtn-cash-bids' \
+          node scripts/probe.mjs --raw 200000 \
             'https://www.farmerscoopsociety.com/ajax/homepage/dtn-cash-bids'
 
-      # United Cooperative's equivalent: POST /dtncashbidwidget/bindlocation.
-      # GET may answer; if it does not, the log says so and we know to POST.
+      # GET may not answer a route the site only ever POSTs to. If it 405s or
+      # returns the shell, that is the answer and we stop guessing.
       - name: United Cooperative — its own widget route
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs --all-origins \
-            'https://www.unitedcooperative.com/dtncashbidwidget/bindlocation?dropdownvalue=1' \
-            'https://www.unitedcooperative.com/grain'
-
-      # Albert Lea is a WordPress site on a DTN theme; its board is configured
-      # inline as window.dtn.…createCashBidsWidget({apiKey, siteId, container}).
-      # v1 reported the variable names around that call and threw the argument
-      # away, which is the one thing in it worth having.
-      - name: Albert Lea Elevator — the widget's own configuration
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          node scripts/probe.mjs --all-origins 'https://albertleaelevator.com/markets/'
-
-      # The DTN widget bundle names its paths -- /cash-bids, /markets/sites/,
-      # /markets/symbols/, /quotes, /price-history -- against baseUrl
-      # https://api.dtn.com, keyed by apiKey + siteId. Re-read it alongside the
-      # config above so the two halves land in one log.
-      - name: DTN content-services — the widget bundle's own endpoints
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          node scripts/probe.mjs \
-            'https://content-services.dtn.com/ui-widgets/cash-bids-table-widget/cash-bids-table-widget-1.0-latest.js'
+          node scripts/probe.mjs --raw 200000 \
+            'https://www.unitedcooperative.com/dtncashbidwidget/bindlocation?dropdownvalue=1'
