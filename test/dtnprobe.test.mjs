@@ -51,7 +51,7 @@ test("a row with no quote is not counted as evidence for anything", () => {
 });
 
 test("one skeleton per location, keyed on the id the feed uses", () => {
-  const s = skeleton(rows, { siteId: "e0172401", url: URL_, keyEnv: "DTN_CS_API_KEY", operator: "Ag Partners Cooperative" });
+  const s = skeleton(rows, { siteId: "e0172401", url: URL_, page: "https://agpartners.net/cash-bids/", operator: "Ag Partners Cooperative" });
   assert.equal(s.length, 4);
   assert.deepEqual(s.map((x) => x.manifest.locationId).sort(), ["25078", "25686", "7239", "7240"]);
   const rw = s.find((x) => x.manifest.locationId === "7239");
@@ -63,7 +63,7 @@ test("one skeleton per location, keyed on the id the feed uses", () => {
 });
 
 test("the skeleton refuses to invent the two things the feed does not know", () => {
-  const s = skeleton(rows, { siteId: "e0172401", url: URL_, keyEnv: "DTN_CS_API_KEY" });
+  const s = skeleton(rows, { siteId: "e0172401", url: URL_, page: "https://agpartners.net/cash-bids/" });
   for (const x of s) {
     assert.equal(x.manifest.lat, null, "the feed carries no coordinate and a centroid is a different place");
     assert.equal(x.manifest.lon, null);
@@ -71,15 +71,16 @@ test("the skeleton refuses to invent the two things the feed does not know", () 
     assert.match(x.manifest.note, /SET THIS/);
     assert.equal(x.manifest.operator, "SET THIS");
     assert.ok(!("apiKey" in x.manifest), "a probe must not put a key in a manifest");
-    assert.equal(x.manifest.apiKeyEnv, "DTN_CS_API_KEY");
+    assert.ok(!("apiKeyEnv" in x.manifest), "a browser source holds no key at all -- theirs is in their own page");
     assert.ok(!/apikey=/i.test(x.manifest.url));
+    assert.equal(x.manifest.browserPage, "https://agpartners.net/cash-bids/");
   }
 });
 
 test("a skeleton with its blanks filled is a manifest the loader accepts", () => {
   /* The point of the skeleton is that the only work left is the work that
      needs a human: which town, where it is, and where that came from. */
-  const [first] = skeleton(rows, { siteId: "e0172401", url: URL_, keyEnv: "DTN_CS_API_KEY", operator: "Ag Partners Cooperative" });
+  const [first] = skeleton(rows, { siteId: "e0172401", url: URL_, page: "https://agpartners.net/cash-bids/", operator: "Ag Partners Cooperative" });
   const filled = {
     ...first.manifest, id: "agpartners-redwing", state: "MN",
     website: "https://agpartners.net/cash-bids/",
@@ -94,7 +95,7 @@ test("the mode is left OUT when nothing explains the board, so it refuses loudly
      stays strict, and a board whose arithmetic we have not understood refuses
      with the residuals printed rather than publishing under a guess. */
   const odd = rows.map((r, i) => (i === 0 ? { ...r, cash: r.cash + 0.05 } : r));
-  const s = skeleton(odd, { siteId: "e0172401", url: URL_, keyEnv: "DTN_CS_API_KEY" });
+  const s = skeleton(odd, { siteId: "e0172401", url: URL_, page: "https://agpartners.net/cash-bids/" });
   const rw = s.find((x) => x.manifest.locationId === "7239");
   assert.equal(rw._evidence.mode, null);
   assert.ok(!("cashRounding" in rw.manifest));

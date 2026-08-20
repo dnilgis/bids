@@ -43,7 +43,8 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFile, Refused, serialise } from "../lib/board.mjs";
 import { decide } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
+import { capture } from "../lib/cdp.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -115,11 +116,23 @@ const pages = new Map();
 async function getPage(s) {
   if (fixtures.has(s.id))
     return { html: readFileSync(fixtures.get(s.id), "utf8"), url: `file://${fixtures.get(s.id)}` };
-  const key = s.url;
+  /* Both urls in the key. Thirteen Ag Partners sources share one API url AND
+     one page, so they share one browser load; a fourteenth on the same API url
+     but a different page must not silently reuse it. */
+  const key = `${s.browserPage ?? ""}|${s.url}`;
   if (pages.has(key)) return pages.get(key);
   const p = (async () => {
     const problems = [];
     const wire = wireOf(s.platform);
+
+    /* A BROWSER SOURCE IS LOADED, NOT FETCHED. See lib/cdp.mjs for why. */
+    if (transportOf(s.platform) === "browser") {
+      const got = await capture({ pageUrl: s.browserPage, target: s.url });
+      if (!got.body.length) throw new Error(`${got.url} answered ${got.status} with an empty body`);
+      /* got.url has already had any key in it redacted, which matters: it is
+         what gets stamped into the committed file and printed on failure. */
+      return { html: got.body, url: got.url };
+    }
     const headers = {
       "User-Agent": UA,
       Accept: wire === "json" ? "application/json" : "text/html",

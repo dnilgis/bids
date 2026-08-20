@@ -18,7 +18,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   PLATFORMS, PLATFORM_WIRE, wireOf, CASH_ROUNDING_MODES, FUTURES_UNITS,
   validateSource, warnSource, toConfig, loadSources,
@@ -78,7 +78,8 @@ test("END TO END: a real manifest and a real capture publish through the real gu
 
 test("dtn-cs is a platform the manifest layer knows about", () => {
   assert.ok(PLATFORMS.includes("dtn-cs"));
-  assert.deepEqual(errs({ platform: "dtn-cs", url: "https://api.dtn.com/markets/sites/e0/cash-bids" }), []);
+  assert.deepEqual(errs({ platform: "dtn-cs", url: "https://api.dtn.com/markets/sites/e0/cash-bids",
+                          browserPage: "https://agpartners.net/cash-bids/" }), []);
   assert.match(errs({ platform: "made-up" })[0], /unknown platform/);
 });
 
@@ -129,7 +130,6 @@ test("a key may never be in a manifest or in a url", () => {
 
 test("every shipped manifest is free of a key, in the file and in the url", async () => {
   const dir = new URL("../sources/", import.meta.url);
-  const { readdirSync } = await import("node:fs");
   for (const f of readdirSync(dir).filter((n) => n.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
     assert.ok(!("apiKey" in s), `${f} carries an apiKey`);
@@ -148,4 +148,34 @@ test("every platform declares what comes back on the wire", () => {
   /* An unknown platform defaults to html rather than throwing: validation has
      already refused it by the time anything asks. */
   assert.equal(wireOf("who-knows"), "html");
+});
+
+test("a browser-read platform must name the page whose widget asks for its url", () => {
+  /* A dtn-cs source has TWO urls: `url` is the response we wait for,
+     `browserPage` is the page that will ask for it. Without the second there is
+     nothing to load, and the source would sit out its timeout on every poll and
+     refuse — slowly, and for a reason nobody would guess from the message. */
+  const dtn = { platform: "dtn-cs", url: "https://api.dtn.com/markets/sites/e0/cash-bids" };
+  assert.match(errs(dtn)[0], /needs browserPage/);
+  assert.deepEqual(errs({ ...dtn, browserPage: "https://agpartners.net/cash-bids/" }), []);
+  assert.match(errs({ ...dtn, browserPage: "http://agpartners.net/cash-bids/" })[0], /must be an https url/);
+  /* Loopback is allowed and public http is not. Without the carve-out the
+     entire browser path could only be exercised against the live internet,
+     which is not a test; with it, an http page on a real host is still refused
+     for the same reason `url` refuses one. */
+  assert.deepEqual(errs({ ...dtn, browserPage: "http://127.0.0.1:8080/cash-bids/" }), []);
+  assert.deepEqual(errs({ ...dtn, browserPage: "http://localhost:8080/cash-bids/" }), []);
+  assert.match(errs({ ...dtn, browserPage: "http://10.0.0.5/cash-bids/" })[0], /must be an https url/);
+  /* And the other way: a browserPage on a platform nothing loads is a field
+     that would sit there looking like it did something. */
+  assert.match(errs({ browserPage: "https://x.test/p" })[0], /not read through a browser/);
+});
+
+test("every shipped browser source names a page, and every other source does not", () => {
+  const dir = new URL("../sources/", import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+    const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
+    if (s.platform === "dtn-cs") assert.match(String(s.browserPage), /^https:\/\//, f);
+    else assert.equal(s.browserPage, undefined, `${f} has a browserPage nothing would use`);
+  }
 });

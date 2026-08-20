@@ -41,3 +41,36 @@ test("variants are unique, so no name is asked twice", () => {
   const v = slugVariants("Grain");
   assert.equal(new Set(v).size, v.length, JSON.stringify(v));
 });
+
+/* THE ONLY CORPUS THIS GENERATOR HAS: the tokens known to exist.
+ *
+ * Four of these came out of a page or a bundle. `sunriseagcoop` came out of a
+ * person typing the abbreviation the company uses on its own domain, and on
+ * 2026-08-20 the generator still could not produce it — it offered
+ * sunriseagcooperative, sunriseAgCooperative, sunrise-ag-cooperative and
+ * sunriseag. A candidate generator that cannot produce the one hit a sweep has
+ * ever had is not generating candidates, it is generating confidence.
+ *
+ * If a sixth token is ever found, add it here first and make the generator
+ * reach it. That is the whole discipline available on a guessing game whose
+ * negative answer carries no information.
+ */
+test("every token known to exist is reachable from its company name", () => {
+  const known = [
+    ["Sunrise Ag Cooperative", "sunriseagcoop"],
+    ["Albert Lea Elevator", "albertleaelevator"],
+    ["BAB Grain", "babgrain"],
+    ["St Lawrence Grain", "stLawrenceGrain"],
+    ["Lockie Farms", "lockiefarms"],
+  ];
+  for (const [name, token] of known)
+    assert.ok(slugVariants(name).includes(token),
+      `${name} -> ${slugVariants(name).join(", ")} does not contain ${token}`);
+});
+
+test("the abbreviation swap goes both ways and costs nothing on a name without it", () => {
+  assert.ok(slugVariants("River Country Co-Op").includes("rivercountrycooperative"));
+  assert.ok(slugVariants("River Country Co-Op").includes("rivercountrycoop"));
+  /* A name with neither spelling gains no extra candidates. */
+  assert.deepEqual(slugVariants("BAB Grain"), ["babgrain", "babGrain", "bab-grain"]);
+});

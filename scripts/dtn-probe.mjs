@@ -11,15 +11,21 @@
  * back and writing thirteen manifests without inventing anything. This does
  * that part and writes nothing.
  *
- * WHY IT EXISTS AT ALL, AND WHY IT RUNS ON THE RUNNER. api.dtn.com answers 403
- * to every non-browser client on every path under /markets/, existing or not,
- * so none of this can be worked out from a sandbox. On the Actions runner it is
- * one workflow_dispatch. Premier Cooperative (E0266901) is the next one and its
- * key is already known; whether it is three towns or thirty is one run away.
+ * WHY IT RUNS ON THE RUNNER. It needs a Chromium and real network, and the
+ * sandbox has neither pointed at api.dtn.com. On the runner it is one
+ * workflow_dispatch. Premier Cooperative (E0266901) is the next one: whether it
+ * is three towns or thirty is one run away.
  *
- *   node scripts/dtn-probe.mjs --site e0172401
- *   node scripts/dtn-probe.mjs --site E0266901 --key-env PREMIER_DTN_KEY
+ *   node scripts/dtn-probe.mjs --site E0266901 --page https://www.premiercooperative.com/agricultural/detailed-cash-bids
  *   node scripts/dtn-probe.mjs --site e0172401 --fixture fixtures/dtn-cs-agpartners-e0172401.json
+ *
+ * IT LOADS A PAGE RATHER THAN CALLING THE API, and it holds no key. DTN
+ * answered the first version of this from the runner with "The api key is
+ * valid, but it is valid to be used within a browser only" -- their gateway
+ * scopes widget keys to browser use, so a server-side call cannot work however
+ * valid the key is. The customer's own page carries their key in the clear,
+ * because that is the only way a browser widget can work at all, so loading
+ * that page needs nothing from us. See lib/cdp.mjs.
  *
  * THE ROUNDING MODE IS MEASURED, NOT GUESSED. `cashRounding` decides whether a
  * board's cash cell is the arithmetic exactly, rounded, or floored, and getting
@@ -31,6 +37,7 @@
  */
 import { readFileSync } from "node:fs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
+import { capture } from "../lib/cdp.mjs";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => { const i = args.indexOf(`--${n}`); return i === -1 ? d : args[i + 1] ?? d; };
@@ -67,7 +74,7 @@ export function roundingEvidence(rows) {
 }
 
 /** One manifest per location, with everything the feed knows and nothing else. */
-export function skeleton(rows, { siteId, url, keyEnv, operator }) {
+export function skeleton(rows, { siteId, url, page, operator }) {
   const byId = new Map();
   for (const r of rows) {
     if (!byId.has(r.locationId)) byId.set(r.locationId, []);
@@ -96,9 +103,11 @@ export function skeleton(rows, { siteId, url, keyEnv, operator }) {
         state: "SET THIS",
         platform: "dtn-cs",
         url,
+        /* The public page whose own widget asks for `url`. Required, because a
+           browser source has two urls and needs both. */
+        browserPage: page ?? "SET THIS",
         locationId,
         siteId,
-        apiKeyEnv: keyEnv,
         bands,
         /* Stated only when the evidence names it. Left out otherwise, which
            means the identity guard stays strict and the board will refuse
@@ -130,11 +139,14 @@ export function skeleton(rows, { siteId, url, keyEnv, operator }) {
 
 /* ---- the fetch ----------------------------------------------------------- */
 
+/* KEPT, AND NOT USED BY THE SCRIPT BELOW. A direct call is still the right
+   shape for any DTN endpoint that is not gated to browsers, and the header
+   discipline is worth having written down: a key is a HEADER, never a query
+   parameter, because this prints its URLs and this is a public repository
+   whose Actions logs anybody can read. */
 export async function ask(path, { key, base = BASE } = {}) {
   const url = `${base.replace(/\/+$/, "")}${path}`;
   const headers = { accept: "application/json", "user-agent": UA };
-  /* A HEADER, NEVER A QUERY PARAMETER. This prints its URLs, and this is a
-     public repository whose Actions logs anybody can read. */
   if (key) headers.apikey = key;
   try {
     const res = await fetch(url, { headers });
@@ -150,42 +162,37 @@ export async function ask(path, { key, base = BASE } = {}) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const site = flag("site");
   const fixture = flag("fixture");
-  const keyEnv = flag("key-env", "DTN_CS_API_KEY");
+  const page = flag("page");
   if (!site) { console.error("need --site <siteId>"); process.exit(2); }
+  if (!fixture && !page) {
+    console.error("need --page <the customer's public cash-bids page>, or --fixture <file>.\n" +
+      "A direct call cannot work: DTN answers \"The api key is valid, but it is valid to be " +
+      "used within a browser only\".");
+    process.exit(2);
+  }
 
   const url = `${BASE}/sites/${site}/cash-bids?units=us`;
-  let body;
+  let body, from = url;
 
   if (fixture) {
     body = readFileSync(fixture, "utf8");
-    console.log(`reading ${fixture} -- no request made`);
+    console.log(`reading ${fixture} -- no browser, no request`);
   } else {
-    const key = process.env[keyEnv];
-    if (!key) {
-      console.error(`::error title=${keyEnv} is not set::dtn-probe needs it. Add it as a ` +
-        `repository secret and pass it into this step's env. It must never be written into ` +
-        `a manifest or a URL.`);
-      process.exit(2);
-    }
-    /* The locations call is asked for first because it is the one that may
-       carry addresses, which are the only thing standing between a probe result
-       and a finished manifest. It is allowed to fail: not every site exposes
-       it, and the boards are the point. */
-    const locs = await ask(`/sites/${site}/locations?units=us`, { key });
-    console.log(`locations: HTTP ${locs.status}${locs.error ? ` (${locs.error})` : ""}`);
-    if (locs.ok) console.log(locs.body.slice(0, 4000));
-
-    const res = await ask(`/sites/${site}/cash-bids?units=us`, { key });
-    if (!res.ok) {
-      console.error(`cash-bids: HTTP ${res.status}${res.error ? ` (${res.error})` : ""}\n` +
-                    res.body.slice(0, 400));
+    console.log(`loading ${page} and waiting for ${BASE}/sites/${site}/cash-bids`);
+    let got;
+    try {
+      got = await capture({ pageUrl: page, target: `${BASE}/sites/${site}/cash-bids` });
+    } catch (e) {
+      console.error(`::error title=nothing captured::${e.message}`);
       process.exit(1);
     }
-    body = res.body;
+    console.log(`captured HTTP ${got.status}, ${got.body.length} bytes from ${got.url}`);
+    body = got.body;
+    from = got.url;
   }
 
   let rows;
-  try { rows = extract(body, url); }
+  try { rows = extract(body, from); }
   catch (e) { console.error(`the adapter refused it: ${e.message}`); process.exit(1); }
 
   const all = roundingEvidence(rows);
@@ -194,11 +201,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
               `floor ${all.floor}/${all.testable} -> ${all.mode ?? "NO RULE EXPLAINS EVERY ROW"}`);
   console.log(`residuals seen (cents): ${all.residuals.join(", ")}`);
 
-  const skels = skeleton(rows, { siteId: site, url, keyEnv, operator: flag("operator") });
-  for (const s of skels) {
-    console.log(`\n--- ${s.manifest.location} (${s.manifest.locationId}) — ${s._rows} row(s): ` +
-                `${s._commodities.join(", ")} — ${s._evidence.mode ?? "rounding UNRESOLVED"}`);
-    console.log(JSON.stringify(s.manifest, null, 2));
+  const skels = skeleton(rows, { siteId: site, url, page, operator: flag("operator") });
+  for (const sk of skels) {
+    console.log(`\n--- ${sk.manifest.location} (${sk.manifest.locationId}) — ${sk._rows} row(s): ` +
+                `${sk._commodities.join(", ")} — ${sk._evidence.mode ?? "rounding UNRESOLVED"}`);
+    console.log(JSON.stringify(sk.manifest, null, 2));
   }
   console.log(`\nWrote nothing. Fill in every SET THIS, geocode each address, then enable.`);
 }

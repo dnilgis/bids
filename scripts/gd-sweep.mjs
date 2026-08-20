@@ -60,7 +60,28 @@ export function slugVariants(name) {
   const camel = use.map((w, i) => (i === 0 ? w : w[0].toUpperCase() + w.slice(1))).join("");
   const hyphen = use.join("-");
   const dropCoop = use.filter((w) => !/^(coop|cooperative|co-op|elevator|grain|farms|farm)$/.test(w)).join("");
-  return [...new Set([squashed, camel, hyphen, dropCoop].filter((s) => s.length >= 4))];
+
+  /* "COOPERATIVE" AND "COOP" ARE THE SAME WORD AND THIS GENERATOR KNEW ONLY ONE
+     OF THEM -- 2026-08-20.
+     Held against the five tokens known to exist, it produced four of them and
+     missed `sunriseagcoop`, from "Sunrise Ag Cooperative": it offered
+     sunriseagcooperative, sunriseAgCooperative, sunrise-ag-cooperative and
+     sunriseag, none of which is the token. That token was found by hand, by
+     someone typing the abbreviation the company itself uses on its own domain.
+     A generator that cannot produce the one hit a sweep has ever had is not
+     generating candidates, it is generating confidence.
+     So a name carrying either spelling is tried both ways. It costs one extra
+     request per co-operative and it is the difference between finding one and
+     not. test/gd-sweep.test.mjs holds all five. */
+  const swap = (w) => (w === "cooperative" ? "coop" : w === "coop" ? "cooperative" : w);
+  const swapped = use.map(swap);
+  const bothWays = swapped.join("") === squashed ? [] : [
+    swapped.join(""),
+    swapped.map((w, i) => (i === 0 ? w : w[0].toUpperCase() + w.slice(1))).join(""),
+    swapped.join("-"),
+  ];
+
+  return [...new Set([squashed, camel, hyphen, dropCoop, ...bothWays].filter((s) => s.length >= 4))];
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
