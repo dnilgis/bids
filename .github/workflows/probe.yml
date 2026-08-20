@@ -65,48 +65,43 @@ jobs:
 
       # ---- built-in targets, only when no URLs were supplied ----
 
-      # RUN 87613396138: the chunks 404ed, 46 times, because the entry bundle is
-      # /assets/index-….js and stores chunk names as "assets/App-….js" — resolved
-      # against the bundle's folder that becomes /assets/assets/…. The app does
-      # `"/" + name`. v3 resolves against the root. Same URL, one fix away.
-      - name: StoneX Stonehedge — the chunks, resolved properly this time
+      # THE GRAIN DESK BUNDLE HOLDS ITS ENDPOINT IN A TEMPLATE LITERAL.
+      #   window.ENV = {
+      #     AG_PRODUCER_API_URL: "https://agproducer.prd.ag.zones.dtn.com/api/v1",
+      #     GD_CASH_BIDS_API_URL: "https://marketplace.graindiscovery.com/api",
+      #     DEFAULT_COMPANY_TOKEN: "stLawrenceGrain" }
+      # so the call is `${GD_CASH_BIDS_API_URL}/…` and there is no quoted URL to
+      # find -- which is why the last run returned thirteen strings and none of
+      # them the one. --grep goes looking for the shape instead.
+      - name: DTN Grain Desk — grep the bundle for the call
         if: inputs.urls == ''
         continue-on-error: true
         run: |
-          node scripts/probe.mjs --all-origins --max-chunks 60 \
+          node scripts/probe.mjs --context 200 \
+            --grep 'companyToken|GD_CASH_BIDS_API_URL|cash[-_]?bids|graphql|query [A-Za-z]+ ?\(' \
+            'https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js'
+
+      # 92 chunks were named and half the budget went on relative twins that all
+      # returned the same 5,858-byte shell. v4 fetches the root form only and
+      # sorts bid/cash/component-sounding names to the front.
+      - name: StoneX Stonehedge — the chunks that sound like the board
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          node scripts/probe.mjs --all-origins --max-chunks 92 --context 160 \
+            --grep 'api\.stonehedge[^"'"'"'`]{0,80}|/bids[a-z/-]*|componentBids|publicBids' \
             --referer 'https://www.unitedcooperative.com/grain/markets' \
             'https://stonehedge.stonex.com/component/bids?key=AILQAFBJPWG59NXDNV00QPRSFTUA0EEU&cols=date%2Cbasis%2Ccash%2Cmonth&locs=8TG9IQ1J6TGRFBUP1XH0%2CMY33N2HTBP5KB5I5NXBT&hideRows=true'
 
-      # ALBERT LEA NAMED ITS PLATFORM AND ITS KEY.
-      #   window.initGdCashBidsWidget(widgetId, { companyToken: "albertleaelevator", … })
-      #   https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js
-      # A companyToken that IS the company's slug is the most promising thing
-      # found all night: one adapter, and every elevator on DTN Grain Desk is
-      # one string away. Read the bundle and find what it calls.
-      - name: DTN Grain Desk — the cash-bids bundle
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          node scripts/probe.mjs --all-origins \
-            --referer 'https://albertleaelevator.com/markets/' \
-            'https://agproducer.prd.ag.zones.dtn.com/grain-desk/cash-bids/dtn-gd-cash-bids.bundle.js'
-
-      # The Sioux Center board came back whole: 14,223 bytes of server-rendered
-      # HTML with corn and beans in it. This re-reads it with the body printed
-      # in full so the parser can be written against the real markup, and asks
-      # the per-location variant the same question.
-      - name: Farmers Cooperative Society — the whole fragment
+      # Farmers Cooperative Society is READ as of tonight -- the adapter and the
+      # source row are in this drop. What is still needed is the location ids
+      # for their other elevators, which their own locations page carries and
+      # which /ajax/pages/dtn-cash-bids?location=<id> then serves.
+      - name: Farmers Cooperative Society — the other locations' ids
         if: inputs.urls == ''
         continue-on-error: true
         run: |
           node scripts/probe.mjs --raw 200000 \
-            'https://www.farmerscoopsociety.com/ajax/homepage/dtn-cash-bids'
-
-      # GET may not answer a route the site only ever POSTs to. If it 405s or
-      # returns the shell, that is the answer and we stop guessing.
-      - name: United Cooperative — its own widget route
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          node scripts/probe.mjs --raw 200000 \
-            'https://www.unitedcooperative.com/dtncashbidwidget/bindlocation?dropdownvalue=1'
+            --grep 'location=[0-9A-Za-z_-]+|dtn-cash-bids[^"]{0,60}' \
+            'https://www.farmerscoopsociety.com/locations?services=grain' \
+            'https://www.farmerscoopsociety.com/grain/grain-services'
