@@ -76,7 +76,14 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           LIST: ${{ inputs.list }}
         run: |
+          # SAY WHEN ONE BOX IS OVERRIDING THE OTHER.
+          # 2026-08-21: a stray "s" left in this box silently beat a `list`
+          # selection of bushel-candidates. The run asked one page, called "s",
+          # and the tally reported it as one unreachable page -- which reads
+          # exactly like a co-operative whose site was down. The override is
+          # fine; doing it in silence is not.
           if [ -n "$URLS" ]; then
+            echo "::warning title=urls overrides list::the urls box is not empty, so the ${LIST:-discover-candidates} list is being IGNORED. Asking: $URLS"
             node scripts/discover.mjs $URLS
             exit 0
           fi
