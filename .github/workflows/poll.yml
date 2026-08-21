@@ -219,19 +219,38 @@ jobs:
           # hour away and which fails at the moment you are not watching. Run
           # the workflow by hand with ping_sites ticked and the answer is
           # immediate: both sites rebuild, or this step goes red and says why.
+          # EVERY RUN, NOT ONLY WHEN THE PRICE MOVED.
+          #
+          # This used to exit here unless boyceville had changed, and that was
+          # right while the page showed one fact. It now shows two: "as of
+          # 1:40pm" is when THEIR board moved, and "checked 4:49pm" is that
+          # somebody is still looking. The second one is the answer to Sig's
+          # question on 2026-08-20 -- at five o'clock nineteen of the twenty
+          # boards in this feed still read 1:40pm, correctly, because futures
+          # settle at 1:20pm Central and cash boards freeze after it.
+          #
+          # A "checked" stamp is only worth printing if it moves, and the sites
+          # only rebuild when they are told to. So they are told every run, and
+          # the rebuild is timed to the scrape rather than to the price. THAT
+          # COSTS A COMMIT AND A PAGES DEPLOY PER RUN on each site, which is
+          # the trade Sig chose knowingly: "if we are scraping the data i want
+          # it timed with the scraper".
+          #
+          # The payload still says whether the price actually moved, so the
+          # run log on the other side can tell the two kinds of rebuild apart.
           FORCE="${{ inputs.ping_sites }}"
-          if [ "$FORCE" != "true" ] && ! grep -qx boyceville .changed-sources 2>/dev/null; then
-            echo "boyceville did not move this run; the sites have nothing to rebuild"
-            exit 0
-          fi
+          MOVED=false
+          grep -qx boyceville .changed-sources 2>/dev/null && MOVED=true
 
           if [ -z "${TOKEN:-}" ]; then
-            echo "::error title=EMMERT_DISPATCH_TOKEN is not set::boyceville's price moved and           neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
+            echo "::error title=EMMERT_DISPATCH_TOKEN is not set::neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
             exit 1
           fi
 
-          [ "$FORCE" = "true" ] && echo "ping_sites was ticked: telling them regardless of whether the price moved"
+          [ "$FORCE" = "true" ] && echo "ping_sites was ticked"
+          echo "boyceville moved this run: $MOVED"
           PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
+          CHECKED=$(node -e "const i=require('./data/index.json');const s=(i.sources||[]).find(x=>x.id==='boyceville');process.stdout.write(s&&s.checkedAt||'')" || true)
           fail=""
           for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
             code=$(curl -sS -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
@@ -239,9 +258,9 @@ jobs:
               -H "Authorization: Bearer $TOKEN" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/$repo/dispatches" \
-              -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
+              -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"checkedAt\":\"$CHECKED\",\"moved\":$MOVED,\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
             if [ "$code" = "204" ]; then
-              echo "told $repo (pricedAt $PRICED)"
+              echo "told $repo (pricedAt $PRICED, checkedAt $CHECKED, moved $MOVED)"
             else
               echo "::error title=could not tell $repo::HTTP $code $(head -c 300 /tmp/dispatch-resp 2>/dev/null)"
               fail=1
