@@ -31,6 +31,10 @@ on:
         description: "Space-separated pages to ask INSTEAD of the list (blank = the list)"
         required: false
         default: ""
+      dump:
+        description: "Print ONE matching feed's whole body, e.g. GetBidsList. Pair with limit=1. Leave blank normally."
+        required: false
+        default: ""
       start:
         description: "Skip this many entries of the candidate list (resume a batch)"
         required: false
@@ -75,6 +79,7 @@ jobs:
           START: ${{ inputs.start }}
           LIMIT: ${{ inputs.limit }}
           LIST: ${{ inputs.list }}
+          DUMP: ${{ inputs.dump }}
         run: |
           # SAY WHEN ONE BOX IS OVERRIDING THE OTHER.
           # 2026-08-21: a stray "s" left in this box silently beat a `list`
@@ -95,4 +100,6 @@ jobs:
             *) echo "::error title=unknown list::${LIST}. Use discover-candidates or bushel-candidates."; exit 2 ;;
           esac
           echo "asking $FILE"
-          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}"
+          DUMPARG=""
+          if [ -n "$DUMP" ]; then DUMPARG="--dump $DUMP"; fi
+          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG
