@@ -544,3 +544,51 @@ test("but the SAME endpoint asked twice is still one feed", () => {
   ]});
   assert.equal(feeds.length, 1);
 });
+
+/* ---- ONE REAL BODY, ON REQUEST -------------------------------------------
+ *
+ * `shape` shows a board's columns and is not enough to write an adapter
+ * against. Bushel's first visible row reads cash 4.52, basis -0.22, futures
+ * 4.7525 — and 4.7525 − 0.22 is 4.5325, which neither floors nor rounds to
+ * 4.52. Unit conversion, wrong contract on that row, or a column read wrongly:
+ * the difference decides what the adapter does, and guessing would be
+ * inventing a number.
+ */
+import { dumpable } from "../scripts/discover.mjs";
+
+const F = (endpoint, bytes) => ({
+  url: `https://api.bushelpowered.com/api/x/${endpoint}`, endpoint, body: "y".repeat(bytes),
+});
+
+test("it dumps only what was asked for", () => {
+  const feeds = [F("GetBidsList", 9000), F("GetMarketsConfig", 899)];
+  assert.deepEqual(dumpable(feeds, "GetBidsList").map((f) => f.endpoint), ["GetBidsList"]);
+});
+
+test("NOTHING IS DUMPED UNLESS SOMEBODY ASKS", () => {
+  // A run log is not the place for eighty kilobytes by accident.
+  const feeds = [F("GetBidsList", 9000)];
+  assert.deepEqual(dumpable(feeds, null), []);
+  assert.deepEqual(dumpable(feeds, ""), []);
+  assert.deepEqual(dumpable(feeds, undefined), []);
+});
+
+test("and a body too big for a log is refused even when asked for", () => {
+  assert.deepEqual(dumpable([F("GetBidsList", 900000)], "GetBidsList"), []);
+  assert.equal(dumpable([F("GetBidsList", 9000)], "GetBidsList").length, 1);
+});
+
+test("an empty or absent body is not dumpable", () => {
+  assert.deepEqual(dumpable([{ url: "u", endpoint: "GetBidsList", body: null }], "GetBidsList"), []);
+  assert.deepEqual(dumpable([{ url: "u", endpoint: "GetBidsList", body: "" }], "GetBidsList"), []);
+});
+
+test("matching is case-insensitive and looks at the url too", () => {
+  assert.equal(dumpable([F("GetBidsList", 500)], "getbidslist").length, 1);
+  assert.equal(dumpable([F("GetBidsList", 500)], "bushelpowered").length, 1);
+});
+
+test("no feeds at all is not a crash", () => {
+  assert.deepEqual(dumpable([], "GetBidsList"), []);
+  assert.deepEqual(dumpable(null, "GetBidsList"), []);
+});

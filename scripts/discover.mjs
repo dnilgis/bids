@@ -206,6 +206,26 @@ function dedupe(feeds) {
  *
  * Values are TRUNCATED HARD and only scalars are shown, so a board's prices
  * appear as evidence of a column's type and never as a redistributed quote. */
+/* HAND BACK ONE REAL BODY, ON PURPOSE AND ON REQUEST.
+ *
+ * `shape` is enough to see a board's columns and NOT enough to write an
+ * adapter against. Bushel's first visible row reads cash 4.52, basis -0.22,
+ * futures 4.7525 -- and 4.7525 - 0.22 is 4.5325, which neither floors nor
+ * rounds to 4.52. That is a unit conversion, a different contract on that row,
+ * or a column read wrongly, and the difference decides what the adapter does.
+ * Guessing which would be inventing a number.
+ *
+ * So: `--dump <substring>` prints the WHOLE body of a matching feed, once,
+ * because somebody asked for it. Keys are redacted. Aim it at a small board --
+ * CHS Farmers Alliance is nine kilobytes against CHS Illinois' eighty -- and
+ * pair it with `--limit 1` so one page answers and the log stays readable. */
+export function dumpable(feeds, want, maxBytes = 250000) {
+  if (!want) return [];
+  return (feeds ?? []).filter((f) =>
+    f.body != null && f.body.length > 0 && f.body.length <= maxBytes &&
+    `${f.url} ${f.endpoint ?? ""}`.toLowerCase().includes(String(want).toLowerCase()));
+}
+
 export function shape(body, { maxKeys = 40, sample = 28 } = {}) {
   let v;
   try { v = JSON.parse(String(body)); } catch { return null; }
@@ -429,11 +449,19 @@ export function badTargets(urls) {
 
 /* ---- the runnable part ---------------------------------------------- */
 
+/* A flag's value, or null. Declared before the runnable block uses it. */
+let ARGS = [];
+const flagValue = (name) => {
+  const i = ARGS.indexOf(`--${name}`);
+  return i === -1 ? null : (ARGS[i + 1] ?? null);
+};
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
+  ARGS = args;
   const li = args.indexOf("--list");
   const all = li === -1
-    ? args.filter((a) => !a.startsWith("--"))
+    ? args.filter((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1] === "--dump"))
     : readList(readFileSync(args[li + 1], "utf8"));
 
   /* Refuse the whole run rather than ask for it. One bad entry among twenty is
@@ -514,6 +542,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         for (const c of cands)
           console.log(`     ${c.status} ${c.mime || "?"} ${c.bytes ?? c.body?.length ?? 0}B  ${c.url}`);
       }
+    }
+
+    for (const d of dumpable(feeds, flagValue("dump"))) {
+      console.log(`   FULL BODY of ${d.url} (${d.body.length} bytes), because --dump asked:`);
+      console.log(redactBody(d.body));
+      console.log(`   end of body`);
     }
 
     for (const f of feeds) {
