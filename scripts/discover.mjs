@@ -76,7 +76,22 @@ export const SIGNATURES = [
        already seen. Three brands, one company. */
     test: (u) => /(bushelpowered|bushelsites|bushelops)\.com$/.test(host(u)),
     family: /(bushelpowered|bushelsites|bushelops)\.com$/,
-    id: () => ({}) },
+    /* THE ENDPOINT IS PART OF THE IDENTITY, AND LEAVING IT OUT HID THE BOARD.
+     *
+     * `id: () => ({})` made every Bushel response on a page collapse to one in
+     * dedupe(), which keys on the platform plus its identifying facts. On the
+     * 2026-08-21 run all ten pages reported a single Bushel "feed": the
+     * 899-byte GetMarketsConfig, carrying a CME logo and the sentence "Quotes
+     * delayed a minimum of ten minutes". The board -- 81,051 bytes of it from
+     * CHS Illinois -- was a sibling response that deduped away silently.
+     *
+     * Two generations are in use and both are real:
+     *   api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList
+     *   futures.bushelops.com/api/v1/cash-bids
+     * Keying on the final path segment keeps them apart from each other and
+     * from the config, so a page shows what it actually asked for. */
+    id: (u) => { try { return { endpoint: new URL(u).pathname.split("/").filter(Boolean).pop() ?? null }; }
+                 catch { return { endpoint: null }; } } },
 
   { platform: "agricharts", adapter: null, family: /agricharts\.com$/,
     test: (u) => /agricharts\.com$/.test(host(u)) || /\/markets\/cashgrid\.php/i.test(path(u)),
@@ -181,6 +196,56 @@ function dedupe(feeds) {
  * suppresses the evidence. The real question is not "did a signature match"
  * but "did we come away knowing where the board is" -- a roster or a location
  * count. Without one of those, show the page's other traffic whatever matched. */
+/* WHAT SHAPE IS THIS, WITHOUT PASTING IT INTO THE LOG?
+ *
+ * The Bushel board from CHS Illinois is 81,051 bytes. Nobody can write an
+ * adapter without seeing its structure, and nobody wants eighty kilobytes in a
+ * run log. What an adapter author actually needs is small: is it an array or
+ * an object, how many entries, what keys does an entry have, and what does one
+ * value of each look like.
+ *
+ * Values are TRUNCATED HARD and only scalars are shown, so a board's prices
+ * appear as evidence of a column's type and never as a redistributed quote. */
+export function shape(body, { maxKeys = 40, sample = 28 } = {}) {
+  let v;
+  try { v = JSON.parse(String(body)); } catch { return null; }
+  /* A BARE SCALAR IS NOT A SHAPE. `String(null)` is the valid JSON document
+     `null`, which parses happily and used to be reported as `: null` -- a
+     shape for a body that does not exist. Same for a response that is just a
+     number or a quoted string. */
+  if (v === null || typeof v !== "object") return null;
+
+  const scalar = (x) => {
+    if (x === null) return "null";
+    if (typeof x === "string") return JSON.stringify(x.length > sample ? x.slice(0, sample) + "…" : x);
+    if (typeof x === "object") return Array.isArray(x) ? `[${x.length}]` : `{${Object.keys(x).length}}`;
+    return String(x);
+  };
+  const describe = (o, path, out) => {
+    if (Array.isArray(o)) {
+      out.push(`${path || "(root)"}: array of ${o.length}`);
+      if (o.length) describe(o[0], `${path}[0]`, out);
+      return;
+    }
+    if (o && typeof o === "object") {
+      const keys = Object.keys(o);
+      out.push(`${path || "(root)"}: object, ${keys.length} key(s)`);
+      for (const k of keys.slice(0, maxKeys)) {
+        const val = o[k];
+        if (Array.isArray(val) && val.length && typeof val[0] === "object")
+          describe(val[0], `${path}.${k}[0]`, out);
+        else out.push(`  ${path ? path + "." : ""}${k} = ${scalar(val)}`);
+      }
+      if (keys.length > maxKeys) out.push(`  … and ${keys.length - maxKeys} more key(s)`);
+      return;
+    }
+    out.push(`${path}: ${scalar(o)}`);
+  };
+  const out = [];
+  describe(v, "", out);
+  return out;
+}
+
 export function shouldListCandidates(feeds, towns, rosters) {
   if (!feeds || !feeds.length) return true;
   const learned = (towns ?? []).some((t) => t != null) ||
@@ -469,6 +534,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (shouldPeek({ towns, names, bytes })) {
         const p = peek(body);
         if (p) console.log(`     BODY: ${p}`);
+      } else if (towns == null && !names && bytes != null && bytes > 0) {
+        /* Too big to print and it told us nothing structural — describe it
+           instead. This is what an adapter gets written from. */
+        const sh = shape(body);
+        if (sh) { console.log(`     SHAPE (${bytes}B):`); for (const l of sh.slice(0, 40)) console.log(`       ${l}`); }
       }
     }
     console.log("");

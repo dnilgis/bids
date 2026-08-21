@@ -457,3 +457,90 @@ test("the peek is long enough to reach past the boilerplate", () => {
   const long = '{"disclaimer":"' + "x".repeat(900) + '","marketsUrl":"https://api.test/v1/bids"}';
   assert.match(peek(long), /marketsUrl/);
 });
+
+/* ---- 81,051 BYTES IS NOT SOMETHING YOU PUT IN A LOG ----------------------
+ *
+ * The Bushel board from CHS Illinois is eighty-one kilobytes. An adapter
+ * cannot be written without seeing its structure, and nobody wants the board
+ * itself in a run log. What is actually needed is small: array or object, how
+ * many entries, what keys an entry has, one value of each.
+ */
+import { shape } from "../scripts/discover.mjs";
+
+const BOARD = JSON.stringify({
+  type: "GetBidsListSuccess",
+  bids: [{ locationName: "Rochelle", commodity: "Corn", cashPrice: 4.11, basis: -0.52,
+           futuresSymbol: "ZCU26", note: "x".repeat(200) }],
+  cursor: null,
+});
+
+test("the shape names the container and the row's columns", () => {
+  const s = shape(BOARD).join("\n");
+  assert.match(s, /bids\[0\]: object, 6 key\(s\)/);
+  assert.match(s, /locationName = "Rochelle"/);
+  assert.match(s, /cashPrice = 4\.11/);
+  assert.match(s, /basis = -0\.52/);
+});
+
+test("A LONG VALUE IS TRUNCATED, so a board cannot arrive by the back door", () => {
+  const s = shape(BOARD).join("\n");
+  assert.ok(!s.includes("x".repeat(60)), "a 200-character value was printed in full");
+  assert.match(s, /…/);
+});
+
+test("an array at the root is described as one", () => {
+  const s = shape(JSON.stringify([{ a: 1 }, { a: 2 }, { a: 3 }])).join("\n");
+  assert.match(s, /array of 3/);
+  assert.match(s, /\[0\]\.a = 1/);
+});
+
+test("and a huge object does not produce a huge report", () => {
+  const wide = {};
+  for (let i = 0; i < 500; i++) wide[`k${i}`] = i;
+  const s = shape(JSON.stringify(wide));
+  assert.ok(s.length < 50, `${s.length} lines from a 500-key object`);
+  assert.match(s.join("\n"), /and 460 more key\(s\)/);
+});
+
+test("what is not JSON has no shape, and says so", () => {
+  assert.equal(shape("not json"), null);
+  assert.equal(shape(""), null);
+  assert.equal(shape(null), null);
+});
+
+test("nested empty containers do not throw", () => {
+  assert.ok(shape(JSON.stringify({ bids: [], meta: {} })).join("\n").includes("bids = [0]"));
+});
+
+test("EVERY BUSHEL ENDPOINT IS ITS OWN FEED", () => {
+  /* `id: () => ({})` made every Bushel response on a page collapse to one in
+     dedupe(), which keys on the platform plus its identifying facts. All ten
+     pages on 2026-08-21 reported a single feed — the 899-byte config carrying
+     a CME logo — while the board, 81,051 bytes of it from CHS Illinois, was a
+     sibling response that deduped away in silence. */
+  const urls = [
+    "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+    "https://api.bushelpowered.com/api/markets/aggregator/config/v1/GetMarketsConfig",
+    "https://futures.bushelops.com/api/v1/cash-bids",
+    "https://centre.bushelops.com/api/v1/app-config",
+  ];
+  for (const [u, want] of urls.map((u, i) =>
+       [u, ["GetBidsList", "GetMarketsConfig", "cash-bids", "app-config"][i]]))
+    assert.equal(fingerprint(u).endpoint, want, u);
+
+  const feeds = findFeeds({ responses: urls.map((u, i) =>
+    ({ url: u, status: 200, mime: "application/json", body: "x".repeat(100 * (i + 1)) })) });
+  assert.equal(feeds.length, 4, "the four endpoints collapsed into fewer");
+  assert.deepEqual(feeds.map((f) => f.endpoint).sort(),
+    ["GetBidsList", "GetMarketsConfig", "app-config", "cash-bids"]);
+});
+
+test("but the SAME endpoint asked twice is still one feed", () => {
+  // A widget that refreshes, or a retry after a 401, is not two boards.
+  const u = "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList";
+  const feeds = findFeeds({ responses: [
+    { url: u + "?t=1", status: 200, mime: "application/json", body: "aaa" },
+    { url: u + "?t=2", status: 200, mime: "application/json", body: "aaa" },
+  ]});
+  assert.equal(feeds.length, 1);
+});
