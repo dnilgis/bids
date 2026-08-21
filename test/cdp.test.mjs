@@ -70,11 +70,21 @@ test("the candidate list is tried in order and GitHub's own Chrome is on it", ()
   assert.throws(() => findBrowser({}, () => false), /no browser found/);
 });
 
-test("dtn-cs is the platform that is read through a browser, and it is the only one", () => {
-  assert.equal(transportOf("dtn-cs"), "browser");
+test("the browser is for platforms whose page fetches its own board", () => {
+  /* THIS USED TO SAY "AND IT IS THE ONLY ONE", and it was true when written.
+     Bushel joined on 2026-08-21 for exactly the same reason dtn-cs is here:
+     their board arrives from api.bushelpowered.com in a request the customer's
+     own page makes at runtime, so a plain GET of the page returns a shell.
+     A test that pins down how many there are, rather than which ones and why,
+     goes red the day the answer is legitimately different. */
+  for (const p of ["dtn-cs", "bushel"])
+    assert.equal(transportOf(p), "browser", p);
   for (const p of ["cashbidssingle", "aghost", "fragment", "graindesk", "first-party"])
     assert.equal(transportOf(p), "fetch", p);
-  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT), ["dtn-cs"]);
+  /* Still a closed set: a platform is on the browser deliberately or not at
+     all, because the browser is slow and a page we do not need to run is a
+     page we should not run. */
+  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs"]);
 });
 
 /* ---- end to end, against a server that enforces DTN's own rule ----------- */

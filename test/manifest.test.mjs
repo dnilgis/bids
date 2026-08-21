@@ -19,6 +19,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
+import { transportOf } from "../lib/sources.mjs";
 import {
   PLATFORMS, PLATFORM_WIRE, wireOf, CASH_ROUNDING_MODES, FUTURES_UNITS,
   validateSource, warnSource, toConfig, loadSources,
@@ -175,7 +176,12 @@ test("every shipped browser source names a page, and every other source does not
   const dir = new URL("../sources/", import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
-    if (s.platform === "dtn-cs") assert.match(String(s.browserPage), /^https:\/\//, f);
+    /* ASK THE RULE, DO NOT NAME THE PLATFORM. This said `=== "dtn-cs"` and
+       went red the day Bushel became the second browser platform — for the
+       same reason dtn-cs is one, which is the point. transportOf IS the
+       question being asked here. */
+    if (transportOf(s.platform) === "browser")
+      assert.match(String(s.browserPage), /^https:\/\//, `${f} is read through a browser and names no page`);
     else assert.equal(s.browserPage, undefined, `${f} has a browserPage nothing would use`);
   }
 });
