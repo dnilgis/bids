@@ -169,6 +169,25 @@ function dedupe(feeds) {
  * Extracted from the reporting block because a decision inside a `for` loop in
  * a runnable script is a decision no test can reach — it survived mutation
  * until it was pulled out here. */
+/* SHOULD WE LIST WHAT ELSE THE PAGE ASKED FOR?
+ *
+ * `candidates` was only printed when NOTHING was recognised, and that hid it
+ * exactly where it was needed. The ten Bushel pages each made 33 requests and
+ * matched exactly one "feed" -- an 899-byte GetMarketsConfig carrying
+ * disclaimer text and a CME logo. So the page counted as recognised, the
+ * candidate list stayed silent, and the board sat unnamed among the other 32.
+ *
+ * Recognising the WRONG thing is worse than recognising nothing, because it
+ * suppresses the evidence. The real question is not "did a signature match"
+ * but "did we come away knowing where the board is" -- a roster or a location
+ * count. Without one of those, show the page's other traffic whatever matched. */
+export function shouldListCandidates(feeds, towns, rosters) {
+  if (!feeds || !feeds.length) return true;
+  const learned = (towns ?? []).some((t) => t != null) ||
+                  (rosters ?? []).some((r) => r && r.length);
+  return !learned;
+}
+
 export function shouldPeek({ towns, names, bytes, maxBytes = 4000 }) {
   if (towns != null) return false;
   if (names && names.length) return false;
@@ -176,7 +195,7 @@ export function shouldPeek({ towns, names, bytes, maxBytes = 4000 }) {
   return bytes > 0 && bytes <= maxBytes;
 }
 
-export function peek(body, limit = 600) {
+export function peek(body, limit = 1400) {
   if (body == null) return null;
   const flat = String(body).replace(/\s+/g, " ").trim();
   if (!flat) return null;
@@ -420,6 +439,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.log(`     ${c.status} ${c.mime || "?"} ${c.bytes ?? c.body?.length ?? 0}B  ${c.url}`);
       }
     } else withFeed++;
+
+    const towns_ = feeds.map((f) => countLocations(f.body));
+    const rosters_ = feeds.map((f) => roster(f.body));
+    if (v.kind !== "no-platform" && v.kind !== "dead" && shouldListCandidates(feeds, towns_, rosters_)) {
+      const cands = candidates(result);
+      if (cands.length) {
+        console.log(`   MATCHED, BUT NO BOARD FOUND. What else it asked for, most board-like first:`);
+        for (const c of cands)
+          console.log(`     ${c.status} ${c.mime || "?"} ${c.bytes ?? c.body?.length ?? 0}B  ${c.url}`);
+      }
+    }
 
     for (const f of feeds) {
       const { platform, adapter, url, status, mime, bytes, truncated, body, ...id } = f;

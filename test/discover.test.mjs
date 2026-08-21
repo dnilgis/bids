@@ -407,3 +407,53 @@ test("THE REFUSAL ITSELF IS TESTED, NOT JUST THE PREDICATE", () => {
   assert.match(r.at(-1), /LEAVE THE urls BOX EMPTY/, "and it says how to fix it");
   assert.match(refuseRun(["s"]).at(-1), /1 of 1 entry is not a page/, "singular reads right");
 });
+
+/* ---- RECOGNISING THE WRONG THING IS WORSE THAN RECOGNISING NOTHING --------
+ *
+ * 2026-08-21, the ten Bushel pages. Each made 33 requests. Each matched
+ * exactly one "feed": an 899-byte GetMarketsConfig carrying disclaimer text
+ * and a CME logo. So every page counted as recognised, the candidate list —
+ * which only printed when NOTHING matched — stayed silent, and the actual
+ * board sat unnamed among the other 32 responses.
+ *
+ * The question is not "did a signature match". It is "did we come away knowing
+ * where the board is".
+ */
+import { shouldListCandidates } from "../scripts/discover.mjs";
+
+test("a page that matched nothing shows its traffic", () => {
+  assert.equal(shouldListCandidates([], [], []), true);
+  assert.equal(shouldListCandidates(null, null, null), true);
+});
+
+test("A PAGE THAT MATCHED A CONFIG STILL SHOWS ITS TRAFFIC", () => {
+  // The Bushel case exactly: one feed matched, and it taught us nothing.
+  assert.equal(shouldListCandidates([{ platform: "bushel" }], [null], [null]), true);
+});
+
+test("but a page that yielded a roster does not", () => {
+  // Ag-Land FS: thirteen named towns came back. The traffic list would be noise.
+  assert.equal(shouldListCandidates([{ platform: "dtn-cs" }], [null],
+    [[{ id: 25310, name: "Dunlap" }, { id: 4199, name: "Elmwood" }]]), false);
+});
+
+test("and neither does one that yielded a location count", () => {
+  assert.equal(shouldListCandidates([{ platform: "dtn-cs" }], [13], [null]), false);
+});
+
+test("an EMPTY roster is not a roster", () => {
+  // Zero named locations means the shape was read and gave nothing up, which
+  // is the same position as not having read it.
+  assert.equal(shouldListCandidates([{ platform: "bushel" }], [null], [[]]), true);
+});
+
+test("one feed of several yielding a roster is enough", () => {
+  assert.equal(shouldListCandidates([{}, {}], [null, 3], [null, null]), false);
+});
+
+test("the peek is long enough to reach past the boilerplate", () => {
+  // At 600 characters the Bushel config was cut off inside its own disclaimer
+  // text, before anything useful.
+  const long = '{"disclaimer":"' + "x".repeat(900) + '","marketsUrl":"https://api.test/v1/bids"}';
+  assert.match(peek(long), /marketsUrl/);
+});
