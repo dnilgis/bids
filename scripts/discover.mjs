@@ -307,6 +307,42 @@ export function readList(text) {
              .filter((l) => l && !l.startsWith("#"));
 }
 
+/* A PAGE IS A URL, AND ANYTHING ELSE IS A TYPO.
+ *
+ * 2026-08-21: a stray "s" in the workflow's `urls` box silently overrode a
+ * `list` selection of bushel-candidates. The run asked one page, called "s",
+ * got "Cannot navigate to invalid URL", and reported it in the tally as one
+ * UNREACHABLE page -- which reads exactly like an operator whose site was down
+ * and is worth a retry. A typo must not be able to impersonate a finding.
+ *
+ * http and https only: a `file:` or `data:` argument is not a co-operative's
+ * cash-bid page, and pointing a browser at the runner's own disk is not a
+ * thing this tool should be able to be asked to do. */
+/* The refusal, as lines, or null when the batch is fit to run.
+ *
+ * THIS IS THE THIRD TIME TONIGHT A DECISION HAS BEEN PULLED OUT OF A RUNNABLE
+ * BLOCK because no test could reach it: the probe's not-a-town flag, the
+ * discover body peek, and now this. The mutation harness runs `node --test`,
+ * and `if (import.meta.url === ...)` is by definition not under test. Anything
+ * that decides something belongs above this line, and the runnable block below
+ * should only ever be plumbing. */
+export function refuseRun(all) {
+  const bad = badTargets(all);
+  if (!bad.length) return null;
+  return [
+    ...bad.map((b) => `::error title=not a page::${JSON.stringify(b)} is not an http(s) url`),
+    `${bad.length} of ${all.length} entr${all.length === 1 ? "y is" : "ies are"} not a page. ` +
+    `Nothing was asked. If you meant to use a candidate list, LEAVE THE urls BOX EMPTY.`,
+  ];
+}
+
+export function badTargets(urls) {
+  return (urls ?? []).filter((u) => {
+    try { return !/^https?:$/.test(new URL(u).protocol); }
+    catch { return true; }
+  });
+}
+
 /* ---- the runnable part ---------------------------------------------- */
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -315,6 +351,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const all = li === -1
     ? args.filter((a) => !a.startsWith("--"))
     : readList(readFileSync(args[li + 1], "utf8"));
+
+  /* Refuse the whole run rather than ask for it. One bad entry among twenty is
+     a typo in the box, not a co-operative worth probing, and a run that quietly
+     drops it is a run whose tally cannot be trusted. */
+  const refusal = refuseRun(all);
+  if (refusal) { for (const line of refusal) console.error(line); process.exit(2); }
 
   /* IN SLICES, BECAUSE ONE RUN IS NOT ALL OF THEM. Fifty-six pages at up to
      45 seconds each is forty minutes of wall clock in the worst case, and a

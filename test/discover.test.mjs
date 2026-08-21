@@ -348,3 +348,62 @@ test("A BODY IS ONLY PRINTED WHEN IT IS A LEAD AND NOT AN ANSWER", () => {
   // An empty roster array is not a roster.
   assert.equal(shouldPeek({ towns: null, names: [], bytes: 899 }), true);
 });
+
+/* ---- A TYPO MUST NOT BE ABLE TO IMPERSONATE A FINDING ---------------------
+ *
+ * 2026-08-21: a stray "s" left in the workflow's `urls` box silently overrode a
+ * `list` selection of bushel-candidates. The run asked one page, called "s",
+ * got "Cannot navigate to invalid URL", and the tally reported
+ * `unreachable (retry these): 1` — which reads exactly like a co-operative
+ * whose site was down and is worth another go.
+ */
+import { badTargets, refuseRun } from "../scripts/discover.mjs";
+
+test("a real page is accepted", () => {
+  assert.deepEqual(badTargets(["https://www.allied.coop/grain/cash-bids",
+                               "http://grain.northsideelevator.com/index.cfm?show=11"]), []);
+});
+
+test("A STRAY CHARACTER IS REFUSED, NOT PROBED", () => {
+  assert.deepEqual(badTargets(["s"]), ["s"]);
+  assert.deepEqual(badTargets([""]), [""]);
+  assert.deepEqual(badTargets(["www.aceethanol.com"]), ["www.aceethanol.com"],
+    "no scheme is not a url, however much it looks like one");
+});
+
+test("and so is anything that is not the web", () => {
+  // Pointing a browser at the runner's own disk is not a thing this tool
+  // should be able to be asked to do.
+  for (const u of ["file:///etc/passwd", "data:text/html,x", "ftp://a.test/b", "javascript:1"])
+    assert.deepEqual(badTargets([u]), [u], u);
+});
+
+test("one bad entry condemns the batch, rather than being dropped", () => {
+  // A run that quietly drops one of twenty is a run whose tally cannot be
+  // trusted — and the tally is the whole output.
+  const list = ["https://a.test/b", "s", "https://c.test/d"];
+  assert.deepEqual(badTargets(list), ["s"]);
+});
+
+test("nothing at all is not a crash", () => {
+  assert.deepEqual(badTargets([]), []);
+  assert.deepEqual(badTargets(null), []);
+  assert.deepEqual(badTargets(undefined), []);
+});
+
+test("THE REFUSAL ITSELF IS TESTED, NOT JUST THE PREDICATE", () => {
+  /* Third time tonight a decision has been pulled out of a runnable block
+     because no test could reach it. `if (import.meta.url === ...)` is by
+     definition not under `node --test`, so anything that decides something has
+     to live above that line. */
+  assert.equal(refuseRun(["https://a.test/b", "https://c.test/d"]), null,
+    "a clean batch is not refused");
+  const r = refuseRun(["https://a.test/b", "s"]);
+  assert.ok(Array.isArray(r), "a batch with a typo in it is refused");
+  assert.equal(r.length, 2, "one line per bad entry, plus the summary");
+  assert.match(r[0], /^::error title=not a page::/);
+  assert.match(r[0], /"s"/);
+  assert.match(r.at(-1), /1 of 2 entries are not a page/);
+  assert.match(r.at(-1), /LEAVE THE urls BOX EMPTY/, "and it says how to fix it");
+  assert.match(refuseRun(["s"]).at(-1), /1 of 1 entry is not a page/, "singular reads right");
+});
