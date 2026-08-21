@@ -1,0 +1,34 @@
+# THE BUSHEL TEN — the biggest single win left in the queue.
+#
+# Ten operators, and SEVEN of them are CHS regions: one adapter, one shape,
+# seven co-operatives. Measured by scripts/discover.mjs on 2026-08-20.
+#
+# What we know and what we do not: every one of these pages calls
+#
+#     https://api.bushelpowered.com/api/markets/aggregator/config/v1/GetMarketsConfig
+#
+# and gets 899-1100 bytes of JSON back. That is a CONFIG, not a board -- a board
+# for a co-op with a dozen towns does not fit in nine hundred bytes. The config
+# is almost certainly naming the request that does carry the board, and until
+# 2026-08-20 discover reported it as a byte count and threw the body away.
+# It now prints it. That is what this list is for.
+#
+# Cooperative Elevator also calls futures.bushelops.com/api/v1/futures (36 KB),
+# which is a futures feed and not cash bids.
+#
+# NOTE FOR WHOEVER READS THE RESULT: Ace Ethanol's page carries Bushel's
+# branding and a portal.bushelpowered.com link in its menu, and yet serves its
+# board as plain server-rendered cashbidssingle HTML that our existing parser
+# reads unchanged. "Bushel" is who powers the site, not necessarily how the
+# board arrives. Check for a server-rendered table before writing an adapter.
+
+https://www.chs-illinois.com/grain/cash-bids/
+https://www.chsagservices.com/grain/cash-bids/
+https://www.chs-herman.com/grain/cash-bids/
+https://www.chsdakotaplainsag.com/grain/cash-bids/
+https://www.chsdrayton.com/grain/cash-bids/
+https://www.chsfarmersalliance.com/grain/cash-bids/
+https://www.chsriverplains.com/grain/cash-bids/
+https://fscooperatives.com/gatewayfs/agriculture/cash-bids
+https://grower.coopelev.com/
+https://www.michag.com/bids/

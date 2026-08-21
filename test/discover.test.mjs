@@ -266,3 +266,85 @@ test("an unreadable roster is null, not an empty list", () => {
   assert.equal(roster('[{"cash":1}]'), null);
   assert.equal(roster(null), null);
 });
+
+/* ---- A BYTE COUNT IS NOT EVIDENCE ----------------------------------------
+ *
+ * The 2026-08-20 sweep found ten Bushel operators — seven of them CHS regions,
+ * the largest single win left — and reported each as
+ * `200 application/json 899B  .../GetMarketsConfig`. Eight hundred and
+ * ninety-nine bytes captured, held, and thrown away. A config that small is
+ * almost certainly naming the request that carries the board.
+ */
+import { peek, redactBody, candidates, shouldPeek } from "../scripts/discover.mjs";
+
+test("a small config is printed, so it can name the next request", () => {
+  const body = '{"marketsUrl":"https://api.bushelpowered.com/v1/cash-bids","siteId":"chs-il"}';
+  const p = peek(body);
+  assert.match(p, /cash-bids/);
+  assert.match(p, /chs-il/);
+});
+
+test("THEIR KEY STILL DOES NOT GO IN OUR LOG", () => {
+  // Public in their own page, and that is not a reason to write it down.
+  const p = peek('{"url":"https://a.test/b","apikey":"SECRET123","token":"T0K3N"}');
+  assert.doesNotMatch(p, /SECRET123/);
+  assert.doesNotMatch(p, /T0K3N/);
+  assert.match(p, /<redacted>/);
+  assert.match(p, /a\.test/, "the useful part survives redaction");
+});
+
+test("a key in a query string inside a body is redacted too", () => {
+  assert.doesNotMatch(redactBody("see https://a.test/b?apikey=ABC123&units=us"), /ABC123/);
+  assert.match(redactBody("see https://a.test/b?apikey=ABC123&units=us"), /units=us/);
+});
+
+test("the peek is bounded, because a log is not a place to paste a page", () => {
+  const p = peek("x".repeat(5000), 600);
+  assert.ok(p.length < 700, `peek was ${p.length} chars`);
+  assert.match(p, /\[\+4400 more\]/);
+});
+
+test("nothing to peek at is null, not an empty line", () => {
+  assert.equal(peek(null), null);
+  assert.equal(peek(""), null);
+  assert.equal(peek("   \n\t "), null);
+});
+
+test("candidates ranks the board above the bundle", () => {
+  const c = candidates({ responses: [
+    { url: "https://x.test/main.js", mime: "application/javascript", status: 200, body: "x".repeat(90000) },
+    { url: "https://api.x.test/v1/cash-bids", mime: "application/json", status: 200, body: "{}".repeat(500) },
+    { url: "https://x.test/hero.png", mime: "image/png", status: 200, body: null },
+  ]});
+  assert.equal(c[0].url, "https://api.x.test/v1/cash-bids");
+  assert.ok(!c.some((r) => /\.js$|\.png$/.test(r.url)), "a bundle or an image is not a candidate");
+});
+
+test("AND A FAILED RESPONSE IS NOT A CANDIDATE", () => {
+  // A 404 on a bid-shaped URL is the loudest possible false lead.
+  const c = candidates({ responses: [
+    { url: "https://api.x.test/v1/cash-bids", mime: "application/json", status: 404, body: "" },
+  ]});
+  assert.deepEqual(c, []);
+});
+
+test("no responses is not a crash", () => {
+  assert.deepEqual(candidates({ responses: [] }), []);
+  assert.deepEqual(candidates({}), []);
+  assert.deepEqual(candidates(null), []);
+});
+
+test("A BODY IS ONLY PRINTED WHEN IT IS A LEAD AND NOT AN ANSWER", () => {
+  // The Bushel case: 899 bytes, no towns, no roster — print it.
+  assert.equal(shouldPeek({ towns: null, names: null, bytes: 899 }), true);
+  // A roster IS the answer; the body adds nothing.
+  assert.equal(shouldPeek({ towns: 13, names: null, bytes: 899 }), false);
+  assert.equal(shouldPeek({ towns: null, names: [{ id: 1, name: "Dunlap" }], bytes: 899 }), false);
+  // A board is tens of thousands of bytes and pasting one in a log helps nobody.
+  assert.equal(shouldPeek({ towns: null, names: null, bytes: 45608 }), false);
+  // Nothing was handed over, and an empty body is not a lead.
+  assert.equal(shouldPeek({ towns: null, names: null, bytes: null }), false);
+  assert.equal(shouldPeek({ towns: null, names: null, bytes: 0 }), false);
+  // An empty roster array is not a roster.
+  assert.equal(shouldPeek({ towns: null, names: [], bytes: 899 }), true);
+});

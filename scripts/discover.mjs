@@ -146,6 +146,77 @@ function dedupe(feeds) {
  * `no-platform` and `unreachable` both present as zero feeds, which is exactly
  * why this is a function with a test rather than an `if` in a print statement.
  */
+/* A BYTE COUNT IS NOT EVIDENCE.
+ *
+ * The 2026-08-20 sweep found ten Bushel operators -- seven of them CHS regions,
+ * the largest single win left -- and reported each one as
+ * `200 application/json 899B  .../GetMarketsConfig`. Eight hundred and
+ * ninety-nine bytes that we captured, held, and threw away. A config that small
+ * is almost certainly naming the endpoint that carries the board, which is the
+ * one thing we needed and the one thing the log did not say.
+ *
+ * So: when a feed's body taught us nothing structural -- no location count, no
+ * roster -- and it is small enough to read, print it. Bounded hard, because the
+ * point is to name the next request and not to paste a page into a log.
+ */
+/* Is this body worth printing?
+ *
+ * Only when it taught us NOTHING structural — no location count, no roster —
+ * because those are the answer and the body is only ever a lead. And only when
+ * it is small: a config that names the next request is hundreds of bytes, a
+ * board is tens of thousands, and pasting a board into a log helps nobody.
+ *
+ * Extracted from the reporting block because a decision inside a `for` loop in
+ * a runnable script is a decision no test can reach — it survived mutation
+ * until it was pulled out here. */
+export function shouldPeek({ towns, names, bytes, maxBytes = 4000 }) {
+  if (towns != null) return false;
+  if (names && names.length) return false;
+  if (bytes == null) return false;
+  return bytes > 0 && bytes <= maxBytes;
+}
+
+export function peek(body, limit = 600) {
+  if (body == null) return null;
+  const flat = String(body).replace(/\s+/g, " ").trim();
+  if (!flat) return null;
+  const clean = redactBody(flat);
+  return clean.length > limit ? `${clean.slice(0, limit)}… [+${clean.length - limit} more]` : clean;
+}
+
+/* Their key is public in their own page, and it still does not go in our log.
+   Same reasoning as redactUrl in cdp.mjs, applied to a body. */
+export function redactBody(text) {
+  return String(text ?? "")
+    .replace(/("(?:api_?key|key|token|secret|sig|password|bearer)"\s*:\s*")[^"]*(")/gi, "$1<redacted>$2")
+    .replace(/\b((?:api_?key|token|secret|sig)=)[^&"'\s]+/gi, "$1<redacted>");
+}
+
+/* What did a page we could not classify actually serve?
+ *
+ * "NO KNOWN PLATFORM. hosts seen: …" names the neighbourhood and not the door.
+ * Twenty-nine pages sit in that pile, and some of them are a shape we already
+ * read under a URL we did not expect -- which is exactly what Ace Ethanol was
+ * an hour before it became a source file. Ranked so the thing most likely to be
+ * a board is first. */
+export function candidates(result, limit = 8) {
+  const score = (r) => {
+    let n = 0;
+    if (/json|xml|csv/i.test(r.mime ?? "")) n += 3;
+    if (/text\/plain/i.test(r.mime ?? "")) n += 1;
+    if (/\b(bid|bids|cash|grain|market|quote|price|cashgrid|component)\b/i.test(r.url ?? "")) n += 3;
+    if ((r.bytes ?? (r.body ? r.body.length : 0)) > 400) n += 1;
+    if (/\.(js|css|png|svg|woff2?)(\?|$)/i.test(r.url ?? "")) n -= 4;
+    return n;
+  };
+  return (result?.responses ?? [])
+    .filter((r) => (r.status ?? 0) >= 200 && (r.status ?? 0) < 400)
+    .map((r) => ({ ...r, _s: score(r) }))
+    .filter((r) => r._s > 0)
+    .sort((a, b) => b._s - a._s || (b.body?.length ?? 0) - (a.body?.length ?? 0))
+    .slice(0, limit);
+}
+
 export function verdict(result, feeds = findFeeds(result)) {
   if (feeds.length) return { kind: "feeds", feeds };
   if (result?.navError) return { kind: "unreachable", why: result.navError };
@@ -300,6 +371,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`   NO KNOWN PLATFORM. hosts seen: ${v.hosts.slice(0, 15).join(", ") || "none"}`);
       for (const l of v.leads)
         console.log(`   LEAD: ${l.host} is ${l.platform}'s domain -- the vendor is right, our signature is too narrow`);
+      const cands = candidates(result);
+      if (cands.length) {
+        console.log(`   WHAT IT DID SERVE, most board-like first:`);
+        for (const c of cands)
+          console.log(`     ${c.status} ${c.mime || "?"} ${c.bytes ?? c.body?.length ?? 0}B  ${c.url}`);
+      }
     } else withFeed++;
 
     for (const f of feeds) {
@@ -314,6 +391,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (facts.length) console.log(`     ${facts.map(([k, v]) => `${k}=${v}`).join("  ")}`);
       console.log(`     locations in payload: ${towns ?? "not countable from this shape"}`);
       if (names) for (const n of names) console.log(`       ${String(n.id).padStart(8)}  ${n.name}`);
+      /* Nothing structural came out of it and it is small enough to read: show
+         it. This is the line that turns a Bushel config from 899 bytes we threw
+         away into the name of the request that carries the board. */
+      if (shouldPeek({ towns, names, bytes })) {
+        const p = peek(body);
+        if (p) console.log(`     BODY: ${p}`);
+      }
     }
     console.log("");
   }
