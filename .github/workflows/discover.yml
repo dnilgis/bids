@@ -23,8 +23,12 @@ name: discover
 on:
   workflow_dispatch:
     inputs:
+      list:
+        description: "Which candidate list: discover-candidates (the 56) or bushel-candidates (the 10 Bushel pages)"
+        required: false
+        default: "discover-candidates"
       urls:
-        description: "Space-separated pages to ask INSTEAD of the candidate list (blank = the list)"
+        description: "Space-separated pages to ask INSTEAD of the list (blank = the list)"
         required: false
         default: ""
       start:
@@ -70,10 +74,18 @@ jobs:
           URLS: ${{ inputs.urls }}
           START: ${{ inputs.start }}
           LIMIT: ${{ inputs.limit }}
+          LIST: ${{ inputs.list }}
         run: |
           if [ -n "$URLS" ]; then
             node scripts/discover.mjs $URLS
-          else
-            node scripts/discover.mjs --list probe-lists/discover-candidates.txt \
-              --start "${START:-0}" --limit "${LIMIT:-20}"
+            exit 0
           fi
+          # The name is taken from a fixed set rather than pasted into a path.
+          # An input that reaches a filename is an input that can reach ../.
+          case "${LIST:-discover-candidates}" in
+            bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
+            discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
+            *) echo "::error title=unknown list::${LIST}. Use discover-candidates or bushel-candidates."; exit 2 ;;
+          esac
+          echo "asking $FILE"
+          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}"
