@@ -35,6 +35,16 @@ on:
         description: "Also follow scripts hosted on other domains"
         type: boolean
         default: true
+      raw:
+        # THE URLS BOX COULD NOT PRINT A JSON BODY, WHICH IS WHAT WE NOW WANT
+        # FROM IT. probe.mjs takes --raw <bytes> and the built-in steps pass it;
+        # the "Your URLs" step never did, so pasting an API URL walked it like a
+        # web page, found no scripts, and printed the first 600 bytes at most.
+        # DTN's grain-bids elevator directory answers with an array of every
+        # elevator in a state, which is a great deal more than 600 bytes.
+        description: "Bytes of the response body to print (e.g. 400000). Leave blank for the default 40000."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -56,11 +66,17 @@ jobs:
         env:
           URLS: ${{ inputs.urls }}
           REFERER: ${{ inputs.referer }}
+          RAW: ${{ inputs.raw }}
           ALL_ORIGINS: ${{ inputs.all_origins }}
         run: |
           args=""
           [ -n "$REFERER" ] && args="$args --referer $REFERER"
           [ "$ALL_ORIGINS" = "true" ] && args="$args --all-origins"
+          case "$RAW" in
+            "" ) ;;
+            *[!0-9]* ) echo "raw must be a number of bytes; ignoring \"$RAW\"" ;;
+            * ) args="$args --raw $RAW" ;;
+          esac
           node scripts/probe.mjs $URLS $args
 
       # ---- built-in targets, only when no URLs were supplied ----
