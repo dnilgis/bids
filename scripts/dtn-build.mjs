@@ -270,7 +270,7 @@ export function looksLikeTheSameRun(now, prior) {
 
 export function decide(entries, {
   prior = new Map(), existing = new Set(), existingByKey = new Map(), barchart = null,
-  sameRun = false, geocodes = null,
+  sameRun = false, geocodes = null, enable = false,
 } = {}) {
   const write = [], skip = [];
 
@@ -366,7 +366,49 @@ export function decide(entries, {
     }
 
     const blanks = HUMAN_FIELDS.filter((k) => m[k] === SET || m[k] === undefined || m[k] === null);
-    write.push({ e, id, manifest: m, agreed, priorMode, blanks, geo,
+
+    /* ---- SHOULD THIS ONE BE SWITCHED ON? ---------------------------------
+     *
+     * "The endpoint is documented, so turn it on" is a reasonable-sounding
+     * argument and the measurement says no. Enabled with no cashRounding, the
+     * identity guard is EXACT, and these boards floor their cash to the cent.
+     * Across the 2026-08-22 run, checked row by row:
+     *
+     *     rows that would reconcile     38 of 378   (10%)
+     *     boards where every row passes  0 of 45
+     *     boards where every row FAILS  28 of 45
+     *
+     * So flipping them today does not publish anything wrong -- the guard is
+     * doing its job -- it just makes forty-five sources refuse in unison. What
+     * gates them is not the endpoint, which is measured and works. It is the
+     * ROUNDING MODE, and that needs the same answer on a second day's prices.
+     *
+     * TWO SWITCHES, NOT ONE. `enabled` is "read this board"; `inMerge` is "put
+     * it on the map". They fail differently: reading a board with no state is
+     * harmless, while a map row whose state says SET THIS is a wrong answer in
+     * front of somebody. So a corroborated board is read as soon as it can be
+     * trusted, and stays off the map until a person has filled in where it is.
+     */
+    let enabling = null;
+    if (enable) {
+      if (!agreed) {
+        enabling = { on: false, why: `no rounding mode corroborated by a second run — enabled now, ` +
+                                     `the exact identity guard would refuse this board` };
+      } else {
+        m.enabled = true;
+        enabling = { on: true };
+        if (blanks.includes("state")) {
+          m.inMerge = false;
+          m.inMergeWhy = `Read, but off the map until somebody fills in the state. The feed carries ` +
+            `a location name and an id and no address, so nothing here knows which state this town ` +
+            `is in — and guessing it from the operator is what would have put six Iowa towns under ` +
+            `a Wisconsin co-operative. Reading the board without that is harmless; a map row that ` +
+            `says SET THIS is a wrong answer in front of somebody.`;
+        }
+      }
+    }
+
+    write.push({ e, id, manifest: m, agreed, priorMode, blanks, geo, enabling,
                  barchartCovered: m.inMerge === false });
   }
   return { write, skip };
@@ -530,7 +572,9 @@ function main() {
                 `compared with itself looks like. No cashRounding will be stated. Run the probe ` +
                 `again on another day's prices and pass THAT log.`);
 
-  const { write, skip } = decide(entries, { prior, existing, existingByKey, barchart, sameRun, geocodes });
+  const enable = has("enable");
+  const { write, skip } = decide(entries, { prior, existing, existingByKey, barchart, sameRun,
+                                            geocodes, enable });
 
   console.log(`read ${entries.length} location(s) from ${logPath}`);
   if (bad.length) {
@@ -574,6 +618,18 @@ function main() {
               `${blocked.length} still needing a person (${HUMAN_FIELDS.join("/")}), ` +
               `${write.filter((w) => w.manifest.cashRounding).length} with a rounding mode two runs agreed on, ` +
               `${write.filter((w) => w.manifest.lat != null).length} with a coordinate`);
+
+  if (enable) {
+    const on = write.filter((w) => w.enabling?.on);
+    const held = write.filter((w) => w.enabling && !w.enabling.on);
+    console.log(`\n--enable: ${on.length} switched ON, ${held.length} held back`);
+    for (const w of on)
+      console.log(`  ON   ${w.id.padEnd(34)}${w.manifest.inMerge === false ? "  (read, but off the map until state is filled)" : ""}`);
+    if (held.length)
+      console.log(`  held back: ${held.length} — ${held[0].enabling.why}`);
+  } else {
+    console.log(`no --enable, so every source is written disabled. A person turns a source on.`);
+  }
 
   if (!doWrite) { console.log(`\nNothing written. Add --write.`); return; }
 

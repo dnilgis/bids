@@ -456,3 +456,67 @@ test("A BARE TOWN ROW NEVER INVENTS A STATE", () => {
   assert.equal(write[0].manifest.lat, 44.38205361, "the coordinate still arrives");
   assert.equal(write[0].manifest.state, SET, "the state does not");
 });
+
+
+/* ---- switching a source on ----------------------------------------------
+   "The endpoint is documented, so turn it on" is reasonable-sounding and the
+   measurement says no: with no cashRounding the identity guard is EXACT, and
+   across the 2026-08-22 run only 38 of 378 rows reconciled exactly — 28 of 45
+   boards would have refused every row. What gates these is the rounding mode,
+   not the endpoint. */
+
+test("--enable holds back a board with no corroborated rounding mode", () => {
+  const { entries } = parseProbeLog(log([{ m: manifest(), mode: "floor-cent", testable: 25, margin: 14 }]));
+  const { write } = decide(entries, { enable: true });
+  assert.equal(write[0].manifest.enabled, false,
+    "one run looks confident and is not evidence — enabled now, this board refuses in unison");
+  assert.equal(write[0].enabling.on, false);
+  assert.match(write[0].enabling.why, /exact identity guard would refuse/);
+});
+
+test("--enable switches on a board two runs agreed about", () => {
+  const m = manifest({ state: "WI" });
+  const now = log([{ m, mode: "floor-cent", testable: 25, margin: 14 }]);
+  const then = log([{ m, mode: "floor-cent", testable: 22, margin: 11 }]);
+  const { entries } = parseProbeLog(now);
+  const { write } = decide(entries, { prior: verdicts(then), enable: true });
+  assert.equal(write[0].manifest.enabled, true);
+  assert.equal(write[0].manifest.cashRounding, "floor-cent");
+  assert.equal(write[0].manifest.inMerge, true, "it knows where it is, so it may go on the map");
+});
+
+test("A BOARD WITH NO STATE IS READ BUT KEPT OFF THE MAP", () => {
+  /* Two switches, because they fail differently. Reading a board with no state
+     is harmless. A map row whose state says SET THIS is a wrong answer in
+     front of somebody. And guessing the state from the operator is exactly
+     what would have put six Iowa towns under a Wisconsin co-operative. */
+  const m = manifest();                       // state is SET THIS
+  const now = log([{ m, mode: "floor-cent", testable: 25, margin: 14 }]);
+  const then = log([{ m, mode: "floor-cent", testable: 21, margin: 10 }]);
+  const { entries } = parseProbeLog(now);
+  const { write } = decide(entries, { prior: verdicts(then), enable: true });
+  assert.equal(write[0].manifest.enabled, true, "the board is read");
+  assert.equal(write[0].manifest.inMerge, false, "and kept off the map");
+  assert.match(write[0].manifest.inMergeWhy, /until somebody fills in the state/);
+});
+
+test("without --enable nothing is ever switched on", () => {
+  const m = manifest({ state: "WI" });
+  const now = log([{ m, mode: "floor-cent", testable: 25, margin: 14 }]);
+  const then = log([{ m, mode: "floor-cent", testable: 22, margin: 11 }]);
+  const { entries } = parseProbeLog(now);
+  const { write } = decide(entries, { prior: verdicts(then) });
+  assert.equal(write[0].manifest.enabled, false, "a person turns a source on");
+  assert.equal(write[0].enabling, null);
+});
+
+test("the same-run guard also blocks --enable", () => {
+  /* A log compared with itself agrees with itself. That must not be able to
+     switch forty-five sources on. */
+  const m = manifest({ state: "WI" });
+  const one = log([{ m, mode: "floor-cent", testable: 20, margin: 12 }]);
+  const { entries } = parseProbeLog(one);
+  const V = verdicts(one);
+  const { write } = decide(entries, { prior: V, sameRun: looksLikeTheSameRun(V, V), enable: true });
+  assert.equal(write[0].manifest.enabled, false);
+});
