@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseProbeLog, verdicts, idFor, decide, noteFor, barchartList, slug, SET, HUMAN_FIELDS,
-  looksLikeTheSameRun,
+  looksLikeTheSameRun, unwrapActionsLog,
 } from "../scripts/dtn-build.mjs";
 
 /* ---- a log, in exactly the shape the probe prints ----------------------- */
@@ -291,4 +291,54 @@ test("no shared locations at all is not agreement either", () => {
   const now = verdicts(log([{ m: manifest({ locationId: "101" }) }]));
   const then = verdicts(log([{ m: manifest({ locationId: "999" }) }]));
   assert.equal(looksLikeTheSameRun(now, then), false, "nothing in common cannot look like the same run");
+});
+
+
+/* ---- the log that actually arrives -------------------------------------- */
+
+test("AN ACTIONS LOG IS READ AS IT ARRIVES, TIMESTAMPS AND ALL", () => {
+  /* The first real log — run 88349821780, 2026-08-22 — came as a zip of
+     probe/5_Ask.txt with an ISO timestamp on every line, a BOM on the first
+     and ANSI colour around the echoed shell. Every heading and every verdict
+     line failed to match and the script read ZERO locations out of a good
+     69-location run. Nothing threw; it just said "read 0 location(s)", which
+     is indistinguishable from a probe that found nothing. */
+  const plain = log([{ m: manifest() }]);
+  const asActions = "\uFEFF" + plain.split("\n")
+    .map((l, i) => `2026-08-22T21:21:${String(10 + (i % 40)).padStart(2, "0")}.1234567Z ${l}`)
+    .join("\n");
+
+  const { entries, bad } = parseProbeLog(asActions);
+  assert.deepEqual(bad, []);
+  assert.equal(entries.length, 1, "a timestamped log must read exactly like a plain one");
+  assert.equal(entries[0].location, "Mount Horeb");
+  assert.equal(entries[0].manifest.siteId, "E0266901");
+  assert.equal(entries[0].verdict.mode, "floor-cent",
+    "the verdict lines are timestamped too, and they are what carries the rounding evidence");
+});
+
+test("the --against log is unwrapped as well", () => {
+  /* It is the same kind of file. A prior log whose verdict lines silently fail
+     to match reads as "there was no prior run", which is the quiet way to lose
+     a corroborated rounding mode. */
+  const plain = log([{ m: manifest(), mode: "floor-cent", testable: 18, margin: 9 }]);
+  const stamped = plain.split("\n").map((l) => `2026-08-22T21:21:35.6394938Z ${l}`).join("\n");
+  const V = verdicts(stamped);
+  assert.equal(V.size, 1);
+  assert.equal(V.get("E0266901 101").mode, "floor-cent");
+  assert.equal(V.get("E0266901 101").testable, 18);
+});
+
+test("ANSI colour and group markers do not break a heading", () => {
+  const ESC = String.fromCharCode(27);
+  const plain = log([{ m: manifest() }]);
+  const noisy = plain.replace("VERDICTS", ESC + "[36;1mVERDICTS" + ESC + "[0m");
+  const { entries } = parseProbeLog("##[group]Run node\n" + noisy);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].verdict.mode, "floor-cent");
+});
+
+test("unwrapping is a no-op on a log that was already plain", () => {
+  const plain = log([{ m: manifest() }]);
+  assert.equal(unwrapActionsLog(plain), plain);
 });

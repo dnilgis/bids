@@ -37,11 +37,12 @@
  */
 import { readFileSync } from "node:fs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
-import { capture } from "../lib/cdp.mjs";
+import { capture, captureAll } from "../lib/cdp.mjs";
 import { destinationReason } from "../lib/place.mjs";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => { const i = args.indexOf(`--${n}`); return i === -1 ? d : args[i + 1] ?? d; };
+const has = (n) => args.includes(`--${n}`);
 const UA = "agsist-bidreader/1.0 (+https://agsist.com; posted bid)";
 const BASE = flag("base", "https://api.dtn.com/markets");
 
@@ -348,6 +349,50 @@ async function probeOne({ site, page, fixture, operator }) {
            flagged: skels.filter((sk) => sk._notATown).length, mode: all.confident ?? null };
 }
 
+/* WHAT ELSE DOES THEIR PAGE ASK api.dtn.com FOR?
+ *
+ * Every manifest this probe prints comes out with `state`, `address`, `zip`
+ * and `website` set to SET THIS, because the cash-bids payload carries a
+ * location NAME and a location ID and nothing else. On the 2026-08-22 run that
+ * was 45 usable locations x 4 fields for somebody to type by hand, and a typed
+ * field is the one that is wrong -- which is exactly how "Red Wing Grain LLC"
+ * became a town in the first place.
+ *
+ * DTN's own OpenAPI document lists a sibling endpoint:
+ *
+ *     GET https://api.dtn.com/markets/sites/<siteId>/locations?units=us
+ *
+ * If the customer's widget asks for it, the addresses are THEIRS and measured,
+ * and nobody types anything. If it does not, we have learned that for the cost
+ * of one run instead of assuming it either way.
+ *
+ * This asks the question and NOTHING ELSE. It records every response the page
+ * makes -- captureAll, the same function discover uses, which is the one shown
+ * to survive a hostile Next.js page -- and prints the api.dtn.com ones. It
+ * writes no manifest, changes no source, and cannot affect a board. */
+export async function surveyOne({ page, site }) {
+  console.log(`\nSURVEY ${site}: loading ${page} and recording every response`);
+  const got = await captureAll({ pageUrl: page });
+  if (got.error) { console.error(`::warning::survey of ${site} failed: ${got.error}`); return { site, ok: false }; }
+
+  const dtn = (got.responses ?? []).filter((r) => /(^|\.)dtn\.com/.test(hostOf(r.url)));
+  console.log(`  ${got.responses.length} response(s) in total, ${dtn.length} to dtn.com`);
+  for (const r of dtn)
+    console.log(`  DTN ${String(r.status).padEnd(4)} ${r.body ? String(r.body.length).padStart(7) : "      -"}B  ${r.url}`);
+
+  const locations = dtn.find((r) => /\/locations\b/.test(r.url) && r.status === 200 && r.body);
+  if (locations) {
+    console.log(`\n  A LOCATIONS PAYLOAD EXISTS for ${site}. First 600 bytes, so the shape can be read:`);
+    console.log("  " + locations.body.slice(0, 600).replace(/\n/g, "\n  "));
+  } else {
+    console.log(`\n  No /locations payload on this page — the addresses are not ours to read from ` +
+                `here, and the manifests keep SET THIS rather than a guess.`);
+  }
+  return { site, ok: true, dtn: dtn.length, hasLocations: !!locations };
+}
+
+const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ""; } };
+
 /* Lines of the form `V <siteId> <locationId> <mode> <testable> <margin>`, as
    printed by a previous run. Anything else in the file is ignored, so the
    whole log can be pasted in. */
@@ -385,6 +430,26 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   for (const j of todo)
     if (!j.fixture && !j.page) { console.error(`${j.siteId}: no page and no fixture`); process.exit(2); }
+
+  /* --survey ASKS A DIFFERENT QUESTION AND WRITES NOTHING.
+     Not "what is on this board" but "what else does this page ask DTN for",
+     which is how we find out whether the addresses are available without
+     assuming they are. It is deliberately a separate mode: it must not be able
+     to change what a normal probe run prints. */
+  if (has("survey")) {
+    const out = [];
+    for (const [i, j] of todo.entries()) {
+      console.log(`\n${"=".repeat(72)}\n[${i + 1}/${todo.length}] SURVEY ${j.operator ?? j.siteId}  (${j.siteId})\n${"=".repeat(72)}`);
+      if (!j.page) { console.log("  no page to load — a survey needs the customer's own page"); continue; }
+      out.push(await surveyOne({ page: j.page, site: j.siteId }));
+    }
+    const withLoc = out.filter((r) => r.hasLocations);
+    console.log(`\n${"=".repeat(72)}\nSURVEY TALLY`);
+    console.log(`  ${withLoc.length} of ${out.length} site(s) exposed a /locations payload` +
+                (withLoc.length ? `: ${withLoc.map((r) => r.site).join(", ")}` : ""));
+    console.log(`\nWrote nothing.`);
+    process.exit(0);
+  }
 
   const results = [];
   for (const [i, j] of todo.entries()) {

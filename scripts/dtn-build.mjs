@@ -49,9 +49,12 @@ export const SET = "SET THIS";
 /* `V <siteId> <locationId> <mode> <testable> <margin>`, one per location.
    Same shape parseVerdicts() in the probe reads, and deliberately so: the two
    scripts must not disagree about what a verdict line means. */
-export function verdicts(text) {
+export function verdicts(raw) {
   const out = new Map();
-  for (const l of String(text ?? "").split(/\r?\n/)) {
+  /* Unwrapped here too: --against is handed the SAME kind of file, and a prior
+     log whose verdict lines silently fail to match reads as "no prior run"
+     rather than as an error. */
+  for (const l of unwrapActionsLog(raw).split(/\r?\n/)) {
     const m = l.trim().match(/^V\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(-?\d+)/);
     if (m) out.set(`${m[1]} ${m[2]}`, { mode: m[3], testable: +m[4], margin: +m[5] });
   }
@@ -73,8 +76,33 @@ export function verdicts(text) {
  * whether the previous character was a backslash. A parser that gets this wrong
  * does not fail loudly; it silently truncates the last manifest of a run.
  */
-export function parseProbeLog(text) {
-  const lines = String(text ?? "").split(/\r?\n/);
+/* THE LOG THAT ACTUALLY ARRIVES IS AN ACTIONS LOG.
+ *
+ * This script's whole premise is "read the log a person pastes", and the first
+ * real one -- run 88349821780, 2026-08-22 -- arrived as a zip of
+ * `probe/5_Ask.txt` with an ISO timestamp on every single line, a UTF-8 BOM on
+ * the first, and ANSI colour around the echoed shell. Every heading and every
+ * verdict line failed to match, and the script read ZERO locations out of a
+ * perfectly good 69-location run.
+ *
+ * Stripping it here rather than telling somebody to sed it first: a
+ * pre-processing step nobody is told about is a step that gets skipped, and
+ * the failure is silent -- "read 0 location(s)" looks like an empty probe. */
+export function unwrapActionsLog(text) {
+  return String(text ?? "")
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((l) => l
+      .replace(/^\uFEFF/, "")
+      .replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, "")
+      .replace(/\x1b\[[0-9;]*m/g, "")
+      .replace(/^##\[(?:group|endgroup|debug)\]/, ""))
+    .join("\n");
+}
+
+export function parseProbeLog(raw) {
+  const text = unwrapActionsLog(raw);
+  const lines = text.split(/\r?\n/);
   const V = verdicts(text);
   const out = [];
   const bad = [];
