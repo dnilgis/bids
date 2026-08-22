@@ -116,6 +116,59 @@ jobs:
           node scripts/probe.mjs --raw 400000 \
             'https://cp-docs.dtn.com/content-packages/api-specs/markets-grain-bids-api/markets-grain-bids-oas-1.1.yaml'
 
+      # THE ELEVATOR DIRECTORY — THE WHOLE CENSUS IN ONE CALL, IF THE KEY REACHES IT.
+      #
+      # Read off the spec above on 2026-08-22. This is a DIFFERENT DTN PRODUCT
+      # from the cash-bids widget every source in this repo currently uses. The
+      # widget is keyed per customer, scoped to a browser, and has NO INDEX —
+      # which is why coverage has been built one co-operative at a time, eight
+      # site ids for sixty-nine locations. This one is a plain REST search:
+      #
+      #   GET /markets/grain-bids/elevators?country=USA&state=WI&active=Y
+      #
+      # and each record carries a name, a business type, and an address with
+      # city, county, state, postalCode, fips, LATITUDE and LONGITUDE — all of
+      # them required fields in the schema. Those are exactly the fields the 45
+      # generated sources currently leave as SET THIS.
+      #
+      # IT IS A BUILT-IN TARGET RATHER THAN SOMETHING TO PASTE. The urls box was
+      # left blank on two runs in a row and both produced an identical log, so
+      # the step that has to happen should not depend on remembering to fill in
+      # a box. Blank is the normal way to run this workflow.
+      #
+      # THE KEY IS DTN'S OWN PUBLISHED SAMPLE KEY, printed in the comment eleven
+      # lines above and documented in their spec. It is not ours and it is not
+      # secret. probe.mjs cannot send a custom header, so it travels in the query
+      # string; the rule that a key is a header and never a query parameter
+      # exists so OUR credentials stay out of a public Actions log, and there is
+      # nothing of ours here to keep out of it.
+      #
+      # WHAT THIS DECIDES: the spec calls that key "sample data". So either it
+      # answers with Wisconsin, or it answers with a few demo rows and we learn
+      # that production needs a real key. Both are worth knowing; neither is
+      # worth guessing at.
+      - name: DTN Markets Grain Bids — the elevator directory for WI and MN
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          KEY=oViXqthDGFNVw3IvAsnKrFG1AcfPyA6b
+          BASE='https://api.dtn.com/markets/grain-bids/elevators'
+          node scripts/probe.mjs --raw 400000 \
+            "$BASE?apikey=$KEY&country=USA&state=WI&active=Y" \
+            "$BASE?apikey=$KEY&country=USA&state=MN&active=Y"
+
+      # The same key against the smallest endpoint in the spec. If the directory
+      # above refuses, this says whether the key is the problem or the state
+      # filter is — one 401 and one 200 mean something quite different from two
+      # 401s, and without this the log cannot tell them apart.
+      - name: DTN Markets Grain Bids — commodities, to prove the key works at all
+        if: inputs.urls == ''
+        continue-on-error: true
+        run: |
+          KEY=oViXqthDGFNVw3IvAsnKrFG1AcfPyA6b
+          node scripts/probe.mjs --raw 60000 \
+            "https://api.dtn.com/markets/grain-bids/commodities?apikey=$KEY"
+
       # StoneX: the component's own call is still unfound, but the API publishes
       # Swagger at /swagger/index.html and the document loads from somewhere.
       # Read the UI page raw and follow whatever spec URL it names.
