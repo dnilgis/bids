@@ -54,6 +54,16 @@ on:
         description: "Paste the VERDICTS lines from a previous run to see which rounding modes agree"
         required: false
         default: ""
+      survey:
+        # Every manifest comes out with state, address, zip and website unset,
+        # because the cash-bids payload carries a location name and an id and
+        # nothing else -- 45 locations x 4 fields to type by hand after the
+        # 2026-08-22 run, and a typed field is the one that is wrong. DTN lists
+        # a sibling /locations endpoint. This asks whether the customer's own
+        # page requests it. It writes nothing and reads no board.
+        description: "Instead of reading boards, list what else these pages ask api.dtn.com for (looking for addresses)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -89,11 +99,13 @@ jobs:
           # VERDICTS lines in and this run says which of them agree.
           AGAINST: ${{ inputs.against }}
           USE_LIST: ${{ inputs.list }}
+          SURVEY: ${{ inputs.survey }}
           SITE: ${{ inputs.site }}
           PAGE: ${{ inputs.page }}
           OPERATOR: ${{ inputs.operator }}
         run: |
           ARGS=""
+          if [ "$SURVEY" = "true" ]; then ARGS="--survey"; fi
           if [ -n "$AGAINST" ]; then
             printf '%s\n' "$AGAINST" > /tmp/prior-verdicts.txt
             ARGS="--against /tmp/prior-verdicts.txt"
