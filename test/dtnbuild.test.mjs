@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseProbeLog, verdicts, idFor, decide, noteFor, barchartList, slug, SET, HUMAN_FIELDS,
-  looksLikeTheSameRun, unwrapActionsLog,
+  looksLikeTheSameRun, unwrapActionsLog, geocodeList, splitPostal,
 } from "../scripts/dtn-build.mjs";
 
 /* ---- a log, in exactly the shape the probe prints ----------------------- */
@@ -341,4 +341,118 @@ test("ANSI colour and group markers do not break a heading", () => {
 test("unwrapping is a no-op on a log that was already plain", () => {
   const plain = log([{ m: manifest() }]);
   assert.equal(unwrapActionsLog(plain), plain);
+});
+
+
+/* ---- coordinates ---------------------------------------------------------
+   The rules come from geocodes/README.md, which is where the argument about
+   this file already happened. These assert that dtn-build obeys them. */
+
+const TSV = [
+  "# a comment line",
+  "Allied Cooperative\thttps://www.allied.coop/grain/cash-bids\t\t\tHIXTON\t-91.00691356\t44.38205361",
+  "Alcivia\thttps://www.alcivia.com/x\t\t\tELMWOOD\t-92.15147432\t44.77935",
+  "Synergy Coop\thttps://x\t\t\tRice Lake, WI\t-91.73868744\t45.51678958",
+  "Sloppy Coop\thttps://x\t\t\tCASSELTON\t-81.8645\t40.21473",
+].join("\n");
+
+test("a coordinate is taken only on an OPERATOR AND TOWN match", () => {
+  const g = geocodeList(TSV);
+  assert.equal(g.find("Allied Cooperative", "HIXTON").row.lat, 44.38205361);
+});
+
+test("A TOWN NAME IS NOT A KEY — the Elmwood trap", () => {
+  /* Ag-Land FS's Elmwood is in Illinois; the only Elmwood in the file is
+     Alcivia's, in Wisconsin. Matching on town alone would have pinned an
+     Illinois elevator in Wisconsin with nothing on the page to say so. Found
+     in the real 2026-08-22 build. */
+  const g = geocodeList(TSV);
+  const r = g.find("Ag-Land FS", "Elmwood");
+  assert.equal(r.row, undefined, "this must not resolve");
+  assert.match(r.refused, /belongs to Alcivia/);
+  assert.match(r.refused, /two different places/);
+});
+
+test("the known-bad row is refused by name", () => {
+  /* README rule 2: Synergy / Rice Lake resolves to a park, 611 m out. */
+  const g = geocodeList(TSV);
+  const r = g.find("Synergy Coop", "Rice Lake");
+  assert.equal(r.row, undefined);
+  assert.match(r.refused, /known bad/);
+});
+
+test("THE LOW-PRECISION POPULATION IS REFUSED EVEN IF SOMEBODY PASTES IT BACK IN", () => {
+  /* The dropped rows are a bad join — latitude 32.39 for a Minnesota town,
+     longitude -81.86 for North Dakota. They are told apart by decimal places,
+     and this file is edited by hand, so the check is made here rather than
+     trusted to have been made once. */
+  const g = geocodeList(TSV);
+  const r = g.find("Sloppy Coop", "Casselton");
+  assert.equal(r.row, undefined);
+  assert.match(r.refused, /low-precision population/);
+});
+
+test("a town with no row at all says so, and is not confused with a refusal", () => {
+  const g = geocodeList(TSV);
+  const r = g.find("Premier Cooperative", "Westby");
+  assert.equal(r.missing, true);
+  assert.equal(r.refused, undefined);
+});
+
+test("a filled coordinate carries its provenance into the note", () => {
+  const g = geocodeList(TSV);
+  const m = manifest({ operator: "Allied Cooperative", location: "HIXTON", locationId: "501" });
+  const { entries } = parseProbeLog(log([{ m }]));
+  const { write } = decide(entries, { geocodes: g });
+  assert.equal(write[0].manifest.lat, 44.38205361);
+  assert.match(write[0].manifest.note, /EVIDENCE AND NOT A FACT/);
+  assert.match(write[0].manifest.note, /matched on operator AND town/);
+  assert.match(write[0].manifest.note, /check this pin against the operator/);
+});
+
+test("with no geocode file every pin stays null", () => {
+  const { entries } = parseProbeLog(log([{ m: manifest() }]));
+  const { write } = decide(entries);
+  assert.equal(write[0].manifest.lat, null);
+  assert.equal(write[0].manifest.lon, null);
+});
+
+
+test("THE POSTAL COLUMN IS TWO FORMATS AND BOTH MUST MATCH", () => {
+  /* 42 of the real file's 82 rows are `Town, ST` or `Town, ST 54768`; the rest
+     are a bare TOWN. Slugging the whole cell turned `Goodhue, MN 55027` into
+     `goodhuemn55027`, which matched nothing — and produced no error, just a
+     town with no coordinate, indistinguishable from one the file lacks. */
+  assert.deepEqual(splitPostal("Goodhue, MN 55027"), { town: "Goodhue", state: "MN", zip: "55027" });
+  assert.deepEqual(splitPostal("Cylon, WI"),          { town: "Cylon",   state: "WI", zip: null });
+  assert.deepEqual(splitPostal("ADAMS"),              { town: "ADAMS",   state: null, zip: null });
+  assert.deepEqual(splitPostal("MENOMONIE FEED MILL"),{ town: "MENOMONIE FEED MILL", state: null, zip: null });
+});
+
+test("a Town, ST row resolves and hands over its state and zip", () => {
+  const tsv = "Ag Partners\thttps://x\t\t101 S Broadway\tGoodhue, MN 55027\t-92.62402113\t44.40021447";
+  const g = geocodeList(tsv);
+  const hit = g.find("Ag Partners", "Goodhue");
+  assert.equal(hit.row.state, "MN");
+  assert.equal(hit.row.zip, "55027");
+
+  const m = manifest({ operator: "Ag Partners", location: "Goodhue", locationId: "7240", siteId: "zz" });
+  const { entries } = parseProbeLog(log([{ m }]));
+  const { write } = decide(entries, { geocodes: g });
+  assert.equal(write[0].manifest.state, "MN", "the state came from the file, not from the operator");
+  assert.equal(write[0].manifest.zip, "55027");
+  assert.equal(write[0].manifest.address, "101 S Broadway");
+});
+
+test("A BARE TOWN ROW NEVER INVENTS A STATE", () => {
+  /* Half the file says nothing about the state. Inheriting one from the
+     operator is exactly the assumption that put six Iowa towns under a
+     Wisconsin co-operative in the 2026-08-22 run. */
+  const tsv = "Allied Cooperative\thttps://x\t\t\tHIXTON\t-91.00691356\t44.38205361";
+  const g = geocodeList(tsv);
+  const m = manifest({ operator: "Allied Cooperative", location: "HIXTON", locationId: "501" });
+  const { entries } = parseProbeLog(log([{ m }]));
+  const { write } = decide(entries, { geocodes: g });
+  assert.equal(write[0].manifest.lat, 44.38205361, "the coordinate still arrives");
+  assert.equal(write[0].manifest.state, SET, "the state does not");
 });

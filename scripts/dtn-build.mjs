@@ -270,7 +270,7 @@ export function looksLikeTheSameRun(now, prior) {
 
 export function decide(entries, {
   prior = new Map(), existing = new Set(), existingByKey = new Map(), barchart = null,
-  sameRun = false,
+  sameRun = false, geocodes = null,
 } = {}) {
   const write = [], skip = [];
 
@@ -340,8 +340,33 @@ export function decide(entries, {
       }
     }
 
+    /* A COORDINATE IS FILLED ONLY FROM AN OPERATOR-AND-TOWN MATCH, and the
+       refusal is carried so the report can say why a pin is still null. */
+    let geo = null;
+    if (geocodes) {
+      geo = geocodes.find(m.operator, e.location);
+      if (geo.row) {
+        m.lat = geo.row.lat;
+        m.lon = geo.row.lon;
+        if (!m.address && geo.row.address) m.address = geo.row.address;
+        if (!m.phone && geo.row.phone) m.phone = geo.row.phone;
+        /* Only where the row actually carries it. Half the file's postal cells
+           are a bare town and say nothing about the state; those keep SET THIS
+           rather than inheriting a state from the operator, which is exactly
+           the assumption that put six Iowa towns under a Wisconsin co-op. */
+        if (geo.row.state && (m.state === SET || !m.state)) m.state = geo.row.state;
+        if (geo.row.zip && m.zip == null) m.zip = geo.row.zip;
+        m.note += ` COORDINATES came from geocodes/basis1st-list-2026-08-20.tsv, matched on ` +
+          `operator AND town (${geo.row.name} / ${geo.row.postal}) — never on town alone, which ` +
+          `pairs Ag-Land FS's Elmwood in Illinois with Alcivia's Elmwood in Wisconsin. That file's ` +
+          `kept population was sampled against the Census geocoder and ArcGIS at a median of 123 m, ` +
+          `with Allied's Hixton at 37 m. It is EVIDENCE AND NOT A FACT — README rule 1 — so check ` +
+          `this pin against the operator's own published address before enabling.`;
+      }
+    }
+
     const blanks = HUMAN_FIELDS.filter((k) => m[k] === SET || m[k] === undefined || m[k] === null);
-    write.push({ e, id, manifest: m, agreed, priorMode, blanks,
+    write.push({ e, id, manifest: m, agreed, priorMode, blanks, geo,
                  barchartCovered: m.inMerge === false });
   }
   return { write, skip };
@@ -367,6 +392,103 @@ export function barchartList(text) {
   };
 }
 
+/* ---- coordinates, from a file the repository has already argued about ---- */
+
+/* geocodes/basis1st-list-2026-08-20.tsv, read under its own README's rules.
+ *
+ * WHY IT IS SAFE TO READ AT ALL: the kept population was sampled against the
+ * US Census geocoder and ArcGIS on 2026-08-20 -- seven of eight facility
+ * accurate, median 123 m, with Allied's own Hixton at 37 m and Auburndale
+ * correctly picking the East site over the West site 3.2 km away.
+ *
+ * WHY IT IS STILL ONLY EVIDENCE: rule 1 of that README. The population was
+ * sampled, not verified row by row, so a coordinate taken from here is written
+ * with its provenance in the note and the source stays enabled:false.
+ *
+ * THE MATCH IS ON OPERATOR **AND** TOWN, AND THAT IS NOT FUSSINESS. Matching
+ * on town alone, the 2026-08-22 build pairs Ag-Land FS's Elmwood with
+ * Alcivia's Elmwood -- one is in Illinois, the other in Wisconsin, and the
+ * coordinate would have pinned an Illinois elevator in Wisconsin with nothing
+ * on the page to say so. A town name is not a key.
+ */
+export const KNOWN_BAD = [
+  /* README rule 2: resolves to a park with no street address, 611 m out.
+     The operator slug is `synergycoop` and not `synergy` -- the README calls
+     it "Synergy" and the file says "Synergy Coop", and the first version of
+     this list used the README's wording, so the row it exists to block sailed
+     straight through. A refusal keyed on a name nobody checked is not a
+     refusal. */
+  { operator: "synergycoop", town: "ricelake",
+    why: "known bad in geocodes/README.md — resolves to a park with no street address, 611 m out" },
+];
+
+/* THE POSTAL COLUMN IS TWO FORMATS, AND READING ONLY ONE OF THEM LOSES HALF
+ * THE FILE IN SILENCE.
+ *
+ * Measured on the real file: 42 of its 82 rows are `Town, ST` or
+ * `Town, ST 54768`, and the other 40 are a bare `TOWN`. The first version of
+ * this matcher slugged the whole cell, so `Goodhue, MN 55027` became
+ * `goodhuemn55027` and never matched `goodhue`. Nothing failed -- those towns
+ * simply came out with no coordinate, which looks exactly like a town the file
+ * does not have.
+ *
+ * The comma is also worth something: where it is there, the STATE is there,
+ * and the state is a field somebody would otherwise type by hand. */
+export function splitPostal(cell) {
+  const raw = String(cell ?? "").trim();
+  const [townPart, rest = ""] = raw.split(",");
+  const m = rest.trim().match(/^([A-Za-z]{2})\b\s*(\d{5})?/);
+  return {
+    town: townPart.trim(),
+    state: m ? m[1].toUpperCase() : null,
+    zip: m && m[2] ? m[2] : null,
+  };
+}
+
+export function geocodeList(tsv) {
+  const rows = [];
+  for (const raw of String(tsv ?? "").split(/\r?\n/)) {
+    if (!raw.trim() || raw.startsWith("#")) continue;
+    const c = raw.split("\t");
+    if (c.length < 7) continue;
+    const lon = parseFloat(c[5]), lat = parseFloat(c[6]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const p = splitPostal(c[4]);
+    rows.push({ name: c[0], url: c[1], phone: c[2], address: c[3], postal: c[4],
+                town: p.town, state: p.state, zip: p.zip, lon, lat });
+  }
+  return {
+    size: rows.length,
+    /* Returns the row, or a REASON it was refused. Never a bare null: a
+       coordinate that silently did not arrive is indistinguishable from a
+       town that has none. */
+    find(operator, town) {
+      const op = slug(operator), t = slug(town);
+      const bad = KNOWN_BAD.find((b) => b.operator === op && b.town === t);
+      if (bad) return { refused: bad.why };
+
+      const hit = rows.find((r) => slug(r.name) === op && slug(r.town) === t);
+      if (hit) {
+        /* The two populations are told apart by precision: the dropped rows
+           carry 4 decimals and are a bad join (latitude 32.39 for a Minnesota
+           town). Checked again here rather than trusted, because this file is
+           edited by hand. */
+        const dp = (n) => { const m = String(n).split("."); return m[1] ? m[1].length : 0; };
+        if (dp(hit.lat) < 6 || dp(hit.lon) < 6)
+          return { refused: `only ${Math.min(dp(hit.lat), dp(hit.lon))} decimal(s) — that is the ` +
+                            `low-precision population geocodes/README.md says never to copy from` };
+        return { row: hit };
+      }
+
+      const townOnly = rows.find((r) => slug(r.town) === t);
+      if (townOnly)
+        return { refused: `the only row for "${town}" belongs to ${townOnly.name}, not ` +
+                          `${operator} — a town name is not a key, and these are two different places` };
+      return { missing: true };
+    },
+  };
+}
+
 function main() {
   const logPath = flag("log");
   if (!logPath) {
@@ -380,6 +502,11 @@ function main() {
   const { entries, bad } = parseProbeLog(readFileSync(logPath, "utf8"));
   const prior = flag("against") ? verdicts(readFileSync(flag("against"), "utf8")) : new Map();
   const barchart = flag("barchart") ? barchartList(readFileSync(flag("barchart"), "utf8")) : null;
+  /* Defaults ON: the file is in the repository and the whole point of it is to
+     stop elevators being pinned at a town centroid. --no-geocodes turns it off. */
+  const geoPath = flag("geocodes", "geocodes/basis1st-list-2026-08-20.tsv");
+  const geocodes = (has("no-geocodes") || !existsSync(geoPath))
+    ? null : geocodeList(readFileSync(geoPath, "utf8"));
   /* Every source already on disk, by BOTH names it can be known under: its id,
      and the siteId+locationId the feed keys it on. See decide(). */
   const existing = new Set();
@@ -403,7 +530,7 @@ function main() {
                 `compared with itself looks like. No cashRounding will be stated. Run the probe ` +
                 `again on another day's prices and pass THAT log.`);
 
-  const { write, skip } = decide(entries, { prior, existing, existingByKey, barchart, sameRun });
+  const { write, skip } = decide(entries, { prior, existing, existingByKey, barchart, sameRun, geocodes });
 
   console.log(`read ${entries.length} location(s) from ${logPath}`);
   if (bad.length) {
@@ -424,16 +551,29 @@ function main() {
     for (const s of skip) console.log(`  ${s.e.location} (${s.e.locationId}) — ${s.why}`);
   }
 
+  if (geocodes) console.log(`geocodes: ${geocodes.size} row(s) from ${geoPath}`);
+  else console.log(`no geocode file, so every coordinate stays null.`);
+
   console.log(`\nWOULD WRITE ${write.length}:`);
   for (const w of write)
     console.log(`  ${w.id.padEnd(34)} ${w.manifest.cashRounding ?? "(no rounding stated)"}` +
+                `${w.manifest.lat != null ? `  pin ${w.manifest.lat},${w.manifest.lon}` : "  no pin"}` +
                 `${w.barchartCovered ? "  [Barchart covers it — inMerge:false]" : ""}` +
                 `${w.blanks.length ? `  STILL BLANK: ${w.blanks.join(", ")}` : ""}`);
+
+  /* A refused coordinate is reported. A pin that silently did not arrive looks
+     exactly like a town that never had one. */
+  const refused = write.filter((w) => w.geo && w.geo.refused);
+  if (refused.length) {
+    console.log(`\nCOORDINATES REFUSED ${refused.length}:`);
+    for (const w of refused) console.log(`  ${w.e.location} — ${w.geo.refused}`);
+  }
 
   const blocked = write.filter((w) => w.blanks.length);
   console.log(`\n${write.length} to write, ${skip.length} skipped, ` +
               `${blocked.length} still needing a person (${HUMAN_FIELDS.join("/")}), ` +
-              `${write.filter((w) => w.manifest.cashRounding).length} with a rounding mode two runs agreed on`);
+              `${write.filter((w) => w.manifest.cashRounding).length} with a rounding mode two runs agreed on, ` +
+              `${write.filter((w) => w.manifest.lat != null).length} with a coordinate`);
 
   if (!doWrite) { console.log(`\nNothing written. Add --write.`); return; }
 
