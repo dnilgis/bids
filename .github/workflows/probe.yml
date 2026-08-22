@@ -45,6 +45,16 @@ on:
         description: "Bytes of the response body to print (e.g. 400000). Leave blank for the default 40000."
         required: false
         default: ""
+      dtn_key:
+        # A LICENSED DTN key, if one is ever bought. Their documented sample key
+        # is browser-scoped and answers AGW-403=002 to everything — measured
+        # 2026-08-22 on the elevator directory, on MN, and on commodities. With
+        # a real key the directory returns every elevator in a state with city,
+        # county, postalCode, fips, latitude and longitude. Left blank, the step
+        # that uses it does not run.
+        description: "A licensed DTN Markets API key, to fetch the national elevator directory. Blank = skip."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -143,31 +153,48 @@ jobs:
       # exists so OUR credentials stay out of a public Actions log, and there is
       # nothing of ours here to keep out of it.
       #
-      # WHAT THIS DECIDES: the spec calls that key "sample data". So either it
-      # answers with Wisconsin, or it answers with a few demo rows and we learn
-      # that production needs a real key. Both are worth knowing; neither is
-      # worth guessing at.
-      - name: DTN Markets Grain Bids — the elevator directory for WI and MN
-        if: inputs.urls == ''
+      # ══ ANSWERED 2026-08-22, run 88363539257. THE SAMPLE KEY CANNOT REACH IT. ══
+      #
+      # All three calls — WI, MN, and commodities — came back identically:
+      #
+      #   403  {"type":"Authorization","id":"AGW-403=002",
+      #         "message":"The api key is valid, but it is valid to be used
+      #                    within a browser only."}
+      #
+      # THE SAME GATEWAY RULE AS THE WIDGET, on a completely different product.
+      # The key is valid; DTN scopes it to browser use, and no server-side
+      # request passes that check however well-formed it is.
+      #
+      # The commodities call is why we know WHICH thing refused. One 403 on the
+      # directory alone would have left "is it the key or the state filter?"
+      # open, and the obvious next move would have been to fiddle with query
+      # parameters for an hour. Two identical 403s on the simplest endpoint in
+      # the spec close that off: it is the key.
+      #
+      # THIS IS NOT A THING TO ROUTE AROUND. There is no customer page that
+      # requests /markets/grain-bids/elevators — the 2026-08-22 survey showed
+      # the widgets ask only for /markets/sites/<id>/cash-bids — so driving it
+      # from inside a browser would mean manufacturing a request no page makes,
+      # which is the forged Origin/Referer that Sig ruled out on 2026-08-20.
+      # The directory is real, it is exactly what a national census needs, and
+      # reaching it takes a licensed key from DTN. That is a commercial
+      # conversation, not a technical one.
+      #
+      # THE STEP STAYS, GATED ON A KEY. If a real one ever arrives, put it in
+      # the dtn_key box and this answers without anybody rediscovering the
+      # endpoint. Left blank it does not run, because running it again with the
+      # sample key would print the same 403 and teach nobody anything.
+      - name: DTN Markets Grain Bids — the elevator directory (needs a licensed key)
+        if: inputs.urls == '' && inputs.dtn_key != ''
         continue-on-error: true
+        env:
+          DTN_KEY: ${{ inputs.dtn_key }}
         run: |
-          KEY=oViXqthDGFNVw3IvAsnKrFG1AcfPyA6b
           BASE='https://api.dtn.com/markets/grain-bids/elevators'
           node scripts/probe.mjs --raw 400000 \
-            "$BASE?apikey=$KEY&country=USA&state=WI&active=Y" \
-            "$BASE?apikey=$KEY&country=USA&state=MN&active=Y"
-
-      # The same key against the smallest endpoint in the spec. If the directory
-      # above refuses, this says whether the key is the problem or the state
-      # filter is — one 401 and one 200 mean something quite different from two
-      # 401s, and without this the log cannot tell them apart.
-      - name: DTN Markets Grain Bids — commodities, to prove the key works at all
-        if: inputs.urls == ''
-        continue-on-error: true
-        run: |
-          KEY=oViXqthDGFNVw3IvAsnKrFG1AcfPyA6b
-          node scripts/probe.mjs --raw 60000 \
-            "https://api.dtn.com/markets/grain-bids/commodities?apikey=$KEY"
+            "https://api.dtn.com/markets/grain-bids/commodities?apikey=$DTN_KEY" \
+            "$BASE?apikey=$DTN_KEY&country=USA&state=WI&active=Y" \
+            "$BASE?apikey=$DTN_KEY&country=USA&state=MN&active=Y"
 
       # StoneX: the component's own call is still unfound, but the API publishes
       # Swagger at /swagger/index.html and the document loads from somewhere.
