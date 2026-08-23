@@ -61,13 +61,30 @@ export const SIGNATURES = [
      sweep found these families on dozens of co-operatives each, so the next
      adapter written should be the one with the most towns behind it, and that
      is a question this log can answer instead of a guess. */
+  /* THE ENDPOINT IS PART OF THE IDENTITY HERE TOO, AND LEAVING IT OUT HID THE
+   * BOARD — the same fault, in the same file, that the Bushel note below
+   * describes, repeated on a different vendor.
+   *
+   * `key` is present on `stonehedge.stonex.com/component/bids` and absent on
+   * every `api.stonehedge.stonex.com/...` call the app makes afterwards. So
+   * every one of those collapsed to a single `{key: null}` entry in dedupe(),
+   * and a page that asked for six things reported one.
+   *
+   * Measured 2026-08-23 on United Cooperative, Beaver Dam: 151 responses, and
+   * the log showed exactly two distinct StoneX URLs. `component/bids` turned
+   * out to be a REACT APP SHELL — 21,050 bytes with no table, no row and no
+   * price in it — so the board is whatever that app fetches once it boots, and
+   * that is precisely what was being deduped away. */
   { platform: "stonehedge", adapter: null, family: /stonex\.com$/,
     test: (u) => /stonehedge\.stonex\.com$/.test(host(u)) || /stonex/i.test(host(u)),
-    id: (u) => ({ key: param(u, "key") ? "<present>" : null }) },
+    id: (u) => ({ key: param(u, "key") ? "<present>" : null, endpoint: endpointOf(u) }) },
 
   { platform: "barchart", adapter: null, family: /barchart\.com$/,
     test: (u) => /barchart\.com$/.test(host(u)),
-    id: () => ({}) },
+    /* Same reasoning: `id: () => ({})` made every Barchart response on a page
+       one response. Their widgets are addressed by a `module` query parameter,
+       so that is the fact worth keeping. */
+    id: (u) => ({ module: param(u, "module"), endpoint: endpointOf(u) }) },
 
   { platform: "bushel", adapter: null,
     /* bushelops.com TOO. The 2026-08-20 run watched Gateway FS call
@@ -310,7 +327,7 @@ export function redactBody(text) {
  * read under a URL we did not expect -- which is exactly what Ace Ethanol was
  * an hour before it became a source file. Ranked so the thing most likely to be
  * a board is first. */
-export function candidates(result, limit = 8) {
+export function candidates(result, limit = 8, always = null) {
   const score = (r) => {
     let n = 0;
     if (/json|xml|csv/i.test(r.mime ?? "")) n += 3;
@@ -320,12 +337,28 @@ export function candidates(result, limit = 8) {
     if (/\.(js|css|png|svg|woff2?)(\?|$)/i.test(r.url ?? "")) n -= 4;
     return n;
   };
-  return (result?.responses ?? [])
+  const ok = (result?.responses ?? [])
     .filter((r) => (r.status ?? 0) >= 200 && (r.status ?? 0) < 400)
     .map((r) => ({ ...r, _s: score(r) }))
-    .filter((r) => r._s > 0)
-    .sort((a, b) => b._s - a._s || (b.body?.length ?? 0) - (a.body?.length ?? 0))
-    .slice(0, limit);
+    .sort((a, b) => b._s - a._s || (b.body?.length ?? 0) - (a.body?.length ?? 0));
+
+  /* EVERYTHING THE MATCHED VENDOR SERVED, WHATEVER THE CAP SAYS.
+   *
+   * The cap keeps a page's hundred-and-fifty responses out of the log, and on
+   * 2026-08-23 it kept the answer out too: United Cooperative made 151
+   * requests, the top eight were printed, and `stonehedge.stonex.com/component/
+   * bids` turned out to be a React shell with no prices in it. Whatever the app
+   * fetched next was somewhere in the other 143.
+   *
+   * A vendor host does not serve a hundred things, so when a platform HAS been
+   * matched, every response from its family is shown. That is bounded by the
+   * vendor, and it is the one list worth reading in full. */
+  const forced = always
+    ? ok.filter((r) => { try { return always.test(new URL(r.url).hostname.toLowerCase()); }
+                         catch { return false; } })
+    : [];
+  const rest = ok.filter((r) => r._s > 0 && !forced.includes(r)).slice(0, limit);
+  return [...forced, ...rest];
 }
 
 export function verdict(result, feeds = findFeeds(result)) {
@@ -405,6 +438,11 @@ export function roster(body) {
 const host = (u) => { try { return new URL(u).hostname.toLowerCase(); } catch { return ""; } };
 const path = (u) => { try { return new URL(u).pathname + new URL(u).search; } catch { return ""; } };
 const param = (u, k) => { try { return new URL(u).searchParams.get(k); } catch { return null; } };
+/* The path, without the query, as an identity. Used by the signatures whose
+   vendor serves several different things off one host: keeping the endpoint
+   is what stops six sibling calls deduping into one. */
+const endpointOf = (u) => { try { return new URL(u).pathname.replace(/\/+$/, "") || "/"; }
+                            catch { return null; } };
 
 /* Blank lines and `#` comments, so the candidate list can carry its own
    provenance next to each URL instead of in a separate file that drifts.
@@ -543,7 +581,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const towns_ = feeds.map((f) => countLocations(f.body));
     const rosters_ = feeds.map((f) => roster(f.body));
     if (v.kind !== "no-platform" && v.kind !== "dead" && shouldListCandidates(feeds, towns_, rosters_)) {
-      const cands = candidates(result);
+      /* Scoped to the families actually matched on this page, so "show me
+         everything" cannot become "show me the analytics too". */
+      const fams = SIGNATURES.filter((sg) => feeds.some((f) => f.platform === sg.platform) && sg.family)
+                             .map((sg) => sg.family.source);
+      const always = fams.length ? new RegExp(fams.join("|")) : null;
+      const cands = candidates(result, 8, always);
       if (cands.length) {
         console.log(`   MATCHED, BUT NO BOARD FOUND. What else it asked for, most board-like first:`);
         for (const c of cands)

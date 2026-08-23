@@ -592,3 +592,57 @@ test("no feeds at all is not a crash", () => {
   assert.deepEqual(dumpable([], "GetBidsList"), []);
   assert.deepEqual(dumpable(null, "GetBidsList"), []);
 });
+
+
+/* ---- one vendor, several calls ------------------------------------------
+   Measured 2026-08-23 on United Cooperative, Beaver Dam. 151 responses, and
+   the log showed two distinct StoneX URLs. `stonehedge.stonex.com/component/
+   bids` turned out to be a React app shell — 21,050 bytes, no table, no row,
+   no price — so the board is whatever that app fetches once it boots, and
+   those sibling calls were the ones deduping away. */
+
+test("SIBLING CALLS ON ONE VENDOR HOST KEEP THEIR OWN IDENTITIES", () => {
+  const urls = [
+    "https://stonehedge.stonex.com/component/bids?key=ABC&locs=1,2",
+    "https://api.stonehedge.stonex.com/settings/v2/delivery-periods?locationIds=1,2",
+    "https://api.stonehedge.stonex.com/settings/v1/locations",
+    "https://api.stonehedge.stonex.com/offers/v1/offers",
+  ];
+  const ids = urls.map((u) => JSON.stringify(fingerprint(u)));
+  assert.equal(new Set(ids).size, 4,
+    "keyed on `key` alone these were one entry, and a page that asked for four things reported one");
+  const feeds = findFeeds({ responses: urls.map((u) => ({ url: u, status: 200, mime: "application/json", body: "{}" })) });
+  assert.equal(feeds.length, 4, "and dedupe must keep all four");
+});
+
+test("barchart modules are told apart too", () => {
+  const a = fingerprint("https://x.websol.barchart.com/?module=futureMarketOverview&js=1");
+  const b = fingerprint("https://x.websol.barchart.com/?module=quotesTable&js=1");
+  assert.equal(a.platform, "barchart");
+  assert.notDeepEqual(a, b, "`id: () => ({})` made every Barchart response on a page one response");
+});
+
+test("EVERY RESPONSE FROM A MATCHED VENDOR IS LISTED, past the cap", () => {
+  /* The cap keeps a hundred and fifty responses out of the log. On 2026-08-23
+     it kept the answer out with them. A vendor host does not serve a hundred
+     things, so once its platform is matched, all of it is shown. */
+  const noise = Array.from({ length: 30 }, (_, i) => ({
+    url: `https://cdn.example.com/asset-${i}.json`, status: 200, mime: "application/json", body: "{}",
+  }));
+  const vendor = [
+    { url: "https://api.stonehedge.stonex.com/settings/v1/locations", status: 200, mime: "application/json", body: "{}" },
+    { url: "https://api.stonehedge.stonex.com/settings/v2/delivery-periods", status: 200, mime: "application/json", body: "{}" },
+    { url: "https://api.stonehedge.stonex.com/quotes/v1/whatever", status: 200, mime: "application/json", body: "{}" },
+  ];
+  const out = candidates({ responses: [...noise, ...vendor] }, 8, /stonex\.com$/);
+  const shown = out.map((r) => r.url);
+  for (const v of vendor)
+    assert.ok(shown.includes(v.url), `${v.url} must be listed even though the cap is 8`);
+});
+
+test("with no vendor to force, the cap still holds", () => {
+  const noise = Array.from({ length: 30 }, (_, i) => ({
+    url: `https://cdn.example.com/bids-${i}.json`, status: 200, mime: "application/json", body: "{}",
+  }));
+  assert.equal(candidates({ responses: noise }, 8, null).length, 8);
+});
