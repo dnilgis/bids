@@ -497,3 +497,65 @@ test("A PAGE THAT HANGS COSTS SECONDS, NOT THE BATCH",
       "and it says the rescue timed out rather than going quiet about it");
   } finally { srv.close(); }
 });
+
+
+test("AN API ANSWERING A BROWSER IS NOT THE BOARD",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* Measured 2026-08-23. Navigating to Bushel's GetBidsList returned
+     "<h1>Whitelabel Error Page</h1> … status=404"; futures.bushelops.com
+     returned "not found"; AgriCharts returned "403 Forbidden". Every one came
+     back 200-with-HTML and would have been recorded as that feed's body — an
+     error page wearing a board's URL. */
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/api/GetBidsList")) {
+      if ((req.headers["sec-fetch-mode"] ?? "") === "navigate") {
+        res.writeHead(200, { "content-type": "text/html" });
+        return res.end("<html><body><h1>Whitelabel Error Page</h1>status=404</body></html>");
+      }
+      res.writeHead(200, { "content-type": "application/json", "content-length": "999" });
+      res.flushHeaders?.();
+      return res.socket.destroy();
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>fetch("/api/GetBidsList?key=K").catch(()=>{})</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 25000,
+                                 quietMs: 1000, rescueWaitMs: 400 });
+    const feed = r.responses.find((x) => x.url.includes("GetBidsList"));
+    assert.ok(feed, "the response is still reported");
+    assert.equal(feed.body, null, "the error page must NOT become the feed's body");
+    assert.match(feed.rescue ?? "", /HTML document where the original was/,
+      "and the refusal says exactly what it refused and why");
+  } finally { srv.close(); }
+});
+
+test("an HTML feed is still rescued, because that is what the rescue is for",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* The guard is on JSON-became-HTML. StoneHedge's board IS html and must
+     still come back. */
+  const BOARD = "<div class=\"bid-group\">Beaver Dam</div>";
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/component/bids")) {
+      if ((req.headers["sec-fetch-mode"] ?? "") === "navigate") {
+        res.writeHead(200, { "content-type": "text/html" });
+        return res.end(BOARD);
+      }
+      res.writeHead(200, { "content-type": "text/html", "content-length": "999" });
+      res.flushHeaders?.();
+      return res.socket.destroy();
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>fetch("/component/bids?key=K").catch(()=>{})</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 25000,
+                                 quietMs: 1000, rescueWaitMs: 400 });
+    const feed = r.responses.find((x) => x.url.includes("/component/bids"));
+    assert.match(feed.body ?? "", /Beaver Dam/, "an HTML board still comes back");
+  } finally { srv.close(); }
+});

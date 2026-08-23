@@ -672,3 +672,78 @@ test("a script is still a feed, because a JSONP body is a real board", () => {
   assert.equal(isAsset("https://x/f.woff2", ""), true);
   assert.equal(isAsset("https://api.stonehedge.stonex.com/settings/v1/locations", "application/json"), false);
 });
+
+
+/* ---- a key that arrived by another road ---------------------------------- */
+
+test("A PERCENT-ENCODED KEY IN A BODY IS REDACTED", () => {
+  /* Measured 2026-08-23: --dump printed United Cooperative's StoneHedge board
+     into a PUBLIC Actions log, and inside that body was an encoded copy of the
+     widget URL — `...%3Fkey%3D<their key>%26cols%3D...`. redactUrl in cdp.mjs
+     had been doing its job on every URL printed; this was the same key coming
+     in as page content. */
+  const K = "AILQAFBJPWG59NXDNV00QPRSFTUA0EEU";
+  const out = redactBody(`x%2Fbids%3Fkey%3D${K}%26cols%3Ddate%252Cbasis`);
+  assert.ok(!out.includes(K), "the encoded form must not survive");
+  assert.match(out, /key%3D<redacted>%26cols/, "and the rest of the url is left readable");
+});
+
+test("`key=` alone was never in the query list at all", () => {
+  /* The JSON form was covered, so the name was plainly meant to be there — it
+     just was not, so a bare key=… in a body went straight through. */
+  const K = "AILQAFBJPWG59NXDNV00QPRSFTUA0EEU";
+  assert.ok(!redactBody(`https://x/component/bids?key=${K}&cols=date`).includes(K));
+  assert.ok(!redactBody(`{"key": "${K}"}`).includes(K));
+  assert.ok(!redactBody(`apikey=${K}&units=us`).includes(K));
+  assert.ok(!redactBody(`a%3Fapikey%3D${K}%26x%3D1`).includes(K));
+});
+
+test("REDACTION DOES NOT EAT ORDINARY WORDS OR PRICES", () => {
+  /* A redaction that is too eager is its own bug: it would quietly damage the
+     one body somebody is reading to write an adapter. */
+  assert.equal(redactBody("the monkey=banana and turkey%3Dgravy"),
+               "the monkey=banana and turkey%3Dgravy");
+  assert.equal(redactBody('<div class="cash">4.79</div><div class="basis">-0.45</div>'),
+               '<div class="cash">4.79</div><div class="basis">-0.45</div>');
+});
+
+
+/* ---- a rescued copy is the same feed, and the bigger body wins ------------ */
+
+test("A RESCUED COPY IS NOT A SECOND FEED", () => {
+  /* Measured 2026-08-23 on CHS Illinois: GetBidsList and GetMarketsConfig each
+     appeared TWICE in the tally, once as itself and once as its own rescued
+     copy, because `rescue` and `bodyError` had landed in the dedupe key. A page
+     that asked for two things reported four. */
+  const feeds = findFeeds({ responses: [
+    { url: "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+      status: 200, mime: "application/json", body: "x".repeat(80009) },
+    { url: "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+      status: 200, mime: "", body: "<html>Whitelabel Error Page</html>",
+      rescue: "re-requested as a page and read 288 bytes", bodyError: "-32000" },
+  ] });
+  assert.equal(feeds.length, 1, "one endpoint asked for once is one feed");
+});
+
+test("AND THE BIGGER BODY WINS, because a board is not smaller than its error page", () => {
+  /* The rescued 288-byte error page arriving FIRST would have beaten the real
+     80KB board under the old "does the incumbent lack a body" rule. */
+  const rescued = { url: "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+                    status: 200, mime: "", body: "<html>Whitelabel Error Page</html>", rescue: "…" };
+  const real = { url: "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+                 status: 200, mime: "application/json", body: "y".repeat(80009) };
+  for (const order of [[rescued, real], [real, rescued]]) {
+    const feeds = findFeeds({ responses: order });
+    assert.equal(feeds.length, 1);
+    assert.equal(feeds[0].bytes, 80009, "the board must win whichever order they arrived in");
+  }
+});
+
+test("no body at all still loses to any body", () => {
+  const feeds = findFeeds({ responses: [
+    { url: "https://api.bushelpowered.com/x/GetBidsList", status: 200, mime: "application/json", body: null },
+    { url: "https://api.bushelpowered.com/x/GetBidsList", status: 200, mime: "application/json", body: "{}" },
+  ] });
+  assert.equal(feeds.length, 1);
+  assert.equal(feeds[0].body, "{}");
+});

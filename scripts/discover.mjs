@@ -190,14 +190,28 @@ export function findFeeds(result) {
 function dedupe(feeds) {
   const seen = new Map();
   for (const f of feeds) {
-    const { url, status, mime, bytes, body, ...key } = f;
+    /* rescue, bodyError and bodyNote are DIAGNOSTICS, not identity.
+     *
+     * They were added to the feed record on 2026-08-23 and landed in `key` by
+     * accident, because this destructure names what to EXCLUDE. The effect
+     * showed up on CHS Illinois the same night: one GetBidsList and one
+     * GetMarketsConfig each appeared TWICE in the tally, once as itself and
+     * once as its own rescued copy, and a page that asked for two things
+     * reported four. */
+    const { url, status, mime, bytes, body, rescue, bodyError, bodyNote, ...key } = f;
     const k = JSON.stringify(key);
-    /* PREFER A COPY THAT ACTUALLY HAS A BODY. This compared `bytes === 0`
-       until bytes learned to be null for "no body handed over", at which point
-       `null === 0` is false and the empty copy won every time. Ask the
-       question directly instead of through its old proxy. */
-    const better = !seen.has(k) || (seen.get(k).body == null && body != null);
-    if (better) seen.set(k, f);
+
+    /* PREFER THE COPY WITH THE MOST BODY, not merely the first one that has any.
+     *
+     * This asked "does the incumbent lack a body and the challenger have one",
+     * which was right when the only choice was something or nothing. The rescue
+     * made a third case: on CHS Illinois the rescued GetBidsList came back as a
+     * 288-byte "Whitelabel Error Page" — a body, and the wrong one — while the
+     * real board was 80,009 bytes. Whichever arrived first would have won.
+     * A board is not smaller than its own error page. */
+    const prev = seen.get(k);
+    const size = (r) => (r?.body == null ? -1 : r.body.length);
+    if (!prev || size(f) > size(prev)) seen.set(k, f);
   }
   return [...seen.values()];
 }
