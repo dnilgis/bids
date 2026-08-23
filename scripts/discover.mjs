@@ -129,11 +129,29 @@ export function fingerprint(url) {
  * A page calls its analytics, its consent banner and its font CDN too. This
  * keeps only responses a SIGNATURE claims, so an operator running two boards
  * (it happens -- a co-op that merged) shows both instead of the first one. */
+/* A STYLESHEET IS NOT A BOARD.
+ *
+ * Keeping the endpoint in the identity stopped sibling calls deduping away and
+ * immediately let one through that should never have counted:
+ * `shared.websol.barchart.com/css/barchart-bootstrap.css` was reported as a
+ * Barchart feed on 2026-08-23, with its own line and its own "locations in
+ * payload". It matched because the signature claims the whole barchart.com
+ * family, and before the endpoint went into the identity it had quietly
+ * collapsed into the real one.
+ *
+ * Scripts are NOT excluded. Barchart's widget is served as text/javascript and
+ * a JSONP body is a real board; dropping those would lose the thing we are
+ * looking for. Only the things that cannot carry a price are refused. */
+export const isAsset = (url, mime = "") =>
+  /^(image|font|video|audio)\//.test(mime) || /text\/css/.test(mime) ||
+  /\.(css|woff2?|ttf|otf|png|jpe?g|svg|gif|ico|map)(\?|$)/i.test(String(url));
+
 export function findFeeds(result) {
   const out = [];
   for (const r of result.responses ?? []) {
     const f = fingerprint(r.url);
     if (!f) continue;
+    if (isAsset(r.url, r.mime)) continue;
     /* bytes IS NULL WHEN THERE IS NO BODY, and 0 only when the body was read
        and was empty. The 2026-08-20 run printed "0B" for StoneHedge, Barchart
        and Pearl City alike; three of those never handed a body over and one

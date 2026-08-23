@@ -275,7 +275,7 @@ test("an unreadable roster is null, not an empty list", () => {
  * ninety-nine bytes captured, held, and thrown away. A config that small is
  * almost certainly naming the request that carries the board.
  */
-import { peek, redactBody, candidates, shouldPeek } from "../scripts/discover.mjs";
+import { peek, redactBody, candidates, shouldPeek, isAsset } from "../scripts/discover.mjs";
 
 test("a small config is printed, so it can name the next request", () => {
   const body = '{"marketsUrl":"https://api.bushelpowered.com/v1/cash-bids","siteId":"chs-il"}';
@@ -645,4 +645,30 @@ test("with no vendor to force, the cap still holds", () => {
     url: `https://cdn.example.com/bids-${i}.json`, status: 200, mime: "application/json", body: "{}",
   }));
   assert.equal(candidates({ responses: noise }, 8, null).length, 8);
+});
+
+
+/* ---- what the rescue spends its budget on -------------------------------- */
+
+test("A STYLESHEET IS NOT A BOARD", () => {
+  /* Keeping the endpoint in the identity stopped siblings deduping away and
+     let one through that should never have counted: on 2026-08-23
+     shared.websol.barchart.com/css/barchart-bootstrap.css was reported as a
+     Barchart feed, with its own line and its own "locations in payload". */
+  const feeds = findFeeds({ responses: [
+    { url: "https://shared.websol.barchart.com/css/barchart-bootstrap.css", status: 200, mime: "text/css", body: "a{}" },
+    { url: "https://x.websol.barchart.com/?module=futureMarketOverview&js=1", status: 200, mime: "text/javascript", body: "var q=1" },
+  ] });
+  assert.equal(feeds.length, 1, "the stylesheet must not be a feed");
+  assert.equal(feeds[0].module, "futureMarketOverview");
+});
+
+test("a script is still a feed, because a JSONP body is a real board", () => {
+  /* Barchart serves its widget as text/javascript. Refusing scripts would lose
+     the very thing we are looking for. */
+  assert.equal(isAsset("https://x.websol.barchart.com/?module=q&js=1", "text/javascript"), false);
+  assert.equal(isAsset("https://x/css/a.css", "text/css"), true);
+  assert.equal(isAsset("https://x/logo.png", "image/png"), true);
+  assert.equal(isAsset("https://x/f.woff2", ""), true);
+  assert.equal(isAsset("https://api.stonehedge.stonex.com/settings/v1/locations", "application/json"), false);
 });

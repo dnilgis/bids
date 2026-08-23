@@ -423,3 +423,43 @@ test("a feed that reads normally is never rescued",
     assert.equal(feed.bodyError, undefined);
   } finally { srv.close(); }
 });
+
+
+test("THE RESCUE BUDGET GOES TO THE MOST BOARD-LIKE, NOT THE FIRST TO ARRIVE",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* Measured 2026-08-23 on United Cooperative: FIVE unreadable bodies against a
+     cap of three. The three it spent were a Barchart bundle, a second copy of
+     it and a stylesheet; `stonehedge.stonex.com/component/bids` was fourth in
+     the queue and printed "not re-requested". The cap was right. The order was
+     not. Here the board is requested LAST and the cap is ONE. */
+  const BOARD = "<table><tr><td>Beaver Dam</td><td>4.11</td></tr></table>";
+  const unreadable = (res) => {
+    res.writeHead(200, { "content-type": "text/html", "content-length": "999" });
+    res.flushHeaders?.();
+    res.socket.destroy();
+  };
+  const srv = createServer((req, res) => {
+    if ((req.headers["sec-fetch-mode"] ?? "") === "navigate" && req.url.startsWith("/component/bids")) {
+      res.writeHead(200, { "content-type": "text/html" });
+      return res.end(BOARD);
+    }
+    if (/^\/(component\/bids|vendor\.js|second\.js|styles\.css|logo-thing\.js)/.test(req.url)) return unreadable(res);
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>
+      ["/vendor.js","/second.js","/styles.css","/logo-thing.js","/component/bids?key=K&locs=A"]
+        .forEach(u => fetch(u).catch(()=>{}));</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 40000,
+                                 quietMs: 1200, rescueWaitMs: 800,
+                                 rescueMax: 1, keep: () => true });
+    const board = r.responses.find((x) => x.url.includes("/component/bids"));
+    assert.ok(board, "the board response must have been seen");
+    assert.match(board.body ?? "", /Beaver Dam/,
+      "the one rescue available must have been spent on the board, not on a bundle");
+    const spent = r.responses.filter((x) => /re-requested as a page/.test(x.rescue ?? ""));
+    assert.equal(spent.length, 1, "and only one, because the cap is one");
+  } finally { srv.close(); }
+});
