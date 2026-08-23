@@ -87,9 +87,20 @@ jobs:
           # and the tally reported it as one unreachable page -- which reads
           # exactly like a co-operative whose site was down. The override is
           # fine; doing it in silence is not.
+          # AND --dump HAS TO SURVIVE THE OVERRIDE.
+          # This branch dropped it: `dump` was only ever appended on the list
+          # path below, so asking one page by URL and asking it to print the
+          # body did nothing, silently. Measured 2026-08-23, when the whole
+          # point of the run was to read one rescued StoneHedge board and the
+          # box that would have printed it was ignored. Same shape as probe.yml's
+          # `raw`, which had exactly this gap two runs earlier.
           if [ -n "$URLS" ]; then
             echo "::warning title=urls overrides list::the urls box is not empty, so the ${LIST:-discover-candidates} list is being IGNORED. Asking: $URLS"
-            node scripts/discover.mjs $URLS
+            if [ -n "$DUMP" ]; then
+              node scripts/discover.mjs $URLS --dump "$DUMP"
+            else
+              node scripts/discover.mjs $URLS
+            fi
             exit 0
           fi
           # The name is taken from a fixed set rather than pasted into a path.
