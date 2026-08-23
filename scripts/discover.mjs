@@ -607,11 +607,38 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(2);
   }
 
-  console.log(`asking ${urls.length} page(s), one at a time\n`);
+  /* STOP BEFORE THE JOB DOES, AND SAY WHERE TO RESUME.
+   *
+   * Twice on 2026-08-23 a sweep was killed by the workflow's 55-minute wall
+   * mid-page: once at 24 of 44. Everything already read had been printed, so
+   * nothing was lost — but the run ended with no tally, no platform counts and,
+   * worst of all, no resume line, so the next run's --start had to be counted
+   * by hand out of the log.
+   *
+   * A budget the script owns fixes that. It checks the clock BETWEEN pages,
+   * never mid-page, so a page is never half-reported; and when it stops early
+   * it prints exactly the same tally and resume line a full run would.
+   *
+   * Default 45 minutes against the workflow's 55, which leaves room for the
+   * slowest single page to finish. --budget 0 turns it off. */
+  const budgetMin = Number(flagValue("budget", "45"));
+  const budgetMs = Number.isFinite(budgetMin) && budgetMin > 0 ? budgetMin * 60_000 : Infinity;
+  const began = Date.now();
+
+  console.log(`asking ${urls.length} page(s), one at a time` +
+              (budgetMs === Infinity ? "" : `, stopping after ${budgetMin} minute(s)`) + `\n`);
   const tally = new Map();
   let withFeed = 0, unreachable = 0;
+  let asked = 0, stoppedEarly = false;
 
   for (const [i, pageUrl] of urls.entries()) {
+    if (Date.now() - began > budgetMs) {
+      stoppedEarly = true;
+      console.log(`\n── STOPPING: ${budgetMin} minute(s) spent, ${urls.length - i} page(s) of this ` +
+                  `slice not asked. The tally below covers the ${i} that were.`);
+      break;
+    }
+    asked++;
     console.log(`── [${i + 1}/${urls.length}] ${pageUrl}`);
     const result = await captureAll({ pageUrl });
     const feeds = findFeeds(result);
@@ -697,13 +724,23 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   console.log("── tally");
-  console.log(`pages asked: ${urls.length}; with a recognised feed: ${withFeed}; ` +
+  /* `asked`, NOT `urls.length`. The moment a run could stop on its own budget
+     those stopped being the same number, and the first smoke test of it printed
+     "pages asked: 4" for a run that asked one — which would have made every
+     early-stopping sweep overstate its own coverage, and made "the queue"
+     (asked minus feeds minus unreachable) a count of pages nobody had loaded. */
+  console.log(`pages asked: ${asked}; with a recognised feed: ${withFeed}; ` +
               `unreachable (retry these): ${unreachable}; ` +
-              `loaded but unrecognised (the queue): ${urls.length - withFeed - unreachable}`);
+              `loaded but unrecognised (the queue): ${asked - withFeed - unreachable}`);
   /* NO SILENT CAPS. A slice that covered 20 of 56 must say so, or the tally
      reads as a complete survey of the list. */
-  if (urls.length < all.length)
-    console.log(`NOT ASKED: ${all.length - urls.length} of ${all.length} remain; resume with --start ${start + urls.length}`);
+  /* The resume point is where we ACTUALLY got to, not where the slice ended.
+     Those were the same thing until a run could stop early, and printing the
+     slice end after stopping short would skip every page in between. */
+  const reached = start + asked;
+  if (reached < all.length)
+    console.log(`NOT ASKED: ${all.length - reached} of ${all.length} remain; resume with --start ${reached}` +
+                (stoppedEarly ? "   (this run stopped on its own budget, not at the end of its slice)" : ""));
   for (const [p, n] of [...tally].sort((a, b) => b[1] - a[1])) {
     const known = SIGNATURES.find((s) => s.platform === p)?.adapter;
     console.log(`  ${String(n).padStart(3)}  ${p}${known ? "" : "   <- no adapter; this is the queue"}`);
