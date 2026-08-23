@@ -124,7 +124,13 @@ export function findFeeds(result) {
        the null-is-not-zero rule that countLocations already follows. */
     out.push({ ...f, url: r.url, status: r.status, mime: r.mime,
                bytes: r.body == null ? null : r.body.length,
-               truncated: r.truncated === true, body: r.body ?? null });
+               truncated: r.truncated === true, body: r.body ?? null,
+               /* AND WHY THERE IS NO BODY, when there is none. Carried up from
+                  cdp.mjs, which used to swallow the reason: on 2026-08-22 all
+                  three StoneHedge pages reported no body and nothing said
+                  whether the response was empty, evicted, or refused. Those
+                  need different next moves and read identically in the log. */
+               bodyError: r.bodyError ?? null, bodyNote: r.bodyNote ?? null });
   }
   return dedupe(out);
 }
@@ -551,13 +557,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
 
     for (const f of feeds) {
-      const { platform, adapter, url, status, mime, bytes, truncated, body, ...id } = f;
+      const { platform, adapter, url, status, mime, bytes, truncated, body,
+              bodyError, bodyNote, ...id } = f;
       const towns = countLocations(body);
       const names = roster(body);
       tally.set(platform, (tally.get(platform) ?? 0) + 1);
       console.log(`   ${platform}${adapter ? "" : "  (NO ADAPTER YET)"}`);
       const size = bytes == null ? "NO BODY HANDED OVER" : `${bytes}B${truncated ? " (TRUNCATED at the cap)" : ""}`;
       console.log(`     ${status} ${mime} ${size}  ${url}`);
+      /* SAY WHICH REFUSAL IT WAS. "No body" covers an empty response, an
+         evicted one and a browser that would not surrender it, and those need
+         different next moves. Printed on its own line because it is the thing
+         a person reads the log for when a feed is found and cannot be read. */
+      if (bodyError) console.log(`     WHY NO BODY: ${bodyError}`);
+      if (bodyNote) console.log(`     NOTE: ${bodyNote}`);
       const facts = Object.entries(id).filter(([, v]) => v != null);
       if (facts.length) console.log(`     ${facts.map(([k, v]) => `${k}=${v}`).join("  ")}`);
       console.log(`     locations in payload: ${towns ?? "not countable from this shape"}`);

@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { redactUrl, matchesTarget, findBrowser, capture, captureAll, looksLikeData, BROWSER_CANDIDATES } from "../lib/cdp.mjs";
+import { redactUrl, matchesTarget, findBrowser, capture, captureAll, looksLikeData, readBody, BROWSER_CANDIDATES } from "../lib/cdp.mjs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
 import { transportOf, PLATFORM_TRANSPORT } from "../lib/sources.mjs";
 
@@ -298,4 +298,54 @@ test("A STYLESHEET IS NOT BLOCKED, AND THAT IS NOT A DETAIL", async () => {
   const tokens = lists.map((l) => [...l.matchAll(/"([^"]+)"/g)].map((m) => m[1]).sort().join(","));
   assert.equal(new Set(tokens).size, 1,
     `the two readers block different things and they meet the same pages:\n  ${tokens.join("\n  ")}`);
+});
+
+
+/* ---- a body that never arrived must say why ------------------------------
+   readBody swallowed every error for twelve attempts and returned with
+   rec.body still null, which prints downstream as "NO BODY HANDED OVER" — the
+   same words an empty response gets. Measured 2026-08-22: all three StoneHedge
+   pages reported no body, United Cooperative's 24 Wisconsin location ids were
+   sitting right there in the query string, and nothing in the log said whether
+   the response was empty, evicted, or refused. --dump could not help either,
+   because it needs a body it does not have. */
+
+test("THE REASON A BODY DID NOT ARRIVE IS KEPT, not swallowed", async () => {
+  const rec = {};
+  const send = async () => { throw new Error("No resource with given identifier found"); };
+  await readBody(send, "req-1", rec, 400000, 3, 0);
+  assert.equal(rec.body, undefined, "still no body, which was never the complaint");
+  assert.match(rec.bodyError, /No resource with given identifier/);
+  assert.equal(rec.bodyTries, 3, "and how hard it tried before giving up");
+});
+
+test("a body that arrives late still arrives, and records no error", async () => {
+  const rec = {};
+  let n = 0;
+  const send = async () => {
+    if (++n < 3) throw new Error("not ready");
+    return { base64Encoded: false, body: "<table>bids</table>" };
+  };
+  await readBody(send, "req-2", rec, 400000, 6, 0);
+  assert.equal(rec.body, "<table>bids</table>");
+  assert.equal(rec.bodyError, undefined, "it worked in the end, so there is nothing to report");
+});
+
+test("AN EMPTY BODY IS AN ANSWER AND SAYS SO", () => {
+  /* 0 bytes read is a different finding from a body that could not be read,
+     and the log used to print both as "0B". */
+  const rec = {};
+  return readBody(async () => ({ base64Encoded: false, body: "" }), "r", rec, 4000, 2, 0)
+    .then(() => {
+      assert.equal(rec.body, "");
+      assert.match(rec.bodyNote, /really was empty/);
+      assert.equal(rec.bodyError, undefined);
+    });
+});
+
+test("a base64 body is decoded before the cap is applied", async () => {
+  const rec = {};
+  const send = async () => ({ base64Encoded: true, body: Buffer.from("bids").toString("base64") });
+  await readBody(send, "r", rec, 400000, 2, 0);
+  assert.equal(rec.body, "bids");
 });
