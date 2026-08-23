@@ -31,6 +31,14 @@ on:
         description: "Space-separated pages to ask INSTEAD of the list (blank = the list)"
         required: false
         default: ""
+      budget:
+        # The job wall is 55 minutes and two sweeps on 2026-08-23 hit it
+        # mid-page, ending with no tally and no resume line. discover now stops
+        # itself between pages and prints both. Blank uses its own 45-minute
+        # default; 0 turns it off.
+        description: "Minutes to spend before stopping cleanly (blank = 45, 0 = no limit)"
+        required: false
+        default: ""
       dump:
         description: "Print ONE matching feed's whole body, e.g. GetBidsList. Pair with limit=1. Leave blank normally."
         required: false
@@ -80,6 +88,7 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           LIST: ${{ inputs.list }}
           DUMP: ${{ inputs.dump }}
+          BUDGET: ${{ inputs.budget }}
         run: |
           # SAY WHEN ONE BOX IS OVERRIDING THE OTHER.
           # 2026-08-21: a stray "s" left in this box silently beat a `list`
@@ -113,4 +122,6 @@ jobs:
           echo "asking $FILE"
           DUMPARG=""
           if [ -n "$DUMP" ]; then DUMPARG="--dump $DUMP"; fi
-          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG
+          BUDGETARG=""
+          if [ -n "$BUDGET" ]; then BUDGETARG="--budget $BUDGET"; fi
+          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG $BUDGETARG
