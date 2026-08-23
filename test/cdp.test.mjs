@@ -349,3 +349,77 @@ test("a base64 body is decoded before the cap is applied", async () => {
   await readBody(send, "r", rec, 400000, 2, 0);
   assert.equal(rec.body, "bids");
 });
+
+
+/* ---- the rescue, against a real browser ----------------------------------
+ *
+ * Measured 2026-08-22 on United Cooperative, Beaver Dam: discover found
+ * `stonehedge.stonex.com/component/bids` carrying twenty-four Wisconsin
+ * location ids, and every attempt to read it came back
+ * "No resource with given identifier found (-32000)". Their page has no
+ * iframe; Chromium had simply let the body go.
+ *
+ * The server below reproduces the SHAPE of that, deterministically: a fetch
+ * from inside the page gets headers and then a destroyed socket, so the body
+ * is unreadable; the same URL asked for as a top-level navigation answers
+ * normally. That is the case the rescue exists for.
+ */
+test("A BODY THE PAGE CANNOT SURRENDER IS ASKED FOR AGAIN, AS A PAGE",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  const BOARD = "<table><tr><td>Beaver Dam</td><td>4.11</td></tr></table>";
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/component/bids")) {
+      /* A navigation gets the board. A subresource fetch gets headers and then
+         the socket pulled, which is what leaves the renderer with nothing to
+         hand over. */
+      if ((req.headers["sec-fetch-mode"] ?? "") === "navigate") {
+        res.writeHead(200, { "content-type": "text/html" });
+        return res.end(BOARD);
+      }
+      res.writeHead(200, { "content-type": "text/html", "content-length": "999" });
+      res.flushHeaders?.();
+      return res.socket.destroy();
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>
+      fetch("/component/bids?key=THEIRPUBLICKEY&locs=A,B").catch(()=>{})</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 40000,
+                                 quietMs: 1200, rescueWaitMs: 800 });
+    const feed = r.responses.find((x) => x.url.includes("/component/bids"));
+    assert.ok(feed, `feed not seen among ${r.responses.map((x) => x.url).join(", ")}`);
+    assert.ok(feed.rescue, "the rescue must have run and said so");
+    assert.match(feed.body ?? "", /Beaver Dam/, "and it must have come back with the board");
+    assert.match(feed.rescue, /re-requested as a page/);
+    /* THE KEY STILL NEVER REACHES THE RECORD. The rescue re-requests the
+       unredacted URL and must not put it anywhere that gets printed. */
+    assert.ok(!JSON.stringify(r.responses).includes("THEIRPUBLICKEY"),
+      "their key must not reach the log, rescue or no rescue");
+  } finally { srv.close(); }
+});
+
+test("a feed that reads normally is never rescued",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* The rescue costs a page load and changes the provenance of a body, so it
+     must not fire when the first read worked. */
+  const FEED = '[{"location":{"id":1,"name":"Alpha"},"cashPrice":4.11}]';
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/api/cash-bids")) {
+      res.writeHead(200, { "content-type": "application/json" }); return res.end(FEED);
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>fetch("/api/cash-bids").then(r=>r.json())</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 40000, quietMs: 1200 });
+    const feed = r.responses.find((x) => x.url.includes("/api/cash-bids"));
+    assert.equal(feed.body, FEED);
+    assert.equal(feed.rescue, undefined, "nothing to rescue, so nothing was");
+    assert.equal(feed.bodyError, undefined);
+  } finally { srv.close(); }
+});
