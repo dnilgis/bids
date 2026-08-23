@@ -463,3 +463,37 @@ test("THE RESCUE BUDGET GOES TO THE MOST BOARD-LIKE, NOT THE FIRST TO ARRIVE",
     assert.equal(spent.length, 1, "and only one, because the cap is one");
   } finally { srv.close(); }
 });
+
+
+test("A PAGE THAT HANGS COSTS SECONDS, NOT THE BATCH",
+  { skip: browser ? false : "no browser on this machine" }, async () => {
+  /* Measured 2026-08-23: a sweep of 44 candidates was killed by the job's
+     55-minute wall at page 24, wedged on one site. `send` resolves only when a
+     reply arrives and has no timeout, so the rescue's Page.navigate to a page
+     that never answers waited for ever. The capture loop had its own deadline;
+     the rescue had nothing. */
+  const srv = createServer((req, res) => {
+    if (req.url.startsWith("/component/bids")) {
+      if ((req.headers["sec-fetch-mode"] ?? "") === "navigate") return;   // never answers
+      res.writeHead(200, { "content-type": "text/html", "content-length": "999" });
+      res.flushHeaders?.();
+      return res.socket.destroy();
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end(`<!doctype html><script>fetch("/component/bids?key=K").catch(()=>{})</script>`);
+  });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const began = Date.now();
+  try {
+    const r = await captureAll({ pageUrl: base + "/", browser, timeoutMs: 20000,
+                                 quietMs: 1000, rescueWaitMs: 200,
+                                 rescueNavMs: 1500, rescueBudgetMs: 4000 });
+    const took = Date.now() - began;
+    assert.ok(took < 40000, `a hanging rescue must not run away; took ${took}ms`);
+    const feed = r.responses.find((x) => x.url.includes("/component/bids"));
+    assert.ok(feed, "the response is still reported");
+    assert.match(feed.rescue ?? "", /did not answer|budget/,
+      "and it says the rescue timed out rather than going quiet about it");
+  } finally { srv.close(); }
+});

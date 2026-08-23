@@ -86,7 +86,19 @@ export const SIGNATURES = [
        so that is the fact worth keeping. */
     id: (u) => ({ module: param(u, "module"), endpoint: endpointOf(u) }) },
 
-  { platform: "bushel", adapter: null,
+  /* THE ADAPTER HAS EXISTED SINCE 2026-08-21 AND THIS LINE STILL SAID null.
+   *
+   * lib/adapters/bushel.mjs is written, wired into lib/adapters/index.mjs,
+   * carries a fixture, and reads it: 24 rows across Mitchell, Chamberlain,
+   * Corsica and Wagner, every row with a futures price, so the identity guard
+   * runs. sources/chsfarmersalliance-mitchell.json is built from it.
+   *
+   * Because this said null, the 2026-08-23 sweep filed FORTY-SEVEN Bushel feeds
+   * under "no adapter; this is the queue" — the largest pile in the tally, and
+   * the one thing on it that was already finished. A stale flag reads exactly
+   * like unfinished work, and that is expensive: it is the difference between
+   * "the biggest job left" and "wire the source files". */
+  { platform: "bushel", adapter: "lib/adapters/bushel.mjs",
     /* bushelops.com TOO. The 2026-08-20 run watched Gateway FS call
        centre.bushelops.com and futures.bushelops.com and reported "no known
        platform", because this line listed only the two hostnames we had
@@ -331,11 +343,40 @@ export function peek(body, limit = 1400) {
 }
 
 /* Their key is public in their own page, and it still does not go in our log.
-   Same reasoning as redactUrl in cdp.mjs, applied to a body. */
+ * Same reasoning as redactUrl in cdp.mjs, applied to a body.
+ *
+ * IT LET ONE THROUGH, AND A PUBLIC ACTIONS LOG IS WHERE IT LANDED.
+ *
+ * Measured 2026-08-23. `--dump` printed United Cooperative's StoneHedge board,
+ * and inside that body sat a PERCENT-ENCODED copy of the widget URL:
+ *
+ *     …%2Fcomponent%2Fbids%3Fkey%3D<their key>%26cols%3D…
+ *
+ * Two separate holes, and the first is the embarrassing one:
+ *
+ *   1. `key=` was not in the query-style list AT ALL. It listed api_key, token,
+ *      secret and sig. The JSON form `"key": "…"` on the line above was
+ *      covered, so the name was clearly meant to be there — it just was not.
+ *   2. Nothing handled `%3D`. A URL embedded in a page as a parameter is
+ *      encoded, and encoded is the form that actually turns up.
+ *
+ * redactUrl in cdp.mjs had been doing its job throughout: every URL printed in
+ * the log says <redacted>. This was the same key arriving by another road. */
 export function redactBody(text) {
+  const NAMES = "api_?key|key|token|secret|sig|password|bearer";
   return String(text ?? "")
-    .replace(/("(?:api_?key|key|token|secret|sig|password|bearer)"\s*:\s*")[^"]*(")/gi, "$1<redacted>$2")
-    .replace(/\b((?:api_?key|token|secret|sig)=)[^&"'\s]+/gi, "$1<redacted>");
+    .replace(new RegExp(`("(?:${NAMES})"\\s*:\\s*")[^"]*(")`, "gi"), "$1<redacted>$2")
+    /* Plain `key=value`, to the next separator. */
+    .replace(new RegExp(`\\b((?:${NAMES})=)[^&"'\\s<>]+`, "gi"), "$1<redacted>")
+    /* And `key%3Dvalue`, which ends at %26 — the encoded ampersand.
+     *
+     * NO \b HERE, AND THAT IS THE WHOLE POINT. In `…%3Fkey%3D…` the character
+     * before `key` is the `F` of `%3F`, which is a word character, so a word
+     * boundary never fires and the first version of this fix still leaked.
+     * The separator in an encoded URL IS the encoding, so the encodings are
+     * named explicitly: %3F for ?, %26 for &, %3B for ;. */
+    .replace(new RegExp(`(^|[^A-Za-z0-9_]|%3[Ff]|%26|%3[Bb])((?:${NAMES})%3[Dd])(?:(?!%26)[^&"'\\s<>])+`, "gi"),
+             "$1$2<redacted>");
 }
 
 /* What did a page we could not classify actually serve?
