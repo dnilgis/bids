@@ -33,8 +33,40 @@
 # PDC, ADM Havana, CHS Havana, AGP-Hastings and the like. A destination is not
 # a town and must not be geocoded as one.
 
+# ── SWEPT 2026-08-25, 20 of 35 asked before the budget ran out ──────────────
+# Resume the rest with  discover  ->  list = sweep-2-wi-mn,  start = 20.
+#
+#   ANSWERED, adapter already written -- these become source files:
+#     rivercountrycoop.com          bushel          (WI)
+#     countrygraincooperative.com   cashbidssingle  (WI)
+#     totalgrainservices.com        aghost          (WI, Wrightstown)
+#
+#   ANSWERED, no adapter yet -- this is the queue, and agricharts now has
+#   three pages behind it, which is the best case for writing one next:
+#     alcivia.com        agricharts   (WI, a big one)
+#     landmark.coop      agricharts   (WI, a big one)
+#     farmerswin.com     agricharts   (MN -- answered 403 to the browser)
+#     crystalvalley.coop barchart     (MN -- the national fetcher covers this)
+#
+#   TWO URLS IN THE FIRST SWEEP WERE MINE, NOT THEIRS, AND ARE NOW CORRECTED:
+#     alcivia    /grain/cash-bids redirected to
+#                /wisconsin-grain-services/cash-bids-grain-wisconsin-grain/
+#                and the only agricharts thing the browser saw was an
+#                /alertform that answered 403. "MATCHED, BUT NO BOARD FOUND"
+#                is the log saying exactly that.
+#     ace        /cash-bids does not exist. sources/aceethanol-stanley.json has
+#                carried the real one since 2026-08-20:
+#                /cashbidssingle-3578, which the cashbidssingle parser already
+#                reads -- 14 of 14 rows off the HTML Sig pasted.
+#
+#   LOADED AND SHOWED NOTHING WE KNOW: united, synergy (the domain is parked
+#   at forsale.godaddy.com), riocreek, adell, farmcity, ace, frventures,
+#   northside, ufcmn, cwvalley, cgsmc (that URL is their 404 page).
+#   Several of these are worth one more look with a different URL before
+#   being written off -- a wrong path is not an absent board.
+#
 # ── WISCONSIN ───────────────────────────────────────────────────────────────
-https://www.alcivia.com/grain/cash-bids
+https://www.alcivia.com/wisconsin-grain-services/cash-bids-grain-wisconsin-grain/
 https://www.rivercountrycoop.com/grain/
 https://www.countrygraincooperative.com/cashbidssingle-
 https://www.unitedcooperative.com/grain/cash-bids
@@ -45,7 +77,7 @@ https://www.adellcoop.com/grain
 https://www.westbendelevator.com/cash-bids
 https://www.farmcityelevator.com/cash-bids
 https://www.totalgrainservices.com/index.cfm?show=11&mid=6
-https://www.aceethanol.com/cash-bids
+https://www.aceethanol.com/cashbidssingle-3578
 https://www.frventures.com/cash-bids
 https://www.didionmilling.com/cash-bids
 https://www.northsideelevator.com/cash-bids
