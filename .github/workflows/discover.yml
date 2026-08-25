@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which candidate list: discover-candidates (the 56) or bushel-candidates (the 10 Bushel pages)"
+        description: "Which candidate list: sweep-2-wi-mn (the new WI/MN tranche), bushel-candidates (10 pages, 7 of them CHS regions), or discover-candidates (the original 56, already spent)"
         required: false
         default: "discover-candidates"
       urls:
@@ -117,7 +117,8 @@ jobs:
           case "${LIST:-discover-candidates}" in
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use discover-candidates or bushel-candidates."; exit 2 ;;
+            sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
+            *) echo "::error title=unknown list::${LIST}. Use sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
           esac
           echo "asking $FILE"
           DUMPARG=""
