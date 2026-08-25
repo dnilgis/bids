@@ -1,0 +1,38 @@
+{
+  "id": "chsdakotaplainsag-galchutt",
+  "operator": "CHS Dakota Plains Ag",
+  "location": "Galchutt",
+  "state": "ND",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chsdakotaplainsag.com/grain/cash-bids/",
+  "locationId": "a5a94076-9079-4889-af27-cf9600bfa8e2",
+  "bands": {
+    "corn": [
+      2.0,
+      12.0
+    ],
+    "soybeans": [
+      6.0,
+      25.0
+    ],
+    "wheat": [
+      3.0,
+      20.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "READ THROUGH THEIR OWN PAGE, holding no credential: Bushel's board is fetched by the customer's site in the reader's browser, so loading that page is the whole of the authorisation. One call to GetBidsList carries every location this operator quotes, so each is a source file and none is new code.\n\nMEASURED BY scripts/bushel-probe.mjs ON 2026-08-25. 20 rows here, and floor-to-the-cent explained EVERY one -- as it did at all 85 locations across the eight Bushel boards that answered. Corn trades in quarter cents and this board displays cash to the whole cent, so residuals come out in quarters; floor makes cash - basis = futures exact again, which is why no tolerance is set and none is wanted.\n\nTHE STATE AND STREET ARE NOT IN THE PAYLOAD -- Bushel's location object is {id, name, groups} and nothing else -- so both were read off CHS Dakota Plains Ag's own locations page on 2026-08-25. Not pedantry: this operator's board crosses state lines.",
+  "address": "125 Galchutt Drive, Galchutt ND",
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.chsdakotaplainsag.com/grain/cash-bids/",
+  "inMerge": true
+}
