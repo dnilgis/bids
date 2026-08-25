@@ -702,8 +702,23 @@ if (import.meta.url === `file://${process.argv[1]}`) {
        "which list did we file them under" is our bookkeeping, not the user's.
        Measured 2026-08-25: three runs of discover on those two pages, every
        one reporting "MATCHED, BUT NO BOARD FOUND" and no way to see why. */
-    const everything = [...(feeds ?? []), ...candidates(result, 40)];
+    /* EVERY RESPONSE, WHATEVER ITS STATUS AND WHEREVER IT RANKED.
+     *
+     * candidates() drops anything outside 200-399 and then keeps a top slice,
+     * which is right for a summary and wrong for --dump. ALCIVIA's board comes
+     * from a <script src> at alciviacoop.agricharts.com/inc/cashbids/
+     * cashbids.php, and agricharts answers a request it does not like with a
+     * 403 -- so if that is what happened on their own page, the one response
+     * that explains everything was being filtered out before dump could see
+     * it. Three runs on 2026-08-25 came back "MATCHED, BUT NO BOARD FOUND"
+     * with no way to tell whether the request was never made or was made and
+     * refused. Those are completely different problems and the log could not
+     * tell them apart.
+     *
+     * A status is information. It is not a reason to withhold the body. */
+    const everything = [...(feeds ?? []), ...(result?.responses ?? [])];
     for (const d of dumpable(everything, flagValue("dump"))) {
+      console.log(`   (status ${d.status ?? "?"}, ${d.mime || "no mime"})`);
       console.log(`   FULL BODY of ${d.url} (${d.body.length} bytes), because --dump asked:`);
       console.log(redactBody(d.body));
       console.log(`   end of body`);

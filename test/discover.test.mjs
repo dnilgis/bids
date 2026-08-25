@@ -773,3 +773,19 @@ test("a body too large to print is left alone", () => {
   assert.equal(dumpable([huge], "big.html").length, 0);
   assert.equal(dumpable([huge], "big.html", 400000).length, 1);
 });
+
+test("--dump can show a response the summary filters out", () => {
+  /* candidates() keeps 200-399 and then a top slice. Right for a summary,
+     wrong for dump: agricharts answers a request it dislikes with 403, so
+     when ALCIVIA's own page fetched its board and got refused, the one
+     response that explained everything was dropped before dump could see it.
+     Three runs said "MATCHED, BUT NO BOARD FOUND" and could not distinguish
+     "never asked" from "asked and refused". */
+  const refused = { url: "https://alciviacoop.agricharts.com/inc/cashbids/cashbids.php?x=1",
+                    body: "<html><head><title>403 Forbidden</title></head></html>",
+                    status: 403, mime: "text/html" };
+  const ok = { url: "https://x/api/GetBidsList", body: '{"locations":[]}', status: 200 };
+  assert.deepEqual(dumpable([ok, refused], "cashbids.php").map((d) => d.status), [403],
+    "a refused response cannot be dumped, so a refusal is indistinguishable from silence");
+  assert.deepEqual(dumpable([ok, refused], "GetBidsList").map((d) => d.status), [200]);
+});
