@@ -1,0 +1,66 @@
+# What came back from a Bushel board, and what rounding rule it uses.
+#
+# The sibling of dtn-probe.yml. The sweep on 2026-08-25 asked ten Bushel pages
+# and every one of them answered -- SEVEN OF THEM CHS REGIONS, one shape. The
+# adapter is already written and already reading CHS Farmers Alliance live, so
+# what stands between those pages and being source files is knowing what came
+# back: which locations, under which ids, and which rounding rule each board's
+# cash cell uses.
+#
+# IT WRITES NOTHING. It prints, and a person reads it and writes the manifests.
+# A source file is a claim about somebody else's business.
+#
+# WHY IT RUNS HERE AND NOT IN A SANDBOX: it needs a real Chromium against a
+# real network. Bushel's board is fetched by the customer's own page in the
+# reader's browser, so loading that page is the whole of the authorisation --
+# we hold no key, exactly as with dtn-cs.
+
+name: bushel probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Probe every page in probe-lists/bushel-candidates.txt (10 of them, 7 CHS regions). Leave the box below blank."
+        type: boolean
+        default: true
+      page:
+        description: "Or ONE cash-bids page, e.g. https://www.chs-herman.com/grain/cash-bids/ — only used when the box above is off"
+        required: false
+        default: ""
+
+permissions:
+  contents: read          # it writes nothing, so it may not write anything
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # The probe decides whether a board gets an EXACT identity check or a
+      # widened tolerance, so its arithmetic is checked before it is trusted.
+      # The first version of it read the futures SYMBOL as the price and
+      # reported "no rule explains it" for a board that floors cleanly -- the
+      # most expensive wrong answer it can give.
+      - name: Test the guards
+        run: node --test test/bushelprobe.test.mjs test/bushel.test.mjs test/cdp.test.mjs
+
+      - name: Ask
+        env:
+          LIST: ${{ inputs.list }}
+          PAGE: ${{ inputs.page }}
+        run: |
+          if [ "$LIST" = "true" ]; then
+            node scripts/bushel-probe.mjs --list probe-lists/bushel-candidates.txt
+          elif [ -n "$PAGE" ]; then
+            # Through an environment variable, never interpolated into the
+            # command line: a workflow_dispatch input is a string a human typed.
+            node scripts/bushel-probe.mjs --page "$PAGE"
+          else
+            echo "::error title=nothing to ask::turn the list box on, or give one page."
+            exit 2
+          fi
