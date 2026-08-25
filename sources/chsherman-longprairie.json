@@ -1,0 +1,38 @@
+{
+  "id": "chsherman-longprairie",
+  "operator": "CHS Herman",
+  "location": "Long Prairie",
+  "state": "MN",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chs-herman.com/grain/cash-bids/",
+  "locationId": "689f3af6-be82-491d-8213-68fe58423c37",
+  "bands": {
+    "corn": [
+      2.0,
+      12.0
+    ],
+    "soybeans": [
+      6.0,
+      25.0
+    ],
+    "wheat": [
+      3.0,
+      20.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "READ THROUGH THEIR OWN PAGE, holding no credential: Bushel's board is fetched by the customer's site in the reader's browser, so loading that page is the whole of the authorisation. One call to GetBidsList carries every location this operator quotes, so each of them is a source file and none of them is new code -- the adapter has been reading CHS Farmers Alliance live since 2026-08-25.\n\nMEASURED BY scripts/bushel-probe.mjs ON 2026-08-25, not guessed. 26 rows here, and floor-to-the-cent explained EVERY one of them -- as it did at all 10 locations on this board and at all 85 across the eight boards that answered. Corn trades in quarter cents and this board displays cash to the whole cent, so the residuals come out in quarters; floor makes the cash - basis = futures identity exact again, which is why no tolerance is set here and none is wanted.\n\nTHE STATE AND STREET ARE NOT IN THE PAYLOAD. Bushel's location object is {id, name, groups} and nothing else, so both were read off CHS Herman's own locations page on 2026-08-25. That is not pedantry: CHS Herman is a Minnesota co-operative and its WILMOT is in SOUTH DAKOTA. Anyone filling these in from the operator's address gets that one wrong and it looks right for ever.\n\nlocationId is the UUID because that is the key their payload uses, and a display name is the thing a vendor re-cases.",
+  "address": "20298 Hwy 71, Long Prairie MN",
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.chs-herman.com/grain/cash-bids/",
+  "inMerge": true
+}

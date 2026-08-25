@@ -747,3 +747,29 @@ test("no body at all still loses to any body", () => {
   assert.equal(feeds.length, 1);
   assert.equal(feeds[0].body, "{}");
 });
+
+test("--dump can reach a server-rendered page, not only a scored feed", () => {
+  /* ALCIVIA and Landmark run agricharts and ask for no JSON at all: their
+     board arrives inside the page's own HTML. Three discover runs on
+     2026-08-25 all said "MATCHED, BUT NO BOARD FOUND" and --dump could not
+     show why, because it only ever searched the feed list. The flag means
+     "show me the bytes"; which list we filed them under is our bookkeeping. */
+  const page = { url: "https://www.alcivia.com/wisconsin-grain-services/cash-bids-grain-wisconsin-grain/",
+                 body: "<html>103KB of board</html>", status: 200, mime: "text/html" };
+  const feed = { url: "https://x/api/v1/GetBidsList", endpoint: "GetBidsList",
+                 body: '{"locations":[]}', status: 200 };
+  assert.deepEqual(dumpable([feed, page], "cash-bids-grain").map((d) => d.url), [page.url],
+    "a page body could not be dumped by a substring of its own address");
+  assert.deepEqual(dumpable([feed, page], "GetBidsList").map((d) => d.url), [feed.url],
+    "widening the search broke the case it already handled");
+  assert.equal(dumpable([feed, page], "nothing-matches-this").length, 0);
+});
+
+test("a body too large to print is left alone", () => {
+  /* The cap is what stops one run burying a log. A 103KB page is inside it;
+     a megabyte of bundled JavaScript is not, and printing that would be the
+     tool wasting the run it was asked to make useful. */
+  const huge = { url: "https://x/big.html", body: "x".repeat(300000), status: 200 };
+  assert.equal(dumpable([huge], "big.html").length, 0);
+  assert.equal(dumpable([huge], "big.html", 400000).length, 1);
+});

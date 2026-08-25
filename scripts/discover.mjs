@@ -694,7 +694,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       }
     }
 
-    for (const d of dumpable(feeds, flagValue("dump"))) {
+    /* DUMP LOOKS AT EVERYTHING THE PAGE SERVED, not only at what we scored as
+       a feed. ALCIVIA and Landmark run agricharts and ask for no JSON at all:
+       their board is inside 103KB of server-rendered HTML at the page's own
+       address, so the only response worth dumping was in `cands` and --dump
+       could not reach it. The flag exists to say "show me the bytes", and
+       "which list did we file them under" is our bookkeeping, not the user's.
+       Measured 2026-08-25: three runs of discover on those two pages, every
+       one reporting "MATCHED, BUT NO BOARD FOUND" and no way to see why. */
+    const everything = [...(feeds ?? []), ...candidates(result, 40)];
+    for (const d of dumpable(everything, flagValue("dump"))) {
       console.log(`   FULL BODY of ${d.url} (${d.body.length} bytes), because --dump asked:`);
       console.log(redactBody(d.body));
       console.log(`   end of body`);
