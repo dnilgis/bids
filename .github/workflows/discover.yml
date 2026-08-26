@@ -24,9 +24,9 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which candidate list: sweep-2-wi-mn (the new WI/MN tranche), bushel-candidates (10 pages, 7 of them CHS regions), or discover-candidates (the original 56, already spent)"
+        description: "Which candidate list: national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
         required: false
-        default: "discover-candidates"
+        default: "national"
       urls:
         description: "Space-separated pages to ask INSTEAD of the list (blank = the list)"
         required: false
@@ -41,6 +41,10 @@ on:
         default: ""
       dump:
         description: "Print ONE matching feed's whole body, e.g. GetBidsList. Pair with limit=1. Leave blank normally."
+        required: false
+        default: ""
+      patience:
+        description: "Seconds to give ONE page before giving up (blank = 45). Raise it when a log says 'network never went quiet'."
         required: false
         default: ""
       start:
@@ -88,6 +92,7 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           LIST: ${{ inputs.list }}
           DUMP: ${{ inputs.dump }}
+          PATIENCE: ${{ inputs.patience }}
           BUDGET: ${{ inputs.budget }}
         run: |
           # SAY WHEN ONE BOX IS OVERRIDING THE OTHER.
@@ -104,25 +109,28 @@ jobs:
           # box that would have printed it was ignored. Same shape as probe.yml's
           # `raw`, which had exactly this gap two runs earlier.
           if [ -n "$URLS" ]; then
-            echo "::warning title=urls overrides list::the urls box is not empty, so the ${LIST:-discover-candidates} list is being IGNORED. Asking: $URLS"
+            echo "::warning title=urls overrides list::the urls box is not empty, so the ${LIST:-national} list is being IGNORED. Asking: $URLS"
             if [ -n "$DUMP" ]; then
-              node scripts/discover.mjs $URLS --dump "$DUMP"
+              node scripts/discover.mjs $URLS --dump "$DUMP" ${PATIENCE:+--patience "$PATIENCE"}
             else
-              node scripts/discover.mjs $URLS
+              node scripts/discover.mjs $URLS ${PATIENCE:+--patience "$PATIENCE"}
             fi
             exit 0
           fi
           # The name is taken from a fixed set rather than pasted into a path.
           # An input that reaches a filename is an input that can reach ../.
-          case "${LIST:-discover-candidates}" in
+          case "${LIST:-national}" in
+            national)            FILE=probe-lists/national-2026-08-26.txt ;;
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
             sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+            *) echo "::error title=unknown list::${LIST}. Use national, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
           esac
           echo "asking $FILE"
           DUMPARG=""
           if [ -n "$DUMP" ]; then DUMPARG="--dump $DUMP"; fi
           BUDGETARG=""
           if [ -n "$BUDGET" ]; then BUDGETARG="--budget $BUDGET"; fi
-          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG $BUDGETARG
+          PATIENCEARG=""
+          if [ -n "$PATIENCE" ]; then PATIENCEARG="--patience $PATIENCE"; fi
+          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG $BUDGETARG $PATIENCEARG
