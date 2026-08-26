@@ -1,3 +1,32 @@
+# AGRICHARTS MOBILE -- CORRECTED 2026-08-26 AFTER A RUN ON THE RUNNER
+#
+# I WAS WRONG ABOUT THIS AND IT IS WORTH SAYING PLAINLY AT THE TOP.
+#
+# The mobile path really does serve the whole board as plain HTML, and it
+# really is not robots-disallowed. Both of those were verified. What I did NOT
+# verify before calling it a door was whether the machine that has to read it
+# every day can reach it.
+#
+# It cannot. discover --dump on the runner, 2026-08-26:
+#
+#     FULL BODY of https://legacyfarmers.mobile.agricharts.com/cash/prices.php
+#     (520 bytes)
+#     <html><head><title>403 Forbidden</title></head>
+#
+# 520 bytes of refusal where a fetch from elsewhere returns a full board. That
+# is the THIRD time agricharts has answered a GitHub runner with 403 -- their
+# /alertform did it twice during the ALCIVIA work -- and the pattern now looks
+# like a block on the network the runner sits in rather than anything about the
+# path, the headers or the robots file.
+#
+# So this list is NOT a queue of pages to add. It is a record of a route that
+# works from some clients and is refused from the one that matters, kept so
+# nobody spends another day rediscovering it. Before any of it is usable
+# somebody has to establish whether the 403 is by IP or by client, and the only
+# cheap test left is one run with an ordinary desktop User-Agent.
+#
+# EVERYTHING BELOW THIS LINE WAS TRUE WHEN MEASURED FROM A DIFFERENT NETWORK.
+#
 # AGRICHARTS, READ THROUGH THE MOBILE PATH -- AND THE LIMITS OF IT
 #
 # Compiled 2026-08-26. The desktop board at /markets/* is robots-disallowed on
