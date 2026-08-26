@@ -154,8 +154,33 @@ export function fingerprint(url) {
  * Scripts are NOT excluded. Barchart's widget is served as text/javascript and
  * a JSONP body is a real board; dropping those would lose the thing we are
  * looking for. Only the things that cannot carry a price are refused. */
+/* A FRAMEWORK'S OWN BUILD OUTPUT IS NOT A BOARD -- 2026-08-26.
+ *
+ * Measured on the first national sweep. One 60-page run reported "587 barchart"
+ * in its tally and the queue looked like the biggest job in the repository. It
+ * was not. Barchart's marketplace is a Next.js app, and the signature claims
+ * the whole barchart.com family, so EVERY hashed chunk under /_next/static/
+ * counted as a feed: turbopack-0gbhr29l6e26t.js, 0yt~xtmvnzeiu.js, and
+ * hundreds more. The real surface was TEN responses to one endpoint,
+ * connect.api.barchart.com/graphql.
+ *
+ * A tally that says 587 when the answer is 10 is worse than no tally: it is
+ * the number a person uses to decide what to work on next.
+ *
+ * Scripts stay eligible in general and that is deliberate -- Barchart's own
+ * widget is served as text/javascript and a JSONP body is a real board, so
+ * excluding scripts wholesale would drop the thing we are hunting. What is
+ * excluded here is narrower and cannot be anything else: a bundler's
+ * content-hashed output and its manifests, which are emitted by the build and
+ * never carry a price. */
+export const isBuildArtefact = (url) =>
+  /\/_next\/static\//.test(String(url)) ||
+  /\/_(build|ssg|clientMiddleware)Manifest\.js(\?|$)/.test(String(url)) ||
+  /\/turbopack-[a-z0-9]+\.js(\?|$)/i.test(String(url));
+
 export const isAsset = (url, mime = "") =>
   /^(image|font|video|audio)\//.test(mime) || /text\/css/.test(mime) ||
+  isBuildArtefact(url) ||
   /\.(css|woff2?|ttf|otf|png|jpe?g|svg|gif|ico|map)(\?|$)/i.test(String(url));
 
 export function findFeeds(result) {
@@ -746,6 +771,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(redactBody(d.body));
       console.log(`   end of body`);
     }
+
+    /* A PAGE THAT RAN OUT OF CLOCK SAYS SO, LOUDLY. Otherwise it reads as a
+       page with fewer feeds on it than it really has, which is the one wrong
+       conclusion this tool must never invite. */
+    if (result?.bodyWall) console.log(`   RAN OUT OF CLOCK: ${result.bodyWall}`);
 
     for (const f of feeds) {
       const { platform, adapter, url, status, mime, bytes, truncated, body,

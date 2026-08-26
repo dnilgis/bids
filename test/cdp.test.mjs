@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { redactUrl, matchesTarget, findBrowser, capture, captureAll, looksLikeData, readBody, BROWSER_CANDIDATES } from "../lib/cdp.mjs";
+import { redactUrl, matchesTarget, findBrowser, capture, captureAll, looksLikeData, readBody, BROWSER_CANDIDATES , withSocket} from "../lib/cdp.mjs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
 import { transportOf, PLATFORM_TRANSPORT } from "../lib/sources.mjs";
 
@@ -558,4 +558,63 @@ test("an HTML feed is still rescued, because that is what the rescue is for",
     const feed = r.responses.find((x) => x.url.includes("/component/bids"));
     assert.match(feed.body ?? "", /Beaver Dam/, "an HTML board still comes back");
   } finally { srv.close(); }
+});
+
+/* A BROWSER THAT STOPS ANSWERING MUST NOT HANG THE RUN.
+ *
+ * Measured 2026-08-26, twice, on mnsoy.com: the sweep sat on one page until a
+ * person cancelled it. The cause was that a devtools call had no third
+ * outcome. `send` resolved when the browser answered and rejected when the
+ * browser errored, and did NOTHING AT ALL when the browser went quiet -- so
+ * readBody's twelve attempts each waited for ever, captureAll's
+ * `Promise.allSettled(bodies)` waited on them, and the whole sweep stopped.
+ *
+ * This drives withSocket directly with a socket that opens and then never
+ * replies, which is what a wedged renderer looks like from here. The assertion
+ * is raced against a clock so that the OLD behaviour fails this test rather
+ * than hanging it -- a test that hangs to signal a hang is no use in CI.
+ *
+ * The wall can only ever END a wait sooner; it cannot suppress an answer that
+ * arrived in time, which the second test holds it to.
+ */
+class DeafSocket {
+  constructor() { this.sent = []; setTimeout(() => this.onopen?.(), 0); }
+  addEventListener(k, fn) { this[`on${k}`] = fn; }
+  send(x) { this.sent.push(x); }            // and never answers
+  close() {}
+}
+
+test("a devtools call the browser never answers rejects, and does not hang", async () => {
+  const raced = await withSocket("ws://unused", DeafSocket, 400, async (send) => {
+    const outcome = await Promise.race([
+      send("Network.getResponseBody", { requestId: "1" })
+        .then(() => "answered", (e) => `rejected: ${e.message}`),
+      new Promise((r) => setTimeout(() => r("STILL PENDING"), 6000)),
+    ]);
+    return outcome;
+  });
+  assert.notEqual(raced, "STILL PENDING",
+    "the call never settled — this is the hang that stopped the sweep on mnsoy");
+  assert.match(raced, /^rejected:/, "a silent browser was treated as an answer");
+  assert.match(raced, /did not answer|stopped responding/i,
+    "the failure does not say what happened: " + raced);
+});
+
+test("a call the browser DOES answer is returned untouched and promptly", async () => {
+  /* The other half. A deadline that also drops good answers would be a worse
+     bug than the one it fixes. */
+  class TalkativeSocket extends DeafSocket {
+    send(x) {
+      this.sent.push(x);
+      const m = JSON.parse(x);
+      setTimeout(() => this.onmessage?.({
+        data: JSON.stringify({ id: m.id, result: { body: "the board", base64Encoded: false } }),
+      }), 5);
+    }
+  }
+  const started = Date.now();
+  const got = await withSocket("ws://unused", TalkativeSocket, 20000, (send) =>
+    send("Network.getResponseBody", { requestId: "1" }));
+  assert.equal(got.body, "the board");
+  assert.ok(Date.now() - started < 3000, "a prompt answer was made to wait");
 });

@@ -789,3 +789,38 @@ test("--dump can show a response the summary filters out", () => {
     "a refused response cannot be dumped, so a refusal is indistinguishable from silence");
   assert.deepEqual(dumpable([ok, refused], "GetBidsList").map((d) => d.status), [200]);
 });
+
+/* A FRAMEWORK'S BUILD OUTPUT IS NOT A FEED.
+ *
+ * The first national sweep, 2026-08-26: a 60-page run tallied "587 barchart"
+ * and made the barchart queue look like the largest job in the repository.
+ * The real surface was TEN responses to connect.api.barchart.com/graphql. The
+ * other 577 were Next.js chunks under /_next/static/, which match because the
+ * signature claims the whole barchart.com family.
+ *
+ * A tally is what a person reads to decide what to work on next, so a tally
+ * that says 587 when the answer is 10 is worse than none.
+ */
+test("Next.js build output is not counted as a feed, but a JSONP widget still is", () => {
+  const artefacts = [
+    "https://ucwc.marketplace.barchart.com/_next/static/chunks/turbopack-0gbhr29l6e26t.js",
+    "https://ucwc.marketplace.barchart.com/_next/static/chunks/0yt~xtmvnzeiu.js",
+    "https://ucwc.marketplace.barchart.com/_next/static/_GqxEAMFslVAHJNj0nL3H/_buildManifest.js",
+    "https://ucwc.marketplace.barchart.com/_next/static/_GqxEAMFslVAHJNj0nL3H/_ssgManifest.js",
+  ];
+  for (const u of artefacts)
+    assert.equal(isAsset(u, "application/javascript"), true,
+      `${u} was counted as a feed — this is what made one run report 587`);
+
+  /* THE OTHER HALF OF THE CLAIM, and the reason this is not simply
+     "exclude scripts": Barchart's widget really is served as JavaScript and a
+     JSONP body really is a board. */
+  const real = [
+    "https://connect.api.barchart.com/graphql",
+    "https://shared.websol.barchart.com/quotes/get?module=cashBids&callback=cb",
+    "https://www.example.coop/cashbids.php?callback=jsonp",
+  ];
+  for (const u of real)
+    assert.equal(isAsset(u, "application/javascript"), false,
+      `${u} is a board and was thrown away with the build output`);
+});
