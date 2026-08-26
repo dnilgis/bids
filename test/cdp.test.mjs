@@ -618,3 +618,51 @@ test("a call the browser DOES answer is returned untouched and promptly", async 
   assert.equal(got.body, "the board");
   assert.ok(Date.now() - started < 3000, "a prompt answer was made to wait");
 });
+
+/* NAVIGATION GETS THE PAGE'S CLOCK, NOT THE PROTOCOL'S.
+ *
+ * My own regression, caught on the first fetch after the per-call deadline
+ * shipped. I capped every devtools call at twenty seconds and wrote in the
+ * comment that Page.navigate "resolves when navigation STARTS, not when it
+ * finishes, so it does not legitimately need twenty seconds". True of the
+ * protocol, false of Chromium: a busy renderer does not answer the navigate
+ * call either. Eight Premier Cooperative sources that had read cleanly for
+ * days came back "broken" — the loudest word this system has — with
+ * "Page.navigate did not answer in 20000ms".
+ *
+ * So navigation is passed the page budget explicitly, at BOTH call sites, and
+ * this holds the source to it. Read off the file rather than driven, because
+ * what is under test is which budget each call site hands over, and a browser
+ * that reproduced it would have to be slower than twenty seconds on purpose.
+ */
+test("both Page.navigate call sites are given the page budget, not the per-call ceiling", () => {
+  const src = readFileSync(new URL("../lib/cdp.mjs", import.meta.url), "utf8");
+  const found = [...src.matchAll(/send\(\s*"Page\.navigate"[\s\S]{0,160}?\)/g)];
+  assert.ok(found.length >= 2,
+    `expected the two navigate call sites, found ${found.length} — this test no longer matches the file`);
+  /* The rescue path drives its own explicit race and is excluded on purpose:
+     it is wrapped in within(rescueNavMs, ...), a deliberate separate budget.
+     Matched on the text BEFORE the call, because that is where the wrapper
+     sits — reading only the call itself missed it and failed the test on a
+     line that was already correct. */
+  const primary = found
+    .filter((m) => !/within\(\s*rescueNavMs/.test(src.slice(Math.max(0, m.index - 120), m.index)))
+    .map((m) => m[0]);
+  assert.equal(primary.length, 2,
+    `expected exactly two unwrapped navigate calls, found ${primary.length}`);
+  for (const s of primary)
+    assert.match(s, /callTimeoutMs:\s*timeoutMs/,
+      "a Page.navigate is still capped at the per-call ceiling — this is what broke eight " +
+      "Premier Cooperative sources:\n  " + s.replace(/\s+/g, " "));
+});
+
+test("the per-call ceiling still applies to the calls that are not navigation", () => {
+  /* The other half. If navigation's exemption leaked to every call, the hang
+     this whole mechanism exists to stop would be back. */
+  const src = readFileSync(new URL("../lib/cdp.mjs", import.meta.url), "utf8");
+  assert.match(src, /const callMs = Math\.max\(50, Math\.min\(timeoutMs, 20000\)\)/,
+    "the per-call ceiling is gone");
+  const body = src.slice(src.indexOf("export async function readBody"));
+  assert.doesNotMatch(body.slice(0, 600), /callTimeoutMs/,
+    "readBody now exempts itself from the ceiling — that is where the hang lived");
+});
