@@ -1,0 +1,43 @@
+{
+  "id": "chshighplains-yuma",
+  "operator": "CHS High Plains",
+  "location": "Yuma",
+  "state": "CO",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chshighplains.com/grain/cash-bids",
+  "locationId": "d08a8028-411f-4429-b7bf-c3505601b896",
+  "labelInFeed": "Yuma",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "milo": [
+      2,
+      14
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cashRounding": "floor-cent",
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "Built 2026-08-26 from a bushel-probe run plus the operator's OWN grain-locations page, which is where the state and the address come from -- BUSHEL'S PAYLOAD CARRIES NEITHER: its location object is {id, name, groups} and nothing more. cashRounding is what the probe measured on this board's own rows, not a guess. Verified here: https://www.chshighplains.com/grain/grain-locations/ - 'Yuma - 101 S. Detroit St., P.O. Box 184, Yuma, CO 80759 | (970) 848-8267'. Distinct address AND phone from Yuma Shuttle, so the pair is two facilities. https://www.chshighplains.com/locations heading 'Yuma, Colorado'; the same page gives 101 S. Detroit St. as the co-op's own contact address. Yuma, COLORADO - not Yuma, Ariz COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard. Geocode the street address before relying on a map pin.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": "101 S. Detroit St., P.O. Box 184, Yuma, CO 80759",
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.chshighplains.com/grain/cash-bids",
+  "inMerge": true
+}
