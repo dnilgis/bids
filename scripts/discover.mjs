@@ -654,7 +654,30 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     asked++;
     console.log(`── [${i + 1}/${urls.length}] ${pageUrl}`);
-    const result = await captureAll({ pageUrl });
+    /* HOW LONG TO WAIT ON ONE PAGE, and why it is now a knob.
+     *
+     * ALCIVIA's board comes from a <script src> pointing at
+     * alciviacoop.agricharts.com/inc/cashbids/cashbids.php. Four runs on
+     * 2026-08-25 reported "MATCHED, BUT NO BOARD FOUND", and the last one --
+     * with --dump able to see every response at any status -- proved the
+     * request is NEVER MADE. Not refused: absent. And every one of those runs
+     * also said "network never went quiet", meaning the page was still going
+     * when the 45-second window shut on it.
+     *
+     * That is one page in a hundred and three kilobytes of Elementor markup
+     * with sixty-five requests in flight, and the widget in question sits
+     * near the end of the article. So the honest next question is not "which
+     * URL" -- it is "was it ever going to get there".
+     *
+     * --patience <seconds> answers it. Default unchanged at 45. */
+    const patienceS = Number(flagValue("patience", "45"));
+    const result = await captureAll({
+      pageUrl,
+      timeoutMs: Math.max(5, patienceS) * 1000,
+      /* A page that never goes quiet is exactly this case, so the settle
+         window grows with the wait rather than staying at 2.5 seconds. */
+      quietMs: patienceS > 45 ? 5000 : 2500,
+    });
     const feeds = findFeeds(result);
     const v = verdict(result, feeds);
     console.log(`   ${result.responses.length} response(s), ${feeds.length} feed(s)` +
