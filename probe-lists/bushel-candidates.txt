@@ -49,3 +49,52 @@ https://www.chssunprairie.com/grain/cash-bids
 https://www.chshighplains.com/grain/cash-bids
 https://www.chsholdrege.com/grain/cash-bids
 https://www.chsunitedplainsag.com/grain/cash-bids
+
+# ── NINE MORE CHS REGIONS, found 2026-08-26 ────────────────────────────────
+# CHS has no public directory of its regional co-operatives -- chsinc.com/locations
+# is a 404 -- so these were found a different way, and the method is worth keeping.
+#
+# Every CHS regional site is one WordPress multisite on a shared `chs-theme`. The
+# rendered page is JavaScript-only and carries no platform string, but the REST
+# API hands back the raw markup:
+#
+#     https://<region>.com/wp-json/wp/v2/pages?slug=cash-bids
+#
+# and `content.rendered` contains, verbatim:
+#
+#     <div id="cash-bids-root" data-locations="W10,W20,W30,...">
+#     <script src=".../chs-theme/dist/js/bushel/cash-bids-front-end.DINZfkbf.js">
+#
+# `bushel` in the asset path, and THE SAME BUNDLE HASH on every site -- so it is
+# provably the identical widget the fourteen regions we already read are served
+# by, not a guess from a family resemblance. An empty data-locations array is a
+# clean negative, which is how CHS Northwest was ruled out rather than assumed.
+#
+# 92 locations claimed across these nine.
+https://chsag.com/grain/cash-bids/
+https://www.chsdevilslake.com/grain/cash-bids/
+https://www.chs-texoma.com/grain/cash-bids/
+https://www.chssouthwestgrain.com/grain/cash-bids/
+https://www.chsrochester.com/grain/cash-bids/
+https://www.chsbrandon.com/grain/cash-bids/
+https://www.chsfarmerselevator.com/grain/cash-bids/
+https://www.chsmountainwest.com/grain/cash-bids/
+https://www.chssouthcentral.com/grain/cash-bids/
+#
+# THREE THINGS TO KNOW BEFORE WRITING MANIFESTS FROM THE PROBE OUTPUT:
+#
+#  1. CHS ROCHESTER AND chsag.com OVERLAP. Rochester's bid points are
+#     SAV,WINN,KASS,CTMN,OSTR,WYKO,SANS,MKTO,FMNT -- exactly the River Terminals
+#     set minus COMS. Taking both double-counts nine elevators.
+#  2. NOT LISTED, because they are probably aliases of regions we already read:
+#     chsprairielakes.com is titled "Cash bids - CHS Herman", chsnortherngrain.com
+#     is titled "Home - CHS Ag Services", and chselburn.com now serves CHS
+#     Illinois. Confirm before adding any of them.
+#  3. CONFIRMED NEGATIVE, do not build for it: CHS Northwest (chsnw.com) is nine
+#     retail/agronomy/propane sites in WA and OR with an empty locations array.
+#     CHS Larsen is historic -- merged into Country Visions in 2021.
+#
+# ONE REAL GAP: CHS West Central (the former West Central Ag Services, MN/ND,
+# acquired January 2025) is on the same template, but its host failed TLS
+# certificate verification on every attempt so no board could be confirmed.
+# Worth one retry.

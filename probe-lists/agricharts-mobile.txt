@@ -1,0 +1,70 @@
+# AGRICHARTS, READ THROUGH THE MOBILE PATH -- AND THE LIMITS OF IT
+#
+# Compiled 2026-08-26. The desktop board at /markets/* is robots-disallowed on
+# essentially every AgriCharts site. The MOBILE site is not, and serves every
+# location and every price as PLAIN HTML -- no browser, no JavaScript:
+#
+#     https://<sub>.mobile.agricharts.com/cash/prices.php
+#     https://mobile.<vanity-domain>/cash/prices.php      (the alias form)
+#
+# Both forms work; try both. 110 locations across nine operators are readable
+# this way today.
+#
+# HOW FAR IT DOES NOT GENERALISE, measured rather than assumed:
+#
+#   A bogus subdomain -- zzznotarealcoopxyz.mobile.agricharts.com -- also
+#   returns HTTP 500. So 500 is AgriCharts' "no mobile site provisioned"
+#   signal, NOT an outage, and the ~30 hosts that failed identically have no
+#   mobile board rather than a broken one. That control is the whole reason
+#   this list is nine operators and not a hopeful forty.
+#
+#   /cash/prices.php 404s on every DESKTOP host tested. The endpoint is
+#   genuinely mobile-only; there is no shortcut around the disallowed path.
+#
+# AND THE THING WE HAVE BEEN CHASING FOR DAYS IS NOW CLOSED:
+#
+#   landmark.coop 302-redirects to alcivia.com. LANDMARK IS ALCIVIA. We have
+#   been counting one operator as two.
+#   ALCIVIA has no mobile site: alcivia.mobile 500, alciviacoop.mobile 500,
+#   mobile.alcivia.com NXDOMAIN, alcivia.agricharts.com/cash/prices.php 404.
+#   Farmers Win's mobile hostname resolves but is parked -- it 302s to www.
+#   So agricharts IS readable, and those three are not the way in. That thread
+#   is finished, and it cost less to close than to keep reopening.
+#
+# NO ADAPTER YET. The page needs one written against a real capture. Run
+# discover with dump on the first URL below to get a body to build from.
+#
+# SHAPE, from what the pages actually served:
+#   Columns are stable: Commodity | Delivery | Basis | Cash Price | Futures Chg
+#   THE LAST COLUMN IS A PRICE CHANGE, NOT A CONTRACT MONTH -- "5-4", "-24-2".
+#   The futures month is recoverable only from a link href:
+#     /cash/chart.php?c=<commodity>&l=<location>&d=Q26   <- d is the month
+#   Two shapes: multi-location boards group rows under a LOCATION heading;
+#   single-site boards group under a COMMODITY heading with no location named
+#   anywhere (Keller Grain does this). A location-keyed parser breaks on the
+#   second and must handle both.
+#   Delivery comes in three formats: 08/01/2026, "Mar 26", "Aug 2026".
+#   ?location_filter= and ?commodity_filter= return single slices.
+
+https://legacyfarmers.mobile.agricharts.com/cash/prices.php
+#    VERIFIED 10 locations -- Legacy Farmers, Ohio
+https://mobile.thefarmerselevator.com/cash/prices.php
+#    VERIFIED -- Farmers Elevator
+https://kokomograin.mobile.agricharts.com/cash/prices.php
+#    VERIFIED -- Kokomo Grain, Indiana
+https://mobile.prideag.com/cash/prices.php
+#    VERIFIED 27 locations -- Pride Ag Resources
+https://auroraelevator.mobile.agricharts.com/cash/prices.php
+#    VERIFIED -- Aurora Elevator
+https://kellergrain.mobile.agricharts.com/cash/prices.php
+#    VERIFIED -- Keller Grain & Feed. GROUPS BY COMMODITY, names no location.
+https://offerle.mobile.agricharts.com/cash/prices.php
+#    VERIFIED -- Offerle. Delivery reads "Mar 26" here, not a date.
+https://wheatfieldgrain.mobile.agricharts.com/cash/prices.php
+#    VERIFIED -- Wheatfield Grain. Delivery reads "Aug 2026".
+#
+# 53 LOCATIONS ON ONE BOARD, the largest single find in this file:
+#    Farmers Cooperative Dorchester. Its commodity cells link to
+#    /cash/prices.php?commodity_filter=16622 and its price cells to
+#    /cash/chart.php?c=16622&l=4601&d=Q26, which is where the contract month
+#    comes from.
