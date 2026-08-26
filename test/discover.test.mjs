@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fingerprint, findFeeds, countLocations, readList, SIGNATURES } from "../scripts/discover.mjs";
+import { fingerprint, findFeeds, countLocations, readList, SIGNATURES , flagValue, setArgs} from "../scripts/discover.mjs";
 import { looksLikeData } from "../lib/cdp.mjs";
 
 const KNOWN = {
@@ -823,4 +823,48 @@ test("Next.js build output is not counted as a feed, but a JSONP widget still is
   for (const u of real)
     assert.equal(isAsset(u, "application/javascript"), false,
       `${u} is a board and was thrown away with the build output`);
+});
+
+/* A DEFAULT THAT IS SILENTLY DISCARDED IS WORSE THAN NO DEFAULT.
+ *
+ * flagValue took one parameter while two call sites passed it two. The extra
+ * argument was accepted by the language and thrown away, so an absent flag
+ * came back as null -- and Number(null) is 0, not NaN, so nothing threw and
+ * nothing warned. `--patience` defaulted to 45 in the description, the log and
+ * the comments, and to FIVE SECONDS in fact. `--budget` defaulted to 45
+ * minutes on paper and to 0, which this script defines as "no limit", in fact.
+ *
+ * Measured on the sweep of 2026-08-26: a run with the patience box left blank
+ * -- the documented way to ask for the default -- gave every page five
+ * seconds. Every "network never went quiet" printed on a default run says
+ * less than it appears to.
+ */
+test("an absent flag returns the default it was given, not null", () => {
+  const before = process.argv;
+  try {
+    /* Drive the real module the way the runner does: through process.argv. */
+    process.argv = ["node", "discover.mjs", "--list", "x.txt"];
+    setArgs(["--list", "x.txt"]);
+    assert.equal(flagValue("patience", "45"), "45",
+      "the default was discarded — this is the five-second page budget");
+    assert.equal(Number(flagValue("patience", "45")) * 1000, 45000,
+      "the page budget is not the 45 seconds every message promises");
+    assert.equal(flagValue("budget", "45"), "45",
+      "budget fell through to 0, which this script defines as NO LIMIT");
+    assert.equal(flagValue("nothing-like-this"), null,
+      "a flag with no default still comes back null");
+  } finally { process.argv = before; }
+});
+
+test("a flag whose value box was left blank asks for the default, not for zero", () => {
+  /* This is what the workflow produces when somebody clears the box: the flag
+     is present and the thing after it is the NEXT FLAG, or nothing at all. */
+  setArgs(["--patience"]);
+  assert.equal(flagValue("patience", "45"), "45", "a trailing flag with no value took zero");
+  setArgs(["--patience", "--limit", "60"]);
+  assert.equal(flagValue("patience", "45"), "45", "the next flag was read as the value");
+  setArgs(["--patience", ""]);
+  assert.equal(flagValue("patience", "45"), "45", "an empty string was read as zero seconds");
+  setArgs(["--patience", "180"]);
+  assert.equal(flagValue("patience", "45"), "180", "a real value must still win");
 });

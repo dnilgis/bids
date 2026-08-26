@@ -1105,3 +1105,30 @@ https://www.cmgtharaldsonethanol.com/index.cfm?show=11&mid=5
 #   Columbia Grain is dtn-cs as well, and NOT bushel as the search guessed.
 #   It is one page per elevator rather than one page per co-op -- 23 pages
 #   answered, one location each, across Montana and North Dakota.
+
+# ==========================================================================
+# RETRY ONCE THE PATIENCE BUG IS UPLOADED -- two pages, 2026-08-26
+# ==========================================================================
+#   Both came back "Page.navigate did not answer in 5000ms". That five
+#   seconds was not their slowness: flagValue was discarding its default, so
+#   a blank patience box meant a FIVE SECOND page budget instead of 45, and
+#   the per-call ceiling followed it down. With the fix in place these two
+#   get twenty seconds to begin navigating, which is a different question.
+https://www.mcgregor.com
+https://www.meherrinag.com
+
+# ==========================================================================
+# THE FOUR http:// RETRIES ANSWERED -- and their certificates are broken
+# ==========================================================================
+#   Re-listing them as https did what it was supposed to: Chromium stopped
+#   refusing them before the request and actually reached the hosts. What
+#   came back was a certificate fault on THEIR side, which is a finding
+#   about the operator rather than about our URL:
+#     dtn.al-corn.com                ERR_CERT_COMMON_NAME_INVALID
+#     dtn.horizonresources.coop      ERR_CERT_DATE_INVALID
+#     dtn.nebraskacornprocessing.com ERR_CERT_COMMON_NAME_INVALID
+#     www.cmgtharaldsonethanol.com   ERR_CERT_COMMON_NAME_INVALID
+#   Left off. Chromium can be told to ignore certificate errors and these
+#   would then read, and that is a decision to take deliberately rather than
+#   bury in a candidate list: it weakens the transport for every page in the
+#   sweep to reach four.

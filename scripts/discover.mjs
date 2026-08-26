@@ -594,9 +594,42 @@ export function badTargets(urls) {
 
 /* A flag's value, or null. Declared before the runnable block uses it. */
 let ARGS = [];
-const flagValue = (name) => {
+/* A seam, so the flag reader can be driven by a test without a subprocess.
+   ARGS is module state set from process.argv at entry; this is the only other
+   way in and it exists for test/discover.test.mjs. */
+export const setArgs = (a) => { ARGS = Array.isArray(a) ? a : []; };
+/* THE SECOND ARGUMENT WAS A LIE FOR AS LONG AS IT HAS BEEN WRITTEN -- 2026-08-26.
+ *
+ * Two call sites read `flagValue("patience", "45")` and `flagValue("budget",
+ * "45")`, and this function took ONE parameter. The default was accepted by
+ * the language, discarded, and never missed, because what came back instead
+ * was `null` -- and `Number(null)` is 0, not NaN. Nothing threw. Nothing
+ * warned. Two settings quietly took the value zero.
+ *
+ * What that cost, measured on Sig's sweep of 2026-08-26 with the patience box
+ * left blank, which is the documented way to ask for the default:
+ *
+ *   patience  Math.max(5, 0) * 1000  =  a FIVE SECOND page budget, where the
+ *             log, the workflow description and this file's own comments all
+ *             say forty-five. Every "network never went quiet" this tool has
+ *             ever printed on a default run was a page given five seconds.
+ *             That includes the ALCIVIA investigation that ran for days.
+ *
+ *   budget    0, which this script's own flag documentation defines as NO
+ *             LIMIT -- the exact opposite of the 45-minute stop it promises,
+ *             and the thing that stops a run walking into the six-hour wall.
+ *
+ * A default that is written down, passed in, and silently dropped is worse
+ * than no default at all: every reader of the call site believes it. */
+export const flagValue = (name, dflt = null) => {
   const i = ARGS.indexOf(`--${name}`);
-  return i === -1 ? null : (ARGS[i + 1] ?? null);
+  if (i === -1) return dflt;
+  const v = ARGS[i + 1];
+  /* `--patience` with nothing after it, or with the next flag after it, is a
+     box someone left blank in the workflow form. That is a request for the
+     default, not a request for zero. */
+  if (v === undefined || v === null || v === "" || String(v).startsWith("--")) return dflt;
+  return v;
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
