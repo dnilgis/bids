@@ -1,0 +1,32 @@
+{
+  "id": "auroracooperative-aurorasouth",
+  "operator": "Aurora Cooperative",
+  "location": "Aurora",
+  "state": "NE",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0339801/cash-bids?units=us",
+  "browserPage": "https://auroracoop.com/markets",
+  "locationId": "11846",
+  "siteId": "E0339801",
+  "bands": {
+    "milo": [
+      2.0,
+      14.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "Built 2026-08-26 from a dtn-probe run (site E0339801) plus the operator's OWN locations page, which is where the state and the address come from -- THE FEED CARRIES NEITHER. Bushel and DTN both hand back {id, name} and nothing else, so a state taken from the co-operative's home state would be a guess, and this project has already been bitten by that: one operator's CEDAR RAPIDS is in Nebraska. Verified here: https://auroracoop.com/locations/ (page 1) — 'Aurora South Grain | Aurora, NE 68818 | 315 8th Street | 402-694-4110'. cashRounding is the mode the probe measured across every testable row on this board, not a guess. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard -- measured at 1.4 miles on babgrain-auburn. Geocode the street address before relying on a map pin. MILO ONLY. This location posts three rows and all three are milo, so the probe's skeleton came back with no bands at all and the manifest validator refused it. The band written here is DEFAULT_BANDS' own milo band [2.0, 14.0] copied verbatim -- the range the system already applies to every other milo row it publishes -- not a number chosen for this location. The probe also declined to name a rounding mode: three testable rows, round explains 3 and floor explains 2, which it reports as TOO FEW TO STATE. That is the right answer, so no cashRounding is declared and the identity guard stays exact until a day with more rows says otherwise.",
+  "cashRoundingCents": 0,
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://auroracoop.com/",
+  "inMerge": true,
+  "address": "315 8th Street, Aurora, NE 68818",
+  "labelInFeed": "Aurora South"
+}
