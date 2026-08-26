@@ -38,7 +38,12 @@ test("2. a source is tried on both the apex and the www host", () => {
 });
 
 test("3. the workflow commits every source's file, not one hardcoded path", () => {
-  const yml = readFileSync(join(ROOT, ".github/workflows/poll.yml"), "utf8");
+  /* THE PASS MOVED INTO A SCRIPT on 2026-08-26 so it could be run in a loop,
+     so both files are read here. Checking only the workflow would have made
+     this guard pass by looking at a file the commit no longer happens in --
+     a test that cannot fail is worse than no test. */
+  const yml = readFileSync(join(ROOT, ".github/workflows/poll.yml"), "utf8")
+            + "\n" + readFileSync(join(ROOT, "scripts/one-pass.sh"), "utf8");
   const add = [...yml.matchAll(/^\s*git add (\S+)/gm)].map((m) => m[1]);
   assert.ok(add.includes("data/"),
     `workflow adds ${JSON.stringify(add)} -- a hardcoded data file silently drops every other source`);
@@ -56,9 +61,18 @@ test("3b. exactly one scheduled job writes index.html", () => {
      repo any more, so that job has nothing to run. Either way the file has two
      claimants and the page can only show one. Deleting
      .github/workflows/dashboard.yml is what makes this pass. */
+  /* A JOB IS ITS WORKFLOW PLUS WHAT ITS WORKFLOW RUNS. The bake moved into
+     scripts/one-pass.sh on 2026-08-26 so the pass could be looped, and this
+     guard went quietly to zero writers -- which it reported as a failure only
+     by luck of the deepEqual. A guard that stops seeing the thing it guards is
+     the failure mode this repository has met most often, so the search now
+     follows a workflow into the scripts it calls. */
   const dir = join(ROOT, ".github/workflows");
   const bakers = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).filter((f) => {
-    const y = readFileSync(join(dir, f), "utf8");
+    let y = readFileSync(join(dir, f), "utf8");
+    for (const s of new Set(y.match(/scripts\/[\w.\-]+\.sh/g) || [])) {
+      try { y += "\n" + readFileSync(join(ROOT, s), "utf8"); } catch { /* not ours */ }
+    }
     return /node scripts\/(status|dashboard)\.mjs/.test(y) && /index\.html/.test(y);
   });
   assert.deepEqual(bakers, ["poll.yml"],

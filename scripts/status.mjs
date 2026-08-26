@@ -159,8 +159,68 @@ export function nextFire(crons, fromMs, limitMinutes = 8 * 24 * 60) {
 }
 
 /** Every cron in a workflow file, in order, without a YAML parser. */
-export function cronsOf(yaml) {
+export function rawCronsOf(yaml) {
   return [...String(yaml ?? "").matchAll(/^\s*-\s*cron:\s*["']([^"']+)["']/gm)].map((m) => m[1]);
+}
+
+/* A CRON IS NO LONGER THE SAME THING AS A READ -- 2026-08-26.
+ *
+ * The trading-window job used to fire six times an hour and read once each
+ * time, so "when does the cron next fire" and "when is the board next read"
+ * were the same question. They are not any more. GitHub was measured
+ * delivering one or two of those six, so the workflow now asks ONCE an hour
+ * and the job READS EVERY TEN MINUTES INSIDE ITSELF for fifty minutes.
+ *
+ * This page exists to be believed. Left alone it would have read the hourly
+ * cron and told somebody at 14:12 that the next read was forty-five minutes
+ * away, when the truth is three -- which is exactly the kind of confident
+ * wrong answer the file header warns about.
+ *
+ * So the loop is read out of the workflow too, from the same file and by the
+ * same rule: a cadence written in two places is a cadence that disagrees with
+ * itself. A cron whose job loops is expanded into the minutes it will actually
+ * read at -- "7 12-21 * * 1-5" with a 50-minute loop every 10 becomes
+ * "7,17,27,37,47 12-21 * * 1-5", which is not a guess about the schedule, it
+ * is a statement of when the reads happen.
+ *
+ * A workflow with no loop settings expands to itself, so nothing else moves. */
+export function loopOf(yaml) {
+  const y = String(yaml ?? "");
+  const every = Number((y.match(/EVERY_MINUTES:\s*["']?(\d+)/) || [])[1]);
+  /* The workflow names the ONE cron whose job loops. Reading that name here is
+     what stops this page claiming the overnight and weekend crons read every
+     ten minutes as well -- they do not, deliberately, and an earlier version of
+     this function said they did. */
+  const m = y.match(/event\.schedule == '([^']+)' && '(\d+)'/);
+  const cron = m ? m[1] : null;
+  const mins = Number(m ? m[2] : NaN);
+  return (Number.isFinite(every) && every > 0 && Number.isFinite(mins) && mins > 0 && cron)
+    ? { every, mins, cron } : null;
+}
+
+export function expandLoop(cron, loop) {
+  if (!loop) return cron;
+  const f = String(cron).trim().split(/\s+/);
+  if (f.length !== 5) return cron;
+  /* Only a cron that fires at ONE minute of the hour can be expanded: a list
+     is already several reads and doubling them would overstate the cadence. */
+  if (!/^\d+$/.test(f[0])) return cron;
+  const start = Number(f[0]);
+  const at = [];
+  for (let m = 0; m <= loop.mins - loop.every; m += loop.every) {
+    const v = start + m;
+    if (v > 59) break;              // a read that spills past the hour is not this cron's
+    at.push(v);
+  }
+  return at.length > 1 ? [at.join(","), ...f.slice(1)].join(" ") : cron;
+}
+
+/* What the crons mean once the loop is taken into account. The loop only runs
+   on the SCHEDULED trading-window fire, and that is the only cron this touches:
+   the hourly and weekend ones read once and are returned unchanged. */
+export function cronsOf(yaml) {
+  const loop = loopOf(yaml);
+  return rawCronsOf(yaml).map((c) => (loop && c === loop.cron ? expandLoop(c, loop) : c));
 }
 
 /* MINUTES, IN WORDS A PERSON READS RATHER THAN A TIMESTAMP THEY SUBTRACT.
