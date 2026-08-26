@@ -49,7 +49,18 @@ on:
     # minute -- :00 is when every cron on the platform fires at once, so a job
     # asking for :00 waits behind all of them. Offsetting to :03 costs nothing
     # and lands in a quieter queue. The spacing is still ten minutes.
-    - cron: "3,13,23,33,43,53 12-21 * * 1-5"
+    #
+    # CHANGED 2026-08-26: ONE FIRE AN HOUR, AND THE JOB READS ALL HOUR.
+    # This asked for six fires an hour and was given one or two. Measured on
+    # 2026-08-26, in the trading window, where every run commits so commits are
+    # an exact run count: 13 UTC 3 runs, 14 UTC 2, 15 UTC 1, 16 UTC 1 -- and
+    # some of those were fired by hand. Outside the window, where this file
+    # asks for ONE an hour, it got one every hour with no misses.
+    # Same repository, same day, same scheduler. GitHub is far better at a low
+    # frequency than a high one, so the fix is to stop asking for a high one:
+    # take the fire that reliably arrives and read repeatedly inside it. See
+    # LOOP_MINUTES below.
+    - cron: "7 12-21 * * 1-5"
     # Hourly the rest of the weekday, so an overnight move is picked up and a
     # reader that has quietly died gets noticed before morning.
     - cron: "25 0-11,22-23 * * 1-5"
@@ -75,9 +86,19 @@ on:
         description: "Tell the sites even if the price did not move (use this to prove EMMERT_DISPATCH_TOKEN works)"
         type: boolean
         default: false
+      loop_minutes:
+        description: "Keep reading for this many minutes (blank = 0 for a hand-fired run, so it finishes at once; the hourly schedule uses 50)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
+  # An alert has to reach a person. A failed run is an email GitHub may or may
+  # not send depending on a notification setting nobody remembers choosing, so
+  # a pass that cannot be recovered opens an ISSUE on this repository as well:
+  # it is durable, it is on the page Sig already looks at, and it cannot be
+  # silently filtered into a folder.
+  issues: write
 
 concurrency:
   group: read-boyceville
@@ -96,174 +117,120 @@ jobs:
       # Exits non-zero on a bad read, which fails the run, emails you, and
       # leaves data/boyceville.json exactly as it was. A stale file is safe:
       # every consumer checks `checkedAt`. A wrong file is not.
-      - name: Read every enabled source
-        # poll.mjs SUPERSEDES fetch.mjs. Both write data/boyceville.json, so only
-        # one may ever be scheduled -- two writers on one artefact has bitten
-        # this system three times. Delete scripts/fetch.mjs once this is live.
-        #
-# NO SOURCE NEEDS A KEY TODAY, and this block is the wiring for the first
-        # one that does. The only platform with a credential -- DTN Content
-        # Services -- is read through a BROWSER, on the customer's own page,
-        # because DTN answered a direct call with "The api key is valid, but it
-        # is valid to be used within a browser only". Their page carries their
-        # key in the clear, as it must for a browser widget to work, so we hold
-        # none.
-        #
-        # WHEN ONE DOES: a source names the ENVIRONMENT VARIABLE in its manifest
-        # (`apiKeyEnv`), never the key, poll.mjs sends it as an `apikey` HEADER
-        # so it stays out of the URL and out of every log line and error message
-        # in this public repository -- and the variable gets a line here.
-        # Forgetting that line is not silent: poll.mjs names the variable, the
-        # sources that need it and the remedy, once, before it fetches anything.
-        #
-        # THE DTN_CS_API_KEY LINE THAT USED TO BE HERE IS GONE, AND ITS ABSENCE
-        # IS THE POINT. The thirteen Ag Partners sources are dtn-cs, and dtn-cs
-        # is read through a BROWSER: their gateway answers every server-side
-        # request with "the api key is valid, but it is valid to be used within
-        # a browser only", so poll.mjs loads Ag Partners' own public page and
-        # reads the response their own widget asks for. We hold no key.
-        #
-        # The line survived that change and cost a wrong answer rather than a
-        # broken run: asked on 2026-08-20 why the thirteen were not live, I read
-        # this file, saw a secret being passed, and told Sig they were waiting
-        # on DTN_CS_API_KEY. They were already live. A dead wire that still
-        # looks connected is worse than no wire.
-        run: node scripts/poll.mjs
-
-      - name: Commit if the price moved, and rebake the dashboard
-        run: |
-          git config user.name  "agsist-bot"
-          git config user.email "bot@agsist.com"
-          # EVERY SOURCE'S FILE, NOT ONE HARDCODED PATH.
-          # This said `git add data/boyceville.json`. With a second source that
-          # is a silent outage: poll.mjs writes data/<id>.json and
-          # data/index.json, the log says "3 ok, wrote 3", and only Boyceville
-          # ever reaches the repo. The dashboard reads index.json, so it would
-          # have gone stale while reporting everything healthy.
-          git add data/
-          git diff --cached --quiet && { echo "nothing moved"; exit 0; }
-
-          # THE DEEP FETCH HAPPENS HERE, NOT AT CHECKOUT.
-          #
-          # The dashboard's basis chart is drawn from this repo's git history,
-          # so baking it needs the full log. But checkout runs on every poll --
-          # about 1,650 a month -- while a commit happens only on a price
-          # change or a six-hourly heartbeat, a few dozen times a month. Doing
-          # the unshallow here means the expensive clone is paid on the runs
-          # that need it and no others.
-          git fetch --deepen=1000 --quiet || true
-
-          # THE DASHBOARD MUST NEVER BLOCK THE PRICE.
-          #
-          # This block runs under `bash -e`. A non-zero bake used to abort the
-          # step before `git commit`, and because the runner is ephemeral the
-          # price fetch.mjs had already written to the working tree was thrown
-          # away with it. Worse, a deterministic bake failure -- one bad
-          # basisDollars anywhere in the history the chart reads -- fails every
-          # subsequent poll identically, so `checkedAt` freezes and fourteen
-          # hours later both Emmert sites drop to "Call for today's price".
-          # Over a chart.
-          #
-          # READ-ME-FIRST calls the dashboard optional and deletable. This makes
-          # the workflow agree with that.
-          # status.mjs SUPERSEDES dashboard.mjs -- both write index.html.
-          if node scripts/status.mjs; then
-            git add index.html
-          else
-            echo "::warning::dashboard bake failed; committing the price without it"
-          fi
-          # The message carries the front month, so `git log --oneline` reads
-          # as a price history rather than a list of identical commits, and a
-          # heartbeat says so instead of impersonating a price change.
-          # Written by poll.mjs via lib/decide.mjs.
-          git commit -F .commit-message
-          git push
-
-      # ---- TELL THE TWO SITES, INSTEAD OF LEAVING THEM TO ASK ----------------
+      # ══════════════════════════════════════════════════════════════════
+      #  READ, COMMIT AND TELL -- REPEATEDLY, FOR THE REST OF THE HOUR
+      # ══════════════════════════════════════════════════════════════════
+      #  Everything one pass does now lives in scripts/one-pass.sh, moved
+      #  verbatim from the three steps this replaces. What is new is around it:
       #
-      # badgergrain.com and midwestcommodity.com both rebuild their price panel
-      # from data/boyceville.json in THIS repository, on their own ten-minute
-      # cron. On 2026-08-20 that cron was being honoured one to two times an
-      # hour against six asked -- measured here, where every run commits, so
-      # commits are an exact run count:
+      #  A FAILED PASS RETRIES AT ONCE. Asked for by Sig on 2026-08-26, in his
+      #  words: "if it fails i want it to alert me or retry the run immediately
+      #  instead of failing and then waiting for the next scheduled run." The
+      #  first retry is immediate, the second and third back off a little,
+      #  because a host that just refused us is not helped by being asked again
+      #  in the same second.
       #
-      #   2026-08-19  hour 16 -> 14 runs   17 -> 9   18 -> 5   19 -> 6   20 -> 7
-      #   2026-08-20  hour 13 ->  1 run    14 -> 2
+      #  A PASS THAT CANNOT BE RECOVERED DOES NOT END THE HOUR. It is recorded,
+      #  an issue is opened, and the loop carries on -- a network blip at 14:05
+      #  must not cost the 14:15, 14:25 and 14:35 reads as well. The job still
+      #  goes RED at the end, so nothing is hidden.
       #
-      # Same cron, same repository. GitHub's scheduler is best effort and that
-      # day it was not delivering. At 10:45 Central the feed had moved at 10:25
-      # and badgergrain's page still said "as of 9:49am" -- nothing broken, the
-      # job simply had not run.
-      #
-      # So the sites are TOLD. A price move fires repository_dispatch at both,
-      # their prices workflow runs at once, and the page is current inside a
-      # minute instead of inside a cron nobody can promise.
-      #
-      # ONLY ON A MOVE. This repository commits on every run, because
-      # data/index.json carries `generated: now` -- so "did we commit" is not a
-      # signal. A heartbeat is not a move either. poll.mjs writes
-      # .changed-sources from decide()'s own `changed` verdict, which is the
-      # question already being answered correctly for the file itself.
-      #
-      # IT FAILS THE RUN IF IT CANNOT TELL THEM. The price is already committed
-      # and pushed by this point, so nothing is lost -- but a token that has
-      # quietly expired would leave both sites as late as they were before,
-      # with every run green. That is the failure this whole day has been about.
-      - name: Tell the sites their price moved
+      #  THE LOOP STOPS BEFORE THE NEXT FIRE, NOT AFTER IT. 50 minutes against
+      #  an hourly cron leaves ten minutes of slack, so a slow pass cannot have
+      #  the next scheduled run queue behind this one and get cancelled.
+      - name: Read, commit and tell — for the rest of the hour
         env:
           TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
+          PING_SITES: ${{ inputs.ping_sites }}
+          # A hand-fired run finishes at once unless it is asked not to: the
+          # concurrency group is held for as long as this loop runs, and
+          # somebody pressing the button wants an answer, not a 50-minute lock.
+          # ONLY THE TRADING-WINDOW FIRE LOOPS, and it is named exactly.
+          # Written first as `event_name == 'schedule'`, which caught the
+          # OVERNIGHT and WEEKEND crons too and would have turned one polite
+          # hourly read at 3am into four, and the weekend's three-hourly read
+          # into four an hour. Those cadences are deliberate -- the board does
+          # not move overnight and the comments above say so -- and quadrupling
+          # requests to other people's servers for nothing is the opposite of
+          # what this change is for. github.event.schedule is the cron string
+          # that actually fired, so the loop can be tied to one of them.
+          LOOP_MINUTES: ${{ inputs.loop_minutes || (github.event.schedule == '7 12-21 * * 1-5' && '50' || '0') }}
+          EVERY_MINUTES: "10"
         run: |
-          set -u
-          # A WAY TO PROVE THE TOKEN WORKS WITHOUT WAITING FOR THE MARKET.
-          # Without this the only test is a real price move, which may be an
-          # hour away and which fails at the moment you are not watching. Run
-          # the workflow by hand with ping_sites ticked and the answer is
-          # immediate: both sites rebuild, or this step goes red and says why.
-          # EVERY RUN, NOT ONLY WHEN THE PRICE MOVED.
-          #
-          # This used to exit here unless boyceville had changed, and that was
-          # right while the page showed one fact. It now shows two: "as of
-          # 1:40pm" is when THEIR board moved, and "checked 4:49pm" is that
-          # somebody is still looking. The second one is the answer to Sig's
-          # question on 2026-08-20 -- at five o'clock nineteen of the twenty
-          # boards in this feed still read 1:40pm, correctly, because futures
-          # settle at 1:20pm Central and cash boards freeze after it.
-          #
-          # A "checked" stamp is only worth printing if it moves, and the sites
-          # only rebuild when they are told to. So they are told every run, and
-          # the rebuild is timed to the scrape rather than to the price. THAT
-          # COSTS A COMMIT AND A PAGES DEPLOY PER RUN on each site, which is
-          # the trade Sig chose knowingly: "if we are scraping the data i want
-          # it timed with the scraper".
-          #
-          # The payload still says whether the price actually moved, so the
-          # run log on the other side can tell the two kinds of rebuild apart.
-          FORCE="${{ inputs.ping_sites }}"
-          MOVED=false
-          grep -qx boyceville .changed-sources 2>/dev/null && MOVED=true
-
-          if [ -z "${TOKEN:-}" ]; then
-            echo "::error title=EMMERT_DISPATCH_TOKEN is not set::neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
-            exit 1
-          fi
-
-          [ "$FORCE" = "true" ] && echo "ping_sites was ticked"
-          echo "boyceville moved this run: $MOVED"
-          PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
-          CHECKED=$(node -e "const i=require('./data/index.json');const s=(i.sources||[]).find(x=>x.id==='boyceville');process.stdout.write(s&&s.checkedAt||'')" || true)
-          fail=""
-          for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
-            code=$(curl -sS -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "https://api.github.com/repos/$repo/dispatches" \
-              -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"checkedAt\":\"$CHECKED\",\"moved\":$MOVED,\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
-            if [ "$code" = "204" ]; then
-              echo "told $repo (pricedAt $PRICED, checkedAt $CHECKED, moved $MOVED)"
-            else
-              echo "::error title=could not tell $repo::HTTP $code $(head -c 300 /tmp/dispatch-resp 2>/dev/null)"
-              fail=1
+          set -uo pipefail
+          LOOP=${LOOP_MINUTES:-0}; EVERY=${EVERY_MINUTES:-10}
+          DEADLINE=$(( $(date +%s) + LOOP * 60 ))
+          pass=0; failed=0; firstfail=""
+          while : ; do
+            pass=$((pass + 1))
+            ok=0
+            for attempt in 1 2 3; do
+              if bash scripts/one-pass.sh; then ok=1; break; fi
+              if [ $attempt -lt 3 ]; then
+                # IMMEDIATELY on the first retry. That is the whole point of it.
+                back=$(( (attempt - 1) * 20 ))
+                echo "::warning title=pass $pass failed::retrying now (attempt $((attempt+1)) of 3)"
+                [ $back -gt 0 ] && sleep $back
+              fi
+            done
+            if [ $ok -eq 0 ]; then
+              failed=$((failed + 1))
+              [ -n "$firstfail" ] || firstfail="pass $pass"
+              echo "::error title=pass $pass failed three times::the loop continues; the run will end red"
             fi
+            # Stop if the next pass would run past the deadline. Checked BEFORE
+            # sleeping so the job does not sit idle for ten minutes and then quit.
+            now=$(date +%s)
+            [ $(( now + EVERY * 60 )) -lt $DEADLINE ] || break
+            echo "── sleeping ${EVERY}m; $(( (DEADLINE - now) / 60 ))m of the hour left"
+            sleep $(( EVERY * 60 ))
           done
-          [ -z "$fail" ] || exit 1
+          echo "passes: $pass, failed: $failed"
+          {
+            echo "### read boyceville"
+            echo ""
+            echo "| passes | failed | loop |"
+            echo "|---|---|---|"
+            echo "| $pass | $failed | ${LOOP}m |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "FAILED_PASSES=$failed" >> "$GITHUB_ENV"
+          echo "FIRST_FAIL=$firstfail" >> "$GITHUB_ENV"
+          [ $failed -eq 0 ]
+
+      # AN ALERT THAT REACHES A PERSON. GitHub's own failure email depends on a
+      # notification setting nobody remembers choosing, and a red tick on a page
+      # you are not looking at is not an alert. An issue is durable, it is on
+      # the tab Sig already has open, and it says what to do.
+      #
+      # ONE ISSUE, REOPENED -- not one per failure. A feed that is down for an
+      # afternoon would otherwise file twenty-four of them, and twenty-four
+      # notifications is the same as none.
+      - name: Say so, out loud, if a pass could not be recovered
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          TITLE="read boyceville is failing"
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="A pass of the reader failed three times in a row and could not be recovered.
+          
+          - first failure: ${FIRST_FAIL:-unknown}
+          - failed passes this run: ${FAILED_PASSES:-unknown}
+          - run log: $RUN
+          
+          The loop kept going after the failure, so later passes in the same hour may have
+          succeeded — check the log before assuming the feed is down. The two Emmert sites
+          hold their last good price for 14 hours and then show \"Call for today's price\",
+          so there is time.
+          
+          This issue is reused rather than reopened per failure. Close it when the feed is
+          healthy again."
+          n=$(gh issue list --repo "${{ github.repository }}" --search "$TITLE in:title" \
+                --state all --limit 1 --json number,state --jq '.[0].number // empty' || true)
+          if [ -n "$n" ]; then
+            gh issue reopen "$n" --repo "${{ github.repository }}" 2>/dev/null || true
+            gh issue comment "$n" --repo "${{ github.repository }}" --body "$BODY" || true
+          else
+            gh issue create --repo "${{ github.repository }}" --title "$TITLE" --body "$BODY" || true
+          fi
