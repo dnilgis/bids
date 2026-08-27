@@ -1,0 +1,96 @@
+# Refresh the grey pins: pull agsist's elevator directory and rebuild the map.
+#
+# WHY IT IS SEPARATE FROM THE READER
+#
+# poll.yml runs every ten minutes and must stay a single short pass. This
+# changes when a co-op opens a site or when the Barchart harvest reruns —
+# monthly, in practice — so putting it on the reader's schedule would be
+# thousands of pointless fetches to learn nothing.
+#
+# WHY IT IS SEPARATE FROM agsist
+#
+# agsist writes the directory, because that is where the Barchart key and the
+# full national pull live, and pulling a licensed feed into this public
+# repository would republish it from a second place. What crosses over carries
+# no prices at all: company, branch, address, town, state, ZIP, county, FIPS,
+# coordinates, phone, website and Barchart's own facility ids.
+#
+# The fetch refuses to replace good data with bad — a 404, a body that is not
+# JSON, a file with no elevators, or one that has lost a third of its records
+# all exit non-zero and leave the existing file alone. Proven against all five
+# before shipping. A stale directory is safe; a silently emptied one is not.
+
+name: sync known elevators
+
+on:
+  schedule:
+    # Sunday 06:40 UTC — nothing else in this repository wants that minute, and
+    # the harvest it follows runs on the 2nd of the month.
+    - cron: "40 6 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-known
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch the directory from agsist
+        run: python scripts/sync_known.py
+
+      # zipcodes carries the ZIP and town centroids offline, which is what
+      # places anything the directory did not come with a coordinate for, and
+      # what the state boxes and the self-consistency checks are built from.
+      - name: Place them
+        run: |
+          pip install --quiet zipcodes
+          python scripts/build_geocodes.py
+
+      - name: Rebuild the directory the map reads
+        run: node scripts/build_directory.mjs
+
+      - name: Say what changed
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p = pathlib.Path("data/directory.json")
+          if not p.exists():
+              print("### sync\n\nNothing was rebuilt."); raise SystemExit
+          d = json.loads(p.read_text()); c = d["counts"]
+          print("### elevator map\n")
+          print("| | |\n|---|---|")
+          print("| elevators known | %s |" % c["total"])
+          for k, v in sorted((c.get("byStatus") or {}).items()):
+              print("| %s | %s |" % (k, v))
+          print("| placed | %s |" % c["placed"])
+          for k, v in sorted((c.get("byPrecision") or {}).items()):
+              print("| at a %s point | %s |" % (k, v))
+          print("| possible duplicates, flagged not merged | %s |" % c.get("duplicateSuspects", 0))
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add data/known-elevators.json data/directory.json geocodes/places.json
+          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
+          n=$(node -e "process.stdout.write(String(require('./data/directory.json').counts.total))")
+          git commit -m "directory: $n elevators known [skip ci]"
+          git push
