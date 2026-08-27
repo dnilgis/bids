@@ -358,6 +358,33 @@ def main():
             if lat is None:
                 kstats["unplaced"] += 1
                 continue
+            # SELF-CONSISTENCY, USING ONLY WHAT THE RECORD ITSELF CARRIES.
+            # The first live harvest gave 695 usable coordinates whose median
+            # distance from their OWN ZIP's centre is 2.7 km, p99 19.3 km. So
+            # the feed is good, and the handful that are not stand out sharply:
+            # one Scoular record sat 395 km from its ZIP, and one facility
+            # claimed Indiana while carrying an Illinois ZIP.
+            zc = None
+            if z:
+                for rec in zipcodes.filter_by(zip_code=z) or []:
+                    if rec.get("lat") is not None and usable(float(rec["lat"]), float(rec["long"])):
+                        zc = (float(rec["lat"]), float(rec["long"]), rec.get("state"))
+                        break
+            if zc and zc[2] and st and zc[2].upper() != st:
+                # Not a near miss, a contradiction: the record cannot be in two
+                # states at once, and there is no way to know which half is right.
+                kstats["rejected"] += 1
+                continue
+            suspect = None
+            if zc and prec == "street":
+                dk = km(lat, lon, zc[0], zc[1])
+                if dk > 20:
+                    # KEPT, AND SAID SO. At 20 km we are past the 99th
+                    # percentile, but a country elevator really can sit that far
+                    # from the middle of its ZIP. Dropping it would lose a real
+                    # facility to avoid one questionable dot; showing it
+                    # unmarked would state a location we do not believe.
+                    suspect = "%.0f km from the centre of its own ZIP %s" % (dk, z)
             if not in_state(lat, lon, st, boxes):
                 kstats["rejected"] += 1
                 continue
@@ -365,6 +392,7 @@ def main():
             known[kid] = {"lat": round(lat, 5), "lon": round(lon, 5),
                           "precision": prec, "via": via,
                           "address": e.get("address"), "url": e.get("url"),
+                          "suspect": suspect,
                           "operator": e.get("operator"), "branch": e.get("branch"),
                           "location": e.get("location"), "state": st,
                           "phone": e.get("phone"), "source": e.get("source") or "unknown"}

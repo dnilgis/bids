@@ -135,10 +135,14 @@ const known = Object.entries(knownRaw).map(([kid, k]) => {
     commodities: null, rows: null, checkedAt: null, pricedAt: null,
     placed: true, lat: k.lat, lon: k.lon, precision: k.precision,
     branch: k.branch || null,
+    address: k.address || null,
+    suspect: k.suspect || undefined,
     knownFrom: k.source,
-    why: dup
-      ? "we already read an elevator in this town — may be the same yard under another name"
-      : "known to exist; no adapter for it yet",
+    why: k.suspect
+      ? "known to exist; no adapter yet — and its coordinate is " + k.suspect
+      : dup
+        ? "we already read an elevator in this town — may be the same yard under another name"
+        : "known to exist; no adapter for it yet",
     duplicateSuspect: dup || undefined,
   };
 });

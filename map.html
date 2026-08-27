@@ -63,6 +63,12 @@
      visibility and the pale middle carries the "this is the town, not the
      elevator" signal, which is what the fade was for in the first place. */
   .pin.town{fill-opacity:.28;stroke:currentColor;stroke-width:1.3}
+  /* A coordinate we do not fully believe. Six of the first 950, each more than
+     20 km from the centre of its own ZIP — one of them 395 km, and one sitting
+     across the Mississippi from the state it claims. Kept, because dropping a
+     real elevator to avoid a questionable dot is the worse trade, but never
+     drawn as though it were certain. */
+  .pin.suspect{stroke:var(--gold);stroke-width:1.6}
   .pin:hover,.pin.on{stroke:var(--ink);stroke-width:1.4}
   .legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 0;font-size:12.5px;color:var(--mute)}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
@@ -101,6 +107,7 @@
     <span><i style="background:var(--refuse)"></i>refusing or broken</span>
     <span><i style="background:var(--known);opacity:.55"></i>known, not read yet</span>
     <span>hollow ring = town centre, not the elevator itself</span>
+    <span><i style="background:transparent;border:2px solid var(--gold);width:7px;height:7px"></i>coordinate we do not fully trust</span>
     <span id="dupnote"></span>
   </div>
 
@@ -177,6 +184,7 @@ function draw(us, dir) {
        defeats the one thing Sig asked these for. */
     if (e.precision === "town" && e.status !== "known") c.classList.add("town");
     if (e.status === "known") c.setAttribute("r", 3);
+    if (e.suspect) c.classList.add("suspect");
     c.dataset.i = String(dir.elevators.indexOf(e));
     pins.appendChild(c);
   });
@@ -196,7 +204,9 @@ function draw(us, dir) {
       '</dl>' +
       (e.precision === "town" ? '<div class="warn">Pin is the centre of ' + esc(e.location) +
         ', not the elevator. No street address on file yet.</div>' : '') +
-      (e.why ? '<div class="warn">' + esc(e.why) + '</div>' : '');
+      (e.address ? '<div class="op" style="margin-top:5px">' + esc(e.address) + '</div>' : '') +
+      (e.suspect ? '<div class="warn">Coordinate is ' + esc(e.suspect) + ' — treat the pin as approximate.</div>' : '') +
+      (e.why && !e.suspect ? '<div class="warn">' + esc(e.why) + '</div>' : '');
     card.hidden = false;
     var r = box.getBoundingClientRect();
     var x = evt.clientX - r.left + 14, y = evt.clientY - r.top + 14;
@@ -239,12 +249,23 @@ function draw(us, dir) {
     " placed · " + (p.street || 0) + " at a street address, " + (p.town || 0) + " at a town centre.";
 
   var gaps = dir.elevators.filter(function (e) { return !e.placed || e.status !== "read"; });
-  document.querySelector("#gaps tbody").innerHTML = gaps.map(function (e) {
+  /* Unplaced and suspect first: those are ours to fix, and they would otherwise
+     be buried under several hundred elevators that merely need an adapter. */
+  gaps.sort(function (a, b) {
+    var rank = function (e) { return !e.placed ? 0 : e.suspect ? 1 : e.status !== "read" && e.status !== "known" ? 2 : 3; };
+    return rank(a) - rank(b) || (a.state || "").localeCompare(b.state || "");
+  });
+  var SHOW = 250;
+  document.querySelector("#gaps tbody").innerHTML = gaps.slice(0, SHOW).map(function (e) {
     return "<tr><td>" + esc(e.operator) + "</td><td>" + esc(e.location) + "</td><td>" +
       esc(e.state) + '</td><td class="why">' + esc(e.why || e.status) + "</td></tr>";
   }).join("");
+  var unpl = gaps.filter(function (e) { return !e.placed; }).length;
+  var susp = gaps.filter(function (e) { return e.suspect; }).length;
   document.getElementById("gapnote").textContent = gaps.length
-    ? gaps.length + " we cannot draw or cannot read. This list is the work queue."
+    ? gaps.length + " we cannot draw or cannot read — " + unpl + " with no location, " +
+      susp + " with a coordinate to check, the rest waiting on an adapter." +
+      (gaps.length > SHOW ? " Showing the first " + SHOW + "." : "")
     : "Nothing. Every elevator on file is read and placed.";
   document.getElementById("gaps").hidden = !gaps.length;
 
