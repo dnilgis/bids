@@ -76,6 +76,18 @@ if node scripts/status.mjs; then
 else
   echo "::warning::dashboard bake failed; committing the price without it"
 fi
+
+# THE DIRECTORY, REBUILT EVERY PASS THAT COMMITS.
+# data/directory.json is what map.html draws: who we know about, where they
+# are, and why the ones with no pin have no pin. It is pure local computation
+# over files already in the checkout -- no network, milliseconds -- so it costs
+# nothing to keep exact. Same fail-open rule as the dashboard: a map that
+# cannot be rebuilt must never stop a price reaching the repo.
+if node scripts/build_directory.mjs; then
+  git add data/directory.json
+else
+  echo "::warning::directory bake failed; committing the price without it"
+fi
 # The message carries the front month, so `git log --oneline` reads
 # as a price history rather than a list of identical commits, and a
 # heartbeat says so instead of impersonating a price change.

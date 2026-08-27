@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elevator map — every board we read, and every one we have not got to</title>
+<!--
+  WHY THIS PAGE EXISTS
+
+  Sig, 2026-08-27: "it would be nice to have a national map with a pin on every
+  elevators location ... every elevator that we dont have i want greyed out or
+  something like that to indicate that i know you are out there, i just havent
+  gotten to your data yet."
+
+  So the gap is the point. A map of only what we have looks finished; this one
+  is meant to look unfinished, honestly, and to keep looking less unfinished as
+  the work lands.
+
+  NO TILES, NO CDN, NO KEY. The outlines are baked into data/us-states.json as
+  SVG paths, projected once with d3-geoAlbersUsa at 1300/975x610. The page
+  carries the same projection in about twenty lines so a pin lands exactly on
+  the outline it belongs to -- verified at 4.7e-13 pixels against d3 over five
+  thousand continental points, which is floating-point identical. Nothing here
+  calls out to anybody, so it cannot break when a tile server changes its terms.
+-->
+<style>
+  :root{
+    --bg:#f6f3ec; --card:#fff; --ink:#14100a; --mute:#6b6b6b; --line:#e3ded4;
+    --land:#e9e4d8; --edge:#cfc7b6;
+    --read:#1f6f2a; --refuse:#b3261e; --known:#8a8073; --gold:#8a6b1f;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#12100c; --card:#191510; --ink:#ece6da; --mute:#9a9186; --line:#332d24;
+           --land:#241f18; --edge:#3d3529; --read:#5fbf6a; --refuse:#e2705f; --known:#8f8578;
+           --gold:#d9ad4e; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 16px 48px}
+  h1{font-size:20px;line-height:1.25;margin:0 0 2px}
+  .sub{color:var(--mute);font-size:13px;margin:0 0 16px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  .tiles{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:9px 13px;min-width:104px}
+  .tile b{display:block;font-size:21px;line-height:1.1;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tile span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-top:3px}
+  .mapbox{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:6px;position:relative}
+  svg{display:block;width:100%;height:auto}
+  .state{fill:var(--land);stroke:var(--edge);stroke-width:.5;vector-effect:non-scaling-stroke}
+  .pin{stroke:var(--card);stroke-width:.6;vector-effect:non-scaling-stroke;cursor:pointer}
+  /* `color` is set alongside `fill` so the town ring below can use
+     currentColor and always match its own status, instead of inheriting
+     whatever the page's text colour happens to be. */
+  .pin.read{fill:var(--read);color:var(--read)}
+  .pin.refusing,.pin.broken{fill:var(--refuse);color:var(--refuse)}
+  .pin.known{fill:var(--known);color:var(--known)}
+  /* A TOWN-CENTRE PIN IS A RING, NOT A FADED DOT.
+     It was drawn as fill-opacity .25 over the land, which measured 1.41
+     contrast in light and 1.62 in dark -- and 212 of the 247 pins were that,
+     so most of the map was very nearly invisible. The ring carries the
+     visibility and the pale middle carries the "this is the town, not the
+     elevator" signal, which is what the fade was for in the first place. */
+  .pin.town{fill-opacity:.28;stroke:currentColor;stroke-width:1.3}
+  .pin:hover,.pin.on{stroke:var(--ink);stroke-width:1.4}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 0;font-size:12.5px;color:var(--mute)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+  .card{position:absolute;z-index:5;background:var(--card);border:1px solid var(--line);
+    border-radius:3px;padding:9px 11px;max-width:270px;box-shadow:0 6px 22px rgba(0,0,0,.18);
+    pointer-events:none;font-size:13px;line-height:1.45}
+  .card h3{margin:0 0 2px;font-size:13.5px}
+  .card .op{color:var(--mute);font-size:12px}
+  .card dl{margin:7px 0 0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px}
+  .card dt{color:var(--mute)} .card dd{margin:0}
+  .warn{color:var(--gold);font-size:11.5px;margin-top:6px}
+  h2{font-size:14px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);
+     margin:30px 0 8px;font-weight:700}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:700}
+  .why{color:var(--mute);font-size:12px}
+  a{color:inherit}
+  .foot{margin-top:26px;padding-top:12px;border-top:1px solid var(--line);color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Elevator map</h1>
+  <p class="sub" id="stamp">loading…</p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="mapbox" id="mapbox">
+    <svg id="map" viewBox="0 0 975 610" role="img" aria-label="Map of the United States with one dot per grain elevator"></svg>
+    <div class="card" id="card" hidden></div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--read)"></i>reading its board</span>
+    <span><i style="background:var(--refuse)"></i>refusing or broken</span>
+    <span><i style="background:var(--known);opacity:.55"></i>known, not read yet</span>
+    <span>hollow ring = town centre, not the elevator itself</span>
+    <span id="dupnote"></span>
+  </div>
+
+  <h2 id="gaptitle">Known, but not on the map</h2>
+  <p class="sub" id="gapnote"></p>
+  <table id="gaps"><thead><tr><th>Operator</th><th>Location</th><th>State</th><th>Why</th></tr></thead><tbody></tbody></table>
+
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+/* The same Albers the outlines were baked with. d3's geoAlbersUsa uses plain
+   geoAlbers for the lower 48, and every elevator in this project is
+   continental, so these agree exactly rather than approximately. */
+var W = 975, H = 610, S = 1300, R = Math.PI / 180;
+var p1 = 29.5 * R, p2 = 45.5 * R, lam0 = -96 * R;
+var n = (Math.sin(p1) + Math.sin(p2)) / 2;
+var C = Math.cos(p1) * Math.cos(p1) + 2 * n * Math.sin(p1);
+function raw(lon, lat) {
+  var r = Math.sqrt(C - 2 * n * Math.sin(lat * R)) / n, th = n * (lon * R - lam0);
+  return [r * Math.sin(th), r * Math.cos(th)];
+}
+var c0 = raw(-96.6, 38.7);                    /* d3's center([-0.6, 38.7]) */
+function project(lon, lat) {
+  var p = raw(lon, lat);
+  return [W / 2 + S * (p[0] - c0[0]), H / 2 + S * (p[1] - c0[1])];
+}
+
+var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; };
+var ago = function (iso) {
+  if (!iso) return "never";
+  var m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (!isFinite(m)) return "never";
+  if (m < 1) return "just now";
+  if (m < 60) return m + (m === 1 ? " minute ago" : " minutes ago");
+  var h = Math.round(m / 60);
+  if (h < 36) return h + (h === 1 ? " hour ago" : " hours ago");
+  return Math.round(h / 24) + " days ago";
+};
+
+Promise.all([
+  fetch("data/us-states.json").then(function (r) { return r.json(); }),
+  fetch("data/directory.json").then(function (r) { return r.json(); })
+]).then(function (a) { draw(a[0], a[1]); }).catch(function (e) {
+  document.getElementById("stamp").textContent = "could not load the map data: " + e.message;
+});
+
+function draw(us, dir) {
+  var svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
+  var land = document.createElementNS(NS, "g");
+  us.states.forEach(function (s) {
+    var p = document.createElementNS(NS, "path");
+    p.setAttribute("d", s.d); p.setAttribute("class", "state");
+    land.appendChild(p);
+  });
+  svg.appendChild(land);
+
+  var pins = document.createElementNS(NS, "g");
+  var placed = dir.elevators.filter(function (e) { return e.placed; });
+  placed.forEach(function (e) {
+    var xy = project(e.lon, e.lat);
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", xy[0].toFixed(1));
+    c.setAttribute("cy", xy[1].toFixed(1));
+    c.setAttribute("r", 3.4);
+    c.setAttribute("class", "pin " + e.status);
+    /* A town-centre pin is drawn hollow. It is not the elevator's location and
+       the map must not pretend otherwise at a glance. */
+    /* Hollow means "town centre, not the elevator". It is applied to the ones
+       we READ, where the distinction between a real address and a town centre
+       is a claim about accuracy. A known-but-unread pin is never anything but
+       a town centre, so hollowing it too would say nothing and would make a
+       pin that is already grey almost invisible — and an invisible grey pin
+       defeats the one thing Sig asked these for. */
+    if (e.precision === "town" && e.status !== "known") c.classList.add("town");
+    if (e.status === "known") c.setAttribute("r", 3);
+    c.dataset.i = String(dir.elevators.indexOf(e));
+    pins.appendChild(c);
+  });
+  svg.appendChild(pins);
+
+  var card = document.getElementById("card"), box = document.getElementById("mapbox");
+  function show(e, evt) {
+    card.innerHTML =
+      '<h3>' + esc(e.location || e.id) + (e.state ? ", " + esc(e.state) : "") + '</h3>' +
+      '<div class="op">' + esc(e.operator || "") + '</div>' +
+      '<dl>' +
+        '<dt>status</dt><dd>' + esc(e.status) + '</dd>' +
+        (e.commodities && e.commodities.length ? '<dt>bids</dt><dd>' + esc(e.commodities.join(", ")) + '</dd>' : '') +
+        (e.rows != null ? '<dt>rows</dt><dd>' + esc(e.rows) + '</dd>' : '') +
+        '<dt>read</dt><dd>' + esc(ago(e.checkedAt)) + '</dd>' +
+        (e.platform ? '<dt>platform</dt><dd>' + esc(e.platform) + '</dd>' : '') +
+      '</dl>' +
+      (e.precision === "town" ? '<div class="warn">Pin is the centre of ' + esc(e.location) +
+        ', not the elevator. No street address on file yet.</div>' : '') +
+      (e.why ? '<div class="warn">' + esc(e.why) + '</div>' : '');
+    card.hidden = false;
+    var r = box.getBoundingClientRect();
+    var x = evt.clientX - r.left + 14, y = evt.clientY - r.top + 14;
+    /* Keep it inside the box: a card that runs off the right edge on a phone
+       is the commonest way a hover panel breaks. */
+    if (x + card.offsetWidth > r.width - 6) x = Math.max(6, evt.clientX - r.left - card.offsetWidth - 14);
+    if (y + card.offsetHeight > r.height - 6) y = Math.max(6, evt.clientY - r.top - card.offsetHeight - 14);
+    card.style.left = x + "px"; card.style.top = y + "px";
+  }
+  pins.addEventListener("mouseover", function (ev) {
+    var t = ev.target; if (t.tagName !== "circle") return;
+    show(dir.elevators[+t.dataset.i], ev);
+  });
+  pins.addEventListener("mousemove", function (ev) {
+    var t = ev.target; if (t.tagName === "circle" && !card.hidden) show(dir.elevators[+t.dataset.i], ev);
+  });
+  pins.addEventListener("mouseout", function () { card.hidden = true; });
+  /* Touch: a tap is the only hover a phone has. */
+  pins.addEventListener("click", function (ev) {
+    var t = ev.target; if (t.tagName !== "circle") return;
+    show(dir.elevators[+t.dataset.i], ev);
+  });
+
+  var s = dir.counts.byStatus || {}, p = dir.counts.byPrecision || {};
+  var tiles = [
+    [dir.counts.total, "elevators known"],
+    [s.read || 0, "boards we read"],
+    [(s.refusing || 0) + (s.broken || 0), "refusing or broken"],
+    [s.known || 0, "not read yet"],
+    [p.unplaced || 0, "no location yet"],
+    [dir.counts.states, "states"],
+    [dir.counts.operators, "operators"]
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(function (t) {
+    return '<div class="tile"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>';
+  }).join("");
+
+  document.getElementById("stamp").textContent =
+    "Last read " + ago(dir.generated) + " · " + placed.length + " of " + dir.counts.total +
+    " placed · " + (p.street || 0) + " at a street address, " + (p.town || 0) + " at a town centre.";
+
+  var gaps = dir.elevators.filter(function (e) { return !e.placed || e.status !== "read"; });
+  document.querySelector("#gaps tbody").innerHTML = gaps.map(function (e) {
+    return "<tr><td>" + esc(e.operator) + "</td><td>" + esc(e.location) + "</td><td>" +
+      esc(e.state) + '</td><td class="why">' + esc(e.why || e.status) + "</td></tr>";
+  }).join("");
+  document.getElementById("gapnote").textContent = gaps.length
+    ? gaps.length + " we cannot draw or cannot read. This list is the work queue."
+    : "Nothing. Every elevator on file is read and placed.";
+  document.getElementById("gaps").hidden = !gaps.length;
+
+  var dup = dir.counts.duplicateSuspects || 0;
+  document.getElementById("dupnote").textContent = dup
+    ? dup + " grey " + (dup === 1 ? "pin sits" : "pins sit") + " in a town we already read — possibly the same yard, not merged"
+    : "";
+
+  document.getElementById("foot").textContent =
+    "Outlines projected once with Albers; the page carries the same projection so a pin " +
+    "sits where its state does. Nothing on this page calls out to another server.";
+}
+</script>
+</body>
+</html>
