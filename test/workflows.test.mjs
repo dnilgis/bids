@@ -108,15 +108,41 @@ test("a nested mapping is NOT a block, and is still checked", () => {
    waiting for the next scheduled run."
    Three separate promises, and each gets its own assertion below.
    ══════════════════════════════════════════════════════════════════════════ */
-test("the trading-window cron asks ONCE an hour, not six times", () => {
+test("the trading-window cron asks a FEW times an hour, and each fire is short", () => {
+  /* REVERSED 2026-08-27, and this is the assertion that was most wrong.
+     It required exactly one fire an hour so the job could loop for fifty
+     minutes inside it. Counted over every commit in the repository -- a commit
+     happens on every pass, so this is an exact record of whether the reader
+     ran -- that change cost two thirds of the coverage it was meant to buy:
+
+         BEFORE the 50-minute loop   94 of 116 weekday hours   81.0%
+         AFTER  the 50-minute loop    8 of  26 weekday hours   30.8%
+
+     and on 2026-08-27 the repository went six hours with eighteen fires due
+     and none arriving, with nothing queued, nothing cancelled and nothing red,
+     while push-triggered workflows in the same repository ran normally.
+     A job holding a runner for fifty of every sixty minutes is a persistent
+     server as far as the scheduler is concerned.
+
+     So: several short fires, not one long one. Two is too few to survive a
+     drop, six was measured getting one or two through, and three at twenty
+     minutes leaves no in-window wait longer than the old loop's own gap. */
   const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
   const crons = [...y.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1]);
   const window_ = crons.find((c) => /12-21/.test(c));
   assert.ok(window_, "the trading-window cron is gone");
-  const minutes = window_.split(" ")[0];
-  assert.doesNotMatch(minutes, /,/,
-    `the window cron still asks ${minutes.split(",").length} times an hour — GitHub was ` +
-    "measured delivering one to two of those, which is what the loop replaces");
+  const mins = window_.split(" ")[0].split(",").map(Number);
+  assert.ok(mins.length >= 6,
+    `the window cron asks ${mins.length} times an hour; Sig asked for a read every ten minutes`);
+  const gaps = mins.slice(1).map((m, i) => m - mins[i]);
+  assert.ok(Math.max(...gaps) <= 10,
+    `fires are ${Math.max(...gaps)} minutes apart; the ask is every ten`);
+  /* AND THE ASK IS NOT THE CADENCE. Measured 2026-08-18 to 08-26 with GitHub's
+     own incidents excluded, this exact cron delivered 66 of 380 fires — 17.4%,
+     a mean of 1.7 reads an hour. The workflow must say so where the next
+     person reads it, or they will believe the schedule. */
+  assert.match(y, /17\.4%|66 delivered/,
+    "the cron does not record what GitHub actually delivers, so it reads as a promise");
 });
 
 test("one pass of the reader is ONE THING, so it can be called in a loop", () => {
@@ -151,22 +177,115 @@ test("a pass that cannot be recovered does not cost the rest of the hour", () =>
     "the step does not end red when a pass failed — the failure would be invisible");
 });
 
-test("the loop stops BEFORE the next fire, so runs cannot queue and be cancelled", () => {
+test("NOTHING the scheduler starts may hold a runner for more than one pass", () => {
+  /* The two tests this replaces policed how LONG the scheduled loop ran and
+     WHICH cron it was tied to. Both are moot: no schedule loops at all now.
+     What has to be guarded instead is the property that matters -- a run
+     GitHub starts must be a single short pass -- and it is guarded twice, in
+     the loop length and in the job's own ceiling, because either one alone
+     could be relaxed by accident. */
   const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
-  const m = y.match(/event\.schedule == '[^']+' && '(\d+)'/);
-  assert.ok(m, "the scheduled loop length is not stated");
-  assert.ok(Number(m[1]) < 60,
-    `the loop runs ${m[1]} minutes against an hourly cron — the next run would queue behind it`);
+  assert.match(y, /LOOP_MINUTES: \$\{\{ inputs\.loop_minutes \|\| '0' \}\}/,
+    "a scheduled run can still be given a loop length; it must default to a single pass");
+  assert.doesNotMatch(y, /event\.schedule == '[^']+' && '\d+'/,
+    "a cron is still wired to a loop length — that is the change that cost 50 points of coverage");
+  const ceiling = Number((y.match(/^    timeout-minutes: (\d+)/m) || [])[1]);
+  assert.ok(ceiling > 0 && ceiling <= 20,
+    `the reader's ceiling is ${ceiling} minutes; a single 2-minute pass needs nothing like an hour`);
 });
 
-test("a hand-fired run does NOT loop, because it holds the concurrency lock", () => {
+test("the loop machinery survives, so the cadence can be raised without more fires", () => {
+  /* Keeping it is deliberate. If the scheduler ever starts dropping short
+     fires again, reading repeatedly inside one fire is still the only lever
+     that does not ask GitHub for more of them -- it just cannot be the
+     DEFAULT, which is what this repository learned the hard way. */
   const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
-  assert.match(y, /event\.schedule == '[^']+' && '\d+' \|\| '0'/,
-    "a manually fired run would loop too, locking out the next one for the whole hour");
-  /* And the loop is tied to ONE named cron, not to "any schedule" — which is
-     what stops the overnight and weekend fires looping as well. */
-  const named = y.match(/event\.schedule == '([^']+)'/)[1];
-  assert.match(named, /12-21/, `the loop is tied to "${named}", which is not the trading-window cron`);
+  assert.match(y, /while : ;/, "the loop was deleted rather than defaulted off");
+  assert.match(y, /loop_minutes/, "a hand-fired run can no longer ask for a loop");
+});
+
+test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
+  /* Sig, 2026-08-27: "i want this runnng at least every ten minutes during
+     trading hours, then every hour off hours."
+
+     poll.yml asks for exactly that. What GitHub delivered the last time it
+     asked, 2026-08-18 to 08-26 with GitHub's own incidents excluded, was 66 of
+     380 fires — 17.4%, a mean of 1.7 reads an hour. So the ask alone is a wish,
+     and something outside GitHub cron has to do the asking.
+
+     This test exists so that nobody deletes worker-scheduler/ believing the
+     cron in poll.yml is what delivers the cadence. */
+  const wt = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8");
+  const crons = [...wt.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const win = crons.find((c) => /12-21/.test(c));
+  assert.ok(win, "the external scheduler has no trading-window cron");
+  assert.match(win, /^\*\/10 |^(\d+,){5,}/, `the external trading cron is "${win}", not every ten minutes`);
+  assert.ok(crons.some((c) => /0-11,22-23/.test(c)), "no off-hours cron on the external scheduler");
+  assert.ok(crons.some((c) => /\* \* 6,0|6,0$/.test(c)), "no weekend cron on the external scheduler");
+
+  const js = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
+  /* The path is built from constants, so assert the constant AND the shape —
+     matching only the assembled string would fail on a correct refactor, and
+     matching only the template would pass while pointing at another
+     workflow. */
+  assert.match(js, /const WORKFLOW = "poll\.yml"/, "the scheduler targets some other workflow");
+  assert.match(js, /const REPO = "bids"/, "the scheduler targets some other repository");
+  assert.match(js, /actions\/workflows\/\$\{WORKFLOW\}\/dispatches/,
+    "the scheduler does not hit the workflow-dispatch endpoint");
+  assert.doesNotMatch(js, /ghp_|github_pat_/, "a token is hard-coded in the Worker");
+  assert.match(js, /env\.GH_PAT/, "the token does not come from the Worker's secrets");
+  /* It must dispatch WITHOUT inputs, so a dispatched run is a single short
+     pass. Passing loop_minutes here would rebuild the fifty-minute job that
+     cost 50 points of coverage, from the outside. */
+  /* Strip comments before this one: the file EXPLAINS in prose why it sends no
+     inputs, and a test that reads prose as code is a test that fails on good
+     documentation. */
+  const code = js.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  assert.doesNotMatch(code, /loop_minutes|inputs:/,
+    "the external scheduler passes workflow inputs; a dispatched run must be one short pass");
+  assert.match(code, /JSON\.stringify\(\{ ref: REF \}\)/,
+    "the dispatch body is not just the ref");
+});
+
+test("AND IT EMAILS: every path that gives up sends mail before it files an issue", () => {
+  /* Sig, 2026-08-27, after six silent hours: "if that doesnt run i want an
+     email sent to me immediately to address the issue."
+
+     An issue is the record. The mail is the alert. Both failure paths — the
+     backup job in poll.yml and the watchdog's own covering read — must send
+     it, both must send it BEFORE filing the issue so the mail is out at the
+     earliest moment, and both must go through the one implementation, or the
+     day it matters one of them will turn out to have drifted. */
+  const dir = new URL("../.github/workflows/", import.meta.url);
+  for (const f of ["poll.yml", "watchdog.yml"]) {
+    const y = readFileSync(new URL(f, dir), "utf8");
+    assert.match(y, /node scripts\/alert-email\.mjs/,
+      `${f} never sends mail; a failure there would reach nobody`);
+    const mail = y.indexOf("node scripts/alert-email.mjs");
+    const issue = y.indexOf("gh issue create");
+    assert.ok(mail > 0 && issue > 0 && mail < issue,
+      `${f} files the issue before sending the mail; the alert must go first`);
+    for (const k of ["SMTP_USER", "SMTP_PASS", "ALERT_TO"])
+      assert.match(y, new RegExp(k + ":\\s*\\$\\{\\{ secrets\\." + k),
+        `${f} does not pass ${k} — the mail step would silently no-op`);
+    assert.doesNotMatch(y, /SMTP_PASS:\s*["'][^$]/, `${f} has a literal password in it`);
+  }
+});
+
+test("the alerter fails OPEN, so a mail problem never hides a feed problem", () => {
+  /* If a missing secret or a sulking mail server made this exit non-zero, the
+     job would go red for the wrong reason and — worse — the issue-filing step
+     after it would never run. The alarm must never be able to silence the
+     record. */
+  const js = readFileSync(new URL("../scripts/alert-email.mjs", import.meta.url), "utf8");
+  assert.match(js, /process\.exit\(0\)/, "the alerter can exit non-zero on a mail failure");
+  assert.doesNotMatch(js, /process\.exit\([1-9]/, "the alerter exits non-zero somewhere");
+  assert.match(js, /::warning title=no alert email sent/,
+    "a missing credential is silent — it must annotate the run");
+  assert.match(js, /replace\(\/\^\\\.\/gm, "\.\."\)/,
+    "the body is not dot-stuffed; a line starting with '.' would truncate the message");
+  assert.doesNotMatch(js, /smtp\.gmail\.com['"]\s*\)?[,;]?\s*\n?\s*const (USER|PASS) = ['"][^'"]/,
+    "credentials must come from the environment, never the file");
 });
 
 test("AND IT ALERTS: a failure opens an issue, and reuses the same one", () => {

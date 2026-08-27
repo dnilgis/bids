@@ -26,13 +26,18 @@ test("the schedule is read out of the workflow, not restated here", () => {
      BOARD IS READ, not when the cron fires. cronsOf() expands the looping cron
      into the minutes the reads actually land on; the overnight and weekend
      crons do not loop and are returned untouched. */
+  /* REVERTED 2026-08-27. The loop is off on every schedule -- see the note
+     beside the crons in poll.yml -- so the cron and the read are the same
+     thing again and cronsOf() has nothing to expand. The expansion machinery
+     stays and is still tested below, because it is what this page will need
+     the day the cadence is raised without raising the fire count. */
   assert.deepEqual(CRONS, [
-    "7,17,27,37,47 12-21 * * 1-5",
+    "3,13,23,33,43,53 12-21 * * 1-5",
     "25 0-11,22-23 * * 1-5",
     "25 */3 * * 6,0",
   ]);
-  assert.deepEqual(rawCronsOf(WF)[0], "7 12-21 * * 1-5",
-    "the raw cron is not what the page should quote, but it must still be readable");
+  assert.deepEqual(rawCronsOf(WF), CRONS,
+    "with no loop, the expanded schedule and the raw schedule must be the same list");
   assert.deepEqual(cronsOf("no crons here"), []);
   assert.deepEqual(cronsOf(undefined), []);
 });
@@ -56,14 +61,17 @@ test("a cron field understands lists, ranges, steps and stars", () => {
 });
 
 test("the trading-day cron fires on the tens past, on weekdays, in its own hours", () => {
+  /* Back on the threes past, every ten minutes, 2026-08-27. The offset is
+     deliberate and unchanged in spirit: :00 is the busiest minute on the
+     platform, so nothing here asks for it. */
   const at = (iso) => cronMatches(CRONS[0], new Date(iso));
-  assert.equal(at("2026-08-20T14:47:00Z"), true, "Thursday 14:47 UTC — the last read of the loop");
-  assert.equal(at("2026-08-20T14:07:00Z"), true, "Thursday 14:07 UTC — the fire itself");
-  assert.equal(at("2026-08-20T14:57:00Z"), false, "past the 50-minute loop, before the next fire");
-  assert.equal(at("2026-08-20T14:54:00Z"), false);
-  assert.equal(at("2026-08-20T11:07:00Z"), false, "before the window");
-  assert.equal(at("2026-08-20T22:07:00Z"), false, "after the window");
-  assert.equal(at("2026-08-22T14:07:00Z"), false, "Saturday");
+  assert.equal(at("2026-08-20T14:03:00Z"), true, "Thursday 14:03 UTC");
+  assert.equal(at("2026-08-20T14:53:00Z"), true, "Thursday 14:53 UTC — the last read of the hour");
+  assert.equal(at("2026-08-20T14:07:00Z"), false, "the sevens belong to the schedule this replaced");
+  assert.equal(at("2026-08-20T14:00:00Z"), false, "the top of the hour is never asked for");
+  assert.equal(at("2026-08-20T11:03:00Z"), false, "before the window");
+  assert.equal(at("2026-08-20T22:03:00Z"), false, "after the window");
+  assert.equal(at("2026-08-22T14:03:00Z"), false, "Saturday");
 });
 
 test("the weekend cron is three-hourly and only at the weekend", () => {
@@ -83,16 +91,15 @@ test("the next run is found in each of the three windows", () => {
      read is 14:57 — no, it is not: the loop stops at :47 and the next FIRE is
      15:07. This is the honest cost of the change and the page must state it
      rather than round it away. */
-  assert.deepEqual(next("2026-08-20T14:49:00Z"), { iso: "2026-08-20T15:07:00.000Z", inMins: 18 });
-  /* And mid-loop, which is where a reader usually is, it really is minutes. */
-  assert.deepEqual(next("2026-08-20T14:12:00Z"), { iso: "2026-08-20T14:17:00.000Z", inMins: 5 });
+  assert.deepEqual(next("2026-08-20T14:49:00Z"), { iso: "2026-08-20T14:53:00.000Z", inMins: 4 });
+  assert.deepEqual(next("2026-08-20T14:12:00Z"), { iso: "2026-08-20T14:13:00.000Z", inMins: 1 });
   /* Just after the window closes, it falls through to the hourly one. */
   assert.equal(next("2026-08-20T21:58:00Z").iso, "2026-08-20T22:25:00.000Z");
   /* Saturday lunchtime: three-hourly, so a long wait — and the board should
      say so rather than implying ten minutes. */
   assert.equal(next("2026-08-22T13:00:00Z").iso, "2026-08-22T15:25:00.000Z");
   /* Before the trading window opens on a weekday. */
-  assert.equal(next("2026-08-20T11:40:00Z").iso, "2026-08-20T12:07:00.000Z");
+  assert.equal(next("2026-08-20T11:40:00Z").iso, "2026-08-20T12:03:00.000Z");
 });
 
 test("no schedule, no claim", () => {
@@ -129,14 +136,11 @@ const INDEX = {
 test("the page carries the three numbers the ticker needs, and nothing else", () => {
   const html = render(INDEX, Date.parse("2026-08-20T14:51:00Z"), CRONS);
   assert.match(html, /data-read="2026-08-20T14:49:30\.654Z"/);
-  assert.match(html, /data-due="2026-08-20T15:07:00\.000Z"/);
+  assert.match(html, /data-due="2026-08-20T14:53:00\.000Z"/);
   assert.match(html, /data-every="10"/, "ten minutes is what the trading-day cron asks for");
   /* The baked words are true at bake time and are what a reader with no
      JavaScript sees. */
-  /* 14:51 sits in the twenty-minute gap between the loop's last read at :47
-     and the next fire at :07. That gap is the honest cost of the change and
-     the page states it rather than rounding it away. */
-  assert.match(html, /read 1 minute ago · next run due in 16 minutes/);
+  assert.match(html, /read 1 minute ago · next run due in 2 minutes/);
 });
 
 test("an overdue board says so in the baked HTML too, not only once the script runs", () => {
@@ -144,9 +148,10 @@ test("an overdue board says so in the baked HTML too, not only once the script r
   /* 14:49:30.654 to 15:36:00.000 is 46 min 29 s, which rounds to 46. The first
      draft of this test said 47 because the arithmetic was done in my head
      without the .654. The code was right.
-     The "was due" figure moved from 43 to 29 when the schedule changed: the
-     last due read is now 15:07, the hourly fire, not 14:53. */
-  assert.match(html, /read 46 minutes ago · next run was due 29 minutes ago/);
+     The "was due" figure has moved twice as the schedule moved: 43 at ten
+     minutes, 29 while the job looped and fired hourly, and back to 43 now that
+     the last due read is 14:53 again. */
+  assert.match(html, /read 46 minutes ago · next run was due 43 minutes ago/);
 });
 
 test("with no schedule the board still says how old the read is and claims nothing more", () => {
@@ -197,12 +202,17 @@ test("day-of-month and day-of-week are an OR when both are set, as cron defines 
    three — a confident wrong answer, which is the one thing the header of this
    file says it exists to prevent.
    ══════════════════════════════════════════════════════════════════════════ */
-test("the loop is read out of the workflow, like the schedule", () => {
-  const loop = loopOf(WF);
-  assert.ok(loop, "the loop settings are no longer findable in the workflow");
-  assert.equal(loop.every, 10);
-  assert.ok(loop.mins > 0 && loop.mins < 60, "a loop that outlasts the hour would queue the next run");
-  assert.equal(loop.cron, "7 12-21 * * 1-5", "the workflow no longer names which cron loops");
+test("with the loop off, the page must not invent one", () => {
+  /* INVERTED 2026-08-27. While the window job looped, this asserted the loop
+     was findable so the ticker could expand the cron into the minutes it
+     really read at. The loop is now off on every schedule -- it was measured
+     costing two thirds of the reader's coverage, 81% of weekday hours down to
+     31% -- so the ONLY safe answer here is null. A page that reads a loop out
+     of a workflow that has none would promise a read every ten minutes that
+     nothing is going to perform, which is the confident wrong answer this
+     file exists to prevent. */
+  assert.equal(loopOf(WF), null,
+    "poll.yml no longer loops on any schedule; claiming otherwise overstates the cadence");
   assert.equal(loopOf("nothing like a workflow"), null);
 });
 
@@ -220,10 +230,11 @@ test("ONLY the looping cron is expanded — the quiet hours stay quiet", () => {
     "overnight, the next read must be the next HOUR, not ten minutes away");
 });
 
-test("mid-loop, the page says the next read is minutes away, not the better part of an hour", () => {
+test("inside the trading window the next read is minutes away, not the better part of an hour", () => {
   const t = Date.parse("2026-08-26T14:12:00Z");
   const mins = Math.round((nextFire(CRONS, t) - t) / 60000);
-  assert.equal(mins, 5, `the page would have said ${mins} minutes`);
+  assert.equal(mins, 1, `the page would have said ${mins} minutes`);
+  assert.ok(mins <= 10, "six fires an hour means no in-window wait may exceed ten minutes");
 });
 
 test("expandLoop refuses to overstate a cadence it cannot vouch for", () => {
