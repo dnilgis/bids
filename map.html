@@ -27,11 +27,11 @@
   :root{
     --bg:#f6f3ec; --card:#fff; --ink:#14100a; --mute:#6b6b6b; --line:#e3ded4;
     --land:#e9e4d8; --edge:#cfc7b6;
-    --read:#1f6f2a; --refuse:#b3261e; --known:#8a8073; --gold:#8a6b1f;
+    --read:#1f6f2a; --refuse:#b3261e; --known:#8a8073; --gold:#8a6b1f; --barchart:#1f5f8a;
   }
   @media (prefers-color-scheme:dark){
     :root{ --bg:#12100c; --card:#191510; --ink:#ece6da; --mute:#9a9186; --line:#332d24;
-           --land:#241f18; --edge:#3d3529; --read:#5fbf6a; --refuse:#e2705f; --known:#8f8578;
+           --land:#241f18; --edge:#3d3529; --read:#5fbf6a; --refuse:#e2705f; --known:#8f8578; --barchart:#6cb6e4;
            --gold:#d9ad4e; }
   }
   *{box-sizing:border-box}
@@ -56,6 +56,15 @@
   .pin.read{fill:var(--read);color:var(--read)}
   .pin.refusing,.pin.broken{fill:var(--refuse);color:var(--refuse)}
   .pin.known{fill:var(--known);color:var(--known)}
+  /* THREE POPULATIONS, NOT TWO. Green is a board we read ourselves. Blue is one
+     Barchart is serving today — which is to say, one we have a price for right
+     up until the subscription lapses, and then do not. Grey is an elevator we
+     know exists with nothing behind it at all.
+     Today grey reads zero, because everything we know of that we do not scrape
+     came from Barchart. That is not a bug in the map, it is the shape of the
+     problem: the grey pins arrive with the state licence registries, and when
+     they do the blue ones are the ones with a clock on them. */
+  .pin.barchart{fill:var(--barchart);color:var(--barchart)}
   /* A TOWN-CENTRE PIN IS A RING, NOT A FADED DOT.
      It was drawn as fill-opacity .25 over the land, which measured 1.41
      contrast in light and 1.62 in dark -- and 212 of the 247 pins were that,
@@ -105,7 +114,8 @@
   <div class="legend">
     <span><i style="background:var(--read)"></i>reading its board</span>
     <span><i style="background:var(--refuse)"></i>refusing or broken</span>
-    <span><i style="background:var(--known);opacity:.55"></i>known, not read yet</span>
+    <span><i style="background:var(--barchart)"></i>Barchart serves it, we do not scrape it</span>
+    <span><i style="background:var(--known)"></i>known to exist, nothing behind it</span>
     <span>hollow ring = town centre, not the elevator itself</span>
     <span><i style="background:transparent;border:2px solid var(--gold);width:7px;height:7px"></i>coordinate we do not fully trust</span>
     <span id="dupnote"></span>
@@ -184,6 +194,7 @@ function draw(us, dir) {
        defeats the one thing Sig asked these for. */
     if (e.precision === "town" && e.status !== "known") c.classList.add("town");
     if (e.status === "known") c.setAttribute("r", 3);
+    if (e.status === "known" && e.knownFrom === "barchart") c.classList.add("barchart");
     if (e.suspect) c.classList.add("suspect");
     c.dataset.i = String(dir.elevators.indexOf(e));
     pins.appendChild(c);
@@ -201,6 +212,7 @@ function draw(us, dir) {
         (e.rows != null ? '<dt>rows</dt><dd>' + esc(e.rows) + '</dd>' : '') +
         '<dt>read</dt><dd>' + esc(ago(e.checkedAt)) + '</dd>' +
         (e.platform ? '<dt>platform</dt><dd>' + esc(e.platform) + '</dd>' : '') +
+        (e.knownFrom && e.knownFrom !== "unknown" ? '<dt>known via</dt><dd>' + esc(e.knownFrom) + '</dd>' : '') +
       '</dl>' +
       (e.precision === "town" ? '<div class="warn">Pin is the centre of ' + esc(e.location) +
         ', not the elevator. No street address on file yet.</div>' : '') +
@@ -231,11 +243,14 @@ function draw(us, dir) {
   });
 
   var s = dir.counts.byStatus || {}, p = dir.counts.byPrecision || {};
+  var bc = dir.elevators.filter(function (e) {
+    return e.status === "known" && e.knownFrom === "barchart"; }).length;
   var tiles = [
     [dir.counts.total, "elevators known"],
     [s.read || 0, "boards we read"],
     [(s.refusing || 0) + (s.broken || 0), "refusing or broken"],
-    [s.known || 0, "not read yet"],
+    [bc, "on Barchart only"],
+    [(s.known || 0) - bc, "no source at all"],
     [p.unplaced || 0, "no location yet"],
     [dir.counts.states, "states"],
     [dir.counts.operators, "operators"]

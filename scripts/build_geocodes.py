@@ -314,6 +314,15 @@ def main():
         except Exception as ex:
             kd = {}
             print("could not read %s (%s)" % (KNOWN.name, type(ex).__name__))
+        # WHERE THE FILE CAME FROM, WHEN THE RECORD DOES NOT SAY.
+        # The harvester stamps each record now, but the file already on disk
+        # predates that and every record read `unknown` — which would have made
+        # the map colour 696 Barchart elevators as "source we cannot name".
+        # The file's own `from` line has always carried it, so read that as the
+        # default and let any per-record value win.
+        _from = str(kd.get("from") or "").lower()
+        default_source = ("barchart" if ("getgrainbids" in _from or "bids" in _from)
+                          else (_from.split()[0] if _from else "unknown"))
         for e in (kd.get("elevators") or []):
             st = (e.get("state") or "").upper()
             # THE PRICE ENDPOINT AND THE LOCATIONS ENDPOINT NAME THE SAME
@@ -395,7 +404,7 @@ def main():
                           "suspect": suspect,
                           "operator": e.get("operator"), "branch": e.get("branch"),
                           "location": e.get("location"), "state": st,
-                          "phone": e.get("phone"), "source": e.get("source") or "unknown"}
+                          "phone": e.get("phone"), "source": e.get("source") or default_source}
         print("\nknown-but-not-read: %d at a street point, %d at a ZIP or town centroid, "
               "%d unplaced, %d rejected"
               % (kstats.get("street", 0), kstats.get("town", 0),
