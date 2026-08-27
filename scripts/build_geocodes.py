@@ -316,12 +316,37 @@ def main():
             print("could not read %s (%s)" % (KNOWN.name, type(ex).__name__))
         for e in (kd.get("elevators") or []):
             st = (e.get("state") or "").upper()
-            kid = "%s|%s|%s|%s" % (e.get("operator") or "", e.get("branch") or "",
-                                   e.get("location") or "", st)
+            # THE PRICE ENDPOINT AND THE LOCATIONS ENDPOINT NAME THE SAME
+            # THINGS DIFFERENTLY. A bid row calls the business `facility`; a
+            # locations row calls it `company`. Reading only one of them made
+            # the operator empty for every price-derived entry, which collapsed
+            # three distinct facilities into their neighbours' keys and dropped
+            # the operator count from 66 to 37 without a word.
+            if not e.get("operator"):
+                e["operator"] = e.get("company") or e.get("facility")
+            if not e.get("location"):
+                e["location"] = e.get("city")
+            # Barchart's own facility id is the identity when it sent one;
+            # a name tuple only otherwise. Same rule as the harvester.
+            kid = (str(e.get("elevatorId") or e.get("locationId") or "").strip() or
+                   "%s|%s|%s|%s" % (e.get("operator") or "", e.get("branch") or "",
+                                    e.get("location") or "", st))
             lat = lon = None
-            # A ZIP is a tighter centroid than a town, so try it first.
+            prec, via = "town", "zip-centroid"
+            # BARCHART'S OWN COORDINATE IF IT SENT ONE. The locations response
+            # carries lat/lng and a street address, so most of these need no
+            # geocoding at all -- and a point Barchart holds for the facility
+            # beats any centroid we could derive. Null island is refused here
+            # for the same reason it is refused everywhere else in this file.
+            try:
+                blat, blon = float(e.get("lat")), float(e.get("lng"))
+                if usable(blat, blon):
+                    lat, lon, prec, via = blat, blon, "street", "barchart"
+            except (TypeError, ValueError):
+                pass
+            # A ZIP is a tighter centroid than a town, so try it next.
             z = str(e.get("zip") or "")[:5]
-            if z:
+            if lat is None and z:
                 for rec in zipcodes.filter_by(zip_code=z) or []:
                     if rec.get("lat") is not None and usable(float(rec["lat"]), float(rec["long"])):
                         lat, lon = float(rec["lat"]), float(rec["long"])
@@ -336,14 +361,17 @@ def main():
             if not in_state(lat, lon, st, boxes):
                 kstats["rejected"] += 1
                 continue
-            kstats["town"] += 1
+            kstats[prec] = kstats.get(prec, 0) + 1
             known[kid] = {"lat": round(lat, 5), "lon": round(lon, 5),
-                          "precision": "town", "via": "zip-centroid",
+                          "precision": prec, "via": via,
+                          "address": e.get("address"), "url": e.get("url"),
                           "operator": e.get("operator"), "branch": e.get("branch"),
                           "location": e.get("location"), "state": st,
                           "phone": e.get("phone"), "source": e.get("source") or "unknown"}
-        print("\nknown-but-not-read: placed %d, unplaced %d, rejected %d"
-              % (kstats["town"], kstats["unplaced"], kstats["rejected"]))
+        print("\nknown-but-not-read: %d at a street point, %d at a ZIP or town centroid, "
+              "%d unplaced, %d rejected"
+              % (kstats.get("street", 0), kstats.get("town", 0),
+                 kstats["unplaced"], kstats["rejected"]))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
