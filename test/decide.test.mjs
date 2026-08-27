@@ -42,7 +42,12 @@ test("a moved price writes and stamps a new pricedAt", () => {
 
 test("an unchanged price inside the heartbeat writes nothing", () => {
   const prev = fileAt(T0);
-  const next = fileAt(hoursLater(T0, HEARTBEAT_H - 1));
+  /* HALF the heartbeat, not "heartbeat minus one hour". The old spelling was
+     an hour short of six and became NEGATIVE the moment the heartbeat dropped
+     below one, which tests the clock-went-backwards branch instead of this
+     one. Anything expressed as a fraction of HEARTBEAT_H survives a change to
+     it; anything expressed in hours does not. */
+  const next = fileAt(hoursLater(T0, HEARTBEAT_H / 2));
   const v = decide(prev, next);
   assert.equal(v.write, false);
   assert.equal(v.changed, false);
@@ -89,13 +94,26 @@ test("THE MONDAY MORNING CASE: a quiet weekend is not a dead reader", () => {
     `checkedAt must never fall more than the heartbeat behind, got ${checkAge}h`);
   assert.ok(checkAge < 14,
     "and must stay inside the Emmert Worker's FEED_MAX_AGE_H of 14 hours");
-  assert.ok(writes >= 9 && writes <= 12,
-    `63 quiet hours should cost about 63/${HEARTBEAT_H} commits, got ${writes}`);
+  /* The poll here is HOURLY, so a heartbeat shorter than an hour cannot
+     produce more than one write per poll -- the bound is the poll rate, not
+     the heartbeat. Derived rather than typed, so this survives the next change
+     to HEARTBEAT_H the way the two assertions above it already did. */
+  const perPoll = Math.max(1, HEARTBEAT_H);
+  const expect = 63 / perPoll;
+  assert.ok(writes >= expect * 0.75 && writes <= expect * 1.25,
+    `63 quiet hourly polls at a ${HEARTBEAT_H}h heartbeat should cost about `
+    + `${expect.toFixed(0)} commits, got ${writes}`);
 });
 
-test("a heartbeat costs far fewer commits than writing every poll", () => {
-  /* Ten-minute polls for a full quiet trading day: 54 reads. Writing each
-     would be 54 commits. */
+test("the heartbeat never writes more often than once per HEARTBEAT_H", () => {
+  /* Ten-minute polls for a full quiet trading day: 54 reads over 9 hours.
+     Writing each would be 54 commits. THE INVARIANT IS THE RATE, NOT A COUNT:
+     whatever the heartbeat is set to, a quiet source may not be written more
+     often than once per heartbeat, and must not be written on every poll. This
+     used to assert "at most twice", which is 6h arithmetic wearing the name of
+     a principle -- it failed the moment the heartbeat moved and told us
+     nothing about what had actually broken. */
+  const HOURS = 9;
   let committed = fileAt(T0);
   let t = T0, writes = 0, reads = 0;
   for (let i = 0; i < 54; i++) {
@@ -105,7 +123,41 @@ test("a heartbeat costs far fewer commits than writing every poll", () => {
     if (v.write) { committed = v.file; writes++; }
   }
   assert.equal(reads, 54);
-  assert.ok(writes <= 2, `54 quiet reads should write at most twice, got ${writes}`);
+  assert.ok(writes <= Math.ceil(HOURS / HEARTBEAT_H) + 1,
+    `${HOURS}h of quiet reads may write at most once per ${HEARTBEAT_H}h, got ${writes}`);
+  assert.ok(writes < reads, "a heartbeat that writes on every poll is not a heartbeat");
+});
+
+test("A STAMP THAT MOVES WITHIN THE HOUR — the reason the heartbeat was shortened", () => {
+  /* Sig, 2026-08-27: "i want the prices to be updated with a timestamp even if
+     there was no change to the price, so then i dont wonder if it is broken or
+     not, because the timestamp will be more frequent."
+
+     The concrete failure: on 2026-08-26 the reader ran a healthy pass every
+     eleven minutes from 22:10 to 00:13 and data/boyceville.json kept a
+     checkedAt of 18:36:19Z throughout. Five passes an hour, and the one field
+     a person looks at to decide whether the thing is alive did not move.
+
+     So this is not a test of the constant. It is a test of the PROPERTY the
+     constant exists to deliver: across one hour of realistic passes on a
+     motionless board, the committed checkedAt must advance, and must end the
+     hour no more than the heartbeat behind. */
+  let committed = fileAt(T0);
+  let t = T0;
+  const stamps = new Set([committed.checkedAt]);
+  for (let i = 0; i < 5; i++) {                 // five passes, ~11 minutes apart
+    t = hoursLater(t, 11 / 60);
+    const v = decide(committed, fileAt(t, 4.075));
+    if (v.write) committed = v.file;
+    stamps.add(committed.checkedAt);
+  }
+  assert.ok(stamps.size >= 2,
+    `checkedAt must visibly advance inside one quiet hour, saw ${stamps.size} distinct value(s)`);
+  const behind = (Date.parse(t) - Date.parse(committed.checkedAt)) / 36e5;
+  assert.ok(behind <= HEARTBEAT_H,
+    `checkedAt ended ${behind.toFixed(2)}h behind, heartbeat is ${HEARTBEAT_H}h`);
+  assert.equal(committed.pricedAt, T0,
+    "and none of this may move pricedAt, which is the price's own clock");
 });
 
 test("a schema/1 file's `observed` upgrades instead of resetting the price age", () => {

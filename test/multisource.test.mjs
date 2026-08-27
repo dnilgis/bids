@@ -67,16 +67,100 @@ test("3b. exactly one scheduled job writes index.html", () => {
      by luck of the deepEqual. A guard that stops seeing the thing it guards is
      the failure mode this repository has met most often, so the search now
      follows a workflow into the scripts it calls. */
+  /* WIDENED 2026-08-27, AND MADE STRICTER IN THE SAME BREATH.
+     watchdog.yml reads the board when a scheduled fire of poll.yml is dropped
+     -- measured on 2026-08-26, when 20:07 and 21:07 UTC produced no run at all
+     -- and it does that by calling scripts/one-pass.sh, which bakes index.html.
+     So there are now two workflows in the list and the old deepEqual would
+     forbid the redundancy outright.
+
+     But "one writer" was never really about the count of YAML files. It is
+     about there being ONE IMPLEMENTATION, and about two of them never running
+     at the same moment. Both of those are now asserted, and neither was before:
+     a second workflow is allowed only if it reaches index.html through
+     one-pass.sh rather than baking its own, and only if it shares the reader's
+     concurrency group so the two can never overlap. That is a stronger guard
+     than the one it replaces, not a softer one. */
   const dir = join(ROOT, ".github/workflows");
-  const bakers = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).filter((f) => {
+  const files = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
+  const bakers = files.filter((f) => {
     let y = readFileSync(join(dir, f), "utf8");
     for (const s of new Set(y.match(/scripts\/[\w.\-]+\.sh/g) || [])) {
       try { y += "\n" + readFileSync(join(ROOT, s), "utf8"); } catch { /* not ours */ }
     }
     return /node scripts\/(status|dashboard)\.mjs/.test(y) && /index\.html/.test(y);
   });
-  assert.deepEqual(bakers, ["poll.yml"],
-    `index.html is written by ${JSON.stringify(bakers)}; exactly one job may write it`);
+  assert.deepEqual(bakers.sort(), ["poll.yml", "watchdog.yml"],
+    `index.html is written by ${JSON.stringify(bakers)}; only the reader and its watchdog may`);
+
+  for (const f of bakers) {
+    const own = readFileSync(join(dir, f), "utf8");
+    assert.ok(/scripts\/one-pass\.sh/.test(own),
+      `${f} bakes index.html without going through scripts/one-pass.sh -- that is a second implementation`);
+    assert.ok(!/node scripts\/(status|dashboard)\.mjs/.test(own),
+      `${f} runs the baker itself; the bake belongs to one-pass.sh alone`);
+    assert.match(own, /group:\s*read-boyceville/,
+      `${f} writes index.html but is not in the read-boyceville concurrency group, so it can run at the same moment as the reader`);
+  }
+});
+
+test("3d. a job that holds the reader's concurrency group cannot run for six hours", () => {
+  /* THE NINE-HOUR HOLE, PINNED.
+     On 2026-08-27 the reader's last commit was 03:26 UTC and the dashboard sat
+     at "next run was due 9h 18m ago" while githubstatus.com reported Actions
+     fully operational — so the platform was not dropping these fires.
+
+     poll.yml was the only workflow in this repository with no timeout
+     (bushel-probe 20, discover 55, dtn-probe 5, gd-sweep 20, probe 20), so it
+     inherited GitHub's default of SIX HOURS. It is also the only one that
+     holds a concurrency group. One pass hanging on a slow host therefore held
+     `read-boyceville` for up to six hours, and every hourly fire behind it was
+     queued and then cancelled, because GitHub keeps only the newest pending
+     run per group. One hang, six or seven lost reads, and nothing goes red
+     because the run has not finished — which is why it was invisible.
+
+     A ceiling under the hour is what makes a stuck job die before its
+     successor arrives instead of eating it. */
+  const dir = join(ROOT, ".github/workflows");
+  const files = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
+  for (const f of files) {
+    const y = readFileSync(join(dir, f), "utf8");
+    const holdsGroup = /group:\s*read-boyceville/.test(y);
+    /* COUNT JOBS INSIDE THE `jobs:` BLOCK ONLY. Matching every two-space key
+       in the file also catches `schedule:` and `workflow_dispatch:` under
+       `on:`, which made this guard report two jobs in a one-job workflow —
+       a guard that miscounts is a guard that fails for the wrong reason. */
+    const body = y.split(/^jobs:\s*$/m)[1] || "";
+    const jobs = [...body.matchAll(/^  ([a-z][\w-]*):\s*$/gm)].map((m) => m[1]);
+    assert.ok(jobs.length > 0, `${f}: no jobs found — this guard has gone blind`);
+    const ceilings = [...body.matchAll(/^\s*timeout-minutes:\s*(\d+)/gm)].map((m) => Number(m[1]));
+    assert.equal(ceilings.length >= jobs.length, true,
+      `${f} declares ${jobs.length} job(s) but only ${ceilings.length} timeout-minutes; `
+      + "a job with no ceiling gets GitHub's default of 360 minutes");
+    if (holdsGroup) {
+      for (const c of ceilings) {
+        assert.ok(c < 60,
+          `${f} holds the read-boyceville group with a ${c}-minute ceiling; `
+          + "anything an hour or more can swallow the next scheduled fire");
+      }
+    }
+  }
+});
+
+test("3e. every pass of the reader is individually bounded", () => {
+  /* The job ceiling above turns a hang into a lost hour. This turns the same
+     hang into one failed attempt, which the three-attempt retry beside it
+     already recovers. A measured pass over all 255 sources runs 1m20s to
+     2m11s, so the bound is a hang detector, not a deadline. */
+  const dir = join(ROOT, ".github/workflows");
+  for (const f of readdirSync(dir).filter((x) => /\.ya?ml$/.test(x))) {
+    const y = readFileSync(join(dir, f), "utf8");
+    for (const line of y.split("\n")) {
+      if (!/\bbash scripts\/one-pass\.sh/.test(line)) continue;
+      assert.match(line, /timeout \d+[smh] bash scripts\/one-pass\.sh/,
+        `${f} runs one-pass.sh unbounded: ${line.trim()}`);
+    }
+  }
 });
 
 test("3c. every npm script points at a file that exists", () => {

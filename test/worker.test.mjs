@@ -12,6 +12,15 @@ import { run, getPage } from "../worker/src/index.js";
 import { makeRepo, GitHubError, b64encode, b64decode } from "../worker/src/github.js";
 import { Refused } from "../lib/board.mjs";
 import { serialise } from "../lib/board.mjs";
+import { HEARTBEAT_H } from "../lib/decide.mjs";
+
+/* A GAP THAT IS INSIDE THE HEARTBEAT, WHATEVER THE HEARTBEAT IS.
+   Two tests below poll again "an hour later" to prove a quiet poll writes
+   nothing. One hour was inside the heartbeat while it was six; it is outside
+   it at half an hour, and both tests began failing for a reason that had
+   nothing to do with the worker. Half the heartbeat is inside it by
+   construction. */
+const INSIDE_HEARTBEAT_MS = (HEARTBEAT_H / 2) * 36e5;
 
 const html = readFileSync(new URL("../fixtures/bigriver-2121.html", import.meta.url), "utf8");
 const NOW = "2026-08-17T16:32:26.765Z";
@@ -82,7 +91,7 @@ test("an unchanged price inside the heartbeat commits nothing at all", async () 
   const first = h0.stored;
 
   const h = harness({ existing: first });
-  const later = new Date(Date.parse(NOW) + 36e5).toISOString();
+  const later = new Date(Date.parse(NOW) + INSIDE_HEARTBEAT_MS).toISOString();
   const s = await run(ENV, { now: later, fetchImpl: h.fetchImpl });
   assert.equal(s.wrote, false);
   assert.equal(h.puts, 0, "a quiet poll must not touch the repo");
@@ -192,7 +201,7 @@ test("a quiet poll costs exactly one API read and no write", async () => {
   const h0 = harness();
   await run(ENV, { now: NOW, fetchImpl: h0.fetchImpl });
   const h = harness({ existing: h0.stored });
-  await run(ENV, { now: new Date(Date.parse(NOW) + 36e5).toISOString(), fetchImpl: h.fetchImpl });
+  await run(ENV, { now: new Date(Date.parse(NOW) + INSIDE_HEARTBEAT_MS).toISOString(), fetchImpl: h.fetchImpl });
   const gh = h.calls.filter((c) => c.url.includes("api.github"));
   assert.equal(gh.length, 1);
   assert.equal(gh[0].method, "GET");
