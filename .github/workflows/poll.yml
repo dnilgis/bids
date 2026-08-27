@@ -107,6 +107,30 @@ concurrency:
 jobs:
   read:
     runs-on: ubuntu-latest
+    # ══════════════════════════════════════════════════════════════════════
+    #  A CEILING, BECAUSE THIS JOB HOLDS THE CONCURRENCY GROUP
+    # ══════════════════════════════════════════════════════════════════════
+    #  Added 2026-08-27 after nine straight hours with no commit -- last read
+    #  03:26 UTC, dashboard reading "next run was due 9h 18m ago" -- while
+    #  githubstatus.com reported Actions fully operational. So the fires were
+    #  not being dropped by the platform this time.
+    #
+    #  Every other workflow in this repository sets a timeout: bushel-probe 20,
+    #  discover 55, dtn-probe 5, gd-sweep 20, probe 20. This one, the only one
+    #  that both loops for fifty minutes AND holds a concurrency group, set
+    #  none -- so it inherited GitHub's default of SIX HOURS.
+    #
+    #  That is the exact shape of the outage. One pass hangs on a slow host
+    #  with no timeout of its own; the job sits there for up to six hours; the
+    #  group is held the whole time; every hourly fire queues behind it and is
+    #  then cancelled, because GitHub keeps only the newest pending run per
+    #  group. One hang costs six or seven consecutive reads and leaves nothing
+    #  red to notice, because the run has not finished.
+    #
+    #  58 minutes: comfortably past the 50-minute loop and its slack, and
+    #  safely under the next hourly fire, so a stuck job is dead before its
+    #  successor arrives rather than eating it.
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
 
@@ -165,7 +189,13 @@ jobs:
             pass=$((pass + 1))
             ok=0
             for attempt in 1 2 3; do
-              if bash scripts/one-pass.sh; then ok=1; break; fi
+              # PASS_TIMEOUT, and not just the job ceiling above. A job timeout
+              # turns a hang into a lost hour; an 8-minute pass timeout turns
+              # the same hang into one failed attempt that the retry directly
+              # below already knows how to recover. A full 255-source pass has
+              # measured between 1m20s and 2m11s, so 8 minutes is a hang, not
+              # a slow day.
+              if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
               if [ $attempt -lt 3 ]; then
                 # IMMEDIATELY on the first retry. That is the whole point of it.
                 back=$(( (attempt - 1) * 20 ))
@@ -197,6 +227,84 @@ jobs:
           echo "FIRST_FAIL=$firstfail" >> "$GITHUB_ENV"
           [ $failed -eq 0 ]
 
+  # ══════════════════════════════════════════════════════════════════════════
+  #  THE BACKUP RUN
+  # ══════════════════════════════════════════════════════════════════════════
+  #  Sig, 2026-08-27: "if a run fails i want to immediately trigger a back up
+  #  run."
+  #
+  #  The read job already retries a PASS three times, first retry immediate.
+  #  What it could not survive was the run itself dying: a runner that never
+  #  came up, a checkout that 500'd, setup-node failing to fetch, or the loop
+  #  step ending red because a pass exhausted its three attempts. In every one
+  #  of those cases the hour was simply lost and the board waited for the next
+  #  cron.
+  #
+  #  WHY A SECOND JOB AND NOT A RE-DISPATCH. The obvious shape is a
+  #  workflow_run trigger that fires `gh workflow run` on failure, but GitHub
+  #  will not create a workflow run from an event authenticated with
+  #  GITHUB_TOKEN — that is the platform's recursion guard, and it is not
+  #  negotiable. Re-dispatching would therefore need a personal access token
+  #  with Actions: write on this repository, which is a second long-lived
+  #  credential to hold and rotate for something a second job does for free.
+  #  A job in the same run needs no token, starts in seconds rather than
+  #  waiting on the scheduler, and is visible in the same run log.
+  #
+  #  IT RUNS ONCE, AND IT RUNS SHORT. One recovery pass with its own three
+  #  attempts, no loop. The purpose is to get a current board into the repo
+  #  before the next fire, not to re-serve the hour that was lost — the next
+  #  cron is at most an hour away and the Emmert sides hold a price for
+  #  fourteen. A backup that looped could also still be running when the next
+  #  scheduled fire arrives, and the concurrency group would queue that fire
+  #  behind it: the recovery would start costing the very runs it exists to
+  #  protect.
+  #
+  #  IF THE BACKUP ALSO FAILS, THAT IS WHEN A PERSON IS TOLD. The issue used
+  #  to open on the first red. It now opens only after the retry inside the
+  #  pass, and then the backup run, have both been spent — so an issue means
+  #  the feed is actually down, not that one request timed out.
+  backup:
+    needs: read
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: One recovery pass, immediately
+        env:
+          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
+          PING_SITES: ${{ inputs.ping_sites }}
+        run: |
+          set -uo pipefail
+          echo "the read job ended red; running one recovery pass now"
+          ok=0
+          for attempt in 1 2 3; do
+            if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
+            if [ $attempt -lt 3 ]; then
+              back=$(( (attempt - 1) * 20 ))
+              echo "::warning title=backup attempt $attempt failed::retrying now (attempt $((attempt+1)) of 3)"
+              [ $back -gt 0 ] && sleep $back
+            fi
+          done
+          {
+            echo "### backup run"
+            echo ""
+            echo "| recovered |"
+            echo "|---|"
+            echo "| $( [ $ok -eq 1 ] && echo yes || echo NO )|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ $ok -eq 1 ]; then
+            echo "recovered — the board is current again"
+          else
+            echo "::error title=backup pass failed three times::the feed is down, not flaky"
+          fi
+          [ $ok -eq 1 ]
+
       # AN ALERT THAT REACHES A PERSON. GitHub's own failure email depends on a
       # notification setting nobody remembers choosing, and a red tick on a page
       # you are not looking at is not an alert. An issue is durable, it is on
@@ -213,16 +321,14 @@ jobs:
           set -uo pipefail
           TITLE="read boyceville is failing"
           RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          BODY="A pass of the reader failed three times in a row and could not be recovered.
+          BODY="The reader ended red AND the backup run that follows it also failed three times.
           
-          - first failure: ${FIRST_FAIL:-unknown}
-          - failed passes this run: ${FAILED_PASSES:-unknown}
           - run log: $RUN
           
-          The loop kept going after the failure, so later passes in the same hour may have
-          succeeded — check the log before assuming the feed is down. The two Emmert sites
-          hold their last good price for 14 hours and then show \"Call for today's price\",
-          so there is time.
+          Both the in-pass retry and the backup run have been spent, so this is a feed that is
+          down rather than one request that timed out. Check the run log for which sources
+          refused. The two Emmert sites hold their last good price for 14 hours and then show
+          \"Call for today's price\", so there is time to fix it before anything goes dark.
           
           This issue is reused rather than reopened per failure. Close it when the feed is
           healthy again."

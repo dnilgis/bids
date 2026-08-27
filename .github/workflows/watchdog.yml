@@ -1,0 +1,224 @@
+# Watch the reader, and read the board myself if the reader did not.
+#
+# WHY THIS FILE EXISTS
+#
+# Sig, 2026-08-27: "i want concurrency workflows that watch if a main run is
+# late or something like that, and then it fires as a backup or something like
+# this, i want redundancies on top of reduncdancies."
+#
+# The specific failure this is built for was measured, not imagined. On
+# 2026-08-26 the Actions run list for "read boyceville" goes:
+#
+#     #225  19:23 UTC  manual
+#     #226  22:07 UTC  manual
+#
+# Nothing between them. The scheduled fires at 20:07 and 21:07 did not fail —
+# they never ran at all. GitHub's scheduler is best effort and under load it
+# drops fires silently. A dropped fire produces NO RUN, so there is nothing to
+# go red, nothing to retry, nothing to alert on, and no entry in the run list
+# to notice. Two hours of the trading day simply vanished, and the only
+# evidence was a hole in the commit log that you had to already be looking for.
+#
+# THE THREE LAYERS, AND WHAT EACH ONE CATCHES
+#
+#   1. A pass fails            -> poll.yml retries it three times inside the
+#                                 same run, first retry immediate.
+#   2. The whole read job ends red
+#                              -> poll.yml's `backup` job runs one recovery
+#                                 pass seconds later, in the same run.
+#   3. The run never happens at all
+#                              -> THIS FILE. Nothing inside poll.yml can catch
+#                                 this, because poll.yml did not execute.
+#
+# HOW IT KNOWS, WITHOUT ASKING THE API
+#
+# data/index.json carries `generated`, and poll.mjs rewrites it on every pass
+# whether or not a price moved. one-pass.sh therefore commits on every pass,
+# so the timestamp on the committed index.json is exactly "when the reader last
+# completed a pass". That is a perfect liveness signal sitting in the checkout,
+# free, with no token and no rate limit.
+#
+# It has to be `generated` and NOT a per-source `checkedAt`: before 2026-08-27
+# the heartbeat in lib/decide.mjs held the source files still for six hours at
+# a time, so a healthy quiet reader left them looking stale. `generated` never
+# had that problem.
+#
+# WHY IT READS THE BOARD ITSELF RATHER THAN RE-DISPATCHING poll.yml
+#
+# GitHub will not create a workflow run from an event authenticated with
+# GITHUB_TOKEN — the platform's recursion guard. Re-dispatching would need a
+# personal access token with Actions: write, a second long-lived credential to
+# hold and rotate. Running scripts/one-pass.sh directly needs no token at all,
+# and it is the same script the reader runs, so there is exactly one
+# implementation of "read the board".
+#
+# IT SHARES THE READER'S CONCURRENCY GROUP, DELIBERATELY.
+# Two pollers hitting other people's servers at the same moment is the one
+# thing this must never cause. In the group, a watchdog that fires while the
+# reader is mid-loop simply waits; when the reader's next scheduled fire
+# arrives, GitHub cancels the waiting watchdog in favour of it, which is the
+# precedence we want. By the time a queued watchdog does start, the data is
+# fresh and it exits without making a single request.
+
+name: watchdog
+
+on:
+  schedule:
+    # Twice an hour, at offsets that belong to nothing else. The reader fires
+    # at :07 and :25; :13 and :43 sit clear of those and clear of :00, which is
+    # the busiest minute on the platform.
+    #
+    # TWO FIRES AND NOT ONE, because the watchdog is subject to exactly the
+    # same dropped-fire problem it exists to catch. Two independent chances an
+    # hour is the cheapest possible redundancy for the redundancy.
+    - cron: "13,43 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Poll even if the data looks fresh"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: read-boyceville
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    # The watchdog shares the reader's concurrency group, so it can hold it
+    # too. A watchdog that hangs would be the redundancy causing the outage.
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: How long since the reader last completed a pass
+        id: age
+        run: |
+          set -euo pipefail
+          # THE THRESHOLD DEPENDS ON WHAT THE READER WAS ASKED TO DO THIS HOUR,
+          # and poll.yml asks for three different things. Reading the same
+          # clock GitHub does — UTC — so the two files cannot drift apart when
+          # the clocks change.
+          dow=$(date -u +%u)      # 1-7, Monday first
+          hour=$(date -u +%-H)
+          if [ "$dow" -ge 6 ]; then
+            # Weekend: cron "25 */3 * * 6,0", one pass every three hours.
+            limit=200; regime="weekend, 3-hourly"
+          elif [ "$hour" -ge 12 ] && [ "$hour" -le 21 ]; then
+            # Trading window: cron "7 12-21 * * 1-5", one fire that loops for
+            # 50 minutes reading every 10. A pass should never be 25 minutes
+            # old, even allowing for the ten-minute hole between loops and the
+            # scheduler's usual drift.
+            limit=25;  regime="trading window, 10-minute passes"
+          else
+            # Weekday nights: cron "25 0-11,22-23 * * 1-5", one pass an hour.
+            limit=80;  regime="weekday overnight, hourly"
+          fi
+
+          gen=$(node -e "process.stdout.write(require('./data/index.json').generated||'')")
+          if [ -z "$gen" ]; then
+            echo "data/index.json has no \`generated\` field — treating as stale"
+            age=99999
+          else
+            age=$(( ( $(date -u +%s) - $(date -u -d "$gen" +%s) ) / 60 ))
+          fi
+
+          echo "regime: $regime"
+          echo "last pass: ${gen:-none} (${age} minutes ago), late past ${limit}"
+          {
+            echo "### watchdog"
+            echo ""
+            echo "| regime | last pass | age | late past |"
+            echo "|---|---|---|---|"
+            echo "| $regime | ${gen:-none} | ${age}m | ${limit}m |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "age=$age"     >> "$GITHUB_OUTPUT"
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+          echo "gen=$gen"     >> "$GITHUB_OUTPUT"
+          if [ "$age" -gt "$limit" ]; then
+            echo "late=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=the reader is late::last pass ${age}m ago, expected within ${limit}m ($regime)"
+          else
+            echo "late=false" >> "$GITHUB_OUTPUT"
+            echo "the reader is on time; making no requests"
+          fi
+
+      # ONE PASS, NEVER A LOOP. The watchdog's job is to get a current board
+      # into the repo, not to take over the hour: the reader's next fire is at
+      # most an hour away, and a watchdog that looped would still be holding
+      # the concurrency group when that fire arrived.
+      - name: Read the board, because the reader did not
+        if: steps.age.outputs.late == 'true' || inputs.force == true
+        env:
+          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
+          PING_SITES: "false"
+        run: |
+          set -uo pipefail
+          echo "covering for a missed run: last pass ${{ steps.age.outputs.age }}m ago"
+          ok=0
+          for attempt in 1 2 3; do
+            if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
+            if [ $attempt -lt 3 ]; then
+              back=$(( (attempt - 1) * 20 ))
+              echo "::warning title=watchdog attempt $attempt failed::retrying now (attempt $((attempt+1)) of 3)"
+              [ $back -gt 0 ] && sleep $back
+            fi
+          done
+          [ $ok -eq 1 ] || echo "::error title=watchdog pass failed three times::the feed is down, not just late"
+          [ $ok -eq 1 ]
+
+      # AN ISSUE ONLY WHEN IT IS REALLY BROKEN, NOT MERELY LATE.
+      # The watchdog covering a single dropped fire is the system working, and
+      # filing an issue for it would train everyone to ignore the issues. Three
+      # times the threshold means the reader has been missing for hours AND
+      # this job's own pass could not fix it.
+      - name: Say so if the board has actually gone dark
+        if: always() && steps.age.outputs.late == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGE: ${{ steps.age.outputs.age }}
+          LIMIT: ${{ steps.age.outputs.limit }}
+          GEN: ${{ steps.age.outputs.gen }}
+          RECOVERED: ${{ job.status }}
+        run: |
+          set -uo pipefail
+          if [ "$AGE" -le $(( LIMIT * 3 )) ] && [ "$RECOVERED" = "success" ]; then
+            echo "late by ${AGE}m, covered by this run — no issue needed"
+            exit 0
+          fi
+          TITLE="the bid reader is not running"
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="The watchdog found the reader's last completed pass was **${AGE} minutes ago**
+          (\`data/index.json\` generated ${GEN}); anything over ${LIMIT} minutes is late for this
+          part of the week.
+
+          - watchdog run: $RUN
+          - watchdog's own recovery pass: ${RECOVERED}
+
+          A dropped scheduled fire is normal and the watchdog covers it silently. This issue means
+          either the gap was more than three times the threshold, or the watchdog's own pass could
+          not read the board either. Check the reader's run list first — if there are simply no runs,
+          GitHub dropped the fires; if there are red runs, the feed is refusing us.
+
+          The two Emmert sites hold their last good price for 14 hours and then show
+          \"Call for today's price\", so there is time.
+
+          This issue is reused rather than opened per failure. Close it when the feed is healthy."
+          n=$(gh issue list --repo "${{ github.repository }}" --search "$TITLE in:title" \
+                --state all --limit 1 --json number --jq '.[0].number // empty' || true)
+          if [ -n "$n" ]; then
+            gh issue reopen "$n" --repo "${{ github.repository }}" 2>/dev/null || true
+            gh issue comment "$n" --repo "${{ github.repository }}" --body "$BODY" || true
+          else
+            gh issue create --repo "${{ github.repository }}" --title "$TITLE" --body "$BODY" || true
+          fi
