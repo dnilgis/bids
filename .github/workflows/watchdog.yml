@@ -161,11 +161,12 @@ jobs:
             # Weekend: cron "25 */3 * * 6,0", one pass every three hours.
             limit=200; regime="weekend, 3-hourly"
           elif [ "$hour" -ge 12 ] && [ "$hour" -le 21 ]; then
-            # Trading window: cron "7 12-21 * * 1-5", one fire that loops for
-            # 50 minutes reading every 10. A pass should never be 25 minutes
-            # old, even allowing for the ten-minute hole between loops and the
-            # scheduler's usual drift.
-            limit=25;  regime="trading window, 10-minute passes"
+            # Trading window: a read is asked for every ten minutes, and with
+            # the external scheduler in worker-scheduler/ that is what arrives.
+            # 25 minutes means two consecutive reads have been missed. On GitHub
+            # cron alone this will fire often, which is correct: it is covering
+            # a cadence the cron demonstrably cannot hold on its own.
+            limit=25;  regime="trading window, 10-minute reads"
           else
             # Weekday nights: cron "25 0-11,22-23 * * 1-5", one pass an hour.
             limit=80;  regime="weekday overnight, hourly"
@@ -229,6 +230,32 @@ jobs:
       # filing an issue for it would train everyone to ignore the issues. Three
       # times the threshold means the reader has been missing for hours AND
       # this job's own pass could not fix it.
+      # The watchdog is the last automatic line. If its own pass could not read
+      # the board either, nothing else is going to try before the next fire,
+      # and that is the moment a person has to be told directly.
+      - name: Email, immediately
+        if: failure()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_TO:  ${{ secrets.ALERT_TO }}
+          AGE: ${{ steps.age.outputs.age }}
+          LIMIT: ${{ steps.age.outputs.limit }}
+        run: |
+          node scripts/alert-email.mjs \
+            "bids: the reader is down and the watchdog could not cover it" \
+            "The watchdog found the last completed pass was ${AGE} minutes ago, against a
+          limit of ${LIMIT} for this part of the week, and its own recovery read failed
+          three times.
+
+          run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Every automatic layer has now been spent: the in-pass retry, the backup job, and
+          the watchdog. Check the reader's run list — if there are simply no runs, the
+          scheduler is not firing this repository; if they are red, the feed is refusing us."
+
       - name: Say so if the board has actually gone dark
         if: always() && steps.age.outputs.late == 'true'
         env:

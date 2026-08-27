@@ -60,7 +60,50 @@ on:
     # frequency than a high one, so the fix is to stop asking for a high one:
     # take the fire that reliably arrives and read repeatedly inside it. See
     # LOOP_MINUTES below.
-    - cron: "7 12-21 * * 1-5"
+    #
+    # REVERSED 2026-08-27. THE LOOP WAS THE WRONG FIX AND IT MADE THIS WORSE.
+    # Measured over every commit in the repository, counting weekday hours that
+    # produced at least one commit -- a commit happens on every pass, so this
+    # is an exact record of whether the reader ran:
+    #
+    #     BEFORE the 50-minute loop   94 of 116 weekday hours   81.0%
+    #     AFTER  the 50-minute loop    8 of  26 weekday hours   30.8%
+    #
+    # Asking for one fire an hour and holding the runner for fifty minutes of
+    # it did not buy reliability, it cost two thirds of what was left. On
+    # 2026-08-27 the repository went 6+ hours with eighteen fires due and not
+    # one arriving: no queued runs, no cancelled runs, nothing red, while
+    # push-triggered workflows in the same repository ran fine and a sibling
+    # repository on the same account committed every thirty minutes through
+    # the whole afternoon. GitHub had stopped scheduling THIS repository.
+    #
+    # A job that occupies a runner for fifty of every sixty minutes is, from
+    # the scheduler's point of view, a persistent server, and that is a shape
+    # Actions actively throttles. Three short passes an hour cost about six
+    # minutes of runner time instead of fifty.
+    #
+    # AND THE MEASUREMENT THAT JUSTIFIED THE LOOP WAS CONTAMINATED. It read
+    # "13 UTC 3 runs, 14 UTC 2, 15 UTC 1, 16 UTC 1" against six asked per hour
+    # -- but githubstatus.com records an Actions incident from 15:02 to 18:01
+    # UTC that same day, "Actions jobs failed to start", so the 15 and 16 UTC
+    # readings are the incident, not the scheduler's normal behaviour.
+    #
+    # SIX AN HOUR, AND KNOWING WHAT THAT REALLY BUYS.
+    # Sig wants a read every ten minutes through the trading day. Asked for,
+    # here, in full. What GitHub actually delivered the last time this file
+    # asked for exactly this, counted over every commit from 2026-08-18 to
+    # 2026-08-26 and with both of GitHub's own Actions incidents that week
+    # excluded from the count:
+    #
+    #     380 fires asked      66 delivered      17.4%
+    #     mean 1.7 reads per trading hour, median gap between reads 36 minutes
+    #
+    # So this cron is the ceiling, not the cadence, and asking for six costs
+    # nothing over asking for three. The ten-minute cadence itself has to come
+    # from a scheduler that is not GitHub cron -- see worker-scheduler/ -- which
+    # dispatches this same workflow and is not subject to any of the above.
+    # Each fire is one short pass; nothing here holds a runner.
+    - cron: "3,13,23,33,43,53 12-21 * * 1-5"
     # Hourly the rest of the weekday, so an overnight move is picked up and a
     # reader that has quietly died gets noticed before morning.
     - cron: "25 0-11,22-23 * * 1-5"
@@ -130,7 +173,11 @@ jobs:
     #  58 minutes: comfortably past the 50-minute loop and its slack, and
     #  safely under the next hourly fire, so a stuck job is dead before its
     #  successor arrives rather than eating it.
-    timeout-minutes: 58
+    #  20 and not 58: a scheduled run is now a single pass, measured between
+    #  1m20s and 2m11s over all 255 sources. A ceiling of twenty minutes is ten
+    #  times a normal pass and still leaves the next fire, twenty minutes
+    #  later, a clear runway.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -159,9 +206,10 @@ jobs:
       #  must not cost the 14:15, 14:25 and 14:35 reads as well. The job still
       #  goes RED at the end, so nothing is hidden.
       #
-      #  THE LOOP STOPS BEFORE THE NEXT FIRE, NOT AFTER IT. 50 minutes against
-      #  an hourly cron leaves ten minutes of slack, so a slow pass cannot have
-      #  the next scheduled run queue behind this one and get cancelled.
+      #  THE LOOP IS OFF ON EVERY SCHEDULE as of 2026-08-27 -- see the long
+      #  note beside the crons. The machinery stays because a hand-fired run
+      #  can still use it, and because it is the thing to reach for if the
+      #  cadence ever has to be raised again without raising the fire count.
       - name: Read, commit and tell — for the rest of the hour
         env:
           TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
@@ -178,7 +226,10 @@ jobs:
           # requests to other people's servers for nothing is the opposite of
           # what this change is for. github.event.schedule is the cron string
           # that actually fired, so the loop can be tied to one of them.
-          LOOP_MINUTES: ${{ inputs.loop_minutes || (github.event.schedule == '7 12-21 * * 1-5' && '50' || '0') }}
+          # NEVER ON A SCHEDULE. The input survives so a run fired by hand can
+          # still be asked to loop for an experiment; nothing the scheduler
+          # starts will hold a runner for longer than one pass.
+          LOOP_MINUTES: ${{ inputs.loop_minutes || '0' }}
           EVERY_MINUTES: "10"
         run: |
           set -uo pipefail
@@ -313,8 +364,45 @@ jobs:
       # ONE ISSUE, REOPENED -- not one per failure. A feed that is down for an
       # afternoon would otherwise file twenty-four of them, and twenty-four
       # notifications is the same as none.
-      - name: Say so, out loud, if a pass could not be recovered
+      # ══════════════════════════════════════════════════════════════════
+      #  AND AN EMAIL, BECAUSE AN ISSUE IS NOT AN ALERT
+      # ══════════════════════════════════════════════════════════════════
+      #  Sig, 2026-08-27: "if that doesnt run i want an email sent to me
+      #  immediately to address the issue."
+      #
+      #  A GitHub issue is durable and it is the right RECORD, but it reaches a
+      #  person only if they watch the repository, and the notification setting
+      #  nobody remembers choosing is on, and it misses their filters. On
+      #  2026-08-27 this feed was down for six hours and the first anyone knew
+      #  was Sig opening a browser tab.
+      #
+      #  This step runs BEFORE the issue, so the mail is out of the door at the
+      #  earliest possible moment, and it cannot fail the job: alert-email.mjs
+      #  exits 0 on a missing secret or a bad mail server, with a warning
+      #  annotation, because a mail problem must never be the reason a feed
+      #  problem goes unreported.
+      - name: Email, immediately
         if: failure()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_TO:  ${{ secrets.ALERT_TO }}
+        run: |
+          node scripts/alert-email.mjs \
+            "bids: the reader failed AND the backup failed" \
+            "The scheduled read of the elevator boards failed, the backup run that follows it
+          failed too, and each of them had already retried three times.
+
+          run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Nothing further is scheduled to recover this before the next fire. The two Emmert
+          sites hold their last good price for 14 hours and then show \"Call for today's
+          price\", so there is time, but this one needs a person."
+
+      - name: Say so, out loud, if a pass could not be recovered
+        if: always() && failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
