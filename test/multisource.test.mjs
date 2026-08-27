@@ -99,8 +99,32 @@ test("3b. exactly one scheduled job writes index.html", () => {
       `${f} bakes index.html without going through scripts/one-pass.sh -- that is a second implementation`);
     assert.ok(!/node scripts\/(status|dashboard)\.mjs/.test(own),
       `${f} runs the baker itself; the bake belongs to one-pass.sh alone`);
-    assert.match(own, /group:\s*read-boyceville/,
-      `${f} writes index.html but is not in the read-boyceville concurrency group, so it can run at the same moment as the reader`);
+  }
+
+  /* CORRECTED THE SAME DAY IT WAS WRITTEN.
+     This asserted that every writer of index.html sat in the reader's
+     `read-boyceville` concurrency group, so two pollers could never overlap.
+     Politeness was the right goal and the group was the wrong mechanism: a
+     reader run that hangs HOLDS that group, so every watchdog fire behind it
+     queues and is then cancelled — silently, because a cancelled pending run
+     is not a red run. The watchdog would have been switched off by exactly the
+     failure it exists to catch.
+
+     So the invariant is inverted, and a real one is put in its place: a
+     workflow that covers for the reader must NOT be able to be starved by it,
+     and must instead prove it will not poll blindly — its poll step has to be
+     gated on the freshness check. That is what actually prevents the double
+     read, and unlike the group it keeps working when the reader is wedged. */
+  const wd = join(dir, "watchdog.yml");
+  if (existsSync(wd)) {
+    const y = readFileSync(wd, "utf8");
+    assert.ok(!/group:\s*read-boyceville/.test(y),
+      "watchdog.yml is in the reader's concurrency group; a hung reader would starve the watchdog that exists to cover for it");
+    assert.match(y, /concurrency:\s*\n\s*group:\s*\S+/,
+      "watchdog.yml must still declare a concurrency group of its own, so it cannot pile up on itself");
+    const poll = y.split(/- name: Read the board, because the reader did not/)[1] || "";
+    assert.match(poll.split("run:")[0] || "", /if:.*steps\.age\.outputs\.late/,
+      "watchdog.yml polls without first checking the freshness stamp — that is the guard that replaced the shared group");
   }
 });
 
