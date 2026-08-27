@@ -52,13 +52,23 @@
 # and it is the same script the reader runs, so there is exactly one
 # implementation of "read the board".
 #
-# IT SHARES THE READER'S CONCURRENCY GROUP, DELIBERATELY.
-# Two pollers hitting other people's servers at the same moment is the one
-# thing this must never cause. In the group, a watchdog that fires while the
-# reader is mid-loop simply waits; when the reader's next scheduled fire
-# arrives, GitHub cancels the waiting watchdog in favour of it, which is the
-# precedence we want. By the time a queued watchdog does start, the data is
-# fresh and it exits without making a single request.
+# IT HAS ITS OWN CONCURRENCY GROUP. CORRECTED 2026-08-27, SAME DAY.
+#
+# It was first written into the reader's group, `read-boyceville`, to guarantee
+# that two pollers could never hit other people's servers at the same moment.
+# That reasoning was right about politeness and exactly backwards about safety:
+# a reader run that hangs HOLDS that group, so every watchdog fire behind it
+# queues and is then cancelled. The watchdog would have been disabled by
+# precisely the failure it exists to catch, and silently, because a cancelled
+# pending run is not a red run.
+#
+# A watchdog that shares a fate with the thing it watches is not a watchdog.
+#
+# Politeness is preserved by other means, and better ones: this job reads the
+# freshness stamp BEFORE making any request and exits without touching a single
+# site when the reader is on time, and scripts/one-pass.sh already rebases and
+# retries when someone else has pushed first. The cost of the rare genuine
+# overlap is one extra read; the cost of the shared group was every read.
 
 name: watchdog
 
@@ -82,9 +92,16 @@ on:
 permissions:
   contents: write
   issues: write
+  # READ THE READER'S RUN LIST, AND CANCEL A HUNG ONE.
+  # GITHUB_TOKEN cannot CREATE a workflow run — that is the platform's
+  # recursion guard — but it can cancel one, which is what is needed here: a
+  # reader stuck in progress holds `read-boyceville` and starves every fire
+  # behind it. Cancelling it is the difference between one lost hour and a
+  # whole afternoon.
+  actions: write
 
 concurrency:
-  group: read-boyceville
+  group: watchdog
   cancel-in-progress: false
 
 jobs:
@@ -99,6 +116,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # ══════════════════════════════════════════════════════════════════
+      #  FREE THE GROUP FIRST
+      # ══════════════════════════════════════════════════════════════════
+      #  poll.yml now carries `timeout-minutes: 58`, so GitHub itself kills a
+      #  hung reader within the hour. This is the belt to that pair of braces:
+      #  a run still in progress well past the ceiling is not working, it is
+      #  wedged, and every fire queued behind it is being cancelled unseen.
+      #  Cancelling it costs nothing — a reader that had anything to commit
+      #  would have committed it — and it is what lets the next scheduled fire
+      #  actually start.
+      - name: Cancel a reader run that is wedged
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          now=$(date -u +%s)
+          gh run list --repo "${{ github.repository }}" --workflow poll.yml \
+             --status in_progress --limit 5 \
+             --json databaseId,startedAt --jq '.[] | "\(.databaseId) \(.startedAt)"' \
+          | while read -r id started; do
+              age=$(( ( now - $(date -u -d "$started" +%s) ) / 60 ))
+              if [ "$age" -gt 62 ]; then
+                echo "::warning title=cancelling a wedged reader::run $id has been in progress ${age}m; the ceiling is 58m"
+                gh run cancel "$id" --repo "${{ github.repository }}" || true
+              else
+                echo "reader run $id is ${age}m old and still inside its ceiling — leaving it alone"
+              fi
+            done
 
       - name: How long since the reader last completed a pass
         id: age
