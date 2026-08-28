@@ -33,7 +33,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-known
+  # Shared with registries.yml: both rewrite geocodes/places.json and
+  # data/directory.json, and one writer per artefact is the rule.
+  group: map-data
   cancel-in-progress: false
 
 jobs:

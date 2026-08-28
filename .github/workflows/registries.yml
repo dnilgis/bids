@@ -1,4 +1,4 @@
-# Iowa's licensed grain dealers and warehouses — the first state.
+# The state licensed grain dealer and warehouse registries.
 #
 # WHY THIS EXISTS
 #
@@ -16,8 +16,10 @@
 # actually sell a load. The report step measures that before nineteen more
 # scrapers get written.
 #
-# IT DOES NOT TOUCH THE MAP. This commits data/registry-ia.json and nothing
-# else. Merging it into known-elevators.json is a separate, deliberate step
+# WHAT IT WRITES. data/registries.json, the survey, the raw pages it read, and —
+# because a registry nobody draws is a registry nobody has — geocodes/places.json
+# and data/directory.json, which is what map.html reads. It shares a concurrency
+# group with sync_known.yml so those last two have one writer at a time. Merging it into known-elevators.json is a separate, deliberate step
 # once the numbers have been looked at — putting 251 unverified businesses
 # straight onto the map would be the same mistake as trusting a coordinate
 # nobody checked.
@@ -42,7 +44,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: registry-ia
+  # THE SAME GROUP AS sync_known.yml, ON PURPOSE. Both workflows rewrite
+  # geocodes/places.json and data/directory.json, and one writer per artefact is
+  # the rule. Sharing the group is what enforces it: monthly and weekly will
+  # almost never collide, and "almost never" is how you get a lost push.
+  group: map-data
   cancel-in-progress: false
 
 jobs:
@@ -51,6 +57,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -60,7 +69,11 @@ jobs:
       # exactly that reason: a run that parses nothing still reports the status,
       # the byte count, the table and row counts, the header cells it found and
       # the first row it could not read, which is everything needed to fix it in
-      # one pass instead of three.
+      # one pass instead of three. It now also COMMITS THE PAGES IT READ, under
+      # debug/registries/, because a diagnostic can only answer the questions it
+      # was written to ask. Three parser fixes have been posted blind into CI and
+      # read back out of a log; the page itself is a fixture, so the next one is
+      # measured before it ships.
       # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
       # Three shapes are already confirmed and no two are alike: Iowa is HTML
       # lists with no street address, Illinois is a search form with nothing to
@@ -78,7 +91,22 @@ jobs:
         run: |
           python scripts/fetch_registries.py \
             --pages "${{ inputs.pages || '20' }}" \
-            --states "${{ inputs.states || '' }}"
+            --states "${{ inputs.states || '' }}" \
+            --dump-dir debug/registries
+
+      # WITHOUT THIS THE MAP DOES NOT MOVE. This workflow committed 442
+      # businesses and geocodes/places.json still held no registry section at
+      # all, because the only job that places them and rebuilds the directory
+      # runs weekly in a different workflow. Four hundred grey pins sat in a
+      # data file for up to six days. The registries are fetched to be drawn;
+      # they get drawn in the same run.
+      - name: Place them and rebuild the directory the map reads
+        if: always()
+        continue-on-error: true
+        run: |
+          pip install --quiet zipcodes
+          python scripts/build_geocodes.py
+          node scripts/build_directory.mjs
 
       - name: The four questions
         if: always()
@@ -128,7 +156,9 @@ jobs:
         run: |
           git config user.name  "agsist-bot"
           git config user.email "bot@agsist.com"
-          git add data/registries.json data/registry-survey.json
+          git add data/registries.json data/registry-survey.json 2>/dev/null || true
+          git add geocodes/places.json data/directory.json 2>/dev/null || true
+          [ -d debug/registries ] && git add debug/registries || true
           git diff --cached --quiet && { echo "nothing changed"; exit 0; }
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
           git commit -m "registries: $n businesses, plus the state survey [skip ci]"
