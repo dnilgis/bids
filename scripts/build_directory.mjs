@@ -189,6 +189,11 @@ const registry = Object.entries(regRaw).map(([rid, r]) => {
        heuristic that mistook Landus and MFA for feed mills does not come close. */
     capacity: r.capacity || null,
     licences: r.licences || null,
+    /* Missouri cuts its company names at forty characters, mid-word. Sixteen of
+       twenty-six were completed from the city column; the rest carry the flag
+       so nothing downstream treats a cut name as the business's real one. */
+    nameTruncated: r.nameTruncated || undefined,
+    nameRepaired: r.nameRepaired || undefined,
     knownFrom: r.source,
     why: (r.licences && r.licences.length > 1
             ? "holds both a dealer and a warehouse licence"

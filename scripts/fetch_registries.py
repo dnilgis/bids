@@ -88,6 +88,9 @@ SOURCES = [
      "url": "https://agriculture.mo.gov/grains/grainsearch.php", "paginate": True},
 ]
 
+DUMP_CAP = 600_000     # bytes of each page kept as a fixture
+DUMP_PAGES = 2         # first page and the one after it: enough to see the pager
+
 PHONE = re.compile(r"\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}")
 
 
@@ -244,6 +247,13 @@ PAGE_PARAMS = [
     ("%s?start=%%d" % "{u}", 25, 25),   # row offset
     ("%s?offset=%%d" % "{u}", 25, 25),
     ("%s?limit=1000&offset=%%d" % "{u}", 25, 0),
+    ("%s?PageNum=%%d" % "{u}", 1, 1),
+    ("%s?pageNumber=%%d" % "{u}", 1, 1),
+    ("%s?page_num=%%d" % "{u}", 1, 1),
+    ("%s?paged=%%d" % "{u}", 1, 1),
+    ("%s?from=%%d" % "{u}", 25, 0),
+    ("%s?per_page=1000&page=%%d" % "{u}", 1, 1),
+    ("%spage/%%d/" % "{u}", 1, 1),      # path segment, not a query
 ]
 
 
@@ -269,15 +279,79 @@ def probe_pagination(url, timeout, diag):
         moved = second != first
         tried.append({"param": fmt % (base + step), "bytes": len(second), "changed": moved})
         if moved:
-            diag["pagination"] = {"works": fmt, "step": step, "tried": tried}
-            return fmt, step
+            diag["pagination"] = {"works": fmt, "step": step, "base": base, "tried": tried}
+            return fmt, step, base
         time.sleep(0.3)
     diag["pagination"] = {"works": None, "tried": tried,
                           "note": "nothing turned the page; only the first page was read"}
     return None
 
 
-def scrape(src, pages, timeout, verbose):
+COUNTY_TAIL = re.compile(r",\s*[A-Za-z]{2}\.?\s*$")
+
+
+def clean_county(v):
+    """Missouri writes the county as "Clinton, MO". The state is already its
+    own column; repeating it inside the county turns every county key into a
+    string no other state's list will ever match."""
+    return COUNTY_TAIL.sub("", (v or "").strip()).strip(" ,")
+
+
+def mark_truncation(recs, diag):
+    """Missouri cuts every company name at forty characters.
+
+    Twenty-six names sit at EXACTLY forty and not one exceeds it, and the cuts
+    land mid-word — "Consolidated Grain & Barge Co. - Cottonw". What gets lost
+    is the town suffix, which is the only thing separating six sibling
+    facilities of the same company, so a name key built from this field silently
+    collapses them.
+
+    Where the cut tail is a prefix of the city we already hold, the name is
+    completed from that city and stamped `nameRepaired`. Where it is not —
+    "Cottonw" against a city of Caruthersville, because the facility is
+    Cottonwood Point — nothing is guessed. It stays truncated and flagged, and
+    the flag is what stops the dedup from trusting it.
+    """
+    if not recs:
+        return
+    widest = max(len(r.get("name") or "") for r in recs)
+    atmax = [r for r in recs if len(r.get("name") or "") == widest]
+    if widest < 20 or len(atmax) < 5:
+        return                                  # a long name, not a cut column
+    diag["nameTruncatedAt"] = widest
+    diag["namesAtWidth"] = len(atmax)
+    repaired = 0
+    for r in atmax:
+        r["nameTruncated"] = True
+        name, city = r.get("name") or "", (r.get("city") or "").strip()
+        if not city:
+            continue
+        # The separator is not always a dash: "Farmers Elevator & Supply Co. of
+        # Hawk Po" is cut after a plain "of". So take the LONGEST suffix of the
+        # name that is a proper prefix of the city and begins at a word break.
+        cut = None
+        for k in range(len(name), 2, -1):
+            tail = name[-k:]
+            if not city.lower().startswith(tail.lower()) or len(city) <= len(tail):
+                continue
+            before = name[-k - 1] if len(name) > k else ""
+            if before and not (before.isspace() or before in "-,.&/"):
+                continue
+            cut = k
+            break
+        if cut:
+            r["name"] = name[: len(name) - cut] + city
+            r["nameRepaired"] = "city"
+            r.pop("nameTruncated", None)
+            repaired += 1
+    diag["namesRepairedFromCity"] = repaired
+
+
+def slug(url):
+    return re.sub(r"[^a-z0-9]+", "-", url.lower()).strip("-")[:80]
+
+
+def scrape(src, pages, timeout, verbose, dump=None):
     """Returns (records, diagnostic). Never raises: one dead list must not cost
     the other two."""
     diag = {"url": src["url"], "kind": src["kind"], "note": src["note"]}
@@ -292,10 +366,16 @@ def scrape(src, pages, timeout, verbose):
         # so the next state starts from evidence.
         param = probe_pagination(src["url"], timeout, diag)
         if param:
-            fmt, step = param
-            urls += [fmt % (step * i) for i in range(1, pages)]
+            # START WHERE THE PROBE PROVED IT MOVED, NOT AT ONE.
+            # Missouri's `?page=2` was measured as a different page and then
+            # never fetched: the loop began at `?page=1`, which IS the base
+            # page, contributed nothing new, and the zero-new guard broke out
+            # before page two was ever asked for. The probe reads
+            # `base + step`; so does the first URL after it.
+            fmt, step, base = param
+            urls += [fmt % (base + step * i) for i in range(1, pages)]
 
-    seen, recs = set(), []
+    seen, recs, dumped = set(), [], 0
     for u in urls:
         try:
             status, body = fetch(u, timeout)
@@ -303,6 +383,20 @@ def scrape(src, pages, timeout, verbose):
             diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
             break
         diag.setdefault("pages", []).append({"url": u, "status": status, "bytes": len(body)})
+        if dump is not None and dumped < DUMP_PAGES:
+            # THE HOSTS ARE UNREACHABLE FROM WHERE THIS PARSER IS WRITTEN.
+            # idalsdata.org, data.iowaagriculture.gov and agriculture.mo.gov
+            # are all blocked from the machine that writes this file, so every
+            # parser fix has been a guess posted into CI and read back from a
+            # log. Committing the page itself turns that into a fixture: one
+            # run, then the markup can be read directly and the next fix is
+            # measured before it ships. Public pages, no key, no header.
+            try:
+                dump.mkdir(parents=True, exist_ok=True)
+                (dump / (slug(u) + ".html")).write_text(body[:DUMP_CAP], "utf-8")
+                dumped += 1
+            except Exception as ex:
+                diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
         p = Tables()
         try:
             p.feed(body)
@@ -378,6 +472,10 @@ def scrape(src, pages, timeout, verbose):
         if src.get("paginate") and new == 0 and len(diag["newPerPage"]) > 1:
             break                                   # pagination is not working; stop asking
         time.sleep(0.4)
+    for r in recs:
+        if r.get("county"):
+            r["county"] = clean_county(r["county"])
+    mark_truncation(recs, diag)
     diag["kept"] = len(recs)
     if verbose and recs:
         diag["sample"] = recs[:3]
@@ -390,6 +488,10 @@ def main():
     ap.add_argument("--timeout", type=int, default=45)
     ap.add_argument("--states", default="", help="comma-separated, e.g. IA,MO (blank = all)")
     ap.add_argument("--fixture", help="parse this local HTML file instead of the network")
+    ap.add_argument("--dump-dir", default="", help="write each fetched page here as a fixture")
+    ap.add_argument("--probe-url", default="",
+                    help="scrape this one URL and print {records, diagnostic} as JSON; "
+                         "how the pagination behaviour is tested against a real server")
     a = ap.parse_args()
 
     if a.fixture:
@@ -426,12 +528,22 @@ def main():
                 print("      %s" % r)
         return 0
 
+    dump = Path(a.dump_dir) if a.dump_dir else None
+    if dump and not dump.is_absolute():
+        dump = ROOT / a.dump_dir
+
+    if a.probe_url:
+        recs, diag = scrape({"state": "XX", "kind": "dealer", "note": "probe",
+                             "url": a.probe_url, "paginate": True},
+                            a.pages, a.timeout, verbose=False, dump=dump)
+        print(json.dumps({"records": len(recs), "diagnostic": diag}))
+        return 0
     want = {x.strip().upper() for x in a.states.split(",") if x.strip()}
     allrecs, diags = [], []
     for src in SOURCES:
         if want and src["state"] not in want:
             continue
-        recs, diag = scrape(src, a.pages, a.timeout, verbose=True)
+        recs, diag = scrape(src, a.pages, a.timeout, verbose=True, dump=dump)
         diag["state"] = src["state"]
         diags.append(diag)
         print("%-3s %-16s %-52s -> %d records%s"
@@ -459,6 +571,8 @@ def main():
                                   "zip": (str(r.get("zip") or "")[:5] or None),
                                   "capacity": r.get("capacity") or None,
                                   "licenceClass": r.get("licence") or None,
+                                  "nameTruncated": bool(r.get("nameTruncated")) or None,
+                                  "nameRepaired": r.get("nameRepaired"),
                                   "licences": [],
                                   "source": "registry-%s" % (r.get("state") or "").lower()})
         for lic in str(r.get("kind") or "").split("+"):

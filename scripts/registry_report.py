@@ -57,6 +57,19 @@ def main():
     if only:
         biz = [b for b in biz if (b.get("state") or "").upper() == only]
     states = {(b.get("state") or "").upper() for b in biz if b.get("state")}
+    # THE DIVISOR IS THE STATES WE ASKED, NOT THE STATE CODES THAT CAME BACK.
+    # Missouri's list carries the licensee's head office, so eleven businesses
+    # in it are registered in Arkansas, Illinois, Kansas, Louisiana, Minnesota,
+    # Nebraska, Ohio, Pennsylvania, South Carolina, Texas and Wisconsin. Counting
+    # those as states we have scraped turned two into thirteen and cut the
+    # national estimate from roughly two thousand elevators to three hundred —
+    # an argument for not bothering with the other twenty, built out of eleven
+    # mailing addresses.
+    scraped = {(d.get("state") or "").upper()
+               for d in (reg.get("diagnostics") or []) if d.get("state")}
+    if only:
+        scraped &= {only}
+    scraped = scraped or states
 
     known = json.loads(KNOWN.read_text()).get("elevators", []) if KNOWN.exists() else []
     ours = json.loads(DIRECTORY.read_text()).get("elevators", []) if DIRECTORY.exists() else []
@@ -114,7 +127,10 @@ def main():
     net = len(looks) - by_phone
     print("4. grey pins this would add, net of what we already hold: about %d" % max(0, net))
     print()
-    print("   Twenty states at this rate would be roughly %d new elevators." % int(max(0, net) / max(1, len(states)) * 20))
+    per_state = max(0, net) / max(1, len(scraped))
+    print("   %d state%s scraped (%s), so about %d net new each."
+          % (len(scraped), "" if len(scraped) == 1 else "s", ", ".join(sorted(scraped)), per_state))
+    print("   Twenty more at that rate would be roughly %d new elevators." % int(per_state * 20))
     print("   Question 3 is a name heuristic and nothing more; the real test is whether")
     print("   a sample of them actually post a bid anywhere, which is the next measurement.")
     return 0

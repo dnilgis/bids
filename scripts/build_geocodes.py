@@ -213,9 +213,35 @@ def near_its_town(lat, lon, s, towns):
     return True, "town not in the ZIP table, no distance check possible"
 
 
+# A WALL-CLOCK BUDGET, NOT A CALL COUNT.
+# Missouri publishes a street address for all 288 of its licensees, and every
+# one of them is a Census lookup at up to twenty seconds. A slow morning at
+# their end is 96 minutes, which is not a degraded build — it is a job killed
+# by its own timeout with nothing written. Past the budget the remaining
+# addresses fall back to the town centroid and the build says how many.
+CENSUS_BUDGET_S = float(os.environ.get("CENSUS_BUDGET_S", "420"))
+_census_state = {"spent": 0.0, "skipped": 0, "calls": 0}
+
+
+def census_exhausted():
+    return _census_state["spent"] >= CENSUS_BUDGET_S
+
+
 def census(address, timeout=20):
     """One address, or None. Never raises: a geocoder having a bad day must
     degrade this build to town precision, not fail it."""
+    if census_exhausted():
+        _census_state["skipped"] += 1
+        return None
+    t0 = time.time()
+    try:
+        return _census(address, timeout)
+    finally:
+        _census_state["spent"] += time.time() - t0
+        _census_state["calls"] += 1
+
+
+def _census(address, timeout=20):
     q = urllib.parse.urlencode({"address": address, "benchmark": "Public_AR_Current",
                                 "format": "json"})
     try:
@@ -466,11 +492,18 @@ def main():
                              "operator": b_.get("name"), "location": b_.get("city"),
                              "state": st, "phone": b_.get("phone"),
                              "county": b_.get("county"), "licences": b_.get("licences"),
+                             "nameTruncated": b_.get("nameTruncated") or None,
+                             "nameRepaired": b_.get("nameRepaired") or None,
                              "source": b_.get("source") or ("registry-%s" % st.lower())}
         print("\nstate registries: %d at a street point, %d at a ZIP or town centroid, "
               "%d unplaced, %d rejected"
               % (rstats.get("street", 0), rstats.get("town", 0),
                  rstats["unplaced"], rstats["rejected"]))
+
+    if _census_state["calls"] or _census_state["skipped"]:
+        print("\ngeocoder: %d addresses asked in %.0fs, %d skipped once the %.0fs budget was spent"
+              % (_census_state["calls"], _census_state["spent"],
+                 _census_state["skipped"], CENSUS_BUDGET_S))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
