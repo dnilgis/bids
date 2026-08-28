@@ -67,6 +67,10 @@ OUT = ROOT / "geocodes" / "places.json"
 # the Barchart feed before that subscription lapses. We do not read their
 # boards; we know they exist, which is the whole point of a grey pin.
 KNOWN = ROOT / "data" / "known-elevators.json"
+# State licence registries. These carry no street address outside Nebraska, so
+# everything from here is a town centroid — the right precision for a pin that
+# means "we know you are out there", and nothing more than that.
+REGISTRIES = ROOT / "data" / "registries.json"
 
 CENSUS = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 UA = "agsist-bidreader (+https://agsist.com; sig@farmers1st.com)"
@@ -410,6 +414,38 @@ def main():
               % (kstats.get("street", 0), kstats.get("town", 0),
                  kstats["unplaced"], kstats["rejected"]))
 
+    # ── the state registries ───────────────────────────────────────────────
+    registry, rstats = {}, {"town": 0, "unplaced": 0, "rejected": 0}
+    if REGISTRIES.exists():
+        try:
+            rd = json.loads(REGISTRIES.read_text())
+        except Exception as ex:
+            rd = {}
+            print("could not read %s (%s)" % (REGISTRIES.name, type(ex).__name__))
+        for b_ in (rd.get("businesses") or []):
+            st = (b_.get("state") or "").upper()
+            rid = "%s|%s|%s" % (st, slug(b_.get("name")), slug(b_.get("city")))
+            hit = None
+            for v in town_variants(b_.get("city")):
+                hit = towns.get((slug(v), st))
+                if hit:
+                    break
+            if not hit:
+                rstats["unplaced"] += 1
+                continue
+            if not in_state(hit[0], hit[1], st, boxes):
+                rstats["rejected"] += 1
+                continue
+            rstats["town"] += 1
+            registry[rid] = {"lat": round(hit[0], 5), "lon": round(hit[1], 5),
+                             "precision": "town", "via": "zip-centroid",
+                             "operator": b_.get("name"), "location": b_.get("city"),
+                             "state": st, "phone": b_.get("phone"),
+                             "county": b_.get("county"), "licences": b_.get("licences"),
+                             "source": b_.get("source") or ("registry-%s" % st.lower())}
+        print("\nstate registries: %d placed at a town centroid, %d unplaced, %d rejected"
+              % (rstats["town"], rstats["unplaced"], rstats["rejected"]))
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -419,6 +455,7 @@ def main():
         "places": dict(sorted(places.items())),
         "unplaced": {s["id"]: w for s, w in sorted(unplaced, key=lambda x: x[0]["id"])},
         "known": dict(sorted(known.items())),
+        "registry": dict(sorted(registry.items())),
     }, indent=1) + "\n")
 
     print("\nplaced %d of %d" % (len(places), len(srcs)))

@@ -136,6 +136,7 @@ const known = Object.entries(knownRaw).map(([kid, k]) => {
     placed: true, lat: k.lat, lon: k.lon, precision: k.precision,
     branch: k.branch || null,
     address: k.address || null,
+    phone: k.phone || null,
     suspect: k.suspect || undefined,
     knownFrom: k.source,
     why: k.suspect
@@ -147,6 +148,52 @@ const known = Object.entries(knownRaw).map(([kid, k]) => {
   };
 });
 elevators.push(...known);
+
+/* ── state licence registries ─────────────────────────────────────────────
+   These are the grey pins: a business the state says holds a grain dealer or
+   warehouse licence, with nothing behind it yet.
+
+   THE PHONE DECIDES. A ten-digit match against something we already read, or
+   against a Barchart facility, means this IS that elevator under its licensed
+   name — "Ursa Farmers Cooperative Co" on a licence and "URSA" on a board —
+   and adding it would put two pins on one yard. Those are dropped, and counted,
+   so the drop is visible rather than silent. A town match alone is not
+   identity: a town can hold three elevators, so those stay and carry a flag. */
+/* FROM THE RAW GEO ENTRIES, NOT THE MAPPED ONES. The objects pushed into
+   `known` above never carried a phone field, so this set was empty and every
+   registry duplicate sailed through: seeded with two businesses sharing a
+   phone with a Barchart facility, it dropped zero. The phones live in
+   geocodes/places.json, which is where they are read from now. */
+const knownPhones = new Set(Object.values(knownRaw).map((k) => digits(k.phone))
+                                  .filter((d) => d.length === 10));
+const regRaw = geoFile.registry || {};
+let regMergedPhone = 0, regSameTown = 0;
+const registry = Object.entries(regRaw).map(([rid, r]) => {
+  const ph = digits(r.phone);
+  if (ph.length === 10 && (ourPhones.has(ph) || knownPhones.has(ph))) { regMergedPhone++; return null; }
+  const sameTown = ourTowns.has(townKey(r.state, r.location));
+  if (sameTown) regSameTown++;
+  return {
+    id: "reg:" + rid,
+    operator: r.operator || null,
+    location: r.location || null,
+    state: r.state || null,
+    status: "known",
+    platform: null, website: null, commodities: null, rows: null,
+    checkedAt: null, pricedAt: null,
+    placed: true, lat: r.lat, lon: r.lon, precision: r.precision,
+    county: r.county || null,
+    licences: r.licences || null,
+    knownFrom: r.source,
+    why: (r.licences && r.licences.length > 1
+            ? "holds both a dealer and a warehouse licence"
+            : "holds a state " + ((r.licences || ["grain"])[0]) + " licence")
+         + "; no bid feed found yet"
+         + (sameTown ? " — and we already read an elevator in this town" : ""),
+    duplicateSuspect: sameTown || undefined,
+  };
+}).filter(Boolean);
+elevators.push(...registry);
 elevators.sort((a, b) => (a.state || "").localeCompare(b.state || "") ||
                          (a.operator || "").localeCompare(b.operator || "") ||
                          (a.location || "").localeCompare(b.location || ""));
@@ -159,7 +206,9 @@ const counts = {
   placed: elevators.filter((e) => e.placed).length,
   states: Object.keys(tally((e) => e.state || "?")).length,
   knownOnly: known.length,
-  duplicateSuspects: merged,
+  fromRegistries: registry.length,
+  registryMergedByPhone: regMergedPhone,
+  duplicateSuspects: merged + regSameTown,
   operators: new Set(elevators.map((e) => e.operator)).size,
 };
 
@@ -179,3 +228,5 @@ console.log("  status:   ", JSON.stringify(counts.byStatus));
 console.log("  precision:", JSON.stringify(counts.byPrecision));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);
+console.log("  registries: %d added, %d dropped as the same elevator by phone",
+  counts.fromRegistries, counts.registryMergedByPhone);

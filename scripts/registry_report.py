@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REG = ROOT / "data" / "registry-ia.json"
+REG = ROOT / "data" / "registries.json"
 KNOWN = ROOT / "data" / "known-elevators.json"
 DIRECTORY = ROOT / "data" / "directory.json"
 
@@ -45,13 +45,18 @@ def digits(p):
 
 def main():
     if not REG.exists():
-        print("no %s — run scripts/fetch_registry_ia.py first" % REG.name)
+        print("no %s — run scripts/fetch_registries.py first" % REG.name)
         return 1
     reg = json.loads(REG.read_text())
     biz = reg.get("businesses") or []
     if not biz:
         print("the registry file holds no businesses")
         return 1
+
+    only = (sys.argv[1].upper() if len(sys.argv) > 1 else "")
+    if only:
+        biz = [b for b in biz if (b.get("state") or "").upper() == only]
+    states = {(b.get("state") or "").upper() for b in biz if b.get("state")}
 
     known = json.loads(KNOWN.read_text()).get("elevators", []) if KNOWN.exists() else []
     ours = json.loads(DIRECTORY.read_text()).get("elevators", []) if DIRECTORY.exists() else []
@@ -66,7 +71,7 @@ def main():
         import zipcodes
         places = set()
         for z in zipcodes.list_all():
-            if z.get("lat") is None or z.get("state") != "IA":
+            if z.get("lat") is None or z.get("state") not in states:
                 continue
             if abs(float(z["lat"])) < 0.001:
                 continue
@@ -76,7 +81,7 @@ def main():
         places = None
 
     by_phone = sum(1 for b in biz if digits(b.get("phone")) and digits(b.get("phone")) in have_phones)
-    in_known_town = sum(1 for b in biz if town("IA", b.get("city")) in have_towns)
+    in_known_town = sum(1 for b in biz if town(b.get("state"), b.get("city")) in have_towns)
     geocodable = (sum(1 for b in biz if re.sub(r"[^a-z]", "", (b.get("city") or "").lower()) in places)
                   if places is not None else None)
 
@@ -90,15 +95,15 @@ def main():
     excluded = [b for b in biz if not plausible(b.get("name"))]
     c = reg.get("counts", {})
 
-    print("IOWA REGISTRY — %d businesses" % len(biz))
-    print("   dealer only %s | warehouse only %s | both %s | with a phone %s"
-          % (c.get("dealer_only"), c.get("warehouse_only"), c.get("both"), c.get("with_phone")))
+    print("STATE REGISTRIES — %d businesses across %s" % (len(biz), ", ".join(sorted(states)) or "nowhere"))
+    print("   by state %s | holding both licences %s | with a phone %s"
+          % (json.dumps(c.get("byState", {})), c.get("both_licences"), c.get("with_phone")))
     print()
     print("1. already ours, matched by ten-digit phone : %d of %d  (%.0f%%)"
           % (by_phone, len(biz), 100 * by_phone / len(biz)))
     print("   in a town we already have something in   : %d  (weaker evidence, town is not identity)"
           % in_known_town)
-    print("2. town resolves to an Iowa ZIP centroid    : %s"
+    print("2. town resolves to a ZIP centroid          : %s"
           % ("%d of %d  (%.0f%%)" % (geocodable, len(biz), 100 * geocodable / len(biz))
              if geocodable is not None else "zipcodes not installed"))
     print("3. name looks like somewhere you can sell   : %d of %d  (%.0f%%)  -- HEURISTIC"
@@ -109,7 +114,7 @@ def main():
     net = len(looks) - by_phone
     print("4. grey pins this would add, net of what we already hold: about %d" % max(0, net))
     print()
-    print("   Twenty states at Iowa's rate would be roughly %d new elevators." % (max(0, net) * 20))
+    print("   Twenty states at this rate would be roughly %d new elevators." % int(max(0, net) / max(1, len(states)) * 20))
     print("   Question 3 is a name heuristic and nothing more; the real test is whether")
     print("   a sample of them actually post a bid anywhere, which is the next measurement.")
     return 0
