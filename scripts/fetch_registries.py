@@ -437,6 +437,13 @@ def rows_to_records(header, rows, diag):
     out = []
     for r in rows:
         rec = {k: (r[i].strip() if len(r) > i and r[i] else "") for k, i in idx.items()}
+        # NOT THE SECOND "Mailing Address". Ohio's export repeats that header —
+        # street on one, "TOWN ST 12345" on the other — and reading the second as
+        # the facility's town looked like the fix for sixty-two Ohio elevators
+        # with no pin. It is the CORPORATE address. Bartlett's Columbus Grove
+        # elevator would have been placed in Overland Park, Kansas, and Mennel's
+        # Fostoria mill in Decatur, Illinois. Measured before shipping, on the
+        # committed file; it never left this machine.
         nm = rec.get("name") or ""
         if len(nm) > 2 and nm.lower() not in CSV_KEYS["name"]:
             out.append(rec)
@@ -1324,6 +1331,14 @@ def main():
                                   "licenceClass": r.get("licence") or None,
                                   "nameTruncated": bool(r.get("nameTruncated")) or None,
                                   "nameRepaired": r.get("nameRepaired"),
+                                  # COMPUTED AND THEN DROPPED. cityAlt was being
+                                  # worked out correctly and left behind here, so
+                                  # every record reached the geocoder with alt=None
+                                  # and 42 elevators in two-word towns got no pin.
+                                  # The same shape of bug as nameTruncated: a field
+                                  # list that has to be edited in two places.
+                                  "cityAlt": r.get("cityAlt"),
+                                  "nameAlt": r.get("nameAlt"),
                                   "licences": [],
                                   "source": "registry-%s" % (r.get("state") or "").lower()})
         for lic in str(r.get("kind") or "").split("+"):

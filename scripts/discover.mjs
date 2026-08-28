@@ -28,7 +28,7 @@
  * point is to read a board they publish, not to be a load generator.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { captureAll } from "../lib/cdp.mjs";
+import { captureAll, looksLikeData } from "../lib/cdp.mjs";
 
 /* HOW A PLATFORM IS RECOGNISED, and what it needs before it can be a source.
  *
@@ -750,6 +750,54 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     ledger.sites[url] = { ...(ledger.sites[url] || {}), ...rec, seenAt: new Date().toISOString() };
   };
 
+  /* THE HOME PAGE IS NOT THE BOARD.
+   *
+   * The first live batch asked 45 operators and 28 "loaded but recognised
+   * nothing" — including adm.com, whose front page was never going to call a
+   * cash-bids API. Barchart's directory gives the operator's WEBSITE and nothing
+   * deeper, so probing that URL alone asks the wrong page of most of the list.
+   *
+   * Rather than guess at /cash-bids and a dozen spellings, use the site's own
+   * navigation: find the link it publishes to its own board and follow that one.
+   * A guessed path 404s silently; a link the operator wrote is the page they
+   * mean. Conventional paths are only tried when there is no such link.
+   */
+  const BID_LINK = /cash[\s_-]*bids?|grain[\s_-]*bids?|\bbids?\b|market[\s_-]*(?:prices|zone)/i;
+  const FALLBACK_PATHS = ["/cash-bids/", "/grain/cash-bids/", "/markets/cash-bids/",
+                          "/cash-bids", "/grain/", "/markets/"];
+
+  const bidLink = (result, pageUrl) => {
+    const home = new URL(pageUrl);
+    /* THE MAIN DOCUMENT, PREFERRED BY URL. An arbitrary size floor here (500
+       bytes) skipped small pages entirely, and plenty of co-operative front
+       pages are small. Match the page we asked for; fall back to the first
+       HTML with anchors in it. */
+    const html = result.responses.filter((r) => r.body && /html/i.test(r.mime || ""));
+    const doc = html.find((r) => r.url === pageUrl || r.url === pageUrl.replace(/\/$/, ""))
+             || html.find((r) => /<a\b/i.test(r.body));
+    if (!doc) return [];
+    const out = [];
+    for (const m of doc.body.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+      const [, href, text] = m;
+      const label = text.replace(/<[^>]+>/g, " ");
+      if (!BID_LINK.test(label) && !BID_LINK.test(href)) continue;
+      let u;
+      try { u = new URL(href, pageUrl); } catch { continue; }
+      /* SAME SITE ONLY. A "Cash Bids" link pointing at a third party is a
+         finding about somebody else's board, not this operator's. */
+      if (u.hostname.replace(/^www\./, "") !== home.hostname.replace(/^www\./, "")) continue;
+      if (u.href === pageUrl) continue;
+      /* An explicit "cash bids" beats a bare "bids" beats "markets". */
+      const rank = /cash[\s_-]*bids?/i.test(label + href) ? 0
+                 : /grain[\s_-]*bids?/i.test(label + href) ? 1
+                 : /\bbids?\b/i.test(label + href) ? 2 : 3;
+      out.push({ url: u.href, rank });
+    }
+    out.sort((a, b) => a.rank - b.rank);
+    return [...new Set(out.map((o) => o.url))].slice(0, 2);
+  };
+
+  const patienceS = Number(flagValue("patience", "45"));
   for (const [i, pageUrl] of urls.entries()) {
     if (Date.now() - began > budgetMs) {
       stoppedEarly = true;
@@ -775,18 +823,43 @@ if (import.meta.url === `file://${process.argv[1]}`) {
      * URL" -- it is "was it ever going to get there".
      *
      * --patience <seconds> answers it. Default unchanged at 45. */
-    const patienceS = Number(flagValue("patience", "45"));
     const result = await captureAll({
       pageUrl,
+      /* KEEP THE PAGE ITSELF, not only the data it fetches. captureAll's default
+         keeps bodies that look like a board and drops HTML documents — right for
+         finding a feed, and it means the operator's own "Cash Bids" link is
+         never visible. That link is the whole answer for a list of home pages. */
+      keep: (u, mime) => looksLikeData(u, mime) || (u === pageUrl && /html/i.test(mime || "")),
       timeoutMs: Math.max(5, patienceS) * 1000,
       /* A page that never goes quiet is exactly this case, so the settle
          window grows with the wait rather than staying at 2.5 seconds. */
       quietMs: patienceS > 45 ? 5000 : 2500,
     });
-    const feeds = findFeeds(result);
-    const v = verdict(result, feeds);
+    let feeds = findFeeds(result);
+    let v = verdict(result, feeds);
     console.log(`   ${result.responses.length} response(s), ${feeds.length} feed(s)` +
                 `${result.quiet ? "" : ", network never went quiet"}`);
+
+    /* NOTHING ON THE FRONT PAGE MEANS ASK THE BOARD'S PAGE, NOT GIVE UP. */
+    let followed = null;
+    if (v.kind === "no-platform") {
+      const links = bidLink(result, pageUrl);
+      const tries = links.length ? links
+        : FALLBACK_PATHS.map((p) => new URL(p, pageUrl).href).slice(0, 2);
+      for (const next of tries) {
+        if (Date.now() - began > budgetMs) break;
+        console.log(`   nothing here; following ${links.length ? "their own link" : "a conventional path"}: ${next}`);
+        const r2 = await captureAll({ pageUrl: next, timeoutMs: Math.max(5, patienceS) * 1000,
+                                      quietMs: patienceS > 45 ? 5000 : 2500 });
+        const f2 = findFeeds(r2);
+        const v2 = verdict(r2, f2);
+        console.log(`   ${r2.responses.length} response(s), ${f2.length} feed(s)`);
+        if (v2.kind !== "no-platform" && v2.kind !== "unreachable") {
+          feeds = f2; v = v2; result.responses = r2.responses; followed = next;
+          break;
+        }
+      }
+    }
 
     if (v.kind === "unreachable") {
       unreachable++;
@@ -804,6 +877,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       for (const l of v.leads)
         console.log(`   LEAD: ${l.host} is ${l.platform}'s domain -- the vendor is right, our signature is too narrow`);
       remember(pageUrl, { status: "no-platform", platform: null,
+                          triedBoardPage: followed || undefined,
                           hosts: v.hosts.slice(0, 15),
                           leads: v.leads.map((l) => l.platform) });
       const cands = candidates(result);
@@ -825,6 +899,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const best = found.find((f) => f.adapter) || found[0] || null;
       remember(pageUrl, { status: "platform", platform: best?.platform ?? null,
                           adapter: best?.adapter ?? null,
+                          /* WHICH page answered. A source file has to point at
+                             the page that actually loads the board, not the home
+                             page Barchart's directory happened to list. */
+                          boardPage: followed || pageUrl,
                           ids: found.filter((f) => Object.keys(f).length > 2) });
     }
 

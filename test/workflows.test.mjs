@@ -385,3 +385,36 @@ test("a flag's value is never mistaken for a URL", () => {
   for (const f of ["--patience", "--start", "--limit", "--budget", "--list", "--ledger"])
     assert.ok(d.includes(`"${f}"`), `${f} takes a value and is not in VALUE_FLAGS`);
 });
+
+/* THE HOME PAGE IS NOT THE BOARD.
+ *
+ * The first live sweep asked 45 operators and 28 "loaded but recognised
+ * nothing" — including adm.com, whose front page was never going to call a
+ * cash-bids API. Barchart's directory gives the operator's WEBSITE and nothing
+ * deeper, so probing that URL alone asks the wrong page of most of the list.
+ *
+ * The fix is to use the site's own navigation rather than guess at /cash-bids
+ * and a dozen spellings: a guessed path 404s silently, a link the operator
+ * wrote is the page they mean. Two things that must not rot:
+ *
+ *   - captureAll's default keeps bodies that LOOK LIKE A BOARD and drops HTML
+ *     documents. Right for finding a feed, and it means the operator's own
+ *     "Cash Bids" link is invisible. The sweep has to ask for the page itself.
+ *   - a "Cash Bids" link pointing at another domain is a finding about somebody
+ *     else's board, not this operator's.
+ */
+test("the sweep keeps the page's own HTML, or it can never see the link", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(d, /keep: \(u, mime\) => looksLikeData\(u, mime\) \|\| \(u === pageUrl/,
+    "captureAll drops HTML by default; without this override the link scan reads nothing");
+  assert.match(d, /import \{ captureAll, looksLikeData \}/);
+});
+
+test("a board link on another domain is not followed", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(d, /u\.hostname\.replace\(\/\^www\\\.\/, ""\) !== home\.hostname/,
+    "a third party's Cash Bids link would be recorded as this operator's board");
+  assert.match(d, /FALLBACK_PATHS/, "there is no fallback when a site publishes no link");
+  assert.match(d, /boardPage: followed \|\| pageUrl/,
+    "the ledger must record WHICH page answered, or a source file points at the home page");
+});

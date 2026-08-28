@@ -128,8 +128,9 @@ def usable(lat, lon):
 
 
 def build_tables():
-    """(town, state) -> centroid, and state -> bounding box, from one dataset."""
-    by_town, pts = {}, {}
+    """(town, state) -> centroid, state -> bounding box, and (county, state) ->
+    centroid, all from one dataset."""
+    by_town, pts, by_county = {}, {}, {}
     for z in zipcodes.list_all():
         lat, lon, st = z.get("lat"), z.get("long"), z.get("state")
         if lat is None or lon is None or not st:
@@ -146,6 +147,10 @@ def build_tables():
             if not k[0]:
                 continue
             by_town.setdefault(k, []).append((lat, lon))
+        # A COUNTY IS A REAL, IF COARSE, ANSWER — see the registry block below.
+        cty = slug(re.sub(r"\s+county$", "", (z.get("county") or "").lower()))
+        if cty:
+            by_county.setdefault((cty, st), []).append((lat, lon))
 
     # A TRIMMED BOX, NOT MIN/MAX. Dropping 0,0 fixes the case we found; the
     # percentile trim is what stops the NEXT bad record -- a transposed sign, a
@@ -161,8 +166,9 @@ def build_tables():
         i = max(1, len(la) // 100)
         boxes[st] = [la[i], la[-i - 1], lo[i], lo[-i - 1]]
 
-    return {k: (sum(a for a, _ in v) / len(v), sum(b for _, b in v) / len(v))
-            for k, v in by_town.items()}, boxes
+    mid = lambda v: (sum(a for a, _ in v) / len(v), sum(b for _, b in v) / len(v))
+    return ({k: mid(v) for k, v in by_town.items()}, boxes,
+            {k: mid(v) for k, v in by_county.items()})
 
 
 def in_state(lat, lon, st, boxes, pad=0.35):
@@ -258,8 +264,9 @@ def _census(address, timeout=20):
 
 def main():
     use_census = os.environ.get("NO_CENSUS", "") != "1"
-    towns, boxes = build_tables()
-    print("ZIP table: %d town keys, %d state boxes" % (len(towns), len(boxes)))
+    towns, boxes, counties = build_tables()
+    print("ZIP table: %d town keys, %d state boxes, %d counties"
+          % (len(towns), len(boxes), len(counties)))
 
     srcs = []
     for f in sorted(SOURCES.glob("*.json")):
@@ -441,7 +448,7 @@ def main():
                  kstats["unplaced"], kstats["rejected"]))
 
     # ── the state registries ───────────────────────────────────────────────
-    registry, rstats = {}, {"town": 0, "unplaced": 0, "rejected": 0}
+    registry, rstats = {}, {"town": 0, "county": 0, "unplaced": 0, "rejected": 0}
     if REGISTRIES.exists():
         try:
             rd = json.loads(REGISTRIES.read_text())
@@ -478,6 +485,32 @@ def main():
                     if hit:
                         lat, lon = hit
                         break
+            # THE ALTERNATIVE READING OF A TWO-WORD TOWN.
+            # Nebraska and Indiana print NAME CITY COUNTY with nothing between
+            # them, so "ELYS INCORPORATED GUIDE  ROCK" splits on whitespace and
+            # the town loses its first word. fetch_registries carries both
+            # readings rather than guessing; this is where the guess is settled,
+            # by which one a gazetteer has heard of. "ROCK, NE" has not been;
+            # "GUIDE ROCK, NE" has.
+            if lat is None and b_.get("cityAlt"):
+                for v in town_variants(b_["cityAlt"]):
+                    hit = towns.get((slug(v), st))
+                    if hit:
+                        lat, lon = hit
+                        prec, via = "town", "town centroid (the two-word reading)"
+                        break
+            # A COUNTY IS COARSE, AND IT IS NOT NOTHING.
+            # Ohio names many licensed locations by SITE rather than town —
+            # BIRKEMEIER FARM, BEAVERDAM FLAT, BRICKYARD — and no gazetteer has
+            # those. Sixty-two Ohio elevators got no pin at all while the county
+            # sat in the record, correct. Labelled "county" so a reader can see
+            # the pin means "somewhere in this county" and not "here".
+            if lat is None and b_.get("county"):
+                hit = counties.get((slug(re.sub(r"\s+county$", "",
+                                    str(b_["county"]).strip().lower())), st))
+                if hit:
+                    lat, lon = hit
+                    prec, via = "county", "county centroid; the state named a site, not a town"
             if lat is None:
                 rstats["unplaced"] += 1
                 continue
@@ -496,8 +529,8 @@ def main():
                              "nameRepaired": b_.get("nameRepaired") or None,
                              "source": b_.get("source") or ("registry-%s" % st.lower())}
         print("\nstate registries: %d at a street point, %d at a ZIP or town centroid, "
-              "%d unplaced, %d rejected"
-              % (rstats.get("street", 0), rstats.get("town", 0),
+              "%d at a COUNTY centroid, %d unplaced, %d rejected"
+              % (rstats.get("street", 0), rstats.get("town", 0), rstats.get("county", 0),
                  rstats["unplaced"], rstats["rejected"]))
 
     if _census_state["calls"] or _census_state["skipped"]:
