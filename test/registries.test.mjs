@@ -483,3 +483,63 @@ print(len(r), r[0]["name"], r[0].get("city", ""), sep="|")`).split("|");
     assert.ok(!/^(Inc|LLC)\.?\s/.test(out[2]), `city "${out[2]}" is the tail of the company name`);
   });
 }
+
+/* TWO DOCUMENTS FROM ONE AGENCY, IN TWO DIFFERENT SHAPES.
+ *
+ * Nebraska's PSC publishes a dealer list and a warehouse list side by side:
+ *
+ *   dealers    ADVANCED SUNFLOWER, LLC 3070 35,000 HURON, SD
+ *   warehouses 19 J. E. MEURET GRAIN CO., INC. BRUNSWICK ANTELOPE
+ *
+ * Licence first instead of last, no capacity, no state, a county instead.
+ * Running the dealer's pattern over the warehouse list returned ZERO, which is
+ * the right failure and the reason each document gets its own line rather than
+ * one clever regex for all of them.
+ *
+ * Two things the warehouse list then taught:
+ *
+ *   - "43 TOTAL LICENSED GRAIN WAREHOUSES" — the totals line, with the number
+ *     IN FRONT. It parsed as a business called "TOTAL LICENSED" in a town
+ *     called "GRAIN", and it was invisible to the completeness check, so that
+ *     document had no guard at all.
+ *   - NAME CITY COUNTY with nothing between them means a two-word town is split
+ *     by whitespace and its first word joins the company name: "ELYS
+ *     INCORPORATED GUIDE" / "ROCK". Nothing in this repository KNOWS the right
+ *     answer, so both readings are carried and the geocoder decides — "ROCK, NE"
+ *     does not resolve and "GUIDE ROCK, NE" does.
+ */
+const NEW = "https-psc-nebraska-gov-sites-default-files-doc-2026-07-28-20grain-20warehouse-20.txt";
+
+test("Nebraska's warehouse list has its own shape and is read whole", { skip: !existsSync(fixture(NEW)) }, () => {
+  const out = pyOn(`
+src = [s for s in m.SOURCES if s["state"] == "NE" and s["kind"] == "warehouse"][0]
+t = open(r"${fixture(NEW)}", encoding="utf-8", errors="replace").read()
+r = m.pdf_records(t, {}, src["pattern"])
+junk = [x for x in r if x["name"].upper().startswith("TOTAL")]
+print(len(r), m.stated_total(t), len(junk), sep="|")`).split("|");
+  assert.equal(Number(out[0]), 43, "the warehouse list is not being read");
+  assert.equal(out[1], "(0, 43)", "the totals line with the number in front is invisible to the check");
+  assert.equal(Number(out[2]), 0, "the totals line came back as a business called TOTAL");
+});
+
+test("a two-word town keeps its alternative instead of being guessed", { skip: !existsSync(fixture(NEW)) }, () => {
+  const out = pyOn(`
+src = [s for s in m.SOURCES if s["state"] == "NE" and s["kind"] == "warehouse"][0]
+t = open(r"${fixture(NEW)}", encoding="utf-8", errors="replace").read()
+r = m.pdf_records(t, {}, src["pattern"])
+alts = {x["cityAlt"] for x in r if x.get("cityAlt")}
+print("GUIDE ROCK" in alts, "BATTLE CREEK" in alts, "WEST POINT" in alts, sep="|")`).split("|");
+  for (const [i, town] of ["GUIDE ROCK", "BATTLE CREEK", "WEST POINT"].entries())
+    assert.equal(out[i], "True", `${town} lost its first word to the company name`);
+});
+
+test("both spellings of a printed total are read, in either order", () => {
+  const out = pyOn(`
+for t in ("TOTAL LICENSED GRAIN DEALERS 116", "43 TOTAL LICENSED GRAIN WAREHOUSES",
+          "Showing 25 out of 251", "43 Farmers Coop GENEVA FILLMORE"):
+    print(m.stated_total(t))`).split("\n");
+  assert.equal(out[0], "(0, 116)");
+  assert.equal(out[1], "(0, 43)", "the number-first spelling is not recognised");
+  assert.equal(out[2], "(25, 251)");
+  assert.equal(out[3], "None", "an ordinary licence row is being read as a total");
+});

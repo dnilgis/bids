@@ -341,3 +341,47 @@ test("the reader still commits through it, message file intact", () => {
     "the price message is multi-line and must go through as a FILE, not an argument");
   assert.ok(!/^git push/m.test(pass), "one-pass.sh still has a bare push");
 });
+
+/* THE SWEEP THAT HAS TO WALK ITSELF.
+ *
+ * 674 operator websites at up to 45 seconds each is about eight hours of wall
+ * clock. No single run does that, so the only way it finishes is if each run
+ * starts where the last one stopped WITHOUT a person carrying --start forward.
+ * That is what the ledger is for, and these guard the three ways it could
+ * quietly stop working:
+ *
+ *   - the run stops resuming, and asks the same first 45 hosts forever;
+ *   - the list stops being rebuilt, and keeps asking hosts we now read;
+ *   - a page that could not be loaded gets written off as "runs nothing we
+ *     know", which loses a working elevator to a network blip.
+ */
+test("the discover sweep resumes, rebuilds its list, and keeps a ledger", () => {
+  const y = readFileSync(new URL("../.github/workflows/discover-sweep.yml", import.meta.url), "utf8");
+  assert.match(y, /--resume/, "without this every run asks the same first hosts forever");
+  assert.match(y, /--ledger data\/platforms\.json/, "nothing is remembered between runs");
+  assert.match(y, /node scripts\/barchart_sites\.mjs > probe-lists\/barchart-sites\.txt/,
+    "the list must be rebuilt, or it keeps asking hosts we have started reading");
+  assert.match(y, /--budget/, "a run with no budget dies at the job timeout with nothing written");
+  assert.match(y, /commit-and-push\.sh/, "a bare push loses the sweep to the poller");
+  assert.match(y, /git add data\/platforms\.json/, "the ledger is not committed");
+});
+
+test("an unreachable page is a retry, not a verdict about the operator", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(d, /status === "platform" \|\| v\.status === "no-platform"/,
+    "the resume filter must treat ONLY those two as decided");
+  assert.ok(!/status !== "unreachable"[\s\S]{0,80}done\.add/.test(d),
+    "an unreachable host is being written off as answered");
+  assert.match(d, /remember\(pageUrl, \{ status: "unreachable"/,
+    "an unreachable page is not recorded at all, so it cannot be retried deliberately");
+});
+
+test("a flag's value is never mistaken for a URL", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  /* `discover.mjs <url> --patience 60` refused itself with "2 of 3 entries are
+     not a page", because only --dump's value was excluded from the URL check —
+     and --patience is documented in that same file. */
+  assert.match(d, /VALUE_FLAGS/, "the exclusion list is back to one flag name");
+  for (const f of ["--patience", "--start", "--limit", "--budget", "--list", "--ledger"])
+    assert.ok(d.includes(`"${f}"`), `${f} takes a value and is not in VALUE_FLAGS`);
+});

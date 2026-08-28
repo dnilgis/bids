@@ -27,7 +27,7 @@
  * ONE PAGE AT A TIME, DELIBERATELY. These are other people's websites and the
  * point is to read a board they publish, not to be a load generator.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { captureAll } from "../lib/cdp.mjs";
 
 /* HOW A PLATFORM IS RECOGNISED, and what it needs before it can be a source.
@@ -36,6 +36,10 @@ import { captureAll } from "../lib/cdp.mjs";
  * absent the platform still matches -- knowing a board is Barchart and not
  * knowing its key is a better answer than "unknown", because it says which
  * adapter to write next. */
+/* Flags that consume the argument after them. Anything here is not a URL. */
+const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
+                             "--budget", "--list", "--ledger"]);
+
 export const SIGNATURES = [
   { platform: "dtn-cs", adapter: "lib/adapters/dtn-cs.mjs", family: /(^|\.)dtn\.com$/,
     test: (u) => /(^|\.)api\.dtn\.com$/.test(host(u)) && /\/markets\/sites\/[^/]+\/cash-bids/.test(path(u)),
@@ -637,7 +641,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   ARGS = args;
   const li = args.indexOf("--list");
   const all = li === -1
-    ? args.filter((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1] === "--dump"))
+    /* EVERY FLAG THAT TAKES A VALUE, not just --dump. The list was one name
+       long, so `discover.mjs <url> --patience 60` fed "60" to the URL checker
+       and the run refused itself with "2 of 3 entries are not a page" —
+       a flag documented in this very file. */
+    ? args.filter((a, i) => !a.startsWith("--")
+                  && !(i > 0 && VALUE_FLAGS.has(args[i - 1])))
     : readList(readFileSync(args[li + 1], "utf8"));
 
   /* Refuse the whole run rather than ask for it. One bad entry among twenty is
@@ -663,8 +672,24 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   };
   const start = num("start", 0);
   const limit = num("limit", 0);
-  const urls = all.slice(start, limit ? start + limit : undefined);
-  if (all.length && start >= all.length) {
+  /* --resume: SKIP WHAT THE LEDGER ALREADY DECIDED, so a cron walks the list by
+   * itself instead of needing a person to carry `--start` forward between runs.
+   * An unreachable page is NOT decided — it comes round again, because "we could
+   * not reach it" is a fact about the network and not about the operator. */
+  let pool = all;
+  if (args.includes("--resume")) {
+    const lp = flagValue("ledger", "");
+    const known = lp && existsSync(lp)
+      ? JSON.parse(readFileSync(lp, "utf8")).sites || {} : {};
+    const done = new Set(Object.entries(known)
+      .filter(([, v]) => v.status === "platform" || v.status === "no-platform")
+      .map(([k]) => k));
+    pool = all.filter((u) => !done.has(u));
+    console.log(`resume: ${done.size} of ${all.length} already decided, ${pool.length} left`);
+    if (!pool.length) { console.log("nothing left to ask — the sweep is complete"); process.exit(0); }
+  }
+  const urls = pool.slice(start, limit ? start + limit : undefined);
+  if (pool.length && start >= pool.length) {
     // `slice: 60..59 of 56` was the first version of this message. A backwards
     // range is not a range, and printing one is printing a number that is not
     // true of anything.
@@ -702,6 +727,28 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const tally = new Map();
   let withFeed = 0, unreachable = 0;
   let asked = 0, stoppedEarly = false;
+
+  /* THE LEDGER. Until now this script's own header said it: "It writes nothing
+   * into data/ and publishes no number. The output is the log." That was right
+   * for one page read over Sig's shoulder and wrong for seven hundred and five,
+   * because a sweep whose only record is a log has to be read by a person
+   * before anything can act on it, and it starts from nothing every time.
+   *
+   * With a ledger the sweep becomes resumable BY ITSELF — the next run skips
+   * every URL already decided — and the answer becomes a file the directory can
+   * join against: which of the 705 Barchart facilities sit on a platform we
+   * already read, and are therefore a config row away from a green pin rather
+   * than a scraper.
+   *
+   * It MERGES. A batch never clobbers what earlier batches learned. */
+  const ledgerPath = flagValue("ledger", "");
+  const ledger = ledgerPath && existsSync(ledgerPath)
+    ? JSON.parse(readFileSync(ledgerPath, "utf8")) : { generated: null, sites: {} };
+  ledger.sites ||= {};
+  const remember = (url, rec) => {
+    if (!ledgerPath) return;
+    ledger.sites[url] = { ...(ledger.sites[url] || {}), ...rec, seenAt: new Date().toISOString() };
+  };
 
   for (const [i, pageUrl] of urls.entries()) {
     if (Date.now() - began > budgetMs) {
@@ -743,6 +790,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     if (v.kind === "unreachable") {
       unreachable++;
+      /* NOT a finding about this operator — so it is recorded as a retry, and
+         the resume logic will come back to it rather than treating the page as
+         answered. Conflating "we could not reach it" with "it runs nothing we
+         know" is how a sweep quietly writes off a working elevator. */
+      remember(pageUrl, { status: "unreachable", why: v.why, platform: null });
       console.log(`   THE PAGE DID NOT LOAD: ${v.why}`);
       console.log(`   -- a retry, NOT a finding about this operator`);
     } else if (v.kind === "no-platform") {
@@ -751,13 +803,30 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`   NO KNOWN PLATFORM. hosts seen: ${v.hosts.slice(0, 15).join(", ") || "none"}`);
       for (const l of v.leads)
         console.log(`   LEAD: ${l.host} is ${l.platform}'s domain -- the vendor is right, our signature is too narrow`);
+      remember(pageUrl, { status: "no-platform", platform: null,
+                          hosts: v.hosts.slice(0, 15),
+                          leads: v.leads.map((l) => l.platform) });
       const cands = candidates(result);
       if (cands.length) {
         console.log(`   WHAT IT DID SERVE, most board-like first:`);
         for (const c of cands)
           console.log(`     ${c.status} ${c.mime || "?"} ${c.bytes ?? c.body?.length ?? 0}B  ${c.url}`);
       }
-    } else withFeed++;
+    } else {
+      withFeed++;
+      /* The id fact is the whole point: a platform without its site id, location
+         id or key names the adapter but cannot produce a source file. Both are
+         recorded, and the report counts them separately. */
+      const found = feeds.map((f) => {
+        const sig = SIGNATURES.find((sg) => sg.platform === f.platform);
+        return { platform: f.platform, adapter: sig?.adapter ?? null,
+                 ...(sig?.id ? sig.id(f.url) : {}) };
+      });
+      const best = found.find((f) => f.adapter) || found[0] || null;
+      remember(pageUrl, { status: "platform", platform: best?.platform ?? null,
+                          adapter: best?.adapter ?? null,
+                          ids: found.filter((f) => Object.keys(f).length > 2) });
+    }
 
     const towns_ = feeds.map((f) => countLocations(f.body));
     const rosters_ = feeds.map((f) => roster(f.body));
@@ -845,6 +914,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       }
     }
     console.log("");
+  }
+
+  if (ledgerPath) {
+    ledger.generated = new Date().toISOString();
+    ledger.note = "What board each operator's own page actually calls. Written by " +
+                  "scripts/discover.mjs; merged across runs, never clobbered. " +
+                  "status=platform means we know what it runs; ids carries the one " +
+                  "fact a source file cannot be written without.";
+    writeFileSync(ledgerPath, JSON.stringify(ledger, null, 1) + "\n");
+    console.log(`ledger: ${Object.keys(ledger.sites).length} site(s) decided in ${ledgerPath}\n`);
   }
 
   console.log("── tally");

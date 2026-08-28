@@ -171,8 +171,13 @@ SOURCES = [
                 r"(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?\s*$"},
     {"state": "NE", "kind": "warehouse", "note": "PSC warehouse list", "route": "pdf",
      "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Warehouse[%20\s]*List[^\"']*\.pdf",
-     "pattern": r"^(?P<name>.+?)\s+(?P<licence>\d{2,5})\s+(?P<capacity>[\d,]{3,})\s+"
-                r"(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?\s*$"},]
+     # A DIFFERENT DOCUMENT ENTIRELY from the dealer list next to it, by the same
+     # agency: "19 J. E. MEURET GRAIN CO., INC. BRUNSWICK ANTELOPE". Licence
+     # first, no capacity, no state, county instead. Running the dealer's pattern
+     # over it returned zero — which is the right failure, and the reason each
+     # document gets its own line rather than one clever regex for all of them.
+     "pattern": r"^(?P<licence>\d{1,5})\s+(?P<name>.+)\s+(?P<city>[A-Z][A-Z.'&-]*)"
+                r"\s+(?P<county>[A-Z][A-Z.'&-]*)\s*$"},]
 
 DUMP_CAP = 600_000     # bytes of each page kept as a fixture
 DUMP_PAGES = 2         # first page and the one after it: enough to see the pager
@@ -510,16 +515,57 @@ def pdf_records(text, diag, pattern=None):
         rx = re.compile(pattern)
         out = []
         for l in lines:
+            # THE TOTALS LINE IS NOT A BUSINESS. Nebraska's own
+            # "TOTAL LICENSED GRAIN WAREHOUSES 44" — the line the completeness
+            # check reads — matched the record pattern and came out as a company
+            # called "TOTAL" in a town called "GRAIN".
+            if stated_total(l):
+                continue
             m = rx.match(l)
             if not m:
                 continue
             rec = {k: (v or "").strip() for k, v in m.groupdict().items() if v}
             rec.pop("no", None); rec.pop("cls", None); rec.pop("status", None)
+            _two_word_city(rec)
             if len(rec.get("name", "")) > 2:
                 out.append(rec)
         diag["pdfLinesMatched"] = len(out)
         return out
     return _pdf_phone_lines(text, diag)
+
+
+# Words a company name genuinely ends in. Anything else at the end of a name,
+# sitting immediately before a one-word city, is more likely the first half of a
+# two-word town.
+NAME_TAILS = {"INC", "INC.", "LLC", "L.L.C.", "LC", "CO", "CO.", "COMPANY", "CORP",
+              "CORP.", "COOP", "CO-OP", "COOPERATIVE", "NON-STOCK", "NONSTOCK",
+              "LP", "L.P.", "LTD", "LTD.", "PARTNERSHIP", "ASSOCIATION", "FARMS",
+              "GRAIN", "MILLING", "ELEVATOR", "SEED", "FEED", "ENERGY", "AG"}
+
+
+def _two_word_city(rec):
+    """Nebraska's warehouse list is NAME CITY COUNTY with nothing between them,
+    so a two-word town is split by whitespace alone and its first word is read
+    as the end of the company name:
+
+        ELYS INCORPORATED GUIDE   ROCK    WEBSTER     -> Guide Rock
+        ...COOPERATIVE, NON-STOCK BATTLE  CREEK       -> Battle Creek
+        RICHARDSON MILLING INC. SO SIOUX  CITY        -> South Sioux City
+
+    Three of forty-four. Nothing here KNOWS which is right — a fixed list of
+    Nebraska towns would be inventing data — so both readings are carried and
+    the geocoder decides on evidence: "ROCK, NE" does not resolve and "GUIDE
+    ROCK, NE" does. Guessing here would put a pin in the wrong county; carrying
+    the alternative costs one field.
+    """
+    name, city = rec.get("name", ""), rec.get("city", "")
+    if not name or not city or " " in city:
+        return
+    tail = name.rsplit(" ", 1)[-1]
+    if len(tail) < 2 or tail.upper() in NAME_TAILS or not tail[0].isalpha():
+        return
+    rec["cityAlt"] = tail + " " + city
+    rec["nameAlt"] = name[: -len(tail)].strip()
 
 
 def _pdf_phone_lines(text, diag):
@@ -685,9 +731,18 @@ def dump_page(dump, url, body, diag, n):
 STATED_TOTAL = re.compile(r"\b(\d+)\s+out of\s+(\d+)\b", re.I)
 
 # Nebraska prints it on the document instead: "TOTAL LICENSED GRAIN DEALERS 116".
+_KINDS = r"(?:DEALERS?|WAREHOUSES?|LICENSEES?|FACILITIES)"
 STATED_TOTAL_2 = re.compile(
     r"\bTOTAL\s+(?:NUMBER\s+OF\s+)?(?:LICENSED\s+)?[A-Z ]{0,30}?"
-    r"(?:DEALERS?|WAREHOUSES?|LICENSEES?|FACILITIES)\s*[:\-]?\s*(\d{1,5})\b", re.I)
+    + _KINDS + r"\s*[:\-]?\s*(\d{1,5})\b", re.I)
+# AND WITH THE NUMBER IN FRONT. Nebraska's dealer list says
+# "TOTAL LICENSED GRAIN DEALERS 116"; its warehouse list, from the same agency,
+# says "43 TOTAL LICENSED GRAIN WAREHOUSES". The second spelling was invisible
+# to the check — so that document had no completeness guard at all, AND the
+# line parsed as a business called "TOTAL LICENSED" in a town called "GRAIN".
+STATED_TOTAL_3 = re.compile(
+    r"^\s*(\d{1,5})\s+TOTAL\s+(?:NUMBER\s+OF\s+)?(?:LICENSED\s+)?[A-Z ]{0,30}?"
+    + _KINDS + r"\b", re.I | re.M)
 
 
 def stated_total(body):
@@ -699,6 +754,9 @@ def stated_total(body):
     if m:
         return (int(m.group(1)), int(m.group(2)))
     m = STATED_TOTAL_2.search(body)
+    if m:
+        return (0, int(m.group(1)))
+    m = STATED_TOTAL_3.search(body)
     return (0, int(m.group(1))) if m else None
 
 
