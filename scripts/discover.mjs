@@ -681,11 +681,31 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const lp = flagValue("ledger", "");
     const known = lp && existsSync(lp)
       ? JSON.parse(readFileSync(lp, "utf8")).sites || {} : {};
+    /* A VERDICT REACHED BY A WEAKER TEST IS NOT A VERDICT.
+     *
+     * The first live batch asked 45 home pages and wrote off 28 as
+     * "no-platform" — before the sweep learned to follow the operator's own
+     * Cash Bids link, which is the whole reason most of those looked empty.
+     * Resuming past them would skip exactly the pages the fix was written for,
+     * and the ledger would keep that mistake for good.
+     *
+     * A no-platform record that never tried a board page was decided by the
+     * older, weaker test, so it comes round again. This is general: it is how
+     * the ledger survives the sweep getting better at its job. */
     const done = new Set(Object.entries(known)
-      .filter(([, v]) => v.status === "platform" || v.status === "no-platform")
+      .filter(([, v]) => v.status === "platform"
+                      || (v.status === "no-platform" && Array.isArray(v.triedBoardPages)))
       .map(([k]) => k));
     pool = all.filter((u) => !done.has(u));
-    console.log(`resume: ${done.size} of ${all.length} already decided, ${pool.length} left`);
+    /* HOW MANY OF THIS LIST, not how many the ledger holds. It printed
+       "resume: 11 of 4 already decided" — the ledger's whole count against this
+       list's length, a number true of nothing. */
+    const doneHere = all.length - pool.length;
+    const stale = Object.values(known).filter(
+      (v) => v.status === "no-platform" && !Array.isArray(v.triedBoardPages)).length;
+    console.log(`resume: ${doneHere} of ${all.length} already decided, ${pool.length} left` +
+                (stale ? `  (${stale} in the ledger are owed another ask: they were written ` +
+                         `off before the sweep learned to follow the operator's own link)` : ""));
     if (!pool.length) { console.log("nothing left to ask — the sweep is complete"); process.exit(0); }
   }
   const urls = pool.slice(start, limit ? start + limit : undefined);
@@ -841,12 +861,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
                 `${result.quiet ? "" : ", network never went quiet"}`);
 
     /* NOTHING ON THE FRONT PAGE MEANS ASK THE BOARD'S PAGE, NOT GIVE UP. */
-    let followed = null;
+    let followed = null, triedPages = [];
     if (v.kind === "no-platform") {
       const links = bidLink(result, pageUrl);
       const tries = links.length ? links
         : FALLBACK_PATHS.map((p) => new URL(p, pageUrl).href).slice(0, 2);
       for (const next of tries) {
+        triedPages.push(next);
         if (Date.now() - began > budgetMs) break;
         console.log(`   nothing here; following ${links.length ? "their own link" : "a conventional path"}: ${next}`);
         const r2 = await captureAll({ pageUrl: next, timeoutMs: Math.max(5, patienceS) * 1000,
@@ -876,8 +897,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`   NO KNOWN PLATFORM. hosts seen: ${v.hosts.slice(0, 15).join(", ") || "none"}`);
       for (const l of v.leads)
         console.log(`   LEAD: ${l.host} is ${l.platform}'s domain -- the vendor is right, our signature is too narrow`);
+      /* WHAT WAS TRIED, NOT WHETHER IT WORKED.
+       * Recording only a SUCCESSFUL follow would leave a failed one looking
+       * exactly like a record written before the follow existed — and the
+       * resume filter below uses that difference to decide whether a page is
+       * owed another ask. */
       remember(pageUrl, { status: "no-platform", platform: null,
-                          triedBoardPage: followed || undefined,
+                          triedBoardPages: triedPages,
                           hosts: v.hosts.slice(0, 15),
                           leads: v.leads.map((l) => l.platform) });
       const cands = candidates(result);

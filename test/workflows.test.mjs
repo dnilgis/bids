@@ -368,8 +368,14 @@ test("the discover sweep resumes, rebuilds its list, and keeps a ledger", () => 
 
 test("an unreachable page is a retry, not a verdict about the operator", () => {
   const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
-  assert.match(d, /status === "platform" \|\| v\.status === "no-platform"/,
-    "the resume filter must treat ONLY those two as decided");
+  /* The filter got STRICTER since this was written — a no-platform now counts
+     as decided only if a board page was actually tried — so it is checked by
+     intent rather than by matching its exact text: whatever else it does, an
+     unreachable page must never land in the decided set. */
+  const filt = d.slice(d.indexOf("const done = new Set("), d.indexOf(".map(([k]) => k))"));
+  assert.ok(!/unreachable/.test(filt),
+    "the resume filter mentions unreachable — it must never be treated as decided");
+  assert.match(filt, /v\.status === "platform"/, "a decided platform is not being skipped");
   assert.ok(!/status !== "unreachable"[\s\S]{0,80}done\.add/.test(d),
     "an unreachable host is being written off as answered");
   assert.match(d, /remember\(pageUrl, \{ status: "unreachable"/,
@@ -417,4 +423,35 @@ test("a board link on another domain is not followed", () => {
   assert.match(d, /FALLBACK_PATHS/, "there is no fallback when a site publishes no link");
   assert.match(d, /boardPage: followed \|\| pageUrl/,
     "the ledger must record WHICH page answered, or a source file points at the home page");
+});
+
+/* A VERDICT REACHED BY A WEAKER TEST IS NOT A VERDICT.
+ *
+ * The first live batch asked 45 home pages and wrote off 28 as "no-platform" —
+ * before the sweep learned to follow the operator's own Cash Bids link, which
+ * is the whole reason most of them looked empty. Resuming past those would skip
+ * exactly the pages the fix was written for, and the ledger would carry that
+ * mistake for good.
+ *
+ * The tell is whether a board page was ever tried. Which means the ATTEMPT has
+ * to be recorded, not just a successful follow — otherwise a failed follow is
+ * indistinguishable from a record written before follows existed, and the 28
+ * stay written off.
+ */
+test("a no-platform decided before the follow existed is asked again", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(d, /v\.status === "no-platform" && Array\.isArray\(v\.triedBoardPages\)/,
+    "the resume filter treats every no-platform as final, including pre-fix ones");
+  assert.match(d, /triedBoardPages: triedPages/,
+    "only a SUCCESSFUL follow is recorded, so a failed one looks pre-fix forever");
+  assert.match(d, /triedPages\.push\(next\)/,
+    "the attempt is not recorded before it is made");
+});
+
+test("the resume line counts this list, not the whole ledger", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  /* It printed "resume: 11 of 4 already decided" — the ledger's count against
+     this list's length, a number true of nothing. */
+  assert.match(d, /const doneHere = all\.length - pool\.length/);
+  assert.ok(!/resume: \$\{done\.size\} of/.test(d), "still printing the ledger size as a share of the list");
 });
