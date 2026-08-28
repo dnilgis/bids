@@ -1,13 +1,13 @@
 {
- "generated": "2026-08-28T00:09:56Z",
+ "generated": "2026-08-28T00:30:59Z",
  "state": "IA",
  "note": "Licensed grain dealers and warehouses as Iowa publishes them. Name, city, county and phone only -- no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
-  "businesses": 47,
+  "businesses": 41,
   "dealer_only": 14,
-  "warehouse_only": 22,
+  "warehouse_only": 16,
   "both": 11,
-  "with_phone": 39
+  "with_phone": 40
  },
  "diagnostics": [
   {
@@ -24,25 +24,30 @@
    "tables": 9,
    "headerCells": [],
    "rowsSeen": 566,
-   "columnMap": {
-    "name": 0
-   },
+   "columnMap": [
+    {
+     "rows": 561,
+     "map": {
+      "phone": 1,
+      "name": 0
+     }
+    }
+   ],
+   "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    8
+    2
    ],
-   "kept": 8,
+   "kept": 2,
    "sample": [
     {
-     "name": "Advancing Iowa's Agricultural Interests Bill Northey, Secretary of Agriculture",
+     "phone": "563-566-2291",
+     "name": "Phone:",
      "kind": "warehouse"
     },
     {
-     "name": "Iowa Licensed Grain Warehouses",
-     "kind": "warehouse"
-    },
-    {
-     "name": "Name:",
+     "phone": "",
+     "name": "Return to Grain Warehouse Bureau",
      "kind": "warehouse"
     }
    ]
@@ -51,14 +56,50 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
    "kind": "warehouse",
    "note": "paginated licensing list",
+   "pagination": {
+    "works": null,
+    "tried": [
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page=2",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page=1",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?p=2",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?pg=2",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?start=50",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?offset=50",
+      "bytes": 10918,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?limit=1000&offset=25",
+      "bytes": 10918,
+      "changed": false
+     }
+    ],
+    "note": "nothing turned the page; only the first page was read"
+   },
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
-     "status": 200,
-     "bytes": 10918
-    },
-    {
-     "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page=2",
      "status": 200,
      "bytes": 10918
     }
@@ -70,17 +111,22 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 52,
-   "columnMap": {
-    "name": 0,
-    "city": 1,
-    "county": 2,
-    "phone": 3
-   },
+   "rowsSeen": 26,
+   "columnMap": [
+    {
+     "rows": 26,
+     "map": {
+      "name": 0,
+      "city": 1,
+      "county": 2,
+      "phone": 3
+     }
+    }
+   ],
+   "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    25,
-    0
+    25
    ],
    "kept": 25,
    "sample": [
@@ -111,14 +157,50 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
    "kind": "dealer",
    "note": "paginated licensing list",
+   "pagination": {
+    "works": null,
+    "tried": [
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page=2",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page=1",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?p=2",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?pg=2",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?start=50",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?offset=50",
+      "bytes": 12103,
+      "changed": false
+     },
+     {
+      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?limit=1000&offset=25",
+      "bytes": 12103,
+      "changed": false
+     }
+    ],
+    "note": "nothing turned the page; only the first page was read"
+   },
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
-     "status": 200,
-     "bytes": 12103
-    },
-    {
-     "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page=2",
      "status": 200,
      "bytes": 12103
     }
@@ -130,17 +212,22 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 52,
-   "columnMap": {
-    "name": 0,
-    "city": 1,
-    "county": 2,
-    "phone": 3
-   },
+   "rowsSeen": 26,
+   "columnMap": [
+    {
+     "rows": 26,
+     "map": {
+      "name": 0,
+      "city": 1,
+      "county": 2,
+      "phone": 3
+     }
+    }
+   ],
+   "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    25,
-    0
+    25
    ],
    "kept": 25,
    "sample": [
@@ -170,76 +257,10 @@
  ],
  "businesses": [
   {
-   "name": "Advancing Iowa's Agricultural Interests Bill Northey, Secretary of Agriculture",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
-   "name": "City",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
-   "name": "County:",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
-   "name": "Iowa Licensed Grain Warehouses",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
-   "name": "Mailing Address: IDALS, Wallace State Office Building, 502 E. 9th Street, Des Moines, IA 50319: PH: 515-281-5321",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
-   "name": "Name:",
-   "city": null,
-   "county": null,
-   "phone": null,
-   "state": "IA",
-   "licences": [
-    "warehouse"
-   ],
-   "source": "registry-ia"
-  },
-  {
    "name": "Phone:",
    "city": null,
    "county": null,
-   "phone": null,
+   "phone": "563-566-2291",
    "state": "IA",
    "licences": [
     "warehouse"
@@ -250,7 +271,7 @@
    "name": "Return to Grain Warehouse Bureau",
    "city": null,
    "county": null,
-   "phone": null,
+   "phone": "",
    "state": "IA",
    "licences": [
     "warehouse"
