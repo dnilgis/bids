@@ -204,7 +204,7 @@ test("a server reading the offset as a position also gives up all 251", async ()
 test("a walk that ends short of the source's own total says so", async () => {
   const r = await walk("stuck");
   assert.equal(r.records, 25);
-  assert.match(r.diagnostic.INCOMPLETE || "", /says 251 and this walk took 25/,
+  assert.match(r.diagnostic.INCOMPLETE || "", /says 251, this walk took 25 and only read as far as/,
     "25 of 251 reported as a success is the failure this whole file exists for");
 });
 
@@ -258,3 +258,97 @@ for (const [file, total] of [[IOWA_DEALERS, 251], [IOWA_WHOUSE, 102]]) {
       "the completeness check reads this line; without it 25 of 251 looks like success");
   });
 }
+
+/* THE OFFSET WAS DERIVED FROM THE DEDUPED COUNT, SO IT DRIFTED.
+ *
+ * The first live POST walk took 250 of Iowa's stated 251 dealers, and the
+ * diagnostic showed why: eight pages running came back with 24 new records
+ * instead of 25. The absolute offset was `len(recs)` — how many UNIQUE
+ * businesses were held — so every repeated row left the cursor one behind the
+ * walk's real position, the next page re-read a row already seen, and the lag
+ * compounded to the end of the list.
+ *
+ * The cursor advances by the rows the server RETURNED now, which cannot skip a
+ * row whether the offset is 0- or 1-based.
+ *
+ * The second half matters more than the first. A walk that ends short of a
+ * published total has two completely different causes and only one of them is a
+ * failure: rows were lost, or two licensees share a name and a town and
+ * collapsed on the dedup key. Reporting both as INCOMPLETE cries wolf until
+ * nobody reads it; reporting both as fine is worse. So coverage has to be
+ * EVIDENCE. The first version credited the tail sweep with reaching the end
+ * whether or not it had, and a server truncating at row 150 came back "173 of
+ * 251 — the walk read every row". A false all-clear beats a false alarm to the
+ * top of the list of things not to ship.
+ */
+function iowaAbsolute({ total = 251, duplicateAt = null, truncateAfter = null } = {}) {
+  const all = Array.from({ length: total }, (_, i) => [
+    `Biz ${String(i + 1).padStart(3, "0")}`, `Town${i + 1}`, `Cty${i + 1}`,
+    `515-555-${String(i + 1).padStart(4, "0")}`,
+  ]);
+  if (duplicateAt !== null) {                       // same name AND town as row 8
+    all[duplicateAt][0] = all[7][0];
+    all[duplicateAt][1] = all[7][1];
+  }
+  const body = (off) => {
+    const start = Math.max(0, off > 0 ? off - 1 : 0);   // 1-based, as Iowa reads it
+    const rows = all.slice(start, start + 25);
+    return page(rows) +
+      `<p>${rows.length} out of ${total}<button id="next">Next &gt;</button></p>`;
+  };
+  return createServer((req, res) => {
+    const head = { "content-type": "text/html" };
+    if (req.method === "GET") { res.writeHead(200, head); res.end(body(0)); return; }
+    let raw = "";
+    req.on("data", (d) => { raw += d; });
+    req.on("end", () => {
+      let off = Number(new URLSearchParams(raw).get("offset") || 0);
+      if (truncateAfter !== null && off > truncateAfter) off = 0;   // ignores the offset
+      res.writeHead(200, head); res.end(body(off));
+    });
+  });
+}
+
+async function walkAbs(opts) {
+  const s = iowaAbsolute(opts);
+  await new Promise((r) => s.listen(0, "127.0.0.1", r));
+  try {
+    const { stdout } = await exec("python3", [
+      join(ROOT, "scripts/fetch_registries.py"), "--probe-url",
+      `http://127.0.0.1:${s.address().port}/graindealers/`,
+      "--post-walk", "--pages", "25", "--timeout", "10",
+    ], { encoding: "utf8" });
+    return JSON.parse(stdout);
+  } finally { s.close(); }
+}
+
+test("an absolute 1-based offset does not drift, and the tail is reached", async () => {
+  const r = await walkAbs({});
+  assert.equal(r.records, 251, `took ${r.records} of 251 — the cursor is drifting again`);
+  assert.equal(r.diagnostic.INCOMPLETE, undefined);
+  /* Two short pages are the delta probe finding out the server is absolute —
+     on a 1-based server `offset=25` re-serves the row page one ended on. What
+     must not happen is a short page EVERY page, which is the drift: eight in a
+     row on the live Iowa walk. */
+  const pages = r.diagnostic.newPerPage.slice(1, -1);
+  assert.ok(pages.filter((n) => n === 24).length <= 2,
+    `${pages.filter((n) => n === 24).length} pages came back one short: ${pages.join(",")}`);
+});
+
+test("a name repeated in the same town is NOT reported as a missed row", async () => {
+  const r = await walkAbs({ duplicateAt: 200 });
+  assert.equal(r.records, 250, "251 rows with one duplicate pair is 250 unique businesses");
+  assert.equal(r.diagnostic.INCOMPLETE, undefined,
+    "a duplicate is not a missed row, and calling it one is how a guard stops being read");
+  assert.match(r.diagnostic.shortButCovered || "", /read every row/);
+});
+
+test("a server that quietly stops paging IS reported, and never as all-clear", async () => {
+  const r = await walkAbs({ truncateAfter: 150 });
+  assert.ok(r.records < 251, "the fixture truncates; it cannot return everything");
+  assert.equal(r.diagnostic.shortButCovered, undefined,
+    "a false all-clear: rows were lost and it said the walk read every one");
+  assert.match(r.diagnostic.INCOMPLETE || "", /only read as far as row/);
+  assert.ok(r.diagnostic.offsetIgnoredFrom !== undefined,
+    "the page came back identical to page one and nothing noticed");
+});

@@ -416,7 +416,8 @@ def walk_post(src, pages, timeout, diag, dump):
     if told:
         diag["statedTotal"] = {"shown": told[0], "total": told[1]}
 
-    recs, seen = [], set()
+    recs, seen, covered = [], set(), 0
+    first_page = keyset(extract(body))       # what "the server ignored the offset" looks like
     for r in extract(body, diag):
         k = (r.get("name", "").lower(), r.get("city", "").lower())
         if k not in seen:
@@ -430,10 +431,17 @@ def walk_post(src, pages, timeout, diag, dump):
     # posting the same +25. The switch has to arm on the first stall at any
     # page, and in absolute mode the offset is simply how many rows are already
     # held, which is self-correcting.
-    mode, tried_absolute = "delta", False
+    # THE CURSOR IS WHERE THE WALK HAS READ TO, NOT HOW MANY IT KEPT.
+    # It was len(recs) — the DEDUPED count — so every repeated row made the
+    # offset lag one behind the walk's real position, the next page re-read a
+    # row it already had, and the lag compounded. Iowa's dealers came back 24 at
+    # a time instead of 25 for eight pages running and the walk finished one row
+    # short of the tail: 250 of a stated 251. Advancing by the rows the server
+    # actually RETURNED cannot skip a row whether its offset is 0- or 1-based.
+    mode, tried_absolute, cursor = "delta", False, 0
     for i in range(1, max(1, pages)):
         fields = dict(spec.get("fields") or {})
-        fields[field] = str(delta if mode == "delta" else len(recs))
+        fields[field] = str(delta if mode == "delta" else cursor)
         fields.setdefault("submit", "filter")
         try:
             status, body = post(src["url"], fields, jar, timeout)
@@ -443,8 +451,16 @@ def walk_post(src, pages, timeout, diag, dump):
         diag["pages"].append({"url": "POST %s=%s" % (field, fields[field]),
                               "status": status, "bytes": len(body)})
         dump_page(dump, src["url"] + "-post%d" % i, body, diag, i)
+        rows = extract(body, diag)
+        # THE ECHO IS RECORDED BEFORE THE LOOP CAN BREAK ON IT.
+        # A page identical to the first one is how a server says it is ignoring
+        # the offset, and it also yields nothing new — so checking it after the
+        # zero-new break meant the flag was never once set on the case it was
+        # written for.
+        if i > 1 and keyset(rows) == first_page:
+            diag.setdefault("offsetIgnoredFrom", fields[field])
         new = 0
-        for r in extract(body, diag):
+        for r in rows:
             k = (r.get("name", "").lower(), r.get("city", "").lower())
             if k in seen:
                 continue
@@ -454,14 +470,71 @@ def walk_post(src, pages, timeout, diag, dump):
             if mode == "delta" and not tried_absolute:
                 mode, tried_absolute = "absolute", True
                 diag["offsetMode"] = "absolute"
+                cursor = len(recs)          # first absolute ask: where we are
                 continue
             break
-        if told and len(recs) >= told[1]:
+        if mode == "absolute":
+            cursor += len(rows)
+        else:
+            cursor = len(recs)
+        # COVERAGE IS EVIDENCE, NOT ARITHMETIC. A server that ignores the offset
+        # hands back page one forever, and counting those rows as ground covered
+        # produced a FALSE ALL-CLEAR on a fixture that truncated at row 150: 173
+        # of 251, reported as "the walk read every row". A page identical to the
+        # first one is proof of nothing.
+        if "offsetIgnoredFrom" not in diag:
+            covered = max(covered, cursor)
+        if told and covered >= told[1]:
             break
         time.sleep(0.4)
     diag.setdefault("offsetMode", mode)
+
+    # SHORT OF THE STATED TOTAL? ASK FOR THE TAIL DIRECTLY.
+    # Walking forward can stall one page from the end for reasons this code
+    # cannot see from here. The last page has a known offset, so ask for it
+    # rather than giving up: two requests, bounded, and it either finds the
+    # missing rows or proves they are not missing.
+    if told and len(recs) < told[1] and mode == "absolute":
+        for off in (max(0, told[1] - delta), max(0, told[1] - 1)):
+            try:
+                f = dict(spec.get("fields") or {})
+                f[field] = str(off); f.setdefault("submit", "filter")
+                _, body = post(src["url"], f, jar, timeout)
+            except Exception:
+                break
+            got = 0
+            for r in extract(body, diag):
+                k = (r.get("name", "").lower(), r.get("city", "").lower())
+                if k in seen:
+                    continue
+                seen.add(k); recs.append(r); got += 1
+            tail = keyset(extract(body))
+            echoed = tail == first_page
+            diag.setdefault("tailSweep", []).append(
+                {"offset": off, "new": got, "gotPageOneBack": echoed})
+            if not echoed and tail:
+                # The server honoured an offset at the end of the list, so the
+                # tail exists and was read.
+                covered = max(covered, told[1])
+            if len(recs) >= told[1]:
+                break
+            time.sleep(0.4)
+    diag["covered"] = covered
     if told and len(recs) < told[1]:
-        diag["INCOMPLETE"] = "the page says %d and this walk took %d" % (told[1], len(recs))
+        # TWO DIFFERENT FAILURES, AND ONLY ONE OF THEM IS A FAILURE.
+        # If the walk read past the stated total and still holds fewer unique
+        # businesses, no row was missed — two licensees share a name and a town
+        # and collapsed on the dedup key. If it never got that far, rows were
+        # genuinely lost. Reporting both as "INCOMPLETE" would cry wolf until
+        # nobody reads it.
+        if covered >= told[1]:
+            diag["shortButCovered"] = (
+                "the page says %d and %d unique businesses came back; the walk read "
+                "every row, so the difference is names repeating in the same town"
+                % (told[1], len(recs)))
+        else:
+            diag["INCOMPLETE"] = ("the page says %d, this walk took %d and only read as "
+                                  "far as row %d" % (told[1], len(recs), covered))
     return recs
 
 
