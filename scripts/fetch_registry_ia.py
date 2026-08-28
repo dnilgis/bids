@@ -78,12 +78,16 @@ class Tables(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.rows, self.headers = [], []
+        self.per_table = []          # rows grouped by the table they came from
         self._row, self._cell, self._in = None, None, None
+        self._depth = 0
         self.tables = 0
 
     def handle_starttag(self, tag, attrs):
         if tag == "table":
             self.tables += 1
+            self._depth += 1
+            self.per_table.append([])
         elif tag == "tr":
             self._row = []
         elif tag in ("td", "th"):
@@ -104,7 +108,11 @@ class Tables(HTMLParser):
         elif tag == "tr" and self._row is not None:
             if any(c for c in self._row):
                 self.rows.append(self._row)
+                if self.per_table:
+                    self.per_table[-1].append(self._row)
             self._row = None
+        elif tag == "table":
+            self._depth = max(0, self._depth - 1)
 
 
 def label_split(text):
@@ -142,12 +150,20 @@ def columns_of(headers, rows):
                 idx[want] = i
                 break
     if "phone" not in idx and rows:
+        # A THIRD OF ALL ROWS WAS THE WRONG BAR, and the Iowa directory report
+        # proved it: nine nested layout tables, 566 rows between them, and the
+        # real data confined to one of them. No single column had phones in a
+        # third of everything, so no phone column was found, so nothing was
+        # parsed — 8 records out of 300. Judge each table on its own and take
+        # the column that is mostly phones WITHIN it.
         width = max(len(r) for r in rows)
+        best, best_hits = None, 0
         for i in range(width):
             hits = sum(1 for r in rows if len(r) > i and PHONE.search(r[i] or ""))
-            if hits >= max(3, len(rows) // 3):
-                idx["phone"] = i
-                break
+            if hits > best_hits:
+                best, best_hits = i, hits
+        if best is not None and best_hits >= max(3, len(rows) // 4):
+            idx["phone"] = best
     if "name" not in idx and rows:
         idx["name"] = 0
     # NO HEADERS AT ALL. Both Iowa lists print Name, City, County, Phone in that
@@ -155,12 +171,18 @@ def columns_of(headers, rows):
     # before it. Without this a header-less page kept the name and the phone and
     # silently dropped the CITY — and city is the only thing these records carry
     # that can be turned into a pin at all.
-    if "phone" in idx and ("city" not in idx or "county" not in idx):
-        ph = idx["phone"]
-        if ph - 2 >= 1 and "city" not in idx:
-            idx["city"] = ph - 2
-        if ph - 1 >= 1 and "county" not in idx:
-            idx["county"] = ph - 1
+    if "phone" in idx and ("city" not in idx or "county" not in idx) and rows:
+        # ORDER-INDEPENDENT, because the two Iowa sources do not agree on it.
+        # The licensing lists print Name, City, County, Phone; the directory
+        # report prints Name, City, Phone, County. Counting backwards from the
+        # phone column got county right on one and city wrong on both. What is
+        # stable is that whatever is left over, in order, is city then county.
+        width = max(len(r) for r in rows)
+        spare = [i for i in range(width) if i not in (idx.get("name"), idx.get("phone"))]
+        if spare and "city" not in idx:
+            idx["city"] = spare[0]
+        if len(spare) > 1 and "county" not in idx:
+            idx["county"] = spare[1]
     return idx
 
 
@@ -170,15 +192,64 @@ def fetch(url, timeout=45):
         return r.status, r.read().decode("utf-8", "replace")
 
 
+PAGE_PARAMS = [
+    ("%s?page=%%d" % "{u}", 1, 1),      # 1-indexed page number
+    ("%s?page=%%d" % "{u}", 1, 0),      # 0-indexed page number
+    ("%s?p=%%d" % "{u}", 1, 1),
+    ("%s?pg=%%d" % "{u}", 1, 1),
+    ("%s?start=%%d" % "{u}", 25, 25),   # row offset
+    ("%s?offset=%%d" % "{u}", 25, 25),
+    ("%s?limit=1000&offset=%%d" % "{u}", 25, 0),
+]
+
+
+def probe_pagination(url, timeout, diag):
+    """Return (url_format, step) for whatever actually turns the page, or None.
+
+    A parameter that changes nothing is worse than no parameter: it produces a
+    confident run that quietly holds a tenth of the data.
+    """
+    try:
+        _, first = fetch(url, timeout)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("probe: %s" % type(ex).__name__)
+        return None
+    tried = []
+    for tmpl, step, base in PAGE_PARAMS:
+        fmt = tmpl.replace("{u}", url)
+        try:
+            _, second = fetch(fmt % (base + step), timeout)
+        except Exception as ex:
+            tried.append({"param": fmt, "error": type(ex).__name__})
+            continue
+        moved = second != first
+        tried.append({"param": fmt % (base + step), "bytes": len(second), "changed": moved})
+        if moved:
+            diag["pagination"] = {"works": fmt, "step": step, "tried": tried}
+            return fmt, step
+        time.sleep(0.3)
+    diag["pagination"] = {"works": None, "tried": tried,
+                          "note": "nothing turned the page; only the first page was read"}
+    return None
+
+
 def scrape(src, pages, timeout, verbose):
     """Returns (records, diagnostic). Never raises: one dead list must not cost
     the other two."""
     diag = {"url": src["url"], "kind": src["kind"], "note": src["note"]}
+    _ = pages
     urls = [src["url"]]
     if src.get("paginate"):
-        # Guessing a pagination shape is guessing; ask for the obvious ones and
-        # let the diagnostic say which, if any, moved the row count.
-        urls += ["%s?page=%d" % (src["url"], p) for p in range(2, pages + 1)]
+        # PROBE THE PARAMETER, DO NOT ASSUME IT. `?page=2` returned a
+        # byte-identical page — 10,918 bytes both times — so it was being
+        # ignored outright, and the run took 25 of Iowa's 251 dealers while
+        # reporting success. Ask for page two under several spellings, keep the
+        # first that changes the body, and say in the diagnostic which one won
+        # so the next state starts from evidence.
+        param = probe_pagination(src["url"], timeout, diag)
+        if param:
+            fmt, step = param
+            urls += [fmt % (step * i) for i in range(1, pages)]
 
     seen, recs = set(), []
     for u in urls:
@@ -198,15 +269,24 @@ def scrape(src, pages, timeout, verbose):
         diag["rowsSeen"] = diag.get("rowsSeen", 0) + len(p.rows)
 
         got = []
-        if p.rows:
-            idx = columns_of(p.headers, p.rows)
-            diag["columnMap"] = idx
-            for r in p.rows:
-                if "phone" in idx and len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
-                    continue                       # header or spacer row
+        # EACH TABLE ON ITS OWN. A page can be one data table wrapped in eight
+        # layout tables, and treating them as a single pile of rows is what
+        # turned three hundred Iowa warehouses into eight.
+        groups = [g for g in (p.per_table or []) if g] or ([p.rows] if p.rows else [])
+        maps = []
+        for g in groups:
+            idx = columns_of(p.headers, g)
+            if "phone" not in idx:
+                continue                            # not the data table
+            maps.append({"rows": len(g), "map": idx})
+            for r in g:
+                if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
+                    continue                        # header or spacer row
                 rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
                 if rec.get("name"):
                     got.append(rec)
+        diag["columnMap"] = maps or columns_of(p.headers, p.rows)
+        diag["tablesWithData"] = len(maps)
         if not got:
             # The table route found nothing. Try the labelled-text route before
             # giving up, and keep a sample of what we actually received.
@@ -248,11 +328,24 @@ def main():
         body = Path(a.fixture).read_text()
         p = Tables()
         p.feed(body)
-        idx = columns_of(p.headers, p.rows)
         print("fixture: %d tables, %d rows, headers %s" % (p.tables, len(p.rows), p.headers[:8]))
-        print("column map: %s" % idx)
-        for r in p.rows[:4]:
-            print("   %s" % r)
+        groups = [g for g in (p.per_table or []) if g] or ([p.rows] if p.rows else [])
+        kept = 0
+        for n, g in enumerate(groups):
+            idx = columns_of(p.headers, g)
+            if "phone" not in idx:
+                print("   table %d: %d rows, no phone column — skipped" % (n, len(g)))
+                continue
+            print("   table %d: %d rows, map %s" % (n, len(g), idx))
+            for r in g:
+                if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
+                    continue
+                rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
+                if rec.get("name"):
+                    kept += 1
+                    if kept <= 3:
+                        print("      %s" % rec)
+        print("   kept %d" % kept)
         flat = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body))
         print("labelled-text route would find: %d" % len(label_split(flat)))
         return 0
