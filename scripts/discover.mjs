@@ -37,6 +37,27 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
  * knowing its key is a better answer than "unknown", because it says which
  * adapter to write next. */
 /* Flags that consume the argument after them. Anything here is not a URL. */
+/* HOW HARD THIS SWEEP CURRENTLY TRIES. Bump it whenever the asking gets better
+ * — a new fallback path, a smarter link scan, a longer wait — and every
+ * "no-platform" verdict recorded under a lower number is asked again.
+ *
+ * This is the second time an improvement has invalidated old negatives. The
+ * first was the follow-the-link change, patched by hand with a check for
+ * triedBoardPages. The second was Sig auditing the very first row of the list I
+ * gave him: Assumption Coop publishes a full board at /cashbids, a path the
+ * fallback list did not contain, and the site's own link was missed because a
+ * redirect meant the page body was never kept. Both were filed as "publishes no
+ * bids online" — a claim about somebody's business, made from a bug.
+ *
+ * A negative is only as good as the test that produced it, so the test now
+ * carries a number and the ledger remembers which one it used.
+ *
+ *   1  first sweep: home page only
+ *   2  follow the operator's own Cash Bids link; conventional paths
+ *   3  keep any same-site HTML (redirect-proof); /cashbids and eight more paths
+ */
+export const PROBE_VERSION = 3;
+
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
                              "--budget", "--list", "--ledger"]);
 
@@ -692,9 +713,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
      * A no-platform record that never tried a board page was decided by the
      * older, weaker test, so it comes round again. This is general: it is how
      * the ledger survives the sweep getting better at its job. */
+    /* A NEGATIVE IS ONLY AS GOOD AS THE TEST THAT PRODUCED IT.
+       A platform we identified stays identified — finding a board is not made
+       wrong by looking harder. A "nothing here" recorded by an older, weaker
+       sweep is not a fact about the operator, and comes round again. */
     const done = new Set(Object.entries(known)
       .filter(([, v]) => v.status === "platform"
-                      || (v.status === "no-platform" && Array.isArray(v.triedBoardPages)))
+                      || (v.status === "no-platform" && (v.probeVersion ?? 0) >= PROBE_VERSION))
       .map(([k]) => k));
     pool = all.filter((u) => !done.has(u));
     /* HOW MANY OF THIS LIST, not how many the ledger holds. It printed
@@ -702,10 +727,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
        list's length, a number true of nothing. */
     const doneHere = all.length - pool.length;
     const stale = Object.values(known).filter(
-      (v) => v.status === "no-platform" && !Array.isArray(v.triedBoardPages)).length;
+      (v) => v.status === "no-platform" && (v.probeVersion ?? 0) < PROBE_VERSION).length;
     console.log(`resume: ${doneHere} of ${all.length} already decided, ${pool.length} left` +
-                (stale ? `  (${stale} in the ledger are owed another ask: they were written ` +
-                         `off before the sweep learned to follow the operator's own link)` : ""));
+                (stale ? `  (${stale} in the ledger are owed another ask: they were ` +
+                         `written off by an older, weaker probe than v${PROBE_VERSION})` : ""));
     if (!pool.length) { console.log("nothing left to ask — the sweep is complete"); process.exit(0); }
   }
   const urls = pool.slice(start, limit ? start + limit : undefined);
@@ -783,8 +808,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
    * mean. Conventional paths are only tried when there is no such link.
    */
   const BID_LINK = /cash[\s_-]*bids?|grain[\s_-]*bids?|\bbids?\b|market[\s_-]*(?:prices|zone)/i;
-  const FALLBACK_PATHS = ["/cash-bids/", "/grain/cash-bids/", "/markets/cash-bids/",
-                          "/cash-bids", "/grain/", "/markets/"];
+  /* UNHYPHENATED FIRST. The list had /cash-bids and /cash-bids/ and not
+     /cashbids — the single most obvious spelling, and the one Assumption Coop
+     actually uses. Guessed paths are the fallback for sites that publish no
+     link; a fallback list missing the commonest spelling is barely a fallback. */
+  const FALLBACK_PATHS = ["/cashbids", "/cash-bids/", "/cashbids/", "/grain/cash-bids/",
+                          "/markets/cash-bids/", "/cash-bids", "/grainbids",
+                          "/grain-bids", "/bids", "/markets/", "/grain/"];
+
+  const sameSite = (a, b) => {
+    try {
+      return new URL(a).hostname.replace(/^www\./, "")
+          === new URL(b).hostname.replace(/^www\./, "");
+    } catch { return false; }
+  };
 
   const bidLink = (result, pageUrl) => {
     const home = new URL(pageUrl);
@@ -792,12 +829,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
        bytes) skipped small pages entirely, and plenty of co-operative front
        pages are small. Match the page we asked for; fall back to the first
        HTML with anchors in it. */
-    const html = result.responses.filter((r) => r.body && /html/i.test(r.mime || ""));
-    const doc = html.find((r) => r.url === pageUrl || r.url === pageUrl.replace(/\/$/, ""))
-             || html.find((r) => /<a\b/i.test(r.body));
-    if (!doc) return [];
+    /* Every same-site document, richest first — a redirect, a frameset or a
+       nav loaded separately all put the links somewhere other than the exact
+       URL we asked for. */
+    const html = result.responses
+      .filter((r) => r.body && /html/i.test(r.mime || "") && sameSite(r.url, pageUrl))
+      .sort((a, b) => b.body.length - a.body.length);
+    const docs = html.filter((r) => /<a\b/i.test(r.body));
+    if (!docs.length) return [];
     const out = [];
-    for (const m of doc.body.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+    for (const m of docs.map((d) => d.body).join("\n").matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
       const [, href, text] = m;
       const label = text.replace(/<[^>]+>/g, " ");
       if (!BID_LINK.test(label) && !BID_LINK.test(href)) continue;
@@ -849,7 +890,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
          keeps bodies that look like a board and drops HTML documents — right for
          finding a feed, and it means the operator's own "Cash Bids" link is
          never visible. That link is the whole answer for a list of home pages. */
-      keep: (u, mime) => looksLikeData(u, mime) || (u === pageUrl && /html/i.test(mime || "")),
+      /* ANY html from this host, not the one URL we asked for. Matching the
+         exact URL meant a single redirect — acoop2.com/ landing somewhere else,
+         a trailing slash dropped, a locale path added — left the document
+         unretained, so the link scan saw nothing and fell through to guessed
+         paths. Assumption Coop publishes a full Barchart board at /cashbids and
+         was reported to Sig as an elevator that posts no bids online. */
+      keep: (u, mime) => looksLikeData(u, mime)
+        || (/html/i.test(mime || "") && sameSite(u, pageUrl)),
       timeoutMs: Math.max(5, patienceS) * 1000,
       /* A page that never goes quiet is exactly this case, so the settle
          window grows with the wait rather than staying at 2.5 seconds. */
@@ -888,7 +936,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
          the resume logic will come back to it rather than treating the page as
          answered. Conflating "we could not reach it" with "it runs nothing we
          know" is how a sweep quietly writes off a working elevator. */
-      remember(pageUrl, { status: "unreachable", why: v.why, platform: null });
+      remember(pageUrl, { probeVersion: PROBE_VERSION, status: "unreachable", why: v.why, platform: null });
       console.log(`   THE PAGE DID NOT LOAD: ${v.why}`);
       console.log(`   -- a retry, NOT a finding about this operator`);
     } else if (v.kind === "no-platform") {
@@ -902,7 +950,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
        * exactly like a record written before the follow existed — and the
        * resume filter below uses that difference to decide whether a page is
        * owed another ask. */
-      remember(pageUrl, { status: "no-platform", platform: null,
+      remember(pageUrl, { probeVersion: PROBE_VERSION, status: "no-platform", platform: null,
                           triedBoardPages: triedPages,
                           hosts: v.hosts.slice(0, 15),
                           leads: v.leads.map((l) => l.platform) });
@@ -923,7 +971,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
                  ...(sig?.id ? sig.id(f.url) : {}) };
       });
       const best = found.find((f) => f.adapter) || found[0] || null;
-      remember(pageUrl, { status: "platform", platform: best?.platform ?? null,
+      remember(pageUrl, { probeVersion: PROBE_VERSION, status: "platform", platform: best?.platform ?? null,
                           adapter: best?.adapter ?? null,
                           /* WHICH page answered. A source file has to point at
                              the page that actually loads the board, not the home

@@ -378,7 +378,7 @@ test("an unreachable page is a retry, not a verdict about the operator", () => {
   assert.match(filt, /v\.status === "platform"/, "a decided platform is not being skipped");
   assert.ok(!/status !== "unreachable"[\s\S]{0,80}done\.add/.test(d),
     "an unreachable host is being written off as answered");
-  assert.match(d, /remember\(pageUrl, \{ status: "unreachable"/,
+  assert.match(d, /remember\(pageUrl, \{ probeVersion: PROBE_VERSION, status: "unreachable"/,
     "an unreachable page is not recorded at all, so it cannot be retried deliberately");
 });
 
@@ -411,8 +411,14 @@ test("a flag's value is never mistaken for a URL", () => {
  */
 test("the sweep keeps the page's own HTML, or it can never see the link", () => {
   const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
-  assert.match(d, /keep: \(u, mime\) => looksLikeData\(u, mime\) \|\| \(u === pageUrl/,
+  /* The override got BROADER since this was written — any same-site HTML, not
+     the one exact URL — because an exact match lost the body to a redirect. The
+     intent is unchanged: captureAll drops HTML by default and the link scan
+     needs it. */
+  assert.match(d, /keep: \(u, mime\) => looksLikeData\(u, mime\)/,
     "captureAll drops HTML by default; without this override the link scan reads nothing");
+  assert.match(d, /\/html\/i\.test\(mime \|\| ""\) && sameSite\(u, pageUrl\)/,
+    "the override no longer keeps the document at all");
   assert.match(d, /import \{ captureAll, looksLikeData \}/);
 });
 
@@ -440,8 +446,8 @@ test("a board link on another domain is not followed", () => {
  */
 test("a no-platform decided before the follow existed is asked again", () => {
   const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
-  assert.match(d, /v\.status === "no-platform" && Array\.isArray\(v\.triedBoardPages\)/,
-    "the resume filter treats every no-platform as final, including pre-fix ones");
+  assert.match(d, /v\.status === "no-platform" && \(v\.probeVersion \?\? 0\) >= PROBE_VERSION/,
+    "the resume filter treats every no-platform as final, whatever probe produced it");
   assert.match(d, /triedBoardPages: triedPages/,
     "only a SUCCESSFUL follow is recorded, so a failed one looks pre-fix forever");
   assert.match(d, /triedPages\.push\(next\)/,
@@ -486,4 +492,52 @@ test("an unreachable page is not filed as an elevator that publishes no bids", (
     "a network failure would be reported to Sig as a finding about the operator");
   assert.match(g, /triedBoardPages/,
     "the list must say which board page was tried, or it cannot be checked by hand");
+});
+
+/* SIG AUDITED THE FIRST ROW OF THE LIST AND IT WAS WRONG.
+ *
+ * acoop2.com — Assumption Coop — publishes a full Barchart board at /cashbids,
+ * and I gave it to him as an elevator that posts no bids online. Two bugs, and
+ * one of them is the more serious kind:
+ *
+ *   - the fallback path list had /cash-bids and /cash-bids/ and NOT /cashbids,
+ *     the commonest spelling there is;
+ *   - the document body was kept only when the response URL matched the URL we
+ *     asked for exactly, so one redirect left the page unretained, the link scan
+ *     saw no anchors, and the site's own "CASH BIDS" link — right there in the
+ *     served HTML — was never followed.
+ *
+ * A "no board published" row is a claim about somebody's business. Getting it
+ * from a bug is worse than having no list, because a wrong list gets worked.
+ *
+ * The general fix is the version number: a negative is only as good as the test
+ * that produced it, so improving the test invalidates the negatives. A POSITIVE
+ * stays — finding a board is not made wrong by looking harder.
+ */
+test("improving the probe re-asks every negative it recorded", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(d, /export const PROBE_VERSION = \d+/, "the probe has no version to compare");
+  assert.equal((d.match(/probeVersion: PROBE_VERSION/g) || []).length, 3,
+    "every verdict — platform, no-platform and unreachable — must be stamped");
+  /* A positive must NOT be re-asked: that would re-walk the whole list forever. */
+  const filt = d.slice(d.indexOf("const done = new Set("), d.indexOf(".map(([k]) => k))"));
+  assert.match(filt, /v\.status === "platform"\s*$/m,
+    "an identified platform is being re-asked, so the sweep can never finish");
+});
+
+test("the fallback paths include the spelling that was actually missed", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  const list = /const FALLBACK_PATHS = \[([\s\S]*?)\]/.exec(d)[1];
+  for (const p of ["/cashbids", "/cash-bids", "/grain-bids", "/bids"])
+    assert.ok(list.includes(`"${p}"`), `fallback paths do not include ${p}`);
+  assert.ok(list.indexOf('"/cashbids"') < list.indexOf('"/cash-bids/"'),
+    "the unhyphenated spelling should be tried first; it is the commonest");
+});
+
+test("a redirect does not cost us the page body", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.ok(!/keep: \(u, mime\) => looksLikeData\(u, mime\) \|\| \(u === pageUrl/.test(d),
+    "the body is kept only on an exact URL match — one redirect and the links vanish");
+  assert.match(d, /sameSite\(u, pageUrl\)/, "same-site HTML is not being kept");
+  assert.match(d, /const sameSite = /, "there is no host comparison to keep by");
 });
