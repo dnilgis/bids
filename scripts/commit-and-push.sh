@@ -52,11 +52,36 @@ for i in $(seq 1 "$tries"); do
   fi
   echo "::warning title=push was rejected::somebody pushed first (attempt $i of $tries); rebasing"
   # --autostash so an unstaged file left by a later step cannot block the rebase.
+  #
+  # AUTOSTASH DOES NOT COVER UNTRACKED FILES, and that lost a run.
+  # 2026-08-28: a job untracked two stale files with `git rm --cached`, which
+  # left them sitting in the working tree. The remote had those same paths.
+  # The rebase refused before it started --
+  #     error: The following untracked working tree files would be overwritten
+  #     by checkout: data/gaps/no-board-published.csv
+  # -- and thirty minutes of work across twenty runners was committed locally
+  # and never pushed. autostash stashes tracked modifications; an untracked
+  # file is invisible to it.
+  #
+  # So untracked files are stashed explicitly first and restored after. Nothing
+  # is deleted: a job that meant to leave a file behind still gets it back.
+  UNTRACKED_STASHED=0
+  if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    if git stash push --include-untracked --quiet -m "commit-and-push untracked"; then
+      UNTRACKED_STASHED=1
+      echo "stashed untracked files so the rebase can check out"
+    fi
+  fi
   if ! git pull --rebase --autostash; then
+    [ "$UNTRACKED_STASHED" = "1" ] && git stash pop --quiet 2>/dev/null || true
     git rebase --abort 2>/dev/null || true
     echo "::error title=rebase failed::the work is committed locally and NOT on the remote"
     exit 1
   fi
+  # The rebase worked; put the untracked files back. `|| true` because a file
+  # the rebase itself introduced makes the pop conflict, and by then the pop no
+  # longer matters -- the remote's copy is the one we want.
+  [ "$UNTRACKED_STASHED" = "1" ] && { git stash pop --quiet 2>/dev/null || git stash drop --quiet 2>/dev/null || true; }
   sleep $(( i * 5 ))
 done
 
