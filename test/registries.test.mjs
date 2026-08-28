@@ -419,3 +419,67 @@ print(len(m.SOURCES), len({s["state"] for s in m.SOURCES}))
   const [, states] = out[1].split(" ").map(Number);
   assert.ok(states >= 6, `only ${states} states in the table — the country is fifty`);
 });
+
+/* A PHONE WAS THE ENTRY REQUIREMENT, AND MOST STATES DO NOT PUBLISH ONE.
+ *
+ * Six states were added and all six returned zero. One reason covered five of
+ * them: `if ("phone" not in idx) continue`, written when the only states in the
+ * table were Iowa and Missouri, which both publish phones.
+ *
+ * North Dakota's register had parsed PERFECTLY — 286 rows, name, county, city
+ * and zip all mapped — and every record was thrown away for want of a column
+ * North Dakota does not have. Arkansas the same, Ohio the same, and all three
+ * PDFs. A phone is the best dedup key this project has; it is not proof that a
+ * row is a business.
+ *
+ * These run against the documents the run committed. The counts are what those
+ * files contain, not round numbers chosen to pass.
+ */
+const PDFS = {
+  IN: "https-www-in-gov-da-163601981f-licensees-by-county-06-18-2026-pdf-language-id-1.txt",
+  SD: "http-puc-sd-gov-commission-warehouse-grain-20license-20info-pdf.txt",
+  NE: "https-psc-nebraska-gov-sites-default-files-doc-2026-08-27-20grain-20dealer-20lis.txt",
+};
+const OHIO = "https-dam-assets-ohio-gov-raw-upload-v1745847679-grain-csv.csv";
+const NDAK = "https-lars-ndda-nd-gov-public-alllicenses-4.html";
+const ARK = "https-agriculture-arkansas-gov-crops-industry-quality-control-and-compliance-gra.html";
+
+const pyOn = (code) => py(`${LOAD}\n${code}`).trim();
+
+for (const [file, label, want] of [[NDAK, "North Dakota", 285], [ARK, "Arkansas", 32]]) {
+  test(`${label} publishes no phone column and is still read`, { skip: !existsSync(fixture(file)) }, () => {
+    const n = Number(pyOn(`
+b = open(r"${fixture(file)}", encoding="utf-8", errors="replace").read()
+print(len(m.extract(b, {})))`));
+    assert.equal(n, want, `${n} records — a state without phones is being dropped again`);
+  });
+}
+
+test("Ohio's header is on the second row and the first is junk", { skip: !existsSync(fixture(OHIO)) }, () => {
+  const out = pyOn(`
+b = open(r"${fixture(OHIO)}", encoding="utf-8", errors="replace").read()
+d = {}
+r = m.read_csv(b, d)
+print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
+  assert.equal(Number(out[0]), 335, "Ohio's 335 rows are being dropped");
+  assert.equal(out[1], "1", "the header is row 1; row 0 is `s,s,s,s,s,s`");
+  assert.equal(out[2], "541 GRAIN COMPANY, LLC");
+});
+
+for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 265], ["NE", PDFS.NE, 114]]) {
+  test(`the ${st} bid sheet's own line shape is read`, { skip: !existsSync(fixture(file)) }, () => {
+    const out = pyOn(`
+src = [s for s in m.SOURCES if s["state"] == "${st}" and s.get("pattern")][0]
+t = open(r"${fixture(file)}", encoding="utf-8", errors="replace").read()
+d = {}
+r = m.pdf_records(t, d, src["pattern"])
+print(len(r), r[0]["name"], r[0].get("city", ""), sep="|")`).split("|");
+    assert.equal(Number(out[0]), want, `${out[0]} of an expected ${want} lines matched`);
+    /* The name must be GREEDY. Non-greedy read South Dakota's "ADVANCED
+       SUNFLOWER LLC BHURON" as a company called "ADVANCED" whose permit letter
+       was the S of SUNFLOWER, and split "Berne Hi-Way Hatchery, Inc." into a
+       city called "Inc. Berne". */
+    assert.ok(out[1].length > 8, `name truncated to "${out[1]}" — the pattern went non-greedy`);
+    assert.ok(!/^(Inc|LLC)\.?\s/.test(out[2]), `city "${out[2]}" is the tail of the company name`);
+  });
+}

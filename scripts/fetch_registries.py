@@ -146,10 +146,19 @@ SOURCES = [
      "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/"},
 
     # ── PDFs. Eight states publish this way; these three are the largest. ────
+    # "1 Berne Hi-Way Hatchery, Inc. Berne Adams Active"
     {"state": "IN", "kind": "dealer+warehouse", "note": "licensees by county", "route": "pdf",
-     "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1"},
+     "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1",
+     "pattern": r"^\s*(?P<no>\d{1,4})\s+(?P<name>.+)\s+(?P<city>[A-Z][\w.'-]*(?:\s[A-Z][\w.'-]*)?)"
+                r"\s+(?P<county>[A-Z][\w.'-]*(?:\s[A-Z][\w.'-]*)?)\s+"
+                r"(?P<status>Active|Inactive|Pending|Expired)\s*$"},
+    # "ADVANCED SUNFLOWER LLC BHURON A+VCS" — the permit letter is glued to the
+    # town, so the name has to be greedy or the S of SUNFLOWER becomes the permit.
     {"state": "SD", "kind": "dealer+warehouse", "note": "PUC licence list", "route": "pdf",
-     "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf"},
+     "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf",
+     "pattern": r"^(?P<name>.+)\s(?P<licence>[BFSW])(?P<city>[A-Z][A-Za-z0-9.'&/-]*"
+                r"(?: [A-Z0-9][A-Za-z0-9.'&/-]*)*?)(?:,\s*(?P<st>[A-Z]{2}))?"
+                r"\s+(?P<cls>[A-Z][A-Z+]{2,})\s*$"},
 
     # NEBRASKA REFRESHES ITS LIST CONSTANTLY AND PUTS THE DATE IN THE FILENAME,
     # so a hard-coded URL is a scraper with an expiry date on it. The link is
@@ -157,9 +166,13 @@ SOURCES = [
     # only state that prints its own totals on the document — "TOTAL LICENSED
     # GRAIN DEALERS 116" — which is the completeness check for free.
     {"state": "NE", "kind": "dealer", "note": "PSC dealer list", "route": "pdf",
-     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf"},
+     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf",
+     "pattern": r"^(?P<name>.+?)\s+(?P<licence>\d{2,5})\s+(?P<capacity>[\d,]{3,})\s+"
+                r"(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?\s*$"},
     {"state": "NE", "kind": "warehouse", "note": "PSC warehouse list", "route": "pdf",
-     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Warehouse[%20\s]*List[^\"']*\.pdf"},]
+     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Warehouse[%20\s]*List[^\"']*\.pdf",
+     "pattern": r"^(?P<name>.+?)\s+(?P<licence>\d{2,5})\s+(?P<capacity>[\d,]{3,})\s+"
+                r"(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?\s*$"},]
 
 DUMP_CAP = 600_000     # bytes of each page kept as a fixture
 DUMP_PAGES = 2         # first page and the one after it: enough to see the pager
@@ -436,9 +449,21 @@ def read_csv(body, diag):
     rows = [r for r in _csv.reader(io.StringIO(body), dialect) if any(c.strip() for c in r)]
     if not rows:
         return []
-    diag["csvColumns"] = rows[0][:14]
-    diag["rowsSeen"] = len(rows) - 1
-    return rows_to_records(rows[0], rows[1:], diag)
+    # THE HEADER IS NOT ALWAYS THE FIRST ROW. Ohio's export opens with a row of
+    # `s,s,s,s,s,s` before the real one — so the column mapper was handed six
+    # columns all called "s", recognised none of them, and dropped 336 rows.
+    # Take the first row in the first ten that actually reads like field names.
+    known = {n for names in CSV_KEYS.values() for n in names}
+    def score(r):
+        return sum(1 for c in r
+                   if any(k == c.strip().lower() or k in c.strip().lower() for k in known))
+    head = max(range(min(10, len(rows))), key=lambda i: (score(rows[i]), -i))
+    if score(rows[head]) < 2:
+        head = 0
+    diag["headerRow"] = head
+    diag["csvColumns"] = rows[head][:14]
+    diag["rowsSeen"] = len(rows) - head - 1
+    return rows_to_records(rows[head], rows[head + 1:], diag)
 
 
 def pdf_text(raw, diag):
@@ -462,7 +487,42 @@ def pdf_text(raw, diag):
         return None
 
 
-def pdf_records(text, diag):
+def pdf_records(text, diag, pattern=None):
+    """With a pattern, read the document's own shape; without one, fall back to
+    lines carrying a phone.
+
+    THE PATTERN BELONGS TO THE DOCUMENT, NOT TO THIS FUNCTION. Three states,
+    three completely different line shapes:
+
+        NE  ADVANCED SUNFLOWER, LLC 3070 35,000 HURON, SD
+        SD  ADVANCED SUNFLOWER LLC BHURON A+VCS        <- permit letter GLUED on
+        IN  1 Berne Hi-Way Hatchery, Inc. Berne Adams Active
+
+    Each is written against the text the run committed and measured against it
+    before it ships. The name is GREEDY in all three: non-greedy found the "S"
+    of SUNFLOWER as South Dakota's permit letter and read the company as
+    "ADVANCED", and it split "Berne Hi-Way Hatchery, Inc." into a name and a
+    city called "Inc. Berne".
+    """
+    lines = [re.sub(r"\s+", " ", l.strip()) for l in (text or "").splitlines() if l.strip()]
+    diag["pdfLines"] = len(lines)
+    if pattern:
+        rx = re.compile(pattern)
+        out = []
+        for l in lines:
+            m = rx.match(l)
+            if not m:
+                continue
+            rec = {k: (v or "").strip() for k, v in m.groupdict().items() if v}
+            rec.pop("no", None); rec.pop("cls", None); rec.pop("status", None)
+            if len(rec.get("name", "")) > 2:
+                out.append(rec)
+        diag["pdfLinesMatched"] = len(out)
+        return out
+    return _pdf_phone_lines(text, diag)
+
+
+def _pdf_phone_lines(text, diag):
     """One record per line that carries a phone, which is the only field these
     documents reliably share. THE FIELD MAPPING IS NOT GUESSED HERE — the text
     is dumped alongside the run (debug/registries/*.txt) so the next pass writes
@@ -543,7 +603,7 @@ def fetch_file(src, timeout, diag, dump):
         text = pdf_text(raw, diag)
         if text is None:
             return []
-        recs = pdf_records(text, diag)
+        recs = pdf_records(text, diag, src.get("pattern"))
         told = stated_total(text)
         if told and told[1]:
             diag["statedTotal"] = {"total": told[1]}
@@ -590,7 +650,7 @@ def fetch_file(src, timeout, diag, dump):
         text = pdf_text(raw, diag)
         if text is None:
             return []
-        recs = pdf_records(text, diag)
+        recs = pdf_records(text, diag, src.get("pattern"))
         told = stated_total(text)
         if told and told[1]:
             diag["statedTotal"] = {"total": told[1]}
@@ -955,7 +1015,15 @@ def extract(body, diag=None):
     maps = []
     for g in groups:
         idx = columns_of(p.headers, g)
-        if "phone" not in idx:
+        # A PHONE IS THE BEST KEY, NOT AN ENTRY REQUIREMENT.
+        # This said `if "phone" not in idx: continue`, written when the only two
+        # states in the table were Iowa and Missouri, which both publish one.
+        # Most states do not. North Dakota's register parsed perfectly — 286
+        # rows, name/county/city/zip all mapped — and every record was thrown
+        # away for want of a column North Dakota does not have. Arkansas too,
+        # and Ohio, and all three PDFs: five of six new states returned zero for
+        # this one reason.
+        if "name" not in idx or not ({"city", "county", "address"} & set(idx)):
             continue                            # not the data table
         # ONE CELL PER ROW IS NOT A TABLE. When the phone column and the
         # name column are the same index, every "record" is the entire line
@@ -963,19 +1031,26 @@ def extract(body, diag=None):
         # business name comes out as the whole sentence. That parsed as
         # seven confident records on the Iowa report fixture, which is
         # exactly the kind of success that hides a failure.
-        if idx.get("phone") == idx.get("name"):
+        if "phone" in idx and idx.get("phone") == idx.get("name"):
             continue
         maps.append({"rows": len(g), "map": idx})
         for r in g:
-            if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
+            if "phone" in idx and len(r) > idx["phone"] and not PHONE.search(
+                    r[idx["phone"]] or ""):
                 continue                        # header or spacer row
             rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
             # "Phone:" arrived as a business name from a header row that
             # happened to carry a phone-shaped cell. A name that is a bare
             # label, or two characters long, is not a business.
             nm = (rec.get("name") or "").strip()
+            # With no phone to prove a row is data, the header row walks straight
+            # through as a business called "Company Name".
+            if nm.lower() in {(h or "").strip().lower() for h in p.headers}:
+                continue
             if nm and len(nm) > 2 and not nm.rstrip(":").lower() in (
-                    "name", "phone", "city", "county", "company", "address", "state", "zip"):
+                    "name", "phone", "city", "county", "company", "address", "state",
+                    "zip", "licensee", "license no", "license number", "company name",
+                    "office city", "grain licensee name", "status", "no."):
                 got.append(rec)
     diag["columnMap"] = maps or columns_of(p.headers, p.rows)
     diag["tablesWithData"] = len(maps)
