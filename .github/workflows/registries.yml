@@ -135,6 +135,28 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # A SOURCE THAT PUBLISHES ITS OWN TOTAL IS CHECKED AGAINST IT.
+      # Iowa prints "25 out of 251" under its table and three runs took the 25
+      # and reported success. If a walk ends short of a total the source itself
+      # published, that goes at the top of the summary, not into a diagnostic
+      # nobody opens.
+      - name: Did any source come up short of its own total
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p = pathlib.Path("data/registries.json")
+          if not p.exists():
+              raise SystemExit
+          short = json.loads(p.read_text()).get("counts", {}).get("incompleteSources") or []
+          if not short:
+              print("\n**Every source that publishes a total was read in full.**")
+              raise SystemExit
+          print("\n### incomplete — the source says there is more\n")
+          for s in short:
+              print("* `%s` (%s) — %s" % (s["url"], s.get("state"), s["why"]))
+          PY
+
       - name: Show the diagnostic when nothing parsed
         if: always()
         run: |
