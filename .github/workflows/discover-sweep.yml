@@ -84,15 +84,26 @@ jobs:
       - name: How much of this is a config row rather than a scraper
         if: always()
         run: |
+          # tee, NOT just the summary. This wrote only to the step summary, so
+          # the one number the whole sweep exists to produce was absent from the
+          # log — and the log is what gets downloaded and read.
+          node scripts/platform_report.mjs | tee /tmp/report.txt || echo "no ledger yet"
           {
             echo '```'
-            node scripts/platform_report.mjs || echo "no ledger yet"
+            cat /tmp/report.txt 2>/dev/null || echo "no ledger yet"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # THE TWO LISTS OF WHAT WE DO NOT HAVE — regenerated whenever the inputs
+      # move, because a worklist that goes stale gets phoned twice.
+      - name: Rebuild the gap lists
+        if: always()
+        continue-on-error: true
+        run: node scripts/gap_lists.mjs
 
       - name: Commit
         if: always()
         run: |
-          git add data/platforms.json probe-lists/barchart-sites.txt 2>/dev/null || true
+          git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
           n=$(node -e "try{const s=require('./data/platforms.json').sites;process.stdout.write(String(Object.keys(s).length))}catch(e){process.stdout.write('0')}")
           bash scripts/commit-and-push.sh "discover: $n operator sites identified [skip ci]"

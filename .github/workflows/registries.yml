@@ -187,10 +187,18 @@ jobs:
       # that every ten minutes through the trading day. Everything the run
       # learned died on the runner and the only sign was a red tick under a
       # summary that said it had succeeded.
+      # THE TWO LISTS OF WHAT WE DO NOT HAVE — regenerated whenever the inputs
+      # move, because a worklist that goes stale gets phoned twice.
+      - name: Rebuild the gap lists
+        if: always()
+        continue-on-error: true
+        run: node scripts/gap_lists.mjs
+
       - name: Commit
         if: always()
         run: |
           git add data/registries.json data/registry-survey.json 2>/dev/null || true
+          git add data/gaps 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
           git add geocodes/places.json data/directory.json 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
