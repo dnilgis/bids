@@ -1,0 +1,104 @@
+# Iowa's licensed grain dealers and warehouses — the first state.
+#
+# WHY THIS EXISTS
+#
+# Sig: "have you been getting the licensed grain buyers and populating our
+# elevator map". The answer was no, and the grey pins on map.html read zero.
+# This is the source that fills them.
+#
+# WHY ONE STATE AND NOT TWENTY
+#
+# Barchart carries 86 Iowa facilities; we scrape 6; the state licenses 251
+# grain dealers and 102 grain warehouses. So the registry is roughly three
+# times the commercial feed — but a dealer licence is held by ethanol plants,
+# feed mills, processors and farm operations as well as by country elevators,
+# and nobody knows yet what share of those 251 is somewhere a farmer can
+# actually sell a load. The report step measures that before nineteen more
+# scrapers get written.
+#
+# IT DOES NOT TOUCH THE MAP. This commits data/registry-ia.json and nothing
+# else. Merging it into known-elevators.json is a separate, deliberate step
+# once the numbers have been looked at — putting 251 unverified businesses
+# straight onto the map would be the same mistake as trusting a coordinate
+# nobody checked.
+
+name: registry — Iowa
+
+on:
+  schedule:
+    # 07:10 UTC on the 3rd — the day after the Barchart harvest, so the two
+    # never contend and the report reads against a fresh directory.
+    - cron: "10 7 3 * *"
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: "How many pages to try on the paginated lists (the one-page report needs none)"
+        default: "20"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: registry-ia
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The parser has never met the real page — both Iowa hosts are unreachable
+      # from the sandbox it was written in. It carries its own diagnostic for
+      # exactly that reason: a run that parses nothing still reports the status,
+      # the byte count, the table and row counts, the header cells it found and
+      # the first row it could not read, which is everything needed to fix it in
+      # one pass instead of three.
+      - name: Fetch the Iowa lists
+        id: fetch
+        continue-on-error: true
+        run: python scripts/fetch_registry_ia.py --pages "${{ inputs.pages || '20' }}"
+
+      - name: The four questions
+        if: always()
+        run: |
+          pip install --quiet zipcodes
+          python scripts/registry_report.py | tee /tmp/report.txt || true
+          {
+            echo "### Iowa registry"
+            echo ""
+            echo '```'
+            cat /tmp/report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Show the diagnostic when nothing parsed
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p = pathlib.Path("data/registry-ia.json")
+          if not p.exists():
+              print("\n**No file was written at all.**"); raise SystemExit
+          d = json.loads(p.read_text())
+          if d.get("counts", {}).get("businesses"):
+              raise SystemExit
+          print("\n### what the pages actually returned\n")
+          for diag in d.get("diagnostics", []):
+              print("```json"); print(json.dumps(diag, indent=1)[:1800]); print("```")
+          PY
+
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add data/registry-ia.json
+          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
+          n=$(python -c "import json;print(json.load(open('data/registry-ia.json'))['counts']['businesses'])")
+          git commit -m "registry: Iowa, $n businesses [skip ci]"
+          git push
