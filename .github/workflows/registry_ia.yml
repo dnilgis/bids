@@ -22,7 +22,7 @@
 # straight onto the map would be the same mistake as trusting a coordinate
 # nobody checked.
 
-name: registry — Iowa
+name: registry — Iowa and the survey
 
 on:
   schedule:
@@ -58,6 +58,17 @@ jobs:
       # the byte count, the table and row counts, the header cells it found and
       # the first row it could not read, which is everything needed to fix it in
       # one pass instead of three.
+      # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
+      # Three shapes are already confirmed and no two are alike: Iowa is HTML
+      # lists with no street address, Illinois is a search form with nothing to
+      # page through, and Nebraska is a PDF that DOES carry street addresses.
+      # So "nineteen more scrapers like Iowa's" is wrong before it starts. This
+      # classifies every candidate — table, form, PDF, Tableau, a page offering
+      # a CSV — so the next nineteen are designed against evidence.
+      - name: Survey what the other states publish
+        continue-on-error: true
+        run: python scripts/survey_registries.py
+
       - name: Fetch the Iowa lists
         id: fetch
         continue-on-error: true
@@ -69,6 +80,20 @@ jobs:
           pip install --quiet zipcodes
           python scripts/registry_report.py | tee /tmp/report.txt || true
           {
+            echo "### the survey"
+            echo ""
+            echo '```'
+            python - <<'SV' 2>/dev/null || echo "no survey file"
+          import json, pathlib
+          p = pathlib.Path("data/registry-survey.json")
+          if p.exists():
+              for r in json.loads(p.read_text())["results"]:
+                  print("%-3s %-28s %-26s %s" % (r["state"], r["expected"][:28],
+                        r.get("shape") or ("HTTP %s" % r.get("status")),
+                        (r.get("error") or "")[:50] or ("%s rows" % r.get("rows", ""))))
+          SV
+            echo '```'
+            echo ""
             echo "### Iowa registry"
             echo ""
             echo '```'
@@ -97,8 +122,8 @@ jobs:
         run: |
           git config user.name  "agsist-bot"
           git config user.email "bot@agsist.com"
-          git add data/registry-ia.json
+          git add data/registry-ia.json data/registry-survey.json
           git diff --cached --quiet && { echo "nothing changed"; exit 0; }
-          n=$(python -c "import json;print(json.load(open('data/registry-ia.json'))['counts']['businesses'])")
-          git commit -m "registry: Iowa, $n businesses [skip ci]"
+          n=$(python -c "import json,os;p='data/registry-ia.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
+          git commit -m "registry: Iowa $n businesses, plus the state survey [skip ci]"
           git push
