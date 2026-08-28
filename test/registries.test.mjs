@@ -352,3 +352,70 @@ test("a server that quietly stops paging IS reported, and never as all-clear", a
   assert.ok(r.diagnostic.offsetIgnoredFrom !== undefined,
     "the page came back identical to page one and nothing noticed");
 });
+
+/* THE OTHER TWENTY STATES ARE NOT SHAPED LIKE IOWA.
+ *
+ * Twenty-two states were checked one at a time on 2026-08-28, by fetching each
+ * page rather than assuming from the last one. What they actually publish: ten
+ * PDFs, five one-page HTML tables, five search forms with nothing to page
+ * through, two client-side dashboards that leak no rows, one CSV. Kansas and
+ * Oklahoma publish no list at all — confirmed by looking, not inferred from a
+ * 403.
+ *
+ * So "nineteen more scrapers like Iowa's" was wrong before it started. It is
+ * three routes and a row per state, and these guard the two new routes.
+ *
+ * The CSV test exists because of Missouri: an eleven-column table where
+ * "Manager Name" sat left of "Company Name", and taking the first name-ish
+ * column threw away every street address on a 288-record run. Longest header
+ * match wins, and this proves it still does.
+ */
+import { execFileSync as run1 } from "node:child_process";
+
+const py = (code) => run1("python3", ["-c", code], { encoding: "utf8" });
+const LOAD = `
+import importlib.util
+spec = importlib.util.spec_from_file_location("fr", "${join(ROOT, "scripts/fetch_registries.py")}")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+`;
+
+test("a csv column order we have never seen maps correctly", () => {
+  const out = py(`${LOAD}
+csv = ("Manager Name,Company Name,Address,City,State,Zip,County,Phone,License Type,Capacity\\n"
+       "Jane Roe,Heartland Grain LLC,12 Elevator Rd,Bucyrus,OH,44820,Crawford,419-555-0101,Warehouse,1250000\\n"
+       "John Doe,\\"Smith & Sons, Inc.\\",4 Depot St,Fostoria,OH,44830,Seneca,(419) 555-0102,Dealer,0\\n")
+d = {}
+r = m.read_csv(csv, d)
+print(len(r), "|", r[0]["name"], "|", r[0]["capacity"], "|", r[1]["name"])
+`).trim();
+  const [n, name, cap, quoted] = out.split(" | ");
+  assert.equal(n, "2");
+  assert.equal(name, "Heartland Grain LLC", "Manager Name stole the business name again");
+  assert.equal(cap, "1250000", "the capacity column was dropped");
+  assert.equal(quoted, "Smith & Sons, Inc.", "a quoted comma split one business into two");
+});
+
+test("a state that prints its own total is checked against it, in either spelling", () => {
+  const out = py(`${LOAD}
+for t in ("Showing 25 out of 251 results", "TOTAL LICENSED GRAIN DEALERS 116",
+          "TOTAL NUMBER OF LICENSED WAREHOUSES: 44", "no total here"):
+    print(m.stated_total(t))
+`).trim().split("\n");
+  assert.equal(out[0], "(25, 251)", "Iowa's spelling");
+  assert.equal(out[1], "(0, 116)", "Nebraska prints its total on the PDF and it must count");
+  assert.equal(out[2], "(0, 44)");
+  assert.equal(out[3], "None", "a document with no total must not invent one");
+});
+
+test("every source in the table declares a route the code implements", () => {
+  const out = py(`${LOAD}
+routes = sorted({s.get("route", "html") for s in m.SOURCES})
+print(",".join(routes))
+print(len(m.SOURCES), len({s["state"] for s in m.SOURCES}))
+`).trim().split("\n");
+  for (const r of out[0].split(",")) {
+    assert.ok(["html", "csv", "pdf"].includes(r), `source declares unknown route "${r}"`);
+  }
+  const [, states] = out[1].split(" ").map(Number);
+  assert.ok(states >= 6, `only ${states} states in the table — the country is fifty`);
+});

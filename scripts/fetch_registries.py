@@ -119,7 +119,47 @@ SOURCES = [
     # state was found to publish.
     {"state": "MO", "kind": "dealer+warehouse", "note": "database listing",
      "url": "https://agriculture.mo.gov/grains/grainsearch.php", "paginate": True},
-]
+
+    # ── VERIFIED 2026-08-28, one state at a time, by fetching each page ──────
+    # Twenty-two states were checked. The Iowa shape — an HTML list that pages
+    # by POST — turned out to be the EXCEPTION, not the rule. What states
+    # actually publish, counted: ten PDFs, five one-page HTML tables, five
+    # search forms with nothing to page through, two client-side dashboards
+    # that leak no data, one CSV. Kansas and Oklahoma publish no list at all,
+    # which was confirmed by looking rather than assumed from a 403.
+    #
+    # So the work was never "nineteen more scrapers like Iowa's". It is three
+    # routes — table, csv, pdf — and a row per state.
+
+    # OHIO IS THE BEST-SHAPED SOURCE ANY STATE PUBLISHES: a plain CSV at a
+    # stable URL, no form, no pager, no licence key. Ohio is also one of the
+    # worst holes on the map — 42 Barchart facilities and not one read.
+    {"state": "OH", "kind": "dealer+warehouse", "note": "csv export", "route": "csv",
+     "url": "https://dam.assets.ohio.gov/raw/upload/v1745847679/Grain.csv"},
+
+    # The whole table on one page. (The sibling /licensesearch/4 is a form —
+    # not that one.)
+    {"state": "ND", "kind": "dealer+warehouse", "note": "licence register",
+     "url": "https://lars.ndda.nd.gov/public/allLicenses/4/"},
+
+    {"state": "AR", "kind": "warehouse", "note": "warehouse list",
+     "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/"},
+
+    # ── PDFs. Eight states publish this way; these three are the largest. ────
+    {"state": "IN", "kind": "dealer+warehouse", "note": "licensees by county", "route": "pdf",
+     "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1"},
+    {"state": "SD", "kind": "dealer+warehouse", "note": "PUC licence list", "route": "pdf",
+     "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf"},
+
+    # NEBRASKA REFRESHES ITS LIST CONSTANTLY AND PUTS THE DATE IN THE FILENAME,
+    # so a hard-coded URL is a scraper with an expiry date on it. The link is
+    # discovered from the programme page each run instead. Nebraska is also the
+    # only state that prints its own totals on the document — "TOTAL LICENSED
+    # GRAIN DEALERS 116" — which is the completeness check for free.
+    {"state": "NE", "kind": "dealer", "note": "PSC dealer list", "route": "pdf",
+     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf"},
+    {"state": "NE", "kind": "warehouse", "note": "PSC warehouse list", "route": "pdf",
+     "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Warehouse[%20\s]*List[^\"']*\.pdf"},]
 
 DUMP_CAP = 600_000     # bytes of each page kept as a fixture
 DUMP_PAGES = 2         # first page and the one after it: enough to see the pager
@@ -336,6 +376,238 @@ PAGE_PARAMS = [
 ]
 
 
+CSV_KEYS = {
+    "name": ("company name", "business name", "licensee", "company", "name", "firm",
+             "facility name", "dba", "legal name"),
+    "city": ("city", "town", "city/town", "mailing city", "physical city"),
+    "county": ("county",),
+    "phone": ("phone", "telephone", "phone number", "business phone"),
+    "address": ("address", "street", "street address", "mailing address",
+                "physical address", "address 1", "address line 1"),
+    "zip": ("zip", "zip code", "postal code", "zipcode"),
+    "st": ("state", "st"),
+    "capacity": ("capacity", "bushel capacity", "licensed capacity", "storage capacity"),
+    "licence": ("license", "licence", "license number", "license type", "license no",
+                "licence class", "type"),
+}
+
+
+def rows_to_records(header, rows, diag):
+    """Map an arbitrary column order onto our fields by header name.
+
+    Longest match first, so "Manager Name" cannot win the name column from
+    "Company Name" — that mistake threw away every Missouri street address on a
+    288-record run.
+    """
+    idx, used = {}, set()
+    lower = [re.sub(r"\s+", " ", (h or "").strip().lower()) for h in header]
+    for field, names in CSV_KEYS.items():
+        best, bestlen = None, -1
+        for i, h in enumerate(lower):
+            if i in used or not h:
+                continue
+            for n in names:
+                if (h == n or h.startswith(n) or n in h) and len(n) > bestlen:
+                    best, bestlen = i, len(n)
+        if best is not None:
+            idx[field] = best
+            used.add(best)
+    diag["columnMap"] = [{"rows": len(rows), "map": idx}]
+    if "name" not in idx:
+        diag.setdefault("errors", []).append("no name column in %s" % lower[:12])
+        return []
+    out = []
+    for r in rows:
+        rec = {k: (r[i].strip() if len(r) > i and r[i] else "") for k, i in idx.items()}
+        nm = rec.get("name") or ""
+        if len(nm) > 2 and nm.lower() not in CSV_KEYS["name"]:
+            out.append(rec)
+    return out
+
+
+def read_csv(body, diag):
+    """A state that publishes a CSV has done the hard part. Ohio does."""
+    import csv as _csv
+    import io
+    try:
+        dialect = _csv.Sniffer().sniff(body[:4096], delimiters=",;\t|")
+    except Exception:
+        dialect = _csv.excel
+    rows = [r for r in _csv.reader(io.StringIO(body), dialect) if any(c.strip() for c in r)]
+    if not rows:
+        return []
+    diag["csvColumns"] = rows[0][:14]
+    diag["rowsSeen"] = len(rows) - 1
+    return rows_to_records(rows[0], rows[1:], diag)
+
+
+def pdf_text(raw, diag):
+    """Text out of a PDF, or None with the reason recorded.
+
+    pypdf is a pure-python wheel and installs anywhere; if it is missing the
+    run degrades to "this source needs pypdf" rather than failing the state.
+    """
+    try:
+        import io
+        from pypdf import PdfReader
+    except Exception as ex:
+        diag.setdefault("errors", []).append("pdf: pypdf unavailable (%s)" % type(ex).__name__)
+        return None
+    try:
+        r = PdfReader(io.BytesIO(raw))
+        diag["pdfPages"] = len(r.pages)
+        return "\n".join((p.extract_text() or "") for p in r.pages)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("pdf: %s" % type(ex).__name__)
+        return None
+
+
+def pdf_records(text, diag):
+    """One record per line that carries a phone, which is the only field these
+    documents reliably share. THE FIELD MAPPING IS NOT GUESSED HERE — the text
+    is dumped alongside the run (debug/registries/*.txt) so the next pass writes
+    it against the real document. Ten states publish this way; getting it right
+    once is worth more than getting it approximately right eight times."""
+    out = []
+    for line in (text or "").splitlines():
+        line = re.sub(r"\s{2,}", "  ", line.strip())
+        if not line or not PHONE.search(line):
+            continue
+        m = PHONE.search(line)
+        before, after = line[:m.start()].strip(" ,-"), line[m.end():].strip(" ,-")
+        # "Name  City ST  Zip" is the usual left-hand shape.
+        st = re.search(r"\b([A-Z]{2})\b[\s,]*(\d{5})?\s*$", before)
+        rec = {"name": before, "phone": m.group(0)}
+        if st:
+            rec["st"] = st.group(1)
+            if st.group(2):
+                rec["zip"] = st.group(2)
+            rec["name"] = before[:st.start()].strip(" ,-")
+        parts = re.split(r"\s{2,}", rec["name"])
+        if len(parts) >= 2:
+            rec["name"], rec["city"] = parts[0].strip(), parts[-1].strip()
+        if after and len(after) < 40:
+            rec["county"] = after
+        if len(rec["name"]) > 2:
+            out.append(rec)
+    diag["pdfLinesWithPhone"] = len(out)
+    return out
+
+
+def discover_pdf(page_url, pattern, timeout, diag):
+    """Nebraska puts the refresh date in the filename, so the URL changes every
+    time the list is republished. Hard-coding it is a scraper with an expiry
+    date. Find the link on the programme page instead."""
+    try:
+        _, body = fetch(page_url, timeout)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("discover: %s" % type(ex).__name__)
+        return None
+    hits = re.findall(r'href="([^"]+)"', body)
+    rx = re.compile(pattern, re.I)
+    for h in hits:
+        if rx.search(h):
+            u = urllib.parse.urljoin(page_url, unescape(h))
+            diag["discovered"] = u
+            return u
+    diag.setdefault("errors", []).append("discover: nothing on %s matched %s" % (page_url, pattern))
+    return None
+
+
+def fetch_file(src, timeout, diag, dump):
+    """A CSV or a PDF: one request, no pagination, and the RAW TEXT IS KEPT.
+
+    Ten of the twenty-two states checked publish a PDF and one publishes a CSV.
+    Neither can be parsed well from a guess about its layout, and none of these
+    hosts is reachable from the machine this parser is written on — the same
+    trap that cost four blind runs on Iowa. So the extracted text is committed
+    next to the run and the field mapping is written against the document."""
+    url = src["url"]
+    if src.get("discover"):
+        url = discover_pdf(url, src["discover"], timeout, diag) or ""
+        if not url:
+            return []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            raw, status = r.read(), r.status
+    except Exception as ex:
+        diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
+        return []
+    diag["pages"] = [{"url": url, "status": status, "bytes": len(raw)}]
+
+    if src["route"] == "csv":
+        text = raw.decode("utf-8-sig", "replace")
+        recs = read_csv(text, diag)
+    else:
+        text = pdf_text(raw, diag)
+        if text is None:
+            return []
+        recs = pdf_records(text, diag)
+        told = stated_total(text)
+        if told and told[1]:
+            diag["statedTotal"] = {"total": told[1]}
+            if len(recs) < told[1]:
+                diag["INCOMPLETE"] = ("the document says %d and this parse found %d"
+                                      % (told[1], len(recs)))
+
+    if dump is not None:
+        try:
+            dump.mkdir(parents=True, exist_ok=True)
+            (dump / (slug(url) + (".csv" if src["route"] == "csv" else ".txt"))
+             ).write_text(text[:DUMP_CAP], "utf-8")
+        except Exception as ex:
+            diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
+    return recs
+
+
+def fetch_file(src, timeout, diag, dump):
+    """A CSV or a PDF: one request, no pagination, and the RAW TEXT IS KEPT.
+
+    Ten of the twenty-two states checked publish a PDF and one publishes a CSV.
+    Neither can be parsed well from a guess about its layout, and none of these
+    hosts is reachable from the machine this parser is written on — the same
+    trap that cost four blind runs on Iowa. So the extracted text is committed
+    next to the run and the field mapping is written against the document."""
+    url = src["url"]
+    if src.get("discover"):
+        url = discover_pdf(url, src["discover"], timeout, diag) or ""
+        if not url:
+            return []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            raw, status = r.read(), r.status
+    except Exception as ex:
+        diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
+        return []
+    diag["pages"] = [{"url": url, "status": status, "bytes": len(raw)}]
+
+    if src["route"] == "csv":
+        text = raw.decode("utf-8-sig", "replace")
+        recs = read_csv(text, diag)
+    else:
+        text = pdf_text(raw, diag)
+        if text is None:
+            return []
+        recs = pdf_records(text, diag)
+        told = stated_total(text)
+        if told and told[1]:
+            diag["statedTotal"] = {"total": told[1]}
+            if len(recs) < told[1]:
+                diag["INCOMPLETE"] = ("the document says %d and this parse found %d"
+                                      % (told[1], len(recs)))
+
+    if dump is not None:
+        try:
+            dump.mkdir(parents=True, exist_ok=True)
+            (dump / (slug(url) + (".csv" if src["route"] == "csv" else ".txt"))
+             ).write_text(text[:DUMP_CAP], "utf-8")
+        except Exception as ex:
+            diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
+    return recs
+
+
 def slug(url):
     return re.sub(r"[^a-z0-9]+", "-", url.lower()).strip("-")[:80]
 
@@ -352,13 +624,22 @@ def dump_page(dump, url, body, diag, n):
 
 STATED_TOTAL = re.compile(r"\b(\d+)\s+out of\s+(\d+)\b", re.I)
 
+# Nebraska prints it on the document instead: "TOTAL LICENSED GRAIN DEALERS 116".
+STATED_TOTAL_2 = re.compile(
+    r"\bTOTAL\s+(?:NUMBER\s+OF\s+)?(?:LICENSED\s+)?[A-Z ]{0,30}?"
+    r"(?:DEALERS?|WAREHOUSES?|LICENSEES?|FACILITIES)\s*[:\-]?\s*(\d{1,5})\b", re.I)
+
 
 def stated_total(body):
-    """Iowa prints "25 out of 251" under its table. A source that tells you how
-    many rows it has is a completeness check for free, and the only reason the
-    25-of-251 run ever looked like a success is that nobody read it."""
+    """A source that says how many rows it has is a completeness check for free,
+    and the only reason 25-of-251 ever looked like a success is that nobody read
+    it. Iowa prints "25 out of 251" under its table; Nebraska prints "TOTAL
+    LICENSED GRAIN DEALERS 116" on the PDF. Same guard, two spellings."""
     m = STATED_TOTAL.search(body)
-    return (int(m.group(1)), int(m.group(2))) if m else None
+    if m:
+        return (int(m.group(1)), int(m.group(2)))
+    m = STATED_TOTAL_2.search(body)
+    return (0, int(m.group(1))) if m else None
 
 
 def post(url, fields, jar, timeout=45):
@@ -730,7 +1011,21 @@ def extract(body, diag=None):
 def scrape(src, pages, timeout, verbose, dump=None):
     """Returns (records, diagnostic). Never raises: one dead list must not cost
     the other two."""
-    diag = {"url": src["url"], "kind": src["kind"], "note": src["note"]}
+    diag = {"url": src["url"], "kind": src["kind"], "note": src["note"],
+            "route": src.get("route", "html")}
+
+    if src.get("route") in ("csv", "pdf"):
+        recs = fetch_file(src, timeout, diag, dump)
+        for r in recs:
+            r["kind"] = src["kind"]
+            if r.get("county"):
+                r["county"] = clean_county(r["county"])
+        mark_truncation(recs, diag)
+        diag["kept"] = len(recs)
+        if verbose and recs:
+            diag["sample"] = recs[:3]
+        return recs, diag
+
     if src.get("post"):
         recs = walk_post(src, pages, timeout, diag, dump)
         for r in recs:
