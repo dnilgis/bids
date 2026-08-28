@@ -105,5 +105,6 @@ jobs:
         if: always()
         run: |
           git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
+          git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           n=$(node -e "try{const s=require('./data/platforms.json').sites;process.stdout.write(String(Object.keys(s).length))}catch(e){process.stdout.write('0')}")
           bash scripts/commit-and-push.sh "discover: $n operator sites identified [skip ci]"

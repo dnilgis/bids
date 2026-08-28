@@ -199,6 +199,7 @@ jobs:
         run: |
           git add data/registries.json data/registry-survey.json 2>/dev/null || true
           git add data/gaps 2>/dev/null || true
+          git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
           git add geocodes/places.json data/directory.json 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
