@@ -87,12 +87,10 @@ jobs:
           print("| possible duplicates, flagged not merged | %s |" % c.get("duplicateSuspects", 0))
           PY
 
+      # Same reason as registries.yml: the bid poller pushes to main every ten
+      # minutes and this job runs for several. A bare push throws the work away.
       - name: Commit
         run: |
-          git config user.name  "agsist-bot"
-          git config user.email "bot@agsist.com"
           git add data/known-elevators.json data/directory.json geocodes/places.json
-          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
           n=$(node -e "process.stdout.write(String(require('./data/directory.json').counts.total))")
-          git commit -m "directory: $n elevators known [skip ci]"
-          git push
+          bash scripts/commit-and-push.sh "directory: $n elevators known [skip ci]"

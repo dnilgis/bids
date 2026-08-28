@@ -173,15 +173,18 @@ jobs:
               print("```json"); print(json.dumps(diag, indent=1)[:1800]); print("```")
           PY
 
+      # PUSH THROUGH THE POLLER. The 02:21 run read all 251 Iowa dealers, all
+      # 102 warehouses, geocoded 481 addresses over 171 seconds, committed 581
+      # businesses — and the push was rejected, because the bid poller had
+      # pushed to main during the seven minutes this job was running. It does
+      # that every ten minutes through the trading day. Everything the run
+      # learned died on the runner and the only sign was a red tick under a
+      # summary that said it had succeeded.
       - name: Commit
         if: always()
         run: |
-          git config user.name  "agsist-bot"
-          git config user.email "bot@agsist.com"
           git add data/registries.json data/registry-survey.json 2>/dev/null || true
-          git add geocodes/places.json data/directory.json 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
-          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
+          git add geocodes/places.json data/directory.json 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
-          git commit -m "registries: $n businesses, plus the state survey [skip ci]"
-          git push
+          bash scripts/commit-and-push.sh "registries: $n businesses, plus the state survey [skip ci]"
