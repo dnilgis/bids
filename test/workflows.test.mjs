@@ -455,3 +455,35 @@ test("the resume line counts this list, not the whole ledger", () => {
   assert.match(d, /const doneHere = all\.length - pool\.length/);
   assert.ok(!/resume: \$\{done\.size\} of/.test(d), "still printing the ledger size as a share of the list");
 });
+
+/* THE TWO LISTS OF WHAT WE DO NOT HAVE.
+ *
+ * A green pin says we read a board; a grey pin says we know the elevator is
+ * there. Neither says WHY a grey one is grey, and the two reasons need
+ * completely different work:
+ *
+ *   no website on file    a name, a town, usually a phone, and no URL at all.
+ *                         Every state registry entry is like this — states
+ *                         publish licensees, not websites. A phone-call list.
+ *   publishes no board    we have the site, a browser loaded it, followed the
+ *                         operator's own Cash Bids link, and nothing came back.
+ *                         A finding, not a backlog.
+ *
+ * Conflating them would put 1,930 businesses that have no website into a queue
+ * of "sites we failed to scrape", which is a queue nobody can work.
+ */
+test("both gap lists are rebuilt and committed wherever their inputs move", () => {
+  for (const f of ["registries.yml", "discover-sweep.yml"]) {
+    const y = readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), "utf8");
+    assert.match(y, /node scripts\/gap_lists\.mjs/, `${f} does not rebuild the gap lists`);
+    assert.match(y, /git add[^\n]*data\/gaps/, `${f} rebuilds them and does not commit them`);
+  }
+});
+
+test("an unreachable page is not filed as an elevator that publishes no bids", () => {
+  const g = readFileSync(new URL("../scripts/gap_lists.mjs", import.meta.url), "utf8");
+  assert.match(g, /if \(v\.status !== "no-platform"\) continue;/,
+    "a network failure would be reported to Sig as a finding about the operator");
+  assert.match(g, /triedBoardPages/,
+    "the list must say which board page was tried, or it cannot be checked by hand");
+});

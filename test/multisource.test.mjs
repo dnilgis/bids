@@ -10,11 +10,18 @@ import { urlsFor, loadSources, validateSource } from "../lib/sources.mjs";
 import { render, stateOf } from "../scripts/status.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const snap = () => existsSync(join(ROOT, "data"))
-  ? readdirSync(join(ROOT, "data")).sort()
-      .map((f) => `${f}:${statSync(join(ROOT, "data", f)).mtimeMs}:${readFileSync(join(ROOT, "data", f), "utf8").length}`)
-      .join("|")
-  : "";
+/* WALKS SUBDIRECTORIES. This read every entry of data/ as a file, which was
+   true until data/gaps/ appeared and then threw EISDIR — a guard that fails
+   because the tree grew is a guard that gets deleted. It recurses now, so
+   anything written ANYWHERE under data/ by a fixture run is still caught. */
+const walk = (dir, base = "") => existsSync(dir)
+  ? readdirSync(dir).sort().flatMap((f) => {
+      const p = join(dir, f), st = statSync(p);
+      return st.isDirectory() ? walk(p, `${base}${f}/`)
+                              : [`${base}${f}:${st.mtimeMs}:${readFileSync(p, "utf8").length}`];
+    })
+  : [];
+const snap = () => walk(join(ROOT, "data")).join("|");
 
 test("1. a fixture run writes NOTHING", () => {
   // It once wrote data/boyceville.json -- the file both Emmert sites read --

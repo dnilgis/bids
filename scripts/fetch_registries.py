@@ -1044,7 +1044,7 @@ def mark_out_of_state(rec):
     """
     if OUT_OF_STATE.match(str(rec.get("county") or "")):
         rec["outOfState"] = True
-        rec["licensedBy"] = rec.get("state")
+        rec["licensedBy"] = rec.get("state") or rec.get("licensedBy")
         rec["county"] = None
         rec["st"] = ""                       # do not claim the licensing state
     return rec
@@ -1216,7 +1216,6 @@ def scrape(src, pages, timeout, verbose, dump=None):
             r["kind"] = src["kind"]
             if r.get("county"):
                 r["county"] = clean_county(r["county"])
-            mark_out_of_state(r)
         mark_truncation(recs, diag)
         diag["kept"] = len(recs)
         if verbose and recs:
@@ -1229,7 +1228,6 @@ def scrape(src, pages, timeout, verbose, dump=None):
             r["kind"] = src["kind"]
             if r.get("county"):
                 r["county"] = clean_county(r["county"])
-            mark_out_of_state(r)
         mark_truncation(recs, diag)
         diag["kept"] = len(recs)
         if verbose and recs:
@@ -1289,7 +1287,6 @@ def scrape(src, pages, timeout, verbose, dump=None):
     for r in recs:
         if r.get("county"):
             r["county"] = clean_county(r["county"])
-        mark_out_of_state(r)
     mark_truncation(recs, diag)
     diag["kept"] = len(recs)
     if verbose and recs:
@@ -1368,6 +1365,13 @@ def main():
               % (src["state"], src["kind"], src["url"][:52], len(recs), note))
         for r in recs:
             r["state"] = src["state"]
+            # AFTER the state is stamped, not before. Called from scrape() this
+            # read r["state"] before main() had put it there, so licensedBy came
+            # out null on all 31 records and the state stayed "IA" — the flag was
+            # set and neither thing it was for actually happened. Shipped and
+            # ineffective, which is worse than not shipped: the count looked
+            # corrected and was not.
+            mark_out_of_state(r)
         allrecs += recs
 
     # One record per business per town per state. A business appears once even
@@ -1383,7 +1387,12 @@ def main():
                                   "county": r.get("county"), "phone": r.get("phone"),
                                   # A state that names its own state column beats
                                   # the one we inferred from which list we asked.
-                                  "state": (r.get("st") or r.get("state") or "").upper(),
+                                  # `or` fell through an empty st straight back to
+                                  # the licensing state, which is the thing being
+                                  # corrected. None means "we do not know", and it
+                                  # has to survive the chain.
+                                  "state": (None if r.get("outOfState")
+                                            else (r.get("st") or r.get("state") or "").upper()),
                                   "address": r.get("address") or None,
                                   "zip": (str(r.get("zip") or "")[:5] or None),
                                   "capacity": r.get("capacity") or None,

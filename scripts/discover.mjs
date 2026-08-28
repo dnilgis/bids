@@ -1048,6 +1048,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (reached < all.length)
     console.log(`NOT ASKED: ${all.length - reached} of ${all.length} remain; resume with --start ${reached}` +
                 (stoppedEarly ? "   (this run stopped on its own budget, not at the end of its slice)" : ""));
+  /* FEEDS, NOT OPERATORS — said out loud, because they are different numbers
+     and the difference is large. One page that calls a platform three times
+     counts three here and once in the ledger, and the first live batch printed
+     "10 stonehedge" for a single operator. The ledger is what decisions are
+     made from; this line is what the page did. */
+  console.log("  (counting FEEDS seen, not operators — one page can call a platform several times)");
   for (const [p, n] of [...tally].sort((a, b) => b[1] - a[1])) {
     const known = SIGNATURES.find((s) => s.platform === p)?.adapter;
     console.log(`  ${String(n).padStart(3)}  ${p}${known ? "" : "   <- no adapter; this is the queue"}`);
