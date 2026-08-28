@@ -425,26 +425,52 @@ def main():
         for b_ in (rd.get("businesses") or []):
             st = (b_.get("state") or "").upper()
             rid = "%s|%s|%s" % (st, slug(b_.get("name")), slug(b_.get("city")))
-            hit = None
-            for v in town_variants(b_.get("city")):
-                hit = towns.get((slug(v), st))
-                if hit:
-                    break
-            if not hit:
+            lat = lon = None
+            prec, via = "town", "zip-centroid"
+            # MISSOURI PUBLISHES STREET ADDRESSES, and a state that does should
+            # not be pinned to the middle of its town. The Census geocoder is
+            # reachable on the runner (it moved 126 of our own elevators from
+            # centroids to rooftops on 2026-08-28), so ask it here too.
+            if use_census and (b_.get("address") or "").strip():
+                addr = b_["address"]
+                if st and st.lower() not in addr.lower():
+                    addr = "%s, %s %s" % (addr, b_.get("city") or "", st)
+                got = census(addr)
+                time.sleep(0.2)
+                if got:
+                    lat, lon, prec, via = got[0], got[1], "street", "census"
+            # A ZIP is tighter than a town, when the state gives one.
+            z = str(b_.get("zip") or "")[:5]
+            if lat is None and z:
+                for rec in zipcodes.filter_by(zip_code=z) or []:
+                    if rec.get("lat") is not None and usable(float(rec["lat"]), float(rec["long"])):
+                        lat, lon = float(rec["lat"]), float(rec["long"])
+                        break
+            if lat is None:
+                for v in town_variants(b_.get("city")):
+                    hit = towns.get((slug(v), st))
+                    if hit:
+                        lat, lon = hit
+                        break
+            if lat is None:
                 rstats["unplaced"] += 1
                 continue
-            if not in_state(hit[0], hit[1], st, boxes):
+            if not in_state(lat, lon, st, boxes):
                 rstats["rejected"] += 1
                 continue
-            rstats["town"] += 1
+            hit = (lat, lon)
+            rstats[prec] = rstats.get(prec, 0) + 1
             registry[rid] = {"lat": round(hit[0], 5), "lon": round(hit[1], 5),
-                             "precision": "town", "via": "zip-centroid",
+                             "precision": prec, "via": via,
+                             "address": b_.get("address"), "capacity": b_.get("capacity"),
                              "operator": b_.get("name"), "location": b_.get("city"),
                              "state": st, "phone": b_.get("phone"),
                              "county": b_.get("county"), "licences": b_.get("licences"),
                              "source": b_.get("source") or ("registry-%s" % st.lower())}
-        print("\nstate registries: %d placed at a town centroid, %d unplaced, %d rejected"
-              % (rstats["town"], rstats["unplaced"], rstats["rejected"]))
+        print("\nstate registries: %d at a street point, %d at a ZIP or town centroid, "
+              "%d unplaced, %d rejected"
+              % (rstats.get("street", 0), rstats.get("town", 0),
+                 rstats["unplaced"], rstats["rejected"]))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({

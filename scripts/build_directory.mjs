@@ -183,6 +183,11 @@ const registry = Object.entries(regRaw).map(([rid, r]) => {
     checkedAt: null, pricedAt: null,
     placed: true, lat: r.lat, lon: r.lon, precision: r.precision,
     county: r.county || null,
+    address: r.address || null,
+    /* Storage capacity is the best evidence any registry carries about whether
+       this is a place a farmer can sell a load. Missouri publishes it; a name
+       heuristic that mistook Landus and MFA for feed mills does not come close. */
+    capacity: r.capacity || null,
     licences: r.licences || null,
     knownFrom: r.source,
     why: (r.licences && r.licences.length > 1

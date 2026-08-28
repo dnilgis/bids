@@ -63,6 +63,7 @@ import re
 import sys
 import time
 import urllib.request
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -135,6 +136,9 @@ class Tables(HTMLParser):
 
 
 def label_split(text):
+    # NOTE: callers must unescape first. This route strips tags with a regex
+    # instead of going through HTMLParser, so nothing decodes the entities on
+    # the way — "A &amp; K Feed & Grain" reached the output verbatim.
     """The one-page report was described as 'Name: X City Y Phone: Z County: W'
     rather than a clean table. If the table parse finds nothing, fall back to
     reading those labels out of the flat text -- same fields, different
@@ -160,14 +164,35 @@ def columns_of(headers, rows):
     phone in most rows, and Name / City / County sit around it."""
     idx = {}
     low = [h.lower() for h in headers]
-    for want, keys in (("name", ("name", "business", "company", "firm")),
+    # EVERY FIELD A STATE OFFERS, NOT THE FOUR IOWA HAPPENS TO HAVE.
+    # Missouri's header row reads Company Name, Manager Name, Address, City,
+    # State, Zip, Phone, County, Warehouse License, Dealer Class, Capacity --
+    # street addresses, ZIPs and STORAGE CAPACITY. Mapping only Iowa's four
+    # threw all of that away on 288 records: addresses that would have been
+    # street-precision pins instead of town centroids, and a capacity figure
+    # that separates a country elevator from a feed mill far better than any
+    # guess at its name.
+    for want, keys in (("name", ("company name", "business name", "name", "business", "company", "firm")),
                        ("city", ("city", "town")),
                        ("county", ("county",)),
-                       ("phone", ("phone", "telephone"))):
-        for i, h in enumerate(low):
-            if any(k in h for k in keys):
-                idx[want] = i
+                       ("phone", ("phone", "telephone")),
+                       ("address", ("address", "street")),
+                       ("zip", ("zip", "postal")),
+                       ("st", ("state",)),
+                       ("capacity", ("capacity", "bushels")),
+                       ("licence", ("license", "licence", "class"))):
+        # Longest key first, so "company name" wins over "name" and a column
+        # called "Manager Name" cannot be taken for the business.
+        best = None
+        for k in sorted(keys, key=len, reverse=True):
+            for i, h in enumerate(low):
+                if k in h and i not in idx.values():
+                    best = i
+                    break
+            if best is not None:
                 break
+        if best is not None:
+            idx[want] = best
     if "phone" not in idx and rows:
         # A THIRD OF ALL ROWS WAS THE WRONG BAR, and the Iowa directory report
         # proved it: nine nested layout tables, 566 rows between them, and the
@@ -297,24 +322,47 @@ def scrape(src, pages, timeout, verbose):
             idx = columns_of(p.headers, g)
             if "phone" not in idx:
                 continue                            # not the data table
+            # ONE CELL PER ROW IS NOT A TABLE. When the phone column and the
+            # name column are the same index, every "record" is the entire line
+            # — "Name: ADM Grain Company City Clinton Phone: ..." — and the
+            # business name comes out as the whole sentence. That parsed as
+            # seven confident records on the Iowa report fixture, which is
+            # exactly the kind of success that hides a failure.
+            if idx.get("phone") == idx.get("name"):
+                continue
             maps.append({"rows": len(g), "map": idx})
             for r in g:
                 if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
                     continue                        # header or spacer row
                 rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
-                if rec.get("name"):
+                # "Phone:" arrived as a business name from a header row that
+                # happened to carry a phone-shaped cell. A name that is a bare
+                # label, or two characters long, is not a business.
+                nm = (rec.get("name") or "").strip()
+                if nm and len(nm) > 2 and not nm.rstrip(":").lower() in (
+                        "name", "phone", "city", "county", "company", "address", "state", "zip"):
                     got.append(rec)
         diag["columnMap"] = maps or columns_of(p.headers, p.rows)
         diag["tablesWithData"] = len(maps)
-        if not got:
-            # The table route found nothing. Try the labelled-text route before
-            # giving up, and keep a sample of what we actually received.
-            flat = re.sub(r"<[^>]+>", " ", body)
-            got = label_split(re.sub(r"\s+", " ", flat))
-            if got:
-                diag["parsedVia"] = "labelled text, not a table"
-        else:
+        p_rows_seen = len(p.rows)
+        # A TABLE ROUTE THAT "SUCCEEDS" WITH ALMOST NOTHING IS STILL A FAILURE.
+        # The Iowa directory report has 561 rows in its data table and the
+        # table route kept TWO of them, because the rows are not cells of a
+        # record — they are lines of "Name: X City Y Phone: Z County: W". Two
+        # is non-zero, so the fallback never ran and the run reported success
+        # while holding 0.4% of the state. Whichever route reads more of the
+        # page wins.
+        flat = None
+        if len(got) < max(5, p_rows_seen // 5):
+            flat = label_split(re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", body))))
+        if flat is not None and len(flat) >= len(got):
+            diag["parsedVia"] = "labelled text (%d) beat the table route (%d)" % (len(flat), len(got))
+            got = flat
+        elif got:
             diag["parsedVia"] = "table"
+        elif flat:
+            got = flat
+            diag["parsedVia"] = "labelled text, not a table"
         if not got:
             diag["firstRowRaw"] = (p.rows[0] if p.rows else body[:400])
         new = 0
@@ -356,6 +404,9 @@ def main():
             if "phone" not in idx:
                 print("   table %d: %d rows, no phone column — skipped" % (n, len(g)))
                 continue
+            if idx.get("phone") == idx.get("name"):
+                print("   table %d: %d rows, one cell per row — not a table, skipped" % (n, len(g)))
+                continue
             print("   table %d: %d rows, map %s" % (n, len(g), idx))
             for r in g:
                 if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
@@ -365,9 +416,14 @@ def main():
                     kept += 1
                     if kept <= 3:
                         print("      %s" % rec)
-        print("   kept %d" % kept)
-        flat = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body))
-        print("labelled-text route would find: %d" % len(label_split(flat)))
+        flat = label_split(re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", body))))
+        print("   table route kept %d, labelled-text route found %d" % (kept, len(flat)))
+        route = ("labelled text" if (kept < max(5, len(p.rows) // 5) and len(flat) >= kept) or kept == 0
+                 else "table")
+        print("   -> this run would use the %s route" % route)
+        if route == "labelled text" and flat:
+            for r in flat[:3]:
+                print("      %s" % r)
         return 0
 
     want = {x.strip().upper() for x in a.states.split(",") if x.strip()}
@@ -396,12 +452,19 @@ def main():
              re.sub(r"[^a-z]", "", (r.get("city") or "").lower()))
         e = merged.setdefault(k, {"name": r.get("name"), "city": r.get("city"),
                                   "county": r.get("county"), "phone": r.get("phone"),
-                                  "state": r.get("state"), "licences": [],
+                                  # A state that names its own state column beats
+                                  # the one we inferred from which list we asked.
+                                  "state": (r.get("st") or r.get("state") or "").upper(),
+                                  "address": r.get("address") or None,
+                                  "zip": (str(r.get("zip") or "")[:5] or None),
+                                  "capacity": r.get("capacity") or None,
+                                  "licenceClass": r.get("licence") or None,
+                                  "licences": [],
                                   "source": "registry-%s" % (r.get("state") or "").lower()})
         for lic in str(r.get("kind") or "").split("+"):
             if lic and lic not in e["licences"]:
                 e["licences"].append(lic)
-        for f in ("phone", "county"):
+        for f in ("phone", "county", "address", "capacity"):
             if not e.get(f) and r.get(f):
                 e[f] = r[f]
 
