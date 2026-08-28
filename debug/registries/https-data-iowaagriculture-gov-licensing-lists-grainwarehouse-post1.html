@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+<title>Iowa Dept of Agriculture Licensing List</title>
+
+<!-- Required meta tags -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="/css/idals.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/idals_theme.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/sticky_footer.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/licensing_lists/css/remove_num_arrows.css" crossorigin="anonymous">
+
+<style>  
+a.row-href:link {  
+	color: black;
+	text-decoration: none;
+}
+a.row-href:visited {  
+	color: black;
+	text-decoration: none;
+}
+a.row-href:hover {  
+	color: blue;
+	text-decoration: underline;
+}   
+
+</style>  
+
+</head>
+<body>
+
+<div class="header" style="width:100%;">
+
+	<nav class="d-flex d-inline justify-content-between navbar navbar-expand-lg navbar-light bg-light">
+		<a href="https://iowaagriculture.gov/" class="p-2 navbar-brand flex-fill logo-anchor"><img class="img-responsive logo" src="/images/logo_70px.png" alt="Iowa Department of Agriculture and Land Stewardship home"></a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="p-4 collapse navbar-collapse" id="navbarNavAltMarkup">
+			<div class="navbar-nav">
+				<a class="ml-auto nav-item nav-link text-dark" href="https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories">Licensing List Home</a>
+			</div>
+		</div>
+
+	</nav>
+
+</div>
+
+
+<div class="container">
+	<!--<h4>Licensed Grain Warehouses</h4>-->
+	<h1>Licensed Grain Warehouses</h1>
+
+	<form method="post" id="filterForm" action="/licensing_lists/grainwarehouse/";>
+		<div class="row">
+			<div class="col-md-4">
+				<label for="name" class="form-label">Name</label>
+				<input type="text" name="name" class="form-control" id="name">
+			</div>
+			<div class="col-md-4">
+				<label for="location" class="form-label">City</label>
+				<input type="text" name="location" class="form-control" id="location" value="">
+			</div>
+			<div class="col-md-4">
+
+				<label for="county" class="form-label">County</label>
+				<select id="county" name="county" class="form-control">
+					<option value="All">- Any -</option>
+										<option >Allamakee</option>
+										<option >Benton</option>
+										<option >Black Hawk</option>
+										<option >Bremer</option>
+										<option >Buchanan</option>
+										<option >Butler</option>
+										<option >Calhoun</option>
+										<option >Carroll</option>
+										<option >Cedar</option>
+										<option >Cerro Gordo</option>
+										<option >Chickasaw</option>
+										<option >Clay</option>
+										<option >Clayton</option>
+										<option >Clinton</option>
+										<option >Crawford</option>
+										<option >Davis</option>
+										<option >Decatur</option>
+										<option >Delaware</option>
+										<option >Dubuque</option>
+										<option >Emmet</option>
+										<option >Fayette</option>
+										<option >Floyd</option>
+										<option >Henry</option>
+										<option >Howard</option>
+										<option >Humboldt</option>
+										<option >Iowa</option>
+										<option >Jackson</option>
+										<option >Jasper</option>
+										<option >Johnson</option>
+										<option >Keokuk</option>
+										<option >Kossuth</option>
+										<option >Lee</option>
+										<option >Linn</option>
+										<option >Lyon</option>
+										<option >Mahaska</option>
+										<option >Marion</option>
+										<option >Marshall</option>
+										<option >Mitchell</option>
+										<option >Muscatine</option>
+										<option >O'Brien</option>
+										<option >Plymouth</option>
+										<option >Polk</option>
+										<option >Ringgold</option>
+										<option >Shelby</option>
+										<option >Sioux</option>
+										<option >Tama</option>
+										<option >Wapello</option>
+										<option >Washington</option>
+										<option >Wayne</option>
+										<option >Webster</option>
+										<option >Winneshiek</option>
+										<option >Wright</option>
+									</select>
+				<input type="hidden" name="offset" id="offset">
+
+			</div>
+		</div>
+
+		<div class="row" style="margin: 8px;">
+			<div class="col-md-2">
+				<button id="filterBtn" type="submit" class="btn btn-outline-secondary" name="submit" value="filter">Filter</button>
+			</div>
+			<div class="col-md-2">
+				<a id="resetFilter" class="btn btn-outline-secondary " href="/licensing_lists/grainwarehouse/">Reset filter</a>
+			</div>
+			<div class="col-md-8">
+			</div>
+		</div>
+	</form>
+
+	<div class="table-responsive">
+		<table class="table">
+			<tr>
+				<th style="padding: 4px;">Name</th>
+				<th style="padding: 4px;">City</th>
+				<th style="padding: 4px;">County</th>
+				<th style="padding: 4px;">Phone</th>
+			</tr>
+					<tr>
+				<td>Dunkerton Cooperative Elevator</td>
+				<td>Dunkerton</td>
+				<td>Black Hawk</td>
+				<td>319-822-4291</td>
+			</tr>
+						<tr>
+				<td>Eichelberger Milling, Inc.</td>
+				<td>Wayland</td>
+				<td>Henry</td>
+				<td>319-256-5100</td>
+			</tr>
+						<tr>
+				<td>Ewing Enterprises, Inc.</td>
+				<td>Clio</td>
+				<td>Wayne</td>
+				<td>641-876-2444</td>
+			</tr>
+						<tr>
+				<td>Exporter Elevator Co.</td>
+				<td>West Chester</td>
+				<td>Washington</td>
+				<td>319-698-2515</td>
+			</tr>
+						<tr>
+				<td>F. J. Krob & Co.</td>
+				<td>Walker</td>
+				<td>Linn</td>
+				<td>319-624-3770</td>
+			</tr>
+						<tr>
+				<td>Fairchild Feed and Supply, Inc.</td>
+				<td>Winthrop</td>
+				<td>Buchanan</td>
+				<td>319-935-3371</td>
+			</tr>
+						<tr>
+				<td>Farmers Cooperative Association</td>
+				<td>Ainsworth</td>
+				<td>Washington</td>
+				<td>319-657-3661</td>
+			</tr>
+						<tr>
+				<td>Farmers Cooperative Company</td>
+				<td>Remsen</td>
+				<td>Plymouth</td>
+				<td>712-786-1134</td>
+			</tr>
+						<tr>
+				<td>Farmers Cooperative Company</td>
+				<td>Readlyn</td>
+				<td>Bremer</td>
+				<td>319-279-3396</td>
+			</tr>
+						<tr>
+				<td>Farmers Cooperative Elevator Co.</td>
+				<td>Arcadia</td>
+				<td>Carroll</td>
+				<td>712-689-2296</td>
+			</tr>
+						<tr>
+				<td>Farmers Cooperative Elevator of Ottosen</td>
+				<td>Ottosen</td>
+				<td>Humboldt</td>
+				<td>515-379-1065</td>
+			</tr>
+						<tr>
+				<td>Farmers Shipping Association</td>
+				<td>Dyersville</td>
+				<td>Dubuque</td>
+				<td>563-875-7953</td>
+			</tr>
+						<tr>
+				<td>Farmers Union Cooperative</td>
+				<td>Ossian</td>
+				<td>Winneshiek</td>
+				<td>563-532-9381</td>
+			</tr>
+						<tr>
+				<td>Farrell's Trucking II, Inc.</td>
+				<td>Preston</td>
+				<td>Jackson</td>
+				<td>563-689-5952</td>
+			</tr>
+						<tr>
+				<td>Figanbaum Grain, Inc.</td>
+				<td>Tripoli</td>
+				<td>Bremer</td>
+				<td>319-882-4274</td>
+			</tr>
+						<tr>
+				<td>Fremont Elevator, Inc.</td>
+				<td>Fremont</td>
+				<td>Mahaska</td>
+				<td>641-933-4416</td>
+			</tr>
+						<tr>
+				<td>FTF, Inc.</td>
+				<td>Rockford</td>
+				<td>Floyd</td>
+				<td>641-425-7822</td>
+			</tr>
+						<tr>
+				<td>Garnavillo Mill, Inc.</td>
+				<td>Garnavillo</td>
+				<td>Clayton</td>
+				<td>563-964-2243</td>
+			</tr>
+						<tr>
+				<td>Gold-Eagle Cooperative</td>
+				<td>Goldfield</td>
+				<td>Wright</td>
+				<td>515-825-3161</td>
+			</tr>
+						<tr>
+				<td>H & S Feed and Country Store Inc. d/b/a Diamond Trail Feed</td>
+				<td>Lynnville</td>
+				<td>Jasper</td>
+				<td>641-527-2400</td>
+			</tr>
+						<tr>
+				<td>Hartog Elevator, Inc.</td>
+				<td>Sanborn</td>
+				<td>O'Brien</td>
+				<td>712-729-3359</td>
+			</tr>
+						<tr>
+				<td>Heartland Co-op</td>
+				<td>Clive</td>
+				<td>Polk</td>
+				<td>515-343-5954</td>
+			</tr>
+						<tr>
+				<td>Hoskin Elevator, Inc.</td>
+				<td>Bloomfield</td>
+				<td>Davis</td>
+				<td>641-929-3568</td>
+			</tr>
+						<tr>
+				<td>Interstate Grain Service, LLC</td>
+				<td>Cedar Point</td>
+				<td>Linn</td>
+				<td>319-849-1157</td>
+			</tr>
+						<tr>
+				<td>Inwood Hatchery & Feed Store, Inc.</td>
+				<td>Inwood</td>
+				<td>Lyon</td>
+				<td>712-753-4723</td>
+			</tr>
+					</table>
+	</div>
+
+	<p>
+						<button id="prev" class="btn btn-sm btn-outline-primary">< Prev</button>
+					50 out of 102					<button id="next" class="btn btn-sm btn-outline-primary">Next ></button>
+				</p>
+</div>
+</body>
+
+<script>
+$(function() {
+
+	var getUrlParameter = function getUrlParameter(sParam) {
+		var sPageURL = window.location.search.substring(1),
+			sURLVariables = sPageURL.split('&'),
+			sParameterName,
+			i;
+
+		for (i = 0; i < sURLVariables.length; i++) {
+			sParameterName = sURLVariables[i].split('=');
+
+			if (sParameterName[0] === sParam) {
+				return typeof sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+			}
+		}
+		return false;
+	};
+
+	if(getUrlParameter('offset')) {
+		$('#offset').val(getUrlParameter('offset'));
+	}
+
+	$('#resetFilter').click( function() {
+		localStorage.removeItem('name');
+		localStorage.removeItem('city');
+		localStorage.removeItem('county');
+	});
+
+	$('#filterForm').submit( function() {
+		localStorage.setItem('name', $('#name').val());
+		localStorage.setItem('city', $('#city').val());
+		localStorage.setItem('county', $('#county').val());
+		localStorage.removeItem('offset');
+		return true; // submit the form
+	});
+
+	$('#prev').click( function() {
+		$('#offset').val(0);
+		$('#filterBtn').click();
+	});
+
+	$('#next').click( function() {
+		$('#offset').val(50);
+		$('#filterBtn').click();
+	});
+
+	if(localStorage.getItem('county') > '') {
+		$('#county').val(localStorage.getItem('county'));
+	}
+	if(localStorage.getItem('name') > '') {
+		$('#name').val(localStorage.getItem('name'));
+	}
+	if(localStorage.getItem('city') > '') {
+		$('#city').val(localStorage.getItem('city'));
+	}
+});
+
+</script>
+
+</html>

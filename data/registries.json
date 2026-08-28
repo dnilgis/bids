@@ -1,11 +1,18 @@
 {
- "generated": "2026-08-28T01:34:00Z",
+ "generated": "2026-08-28T13:20:07Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
-  "businesses": 442,
+  "businesses": 581,
+  "incompleteSources": [
+   {
+    "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
+    "state": "IA",
+    "why": "the page says 251 and this walk took 250"
+   }
+  ],
   "byState": {
    "AR": 6,
-   "IA": 157,
+   "IA": 296,
    "IL": 12,
    "KS": 7,
    "LA": 1,
@@ -18,8 +25,8 @@
    "TX": 1,
    "WI": 1
   },
-  "both_licences": 299,
-  "with_phone": 442
+  "both_licences": 393,
+  "with_phone": 581
  },
  "diagnostics": [
   {
@@ -46,11 +53,11 @@
     }
    ],
    "tablesWithData": 1,
-   "parsedVia": "labelled text (139) beat the table route (1)",
+   "parsedVia": "label/value pairs (140) beat the table route (1)",
    "newPerPage": [
-    139
+    140
    ],
-   "kept": 139,
+   "kept": 140,
    "sample": [
     {
      "name": "A & K Feed & Grain Co., Inc.",
@@ -83,88 +90,42 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
    "kind": "warehouse",
    "note": "licensing list",
-   "pagination": {
-    "works": null,
-    "tried": [
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page=1",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?p=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?pg=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?start=50",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?offset=50",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?limit=1000&offset=25",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?PageNum=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?pageNumber=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?page_num=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?paged=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?from=25",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/?per_page=1000&page=2",
-      "bytes": 10918,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/page/%d/",
-      "error": "HTTPError"
-     }
-    ],
-    "note": "nothing turned the page; only the first page was read"
-   },
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
      "status": 200,
      "bytes": 10918
+    },
+    {
+     "url": "POST offset=25",
+     "status": 200,
+     "bytes": 11318
+    },
+    {
+     "url": "POST offset=25",
+     "status": 200,
+     "bytes": 11318
+    },
+    {
+     "url": "POST offset=50",
+     "status": 200,
+     "bytes": 11299
+    },
+    {
+     "url": "POST offset=75",
+     "status": 200,
+     "bytes": 11285
+    },
+    {
+     "url": "POST offset=100",
+     "status": 200,
+     "bytes": 8126
     }
    ],
+   "statedTotal": {
+    "shown": 25,
+    "total": 102
+   },
    "tables": 1,
    "headerCells": [
     "Name",
@@ -172,10 +133,10 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 26,
+   "rowsSeen": 133,
    "columnMap": [
     {
-     "rows": 26,
+     "rows": 3,
      "map": {
       "name": 0,
       "city": 1,
@@ -187,9 +148,15 @@
    "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    25
+    25,
+    25,
+    0,
+    25,
+    25,
+    2
    ],
-   "kept": 25,
+   "offsetMode": "absolute",
+   "kept": 102,
    "sample": [
     {
      "name": "ADM Grain Company",
@@ -222,88 +189,77 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
    "kind": "dealer",
    "note": "licensing list",
-   "pagination": {
-    "works": null,
-    "tried": [
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page=1",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?p=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?pg=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?start=50",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?offset=50",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?limit=1000&offset=25",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?PageNum=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?pageNumber=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?page_num=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?paged=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?from=25",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/?per_page=1000&page=2",
-      "bytes": 12103,
-      "changed": false
-     },
-     {
-      "param": "https://data.iowaagriculture.gov/licensing_lists/graindealers/page/%d/",
-      "error": "HTTPError"
-     }
-    ],
-    "note": "nothing turned the page; only the first page was read"
-   },
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
      "status": 200,
      "bytes": 12103
+    },
+    {
+     "url": "POST offset=25",
+     "status": 200,
+     "bytes": 12440
+    },
+    {
+     "url": "POST offset=25",
+     "status": 200,
+     "bytes": 12440
+    },
+    {
+     "url": "POST offset=50",
+     "status": 200,
+     "bytes": 12467
+    },
+    {
+     "url": "POST offset=74",
+     "status": 200,
+     "bytes": 12495
+    },
+    {
+     "url": "POST offset=98",
+     "status": 200,
+     "bytes": 12456
+    },
+    {
+     "url": "POST offset=122",
+     "status": 200,
+     "bytes": 12422
+    },
+    {
+     "url": "POST offset=146",
+     "status": 200,
+     "bytes": 12462
+    },
+    {
+     "url": "POST offset=170",
+     "status": 200,
+     "bytes": 12480
+    },
+    {
+     "url": "POST offset=194",
+     "status": 200,
+     "bytes": 12501
+    },
+    {
+     "url": "POST offset=218",
+     "status": 200,
+     "bytes": 12455
+    },
+    {
+     "url": "POST offset=242",
+     "status": 200,
+     "bytes": 10204
+    },
+    {
+     "url": "POST offset=250",
+     "status": 200,
+     "bytes": 9172
     }
    ],
+   "statedTotal": {
+    "shown": 25,
+    "total": 251
+   },
    "tables": 1,
    "headerCells": [
     "Name",
@@ -311,10 +267,10 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 26,
+   "rowsSeen": 298,
    "columnMap": [
     {
-     "rows": 26,
+     "rows": 2,
      "map": {
       "name": 0,
       "city": 1,
@@ -326,9 +282,23 @@
    "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    25
+    25,
+    25,
+    0,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    8,
+    0
    ],
-   "kept": 25,
+   "offsetMode": "absolute",
+   "INCOMPLETE": "the page says 251 and this walk took 250",
+   "kept": 250,
    "sample": [
     {
      "name": "218 Grain, LLC",
@@ -362,27 +332,111 @@
    "kind": "dealer+warehouse",
    "note": "database listing",
    "pagination": {
-    "works": "https://agriculture.mo.gov/grains/grainsearch.php?page=%d",
-    "step": 1,
-    "base": 1,
+    "works": null,
     "tried": [
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
+      "bytes": 279731,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=1",
+      "bytes": 279731,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?p=2",
+      "bytes": 279731,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?pg=2",
       "bytes": 279732,
-      "changed": true
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?start=50",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?offset=50",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?limit=1000&offset=25",
+      "bytes": 279731,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?pageNumber=2",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?page_num=2",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?paged=2",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
+      "bytes": 279732,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
+      "bytes": 279733,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.phppage/%d/",
+      "error": "HTTPError"
      }
-    ]
+    ],
+    "note": "nothing turned the page; only the first page was read"
    },
    "pages": [
     {
      "url": "https://agriculture.mo.gov/grains/grainsearch.php",
      "status": 200,
-     "bytes": 279731
-    },
-    {
-     "url": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
-     "status": 200,
-     "bytes": 279732
+     "bytes": 279733
     }
    ],
    "tables": 1,
@@ -399,7 +453,7 @@
     "Dealer Class",
     "Capacity"
    ],
-   "rowsSeen": 608,
+   "rowsSeen": 304,
    "columnMap": [
     {
      "rows": 304,
@@ -419,8 +473,7 @@
    "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    288,
-    0
+    288
    ],
    "nameTruncatedAt": 40,
    "namesAtWidth": 26,
@@ -428,45 +481,42 @@
    "kept": 288,
    "sample": [
     {
-     "name": "Cameron Co-operative Elevator Associatio",
-     "city": "Cameron",
-     "county": "Clinton",
-     "phone": "(816) 632-2124",
-     "address": "102 South Walnut",
-     "zip": "64429",
-     "st": "MO",
-     "capacity": "2028000",
-     "licence": "WH-131",
+     "name": "Cargill SRR Elevators, E. St. Louis, IL",
+     "city": "East St. Louis",
+     "county": "St. Clair",
+     "phone": "(618) 583-6228",
+     "address": "430 S Front Street",
+     "zip": "62201",
+     "st": "IL",
+     "capacity": "",
+     "licence": "",
      "kind": "dealer+warehouse",
-     "nameTruncated": true,
      "state": "MO"
     },
     {
-     "name": "Producers Cooperative Association of Gir",
-     "city": "Liberal",
-     "county": "Barton",
-     "phone": "(417) 843-6465",
-     "address": "1246 W. Highway K",
-     "zip": "64762",
+     "name": "Cencom",
+     "city": "Stanberry",
+     "county": "Gentry",
+     "phone": "(660) 783-2700",
+     "address": "105 S. High St.",
+     "zip": "64489",
      "st": "MO",
-     "capacity": "2572000",
-     "licence": "WH-1086",
+     "capacity": "",
+     "licence": "",
      "kind": "dealer+warehouse",
-     "nameTruncated": true,
      "state": "MO"
     },
     {
-     "name": "Mid Missouri Agri Services- Sweet Springs",
-     "city": "Sweet Springs",
-     "county": "Saline",
-     "phone": "(660) 335-6355",
-     "address": "125 Lexington Ave",
-     "zip": "65351",
+     "name": "Chem Gro of Houghton, Inc.",
+     "city": "Alexandria",
+     "county": "Clark",
+     "phone": "(319) 469-0015",
+     "address": "34999 Hwy 136",
+     "zip": "63430",
      "st": "MO",
-     "capacity": "2660000",
-     "licence": "WH-1031",
+     "capacity": "",
+     "licence": "",
      "kind": "dealer+warehouse",
-     "nameRepaired": "city",
      "state": "MO"
     }
    ],
@@ -613,7 +663,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -652,6 +703,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Valero Grain Marketing, LLC",
+   "city": "Albert City",
+   "county": "Buena Vista",
+   "phone": "712-843-5100",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Linn Cooperative Oil Company",
    "city": "Alburnett",
    "county": "Linn",
@@ -664,7 +732,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "MB Grain LLC, Smithfield Grain",
+   "city": "Algona",
+   "county": "Kossuth",
+   "phone": "910-293-3434",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "MB Grain LLC, Smithfield Grain",
+   "city": "Allerton",
+   "county": "Wayne",
+   "phone": "910-284-0760",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -703,6 +806,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Platinum Crush, LLC",
+   "city": "Alta",
+   "county": "Buena Vista",
+   "phone": "712-213-4000",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Mogler Farms, LLC",
    "city": "Alvord",
    "county": "Lyon",
@@ -715,7 +835,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -750,7 +871,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -785,6 +907,23 @@
    "nameRepaired": null,
    "licences": [
     "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Elite Octane, LLC",
+   "city": "Atlantic",
+   "county": "Cass",
+   "phone": "712-790-0767",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
     "dealer"
    ],
    "source": "registry-ia"
@@ -842,6 +981,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Lighthouse Commodities, LLC",
+   "city": "Bismarck",
+   "county": "out-of-state",
+   "phone": "701-516-8195",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Hoskin Elevator, Inc.",
    "city": "Bloomfield",
    "county": "Davis",
@@ -854,7 +1010,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -871,7 +1028,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Viserion Grain, LLC",
+   "city": "Boulder",
+   "county": "out-of-state",
+   "phone": "559-535-3314",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -906,7 +1081,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -923,7 +1099,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -957,7 +1134,43 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Stonebridge, Ltd.",
+   "city": "Cedar Falls",
+   "county": "Black Hawk",
+   "phone": "319-404-8612",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Interstate Grain Service, LLC",
+   "city": "Cedar Point",
+   "county": "Linn",
+   "phone": "319-849-1157",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -966,6 +1179,23 @@
    "city": "Cedar Rapids",
    "county": "Linn",
    "phone": "217-972-2313",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Ingredion Incorporated",
+   "city": "Cedar Rapids",
+   "county": "Linn",
+   "phone": "319-298-3021",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -996,6 +1226,57 @@
    "source": "registry-ia"
   },
   {
+   "name": "Nexus Cooperative",
+   "city": "Charles City",
+   "county": "Floyd",
+   "phone": "641-715-1203",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Valero Grain Marketing, LLC",
+   "city": "Charles City",
+   "county": "Floyd",
+   "phone": "641-715-3000",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge North America, Inc.",
+   "city": "Chesterfield",
+   "county": "out-of-state",
+   "phone": "314-292-2470",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Schmadeke Feed Mill, Inc.",
    "city": "Clarksville",
    "county": "Butler",
@@ -1008,7 +1289,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1043,7 +1325,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "The DeLong Co., Inc.",
+   "city": "Clinton",
+   "county": "out-of-state",
+   "phone": "608-676-2255",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1060,7 +1360,26 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Heartland Co-op",
+   "city": "Clive",
+   "county": "Polk",
+   "phone": "515-343-5954",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1077,7 +1396,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Mid-Iowa Cooperative",
+   "city": "Conrad",
+   "county": "Grundy",
+   "phone": "641-366-2740",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1099,10 +1436,78 @@
    "source": "registry-ia"
   },
   {
+   "name": "Red Star Feeds, L.L.C.",
+   "city": "Corning",
+   "county": "Adams",
+   "phone": "641-322-4021",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Bartlett Grain Company, LLC",
    "city": "Council Bluffs",
    "county": "Pottawattamie",
    "phone": "712-322-3444",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge North America, Inc.",
+   "city": "Council Bluffs",
+   "county": "Pottawattamie",
+   "phone": "712-366-3600",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Southwest Iowa Renewable Energy, LLC",
+   "city": "Council Bluffs",
+   "county": "Pottawattamie",
+   "phone": "712-352-5045",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Cooperative Company",
+   "city": "Craig",
+   "county": "Plymouth",
+   "phone": "712-562-6544",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -1145,7 +1550,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1162,7 +1568,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Creston",
+   "county": "Union",
+   "phone": "515-697-4410",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "White River CRESTON, LLC",
+   "city": "Creston",
+   "county": "Union",
+   "phone": "314-222-8218",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1171,6 +1612,74 @@
    "city": "Cumberland",
    "county": "Cass",
    "phone": "712-774-5412",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Schmitz Grain, Inc.",
+   "city": "Currie",
+   "county": "out-of-State",
+   "phone": "507-763-3412",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Juhl Feed Store",
+   "city": "Dana",
+   "county": "Greene",
+   "phone": "515-738-5121",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "CHS, Inc.",
+   "city": "Davenport",
+   "county": "Scott",
+   "phone": "563-326-3581",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "River Valley Cooperative",
+   "city": "Davenport",
+   "county": "Scott",
+   "phone": "563-285-7820",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -1230,7 +1739,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1247,7 +1757,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "The Andersons, Inc.",
+   "city": "Denison",
+   "county": "Crawford",
+   "phone": "712-263-2676",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1256,6 +1784,23 @@
    "city": "Des Moines",
    "county": "Polk",
    "phone": "515-263-3280",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Landus Cooperative",
+   "city": "Des Moines",
+   "county": "Polk",
+   "phone": "515-890-1757",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -1287,6 +1832,41 @@
    "source": "registry-mo"
   },
   {
+   "name": "Provision Feed, Inc.",
+   "city": "Diagonal",
+   "county": "Ringgold",
+   "phone": "641-202-0502",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Central Farm Service",
+   "city": "Dolliver",
+   "county": "Emmet",
+   "phone": "507-776-2831",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Doon Elevator Company",
    "city": "Doon",
    "county": "Lyon",
@@ -1299,7 +1879,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Dubuque",
+   "county": "Dubuque",
+   "phone": "563-564-4737",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1316,7 +1914,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Cogdill Farm Supply, Inc.",
+   "city": "Dunlap",
+   "county": "Harrison",
+   "phone": "712-643-5360",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1350,7 +1966,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Tama-Benton Cooperative Company",
+   "city": "Dysart",
+   "county": "Tama",
+   "phone": "319-476-3666",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1389,6 +2023,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Grain Millers, Inc.",
+   "city": "Eden Prairie",
+   "county": "out-of-state",
+   "phone": "952-983-1310",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Edgewood Feed Mill, Inc.",
    "city": "Edgewood",
    "county": "Delaware",
@@ -1418,7 +2069,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1435,7 +2087,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1452,7 +2105,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1474,6 +2128,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "Poet Grain, LLC",
+   "city": "Emmetsburg",
+   "county": "Palo Alto",
+   "phone": "712-852-8700",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Daybreak Foods, Inc.",
+   "city": "Estherville",
+   "county": "Emmet",
+   "phone": "712-362-7224",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "New Fashion Pork, LLP",
    "city": "Estherville",
    "county": "Emmet",
@@ -1486,7 +2174,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1508,6 +2197,125 @@
    "source": "registry-ia"
   },
   {
+   "name": "Consolidated Grain and Barge Co.",
+   "city": "Fayette",
+   "county": "Fayette",
+   "phone": "812-557-6441",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "CFF Commodities, LLC",
+   "city": "Forest City",
+   "county": "Winnebago",
+   "phone": "507-794-8604",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Gold-Eagle Cooperative",
+   "city": "Forest City",
+   "county": "Winnebago",
+   "phone": "641-585-2814",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "New Co-operative, Inc.",
+   "city": "Fort Dodge",
+   "county": "Webster",
+   "phone": "515-955-2040",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Valero Grain Marketing, LLC",
+   "city": "Fort Dodge",
+   "county": "Webster",
+   "phone": "515-955-5019",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Win Cooperative",
+   "city": "Fredericksburg",
+   "county": "Chickasaw",
+   "phone": "563-237-5324",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Fremont",
+   "county": "out-of-state",
+   "phone": "402-727-2332",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Fremont Elevator, Inc.",
    "city": "Fremont",
    "county": "Mahaska",
@@ -1520,7 +2328,26 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "JBS Live Pork, LLC",
+   "city": "Fremont",
+   "county": "Keokuk",
+   "phone": "641-954-3237",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1554,7 +2381,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1571,7 +2399,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1593,6 +2422,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "Consolidated Grain and Barge Co.",
+   "city": "Gladstone",
+   "county": "out-of-state",
+   "phone": "812-557-6441",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Iowa Corn Processors, L.C.",
+   "city": "Glidden",
+   "county": "Carroll",
+   "phone": "712-659-2111",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Gold-Eagle Cooperative",
    "city": "Goldfield",
    "county": "Wright",
@@ -1605,7 +2468,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1622,7 +2486,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Daybreak Foods, Inc.",
+   "city": "Graettinger",
+   "county": "Palo Alto",
+   "phone": "712-859-3663",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunkers Feed & Supply, Inc.",
+   "city": "Granville",
+   "county": "Sioux",
+   "phone": "712-727-3243",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1661,6 +2560,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "The Scoular Company",
+   "city": "Hancock",
+   "county": "Pottawattamie",
+   "phone": "712-741-5437",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Nelson Farm Supply, Inc.",
    "city": "Harlan",
    "county": "Shelby",
@@ -1673,7 +2589,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1708,7 +2625,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Valero Grain Marketing, LLC",
+   "city": "Hartley",
+   "county": "O'Brien",
+   "phone": "712-928-5820",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1743,6 +2678,23 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Central Valley Ag Cooperative",
+   "city": "Hinton",
+   "county": "Plymouth",
+   "phone": "712-947-4212",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1799,6 +2751,91 @@
    "source": "registry-ia"
   },
   {
+   "name": "Hopkinton Feed & Grain, Inc.",
+   "city": "Hopkinton",
+   "county": "Delaware",
+   "phone": "563-213-3309",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Chem Gro of Houghton, Inc.",
+   "city": "Houghton",
+   "county": "Lee",
+   "phone": "319-469-2611",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Hull Cooperative Association",
+   "city": "Hull",
+   "county": "Sioux",
+   "phone": "712-439-2831",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Hull Feed & Produce Inc.",
+   "city": "Hull",
+   "county": "Sioux",
+   "phone": "712-439-1851",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "CHS, Inc.",
+   "city": "Inver Grove Heights",
+   "county": "out-of-state",
+   "phone": "651-355-4962",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Inwood Hatchery & Feed Store, Inc.",
    "city": "Inwood",
    "county": "Lyon",
@@ -1811,7 +2848,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Capitol Grain, LLC",
+   "city": "Iowa City",
+   "county": "Johnson",
+   "phone": "319-331-4426",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1828,7 +2883,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1845,7 +2901,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Seaboard Grain of Iowa, LLC",
+   "city": "Iowa Falls",
+   "county": "Hardin",
+   "phone": "620-593-1573",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1862,7 +2936,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1879,7 +2954,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1901,6 +2977,41 @@
    "source": "registry-ia"
   },
   {
+   "name": "Minerva North Grain and Milling, LLC",
+   "city": "Jesup",
+   "county": "Buchanan",
+   "phone": "319-266-1072",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Joice",
+   "county": "Worth",
+   "phone": "641-323-1190",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Global Processing, Inc.",
    "city": "Kanawha",
    "county": "Hancock",
@@ -1914,6 +3025,57 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Louis Dreyfus Company, LLC",
+   "city": "Kansas City",
+   "county": "out-of-state",
+   "phone": "816-756-3560",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "StoneX Commodity Solutions LLC",
+   "city": "Kansas City",
+   "county": "out-of-state",
+   "phone": "816-410-7158",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Fagen Elevator Inc.",
+   "city": "Keota",
+   "county": "Keokuk",
+   "phone": "641-636-3089",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1948,7 +3110,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1965,7 +3128,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1982,7 +3146,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Cooperative Regions of Organic Producer Pools",
+   "city": "LaFarge",
+   "county": "out-of-state",
+   "phone": "608-625-7311",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Valero Grain Marketing, LLC",
+   "city": "Lakota",
+   "county": "Kossuth",
+   "phone": "515-886-2222",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -1999,7 +3198,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Homeland Energy Solutions, LLC",
+   "city": "Lawler",
+   "county": "Chickasaw",
+   "phone": "563-238-5555",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2016,7 +3233,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2033,7 +3251,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2050,7 +3269,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2059,6 +3279,40 @@
    "city": "Letts",
    "county": "Louisa",
    "phone": "319-726-3791",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Kroeger Grain, LLC",
+   "city": "Lidderdale",
+   "county": "Carroll",
+   "phone": "712-830-0475",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Wenck Feeds, Incorporated",
+   "city": "Lidderdale",
+   "county": "Carroll",
+   "phone": "712-822-5555",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -2089,6 +3343,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "The A.R.C. Group, LLC",
+   "city": "Lincoln",
+   "county": "out-of-state",
+   "phone": "402-484-7474",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "MFA Agri Services",
+   "city": "Lineville",
+   "county": "Wayne",
+   "phone": "641-876-2373",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Little Cedar Cooperative Elevator",
    "city": "Little Cedar",
    "county": "Mitchell",
@@ -2101,7 +3389,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Pruess Elevator, Inc.",
+   "city": "Lowden",
+   "county": "Cedar",
+   "phone": "563-944-5580",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2118,7 +3424,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Professional Ag Hedging, LLC",
+   "city": "Luverne",
+   "county": "Rock",
+   "phone": "5074492030",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2135,7 +3459,26 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "H & S Feed and Country Store Inc. d/b/a Diamond Trail Feed",
+   "city": "Lynnville",
+   "county": "Jasper",
+   "phone": "641-527-2400",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2157,6 +3500,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Fremont Farms of Iowa, L.L.P.",
+   "city": "Malcom",
+   "county": "Powshiek",
+   "phone": "641-792-2270",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Koster Grain, Inc.",
    "city": "Maple River Junction",
    "county": "Carroll",
@@ -2169,7 +3529,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2186,7 +3547,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2203,7 +3565,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Little Sioux Corn Processors",
+   "city": "Marcus",
+   "county": "Cherokee",
+   "phone": "712-376-2800",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2220,7 +3600,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Golden Grain Energy, LLC",
+   "city": "Mason City",
+   "county": "Cerro Gordo",
+   "phone": "641-423-8525",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2237,7 +3635,59 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "McCormick Ag Exchange, LLC",
+   "city": "McGregor",
+   "county": "Clayton",
+   "phone": "563-419-9403",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Plymouth Energy Grain, LLC",
+   "city": "Merrill",
+   "county": "Plymouth",
+   "phone": "605-670-0534",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "The Redwood Commodities Group, LLC",
+   "city": "Mission",
+   "county": "out-of-state",
+   "phone": "816-979-1786",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2255,6 +3705,40 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Innovative Ag Services Co.",
+   "city": "Monticello",
+   "county": "Jones",
+   "phone": "319-465-2022",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Grain St-Laurent Inc.",
+   "city": "Montreal",
+   "county": "out-of-state",
+   "phone": "514-871-2033",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2288,7 +3772,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2311,6 +3796,159 @@
    "source": "registry-ia"
   },
   {
+   "name": "Prairie Ag Commodities, Inc.",
+   "city": "Mount Union",
+   "county": "Henry",
+   "phone": "319-865-1450",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Vantiger Farm Market LLC",
+   "city": "Mount Union",
+   "county": "Henry",
+   "phone": "319-865-4361",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Stoner Grain Incorporated",
+   "city": "Mount Vernon",
+   "county": "Linn",
+   "phone": "319-895-6003",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Premier Cooperative",
+   "city": "Mt. Horeb",
+   "county": "out-of-state",
+   "phone": "608-308-4931",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Cargill, Incorporated",
+   "city": "Muscatine",
+   "county": "Muscatine",
+   "phone": "563-263-3556",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Grain Processing Corporation",
+   "city": "Muscatine",
+   "county": "Muscatine",
+   "phone": "563-264-4211",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Nebraska City",
+   "county": "out-of-state",
+   "phone": "402-874-7000",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Lincolnway Energy, LLC",
+   "city": "Nevada",
+   "county": "Story",
+   "phone": "515-232-1010",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "VERBIO North America, LLC",
+   "city": "Nevada",
+   "county": "Story",
+   "phone": "866-306-4777",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Valley Ag, Inc.",
    "city": "New Albin",
    "county": "Allamakee",
@@ -2324,6 +3962,40 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Five Star Cooperative",
+   "city": "New Hampton",
+   "county": "Chickasaw",
+   "phone": "641-394-3052",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Linn Cooperative Oil Company",
+   "city": "Newhall",
+   "county": "Benton",
+   "phone": "319-531-7001",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2357,7 +4029,144 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Nodaway Elevator, Inc.",
+   "city": "Nodaway",
+   "county": "Adams",
+   "phone": "712-785-3271",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Faas Feed and Grain, Inc.",
+   "city": "North English",
+   "county": "Iowa",
+   "phone": "319-330-0222",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Omaha",
+   "county": "out-of-state",
+   "phone": "402-889-4469",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Hansen-Mueller Co.",
+   "city": "Omaha",
+   "county": "out-of-state",
+   "phone": "402-491-3385",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Omaha Grain Exchange, LLC",
+   "city": "Omaha",
+   "county": "Douglas",
+   "phone": "515-295-3924",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "S&G Commodities, LLC",
+   "city": "Omaha",
+   "county": "out-of-state",
+   "phone": "402-502-2444",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "The Scoular Company",
+   "city": "Omaha",
+   "county": "out-of-state",
+   "phone": "612-851-3746",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "West Plains, LLC",
+   "city": "Omaha",
+   "county": "out-of-state",
+   "phone": "402-829-5112",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2374,7 +4183,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2397,6 +4207,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "DFS Oskaloosa, LLC",
+   "city": "Oskaloosa",
+   "county": "Mahaska",
+   "phone": "641-673-9461",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Ozinga Feed Service, Inc.",
    "city": "Oskaloosa",
    "county": "Mahaska",
@@ -2409,7 +4236,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "World Food Processing, LLC dba Puris",
+   "city": "Oskaloosa",
+   "county": "Mahaska",
+   "phone": "641-672-9651",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2426,7 +4271,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2443,7 +4289,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2460,7 +4307,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2494,7 +4342,59 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Two Rivers Cooperative",
+   "city": "Pella",
+   "county": "Marion",
+   "phone": "641-628-4167",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Sunrise Foods International (USA) Inc.",
+   "city": "Pender",
+   "county": "out-of-state",
+   "phone": "306-657-5796",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "The Gutzmann Company, LLC",
+   "city": "Pender",
+   "county": "out-of-state",
+   "phone": "877-385-5579",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2511,7 +4411,59 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Dakota Growers Coop",
+   "city": "Plankinton",
+   "county": "out-of-state",
+   "phone": "605-942-7731",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Pro Cooperative",
+   "city": "Pocahontas",
+   "county": "Pocahontas",
+   "phone": "712-335-3060",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Prairie du Chien WI",
+   "county": "out-of-state",
+   "phone": "608-326-6111",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2528,7 +4480,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2545,7 +4498,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2563,6 +4517,23 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Nicholson and Edwards Grain Company",
+   "city": "Primghar",
+   "county": "O'Brien",
+   "phone": "712-957-2415",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2585,6 +4556,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "Farmers Mill, Inc.",
+   "city": "Protivin",
+   "county": "Chickasaw",
+   "phone": "563-569-8501",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Cooperative Elevator Company",
+   "city": "Radcliffe",
+   "county": "Hardin",
+   "phone": "515-899-2101",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Farmers Cooperative Company",
    "city": "Readlyn",
    "county": "Bremer",
@@ -2597,7 +4602,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Grain Craft, LLC",
+   "city": "Red Oak",
+   "county": "Montgomery",
+   "phone": "423-424-7700",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Rembrandt Foods Holdings LLC d/b/a REI Enterprises LLC",
+   "city": "Rembrandt",
+   "county": "Buena Vista",
+   "phone": "712-286-6000",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2614,7 +4654,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Gengler Feed Service Incorporated",
+   "city": "Remsen",
+   "county": "Plymouth",
+   "phone": "712-786-2234",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Feed & Grain Company, Inc.",
+   "city": "Riceville",
+   "county": "Howard",
+   "phone": "641-985-2147",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2631,7 +4706,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2653,6 +4729,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Rock Port",
+   "county": "out-of-state",
+   "phone": "660-786-7001",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Cooperative Farmers Elevator",
+   "city": "Rock Valley",
+   "county": "Sioux",
+   "phone": "712-476-5321",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Valley Feed And Seed, Inc.",
    "city": "Rock Valley",
    "county": "Sioux",
@@ -2665,7 +4775,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2682,7 +4793,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2699,7 +4811,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2716,7 +4829,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Key Cooperative",
+   "city": "Roland",
+   "county": "Story",
+   "phone": "515-388-4341",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2733,7 +4864,42 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Ries Ag Marketing LLC",
+   "city": "Ryan",
+   "county": "Delaware",
+   "phone": "563-932-2646",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "St. Ansgar Mills, Inc.",
+   "city": "Saint Ansgar",
+   "county": "Mitchell",
+   "phone": "641-713-4520",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2750,7 +4916,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2767,7 +4934,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2784,7 +4952,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2793,6 +4962,23 @@
    "city": "Schaumburg",
    "county": "out-of-state",
    "phone": "847-375-8675",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Eastland Feed and Grain, Inc.",
+   "city": "Shannon",
+   "county": "out-of-state",
+   "phone": "815-864-2723",
    "state": "IA",
    "address": null,
    "zip": null,
@@ -2818,7 +5004,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Shell Rock Soy Origination, LLC",
+   "city": "Shell Rock",
+   "county": "Butler",
+   "phone": "319-419-6321",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2836,6 +5040,108 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Cooperative Society",
+   "city": "Sioux Center",
+   "county": "Sioux",
+   "phone": "712-722-2671",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Sioux Feed LLC",
+   "city": "Sioux Center",
+   "county": "Sioux",
+   "phone": "712-722-0711",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Siouxland Energy Cooperative",
+   "city": "Sioux Center",
+   "county": "Sioux",
+   "phone": "712-722-4904",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Versova Management Cooperative",
+   "city": "Sioux Center",
+   "county": "Sioux",
+   "phone": "507-840-0046",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Visser Elevator, Inc.",
+   "city": "Sioux Center",
+   "county": "Sioux",
+   "phone": "712-722-0661",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Producers Livestock Marketing Association",
+   "city": "Sioux City",
+   "county": "Woodbury",
+   "phone": "712-274-0539",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2869,7 +5175,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2891,6 +5198,40 @@
    "source": "registry-ia"
   },
   {
+   "name": "Stockport Elevator",
+   "city": "Stockport",
+   "county": "Van Buren",
+   "phone": "319-796-2157",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Hillshire Grain Services, LLC",
+   "city": "Storm Lake",
+   "county": "Buena Vista",
+   "phone": "479-871-3014",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "Kruseman Fertilizer Company",
    "city": "Sully",
    "county": "Jasper",
@@ -2904,6 +5245,23 @@
    "nameRepaired": null,
    "licences": [
     "warehouse"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Green Plains Grain Company LLC",
+   "city": "Superior",
+   "county": "Dickinson",
+   "phone": "402-315-1640",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2925,6 +5283,23 @@
    "source": "registry-ia"
   },
   {
+   "name": "Werner's Grain & Feed, LLC",
+   "city": "Tama",
+   "county": "Tama",
+   "phone": "641-484-2621",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
    "name": "North Iowa Cooperative Elevator",
    "city": "Thornton",
    "county": "Cerro Gordo",
@@ -2937,7 +5312,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2954,7 +5330,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2971,7 +5348,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -2988,7 +5366,77 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "C.B. Constantini Ltd.",
+   "city": "Vancouver",
+   "county": "out-of-state",
+   "phone": "604-669-1212",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "F. J. Krob & Co.",
+   "city": "Walker",
+   "county": "Linn",
+   "phone": "319-624-3770",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Farmers Elevator & Exchange, Inc.",
+   "city": "Wapello",
+   "county": "Louisa",
+   "phone": "319-523-5351",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Kat's Grain, Inc.",
+   "city": "Washington",
+   "county": "Washington",
+   "phone": "319-653-3520",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3005,7 +5453,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3022,7 +5471,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3074,7 +5524,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "United Cooperative",
+   "city": "Webster City",
+   "county": "Hamilton",
+   "phone": "515-832-6373",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3091,7 +5559,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3159,7 +5628,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3193,7 +5663,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Circle J Grain, Inc.",
+   "city": "Williamsburg",
+   "county": "Iowa",
+   "phone": "319-668-1912",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3244,7 +5732,8 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -3261,7 +5750,25 @@
    "nameTruncated": null,
    "nameRepaired": null,
    "licences": [
-    "warehouse"
+    "warehouse",
+    "dealer"
+   ],
+   "source": "registry-ia"
+  },
+  {
+   "name": "Southeast Iowa Grain Corporation II",
+   "city": "Yarmouth",
+   "county": "Des Moines",
+   "phone": "319-868-7990",
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "licences": [
+    "dealer"
    ],
    "source": "registry-ia"
   },
@@ -5199,7 +7706,7 @@
    "state": "MO",
    "address": "6438 NE Nettleton Road",
    "zip": "64644",
-   "capacity": "3509000",
+   "capacity": "3870000",
    "licenceClass": "WH-1078",
    "nameTruncated": null,
    "nameRepaired": null,

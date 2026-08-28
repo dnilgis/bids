@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+<title>Iowa Dept of Agriculture Licensing List</title>
+
+<!-- Required meta tags -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="/css/idals.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/idals_theme.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/sticky_footer.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/licensing_lists/css/remove_num_arrows.css" crossorigin="anonymous">
+
+<style>  
+a.row-href:link {  
+	color: black;
+	text-decoration: none;
+}
+a.row-href:visited {  
+	color: black;
+	text-decoration: none;
+}
+a.row-href:hover {  
+	color: blue;
+	text-decoration: underline;
+}   
+
+</style>  
+
+</head>
+<body>
+
+<div class="header" style="width:100%;">
+
+	<nav class="d-flex d-inline justify-content-between navbar navbar-expand-lg navbar-light bg-light">
+		<a href="https://iowaagriculture.gov/" class="p-2 navbar-brand flex-fill logo-anchor"><img class="img-responsive logo" src="/images/logo_70px.png" alt="Iowa Department of Agriculture and Land Stewardship home"></a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="p-4 collapse navbar-collapse" id="navbarNavAltMarkup">
+			<div class="navbar-nav">
+				<a class="ml-auto nav-item nav-link text-dark" href="https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories">Licensing List Home</a>
+			</div>
+		</div>
+
+	</nav>
+
+</div>
+
+
+<div class="container">
+	<!--<h4>Licensed Grain Dealers</h4>-->
+	<h1>Licensed Grain Dealers</h1>
+
+	<form method="post" id="filterForm" action="/licensing_lists/graindealers/";>
+		<div class="row">
+			<div class="col-md-4">
+				<label for="name" class="form-label">Name</label>
+				<input type="text" name="name" class="form-control" id="name">
+			</div>
+			<div class="col-md-4">
+				<label for="location" class="form-label">City</label>
+				<input type="text" name="location" class="form-control" id="location" value="">
+			</div>
+			<div class="col-md-4">
+
+				<label for="county" class="form-label">County</label>
+				<select id="county" name="county" class="form-control">
+					<option value="All">- Any -</option>
+										<option >Adams</option>
+										<option >Allamakee</option>
+										<option >Benton</option>
+										<option >Black Hawk</option>
+										<option >Bremer</option>
+										<option >Buchanan</option>
+										<option >Buena Vista</option>
+										<option >Butler</option>
+										<option >Calhoun</option>
+										<option >Carroll</option>
+										<option >Cass</option>
+										<option >Cedar</option>
+										<option >Cerro Gordo</option>
+										<option >Cherokee</option>
+										<option >Chickasaw</option>
+										<option >Clay</option>
+										<option >Clayton</option>
+										<option >Clinton</option>
+										<option >Crawford</option>
+										<option >Davis</option>
+										<option >Decatur</option>
+										<option >Delaware</option>
+										<option >Deleware</option>
+										<option >Des Moines</option>
+										<option >Dickinson</option>
+										<option >Douglas</option>
+										<option >Dubuque</option>
+										<option >Emmet</option>
+										<option >Fayette</option>
+										<option >Floyd</option>
+										<option >Fremont</option>
+										<option >Greene</option>
+										<option >Grundy</option>
+										<option >Hamilton</option>
+										<option >Hardin</option>
+										<option >Harrison</option>
+										<option >Henry</option>
+										<option >Howard</option>
+										<option >Humboldt</option>
+										<option >Ida</option>
+										<option >Iowa</option>
+										<option >Jackson</option>
+										<option >Jasper</option>
+										<option >Johnson</option>
+										<option >Jones</option>
+										<option >Keokuk</option>
+										<option >Kossuth</option>
+										<option >Lee</option>
+										<option >Linn</option>
+										<option >Louisa</option>
+										<option >Lyon</option>
+										<option >Mahaska</option>
+										<option >Marion</option>
+										<option >Marshall</option>
+										<option >Mitchell</option>
+										<option >Montgomery</option>
+										<option >Muscatine</option>
+										<option >O'Brien</option>
+										<option >out-of-state</option>
+										<option >Palo Alto</option>
+										<option >Plymouth</option>
+										<option >Pocahontas</option>
+										<option >Polk</option>
+										<option >Pottawattamie</option>
+										<option >Powshiek</option>
+										<option >Ringgold</option>
+										<option >Rock</option>
+										<option >Scott</option>
+										<option >Shelby</option>
+										<option >Sioux</option>
+										<option >Story</option>
+										<option >Tama</option>
+										<option >Union</option>
+										<option >Van Buren</option>
+										<option >Wapello</option>
+										<option >Washington</option>
+										<option >Wayne</option>
+										<option >Webster</option>
+										<option >Winnebago</option>
+										<option >Winneshiek</option>
+										<option >Woodbury</option>
+										<option >Worth</option>
+										<option >Wright</option>
+									</select>
+				<input type="hidden" name="offset" id="offset">
+
+			</div>
+		</div>
+
+		<div class="row" style="margin: 8px;">
+			<div class="col-md-2">
+				<button id="filterBtn" type="submit" class="btn btn-outline-secondary" name="submit" value="filter">Filter</button>
+			</div>
+			<div class="col-md-2">
+				<a id="resetFilter" class="btn btn-outline-secondary " href="/licensing_lists/graindealers/">Reset filter</a>
+			</div>
+			<div class="col-md-8">
+			</div>
+		</div>
+	</form>
+
+	<div class="table-responsive">
+		<table class="table">
+			<tr>
+				<th style="padding: 4px;">Name</th>
+				<th style="padding: 4px;">City</th>
+				<th style="padding: 4px;">County</th>
+				<th style="padding: 4px;">Phone</th>
+			</tr>
+					<tr>
+				<td>Bruntlett Elevator, Inc.</td>
+				<td>Gowrie</td>
+				<td>Webster</td>
+				<td>515-352-3118</td>
+			</tr>
+						<tr>
+				<td>Buckingham Co-Operative Co.</td>
+				<td>Buckingham</td>
+				<td>Tama</td>
+				<td>319-478-2331</td>
+			</tr>
+						<tr>
+				<td>Bullock Ag Service, Inc.- Preston</td>
+				<td>Preston</td>
+				<td>Jackson</td>
+				<td>563-689-5951</td>
+			</tr>
+						<tr>
+				<td>Bullocks, Inc.</td>
+				<td>Maquoketa</td>
+				<td>Jackson</td>
+				<td>563-652-3819</td>
+			</tr>
+						<tr>
+				<td>Bunge North America, Inc.</td>
+				<td>Chesterfield</td>
+				<td>out-of-state</td>
+				<td>314-292-2470</td>
+			</tr>
+						<tr>
+				<td>Bunge North America, Inc.</td>
+				<td>Council Bluffs</td>
+				<td>Pottawattamie</td>
+				<td>712-366-3600</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Dubuque</td>
+				<td>Dubuque</td>
+				<td>563-564-4737</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Joice</td>
+				<td>Worth</td>
+				<td>641-323-1190</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Rock Port</td>
+				<td>out-of-state</td>
+				<td>660-786-7001</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Creston</td>
+				<td>Union</td>
+				<td>515-697-4410</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Nebraska City</td>
+				<td>out-of-state</td>
+				<td>402-874-7000</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Fremont</td>
+				<td>out-of-state</td>
+				<td>402-727-2332</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Omaha</td>
+				<td>out-of-state</td>
+				<td>402-889-4469</td>
+			</tr>
+						<tr>
+				<td>Bunge USA Grain, LLC</td>
+				<td>Prairie du Chien WI</td>
+				<td>out-of-state</td>
+				<td>608-326-6111</td>
+			</tr>
+						<tr>
+				<td>Bunkers Feed & Supply, Inc.</td>
+				<td>Granville</td>
+				<td>Sioux</td>
+				<td>712-727-3243</td>
+			</tr>
+						<tr>
+				<td>C.B. Constantini Ltd.</td>
+				<td>Vancouver</td>
+				<td>out-of-state</td>
+				<td>604-669-1212</td>
+			</tr>
+						<tr>
+				<td>Capitol Grain, LLC</td>
+				<td>Iowa City</td>
+				<td>Johnson</td>
+				<td>319-331-4426</td>
+			</tr>
+						<tr>
+				<td>Cargill, Incorporated</td>
+				<td>Muscatine</td>
+				<td>Muscatine</td>
+				<td>563-263-3556</td>
+			</tr>
+						<tr>
+				<td>Carson Grain Company</td>
+				<td>Troy Mills</td>
+				<td>Linn</td>
+				<td>319-224-3296</td>
+			</tr>
+						<tr>
+				<td>Cartersville Elevator, Inc.</td>
+				<td>Rockwell</td>
+				<td>Cerro Gordo</td>
+				<td>641-822-4550</td>
+			</tr>
+						<tr>
+				<td>Cedar County Cooperative</td>
+				<td>Tipton</td>
+				<td>Cedar</td>
+				<td>563-886-6177</td>
+			</tr>
+						<tr>
+				<td>Central Farm Service</td>
+				<td>Dolliver</td>
+				<td>Emmet</td>
+				<td>507-776-2831</td>
+			</tr>
+						<tr>
+				<td>Central Valley Ag Cooperative</td>
+				<td>Hinton</td>
+				<td>Plymouth</td>
+				<td>712-947-4212</td>
+			</tr>
+						<tr>
+				<td>CFF Commodities, LLC</td>
+				<td>Forest City</td>
+				<td>Winnebago</td>
+				<td>507-794-8604</td>
+			</tr>
+						<tr>
+				<td>Chem Gro of Houghton, Inc.</td>
+				<td>Houghton</td>
+				<td>Lee</td>
+				<td>319-469-2611</td>
+			</tr>
+					</table>
+	</div>
+
+	<p>
+						<button id="prev" class="btn btn-sm btn-outline-primary">< Prev</button>
+					50 out of 251					<button id="next" class="btn btn-sm btn-outline-primary">Next ></button>
+				</p>
+</div>
+</body>
+
+<script>
+$(function() {
+
+	var getUrlParameter = function getUrlParameter(sParam) {
+		var sPageURL = window.location.search.substring(1),
+			sURLVariables = sPageURL.split('&'),
+			sParameterName,
+			i;
+
+		for (i = 0; i < sURLVariables.length; i++) {
+			sParameterName = sURLVariables[i].split('=');
+
+			if (sParameterName[0] === sParam) {
+				return typeof sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+			}
+		}
+		return false;
+	};
+
+	if(getUrlParameter('offset')) {
+		$('#offset').val(getUrlParameter('offset'));
+	}
+
+	$('#resetFilter').click( function() {
+		localStorage.removeItem('name');
+		localStorage.removeItem('city');
+		localStorage.removeItem('county');
+	});
+
+	$('#filterForm').submit( function() {
+		localStorage.setItem('name', $('#name').val());
+		localStorage.setItem('city', $('#city').val());
+		localStorage.setItem('county', $('#county').val());
+		localStorage.removeItem('offset');
+		return true; // submit the form
+	});
+
+	$('#prev').click( function() {
+		$('#offset').val(0);
+		$('#filterBtn').click();
+	});
+
+	$('#next').click( function() {
+		$('#offset').val(50);
+		$('#filterBtn').click();
+	});
+
+	if(localStorage.getItem('county') > '') {
+		$('#county').val(localStorage.getItem('county'));
+	}
+	if(localStorage.getItem('name') > '') {
+		$('#name').val(localStorage.getItem('name'));
+	}
+	if(localStorage.getItem('city') > '') {
+		$('#city').val(localStorage.getItem('city'));
+	}
+});
+
+</script>
+
+</html>
