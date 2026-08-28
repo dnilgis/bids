@@ -1419,10 +1419,20 @@ def main():
                 e[f] = r[f]
 
     out = sorted(merged.values(), key=lambda e: (e.get("state") or "", e.get("city") or "", e.get("name") or ""))
-    per_state = {}
+    # A COUNT WITH A KEY CALLED "null" IS A COUNT NOBODY CAN READ.
+    # Emptying the state on an out-of-state licensee was right; letting the
+    # tally print {"null": 31} alongside real state codes was not. They are
+    # counted apart, under a name that says what they are.
+    per_state, no_state = {}, 0
     for e in out:
+        if not e.get("state"):
+            no_state += 1
+            continue
         per_state[e["state"]] = per_state.get(e["state"], 0) + 1
     counts = {"businesses": len(out),
+              # Licensed by a state, located somewhere else, and the state's own
+              # list says so. Not in byState, because they are not in that state.
+              "licensedButLocatedElsewhere": no_state,
               "incompleteSources": [{"url": d["url"], "state": d.get("state"),
                                      "why": d["INCOMPLETE"]} for d in diags
                                     if d.get("INCOMPLETE")],
@@ -1447,6 +1457,9 @@ def main():
             print("   %-3s %-58s %s" % (d.get("state"), d["url"][:58], d["INCOMPLETE"]))
 
     print("\n%d businesses  %s" % (len(out), json.dumps(per_state)))
+    if no_state:
+        print("   plus %d licensed by a state but located elsewhere — their own "
+              "list says so, so they are not counted in any state" % no_state)
     print("   %d hold both licences, %d carry a phone" % (counts["both_licences"], counts["with_phone"]))
     if not out:
         print("\nNOTHING PARSED ANYWHERE. The diagnostics say what came back:")
