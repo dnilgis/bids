@@ -148,9 +148,13 @@ test("the trading-window cron asks a FEW times an hour, and each fire is short",
 test("one pass of the reader is ONE THING, so it can be called in a loop", () => {
   const sh = readFileSync(new URL("../scripts/one-pass.sh", import.meta.url), "utf8");
   const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
+  /* Commit and push are DELEGATED to scripts/commit-and-push.sh — the pass is
+     still whole, it just no longer carries its own copy of the rebase-and-retry
+     that registries.yml and sync_known.yml were missing when they lost 581
+     businesses to a rejected push. Passing .commit-message keeps the price
+     message's exact bytes. */
   for (const [what, re] of [["read", /node scripts\/poll\.mjs/],
-                            ["commit", /git commit -F \.commit-message/],
-                            ["push", /git push/],
+                            ["commit and push", /commit-and-push\.sh" \.commit-message/],
                             ["tell the sites", /repository_dispatch|dispatches/]])
     assert.match(sh, re, `one-pass.sh does not ${what} — the pass is not whole`);
   assert.match(y, /bash scripts\/one-pass\.sh/, "the workflow no longer calls the pass");
@@ -295,4 +299,45 @@ test("AND IT ALERTS: a failure opens an issue, and reuses the same one", () => {
   assert.match(y, /gh issue create/, "nothing opens an issue");
   assert.match(y, /gh issue list[\s\S]{0,200}--state all/,
     "it does not look for an existing issue — an afternoon of failures would file one per hour");
+});
+
+/* EVERY PUSH GOES THROUGH ONE PLACE, BECAUSE THE SIX LINES DID NOT SPREAD.
+ *
+ * one-pass.sh has carried a rebase-and-retry since the reader started looping.
+ * registries.yml and sync_known.yml never got it, and on 2026-08-28 the
+ * registries run read all 251 Iowa dealers, all 102 warehouses, geocoded 481
+ * addresses over 171 seconds, committed 581 businesses — and then:
+ *
+ *     ! [rejected]  main -> main (fetch first)
+ *
+ * The bid poller pushes to main every ten minutes through the trading day, and
+ * that job runs for seven. Everything it learned died on the runner, under a
+ * summary that said the run had succeeded.
+ *
+ * A bare `git push` in anything that commits is now a test failure.
+ */
+test("nothing pushes without the rebase-and-retry", () => {
+  const offenders = [];
+  for (const f of FILES) {
+    const body = readFileSync(join(DIR, f), "utf8");
+    if (!/git\s+push/.test(body)) continue;
+    if (!/commit-and-push\.sh/.test(body)) offenders.push(f);
+  }
+  assert.deepEqual(offenders, [],
+    `these push directly and will lose their work to the poller: ${offenders.join(", ")}`);
+});
+
+test("the shared push script retries, rebases, and fails loudly", () => {
+  const sh = readFileSync(new URL("../scripts/commit-and-push.sh", import.meta.url), "utf8");
+  assert.match(sh, /pull --rebase --autostash/, "a rejected push must rebase, not force");
+  assert.ok(!/push\s+(--force|-f)\b/.test(sh), "never force-push over somebody else's commit");
+  assert.match(sh, /::error/, "exhausting the retries must be loud, not a silent zero");
+  assert.match(sh, /rebase --abort/, "a failed rebase must not leave the runner mid-rebase");
+});
+
+test("the reader still commits through it, message file intact", () => {
+  const pass = readFileSync(new URL("../scripts/one-pass.sh", import.meta.url), "utf8");
+  assert.match(pass, /commit-and-push\.sh" \.commit-message/,
+    "the price message is multi-line and must go through as a FILE, not an argument");
+  assert.ok(!/^git push/m.test(pass), "one-pass.sh still has a bare push");
 });

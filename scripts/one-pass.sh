@@ -92,17 +92,16 @@ fi
 # as a price history rather than a list of identical commits, and a
 # heartbeat says so instead of impersonating a price change.
 # Written by poll.mjs via lib/decide.mjs.
-git commit -F .commit-message
 # PUSH, THEN REBASE AND PUSH AGAIN IF SOMEBODY GOT THERE FIRST.
-# This used to be a bare `git push` and that was fine while one run existed
-# at a time. The hourly run now loops, so a hand-fired run and a scheduled
-# one can be minutes apart, and a rejected push would have thrown away a
-# price that was already read and written.
-git push || {
-  echo "::warning title=push was rejected::somebody else pushed first; rebasing and retrying"
-  git pull --rebase --autostash
-  git push
-}
+# This used to be a bare `git push` and that was fine while one run existed at
+# a time. The hourly run now loops, so a hand-fired run and a scheduled one can
+# be minutes apart, and a rejected push would have thrown away a price that was
+# already read and written.
+#
+# It lived here as six lines, and the two workflows that needed it most never
+# got them — the registries run of 2026-08-28 lost 581 businesses to exactly
+# this. It is scripts/commit-and-push.sh now, so there is one copy to fix.
+bash "$(dirname "$0")/commit-and-push.sh" .commit-message
 
 # ---- TELL THE TWO SITES, INSTEAD OF LEAVING THEM TO ASK ------------------
 set -u
