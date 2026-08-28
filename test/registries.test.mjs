@@ -466,13 +466,18 @@ print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
   assert.equal(out[2], "541 GRAIN COMPANY, LLC");
 });
 
-for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 265], ["NE", PDFS.NE, 114]]) {
+/* SD is 293, not the 265 this once asserted: its wrapped lines are rejoined now
+   and its class column is constrained, which recovered 28 real records and
+   removed 27 fragments. The call below passes the source's FULL config —
+   pattern, continuation and cityStrip — because a test that exercises less than
+   the run does is a test of something nobody runs. */
+for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 293], ["NE", PDFS.NE, 114]]) {
   test(`the ${st} bid sheet's own line shape is read`, { skip: !existsSync(fixture(file)) }, () => {
     const out = pyOn(`
 src = [s for s in m.SOURCES if s["state"] == "${st}" and s.get("pattern")][0]
 t = open(r"${fixture(file)}", encoding="utf-8", errors="replace").read()
 d = {}
-r = m.pdf_records(t, d, src["pattern"])
+r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
 print(len(r), r[0]["name"], r[0].get("city", ""), sep="|")`).split("|");
     assert.equal(Number(out[0]), want, `${out[0]} of an expected ${want} lines matched`);
     /* The name must be GREEDY. Non-greedy read South Dakota's "ADVANCED
@@ -542,4 +547,65 @@ for t in ("TOTAL LICENSED GRAIN DEALERS 116", "43 TOTAL LICENSED GRAIN WAREHOUSE
   assert.equal(out[1], "(0, 43)", "the number-first spelling is not recognised");
   assert.equal(out[2], "(25, 251)");
   assert.equal(out[3], "None", "an ordinary licence row is being read as a total");
+});
+
+/* A STATE'S LIST IS WHO IT LICENSES, NOT WHO IS INSIDE ITS BORDERS.
+ *
+ * Iowa writes "out-of-state" in the county column for a business licensed to
+ * buy Iowa grain from somewhere else. Thirty-one of them were counted as Iowa
+ * elevators and looked for in the Iowa gazetteer: Lighthouse Commodities of
+ * Bismarck (701 = North Dakota), Viserion of Boulder, Bunge of Chesterfield
+ * (314 = Missouri). They never resolved — the right outcome for the wrong
+ * reason. The towns are fine; they are simply not in Iowa.
+ *
+ * The licensing state is kept and the location state emptied rather than
+ * guessed. Nothing here knows where Boulder is, and an area code is a hint, not
+ * an address. An unplaced pin is honest; a pin in the wrong state is not, and
+ * neither is a state count inflated by thirty-one businesses somewhere else.
+ */
+test("a business the state says is out-of-state is not counted as in it", () => {
+  const out = pyOn(`
+for c in ("out-of-state", "Out of State", "OUT OF STATE", "Boone"):
+    r = {"name": "X", "city": "Bismarck", "county": c, "state": "IA", "st": "IA"}
+    m.mark_out_of_state(r)
+    print(r.get("outOfState"), r.get("licensedBy"), repr(r.get("st")), sep="|")`).split("\n");
+  for (const i of [0, 1, 2]) {
+    const [flag, by, st] = out[i].split("|");
+    assert.equal(flag, "True", `spelling ${i} not recognised as out-of-state`);
+    assert.equal(by, "IA", "the licensing state must be kept, not thrown away");
+    assert.equal(st, "''", "the licensing state is being claimed as the location");
+  }
+  const [flag, , st] = out[3].split("|");
+  assert.equal(flag, "None", "a real county was mistaken for the out-of-state marker");
+  assert.equal(st, "'IA'", "an ordinary Iowa business lost its state");
+});
+
+/* A RECORD THAT WRAPS ONTO A SECOND LINE IS STILL ONE RECORD.
+ *
+ * South Dakota's PDF wraps long licensee names:
+ *     FREDERICK FARMERS ELEVATOR
+ *     BHARROLD A+VCS
+ * a name with no location, and a location with no name. One line at a time,
+ * that produced garbage that LOOKED like data — a company called "FREDERICK" in
+ * a town called "ARMERS" — because the class pattern accepted any capitalised
+ * word, so "ELEVATOR" passed as a licence class. The Class column is only ever
+ * A+VCS, A or B.
+ *
+ * A wrong town is worse than a missing one: it puts a pin somewhere real.
+ */
+const SDF = "http-puc-sd-gov-commission-warehouse-grain-20license-20info-pdf.txt";
+test("South Dakota's wrapped lines are rejoined, not parsed as separate records", { skip: !existsSync(fixture(SDF)) }, () => {
+  const out = pyOn(`
+import re
+src = [s for s in m.SOURCES if s["state"] == "SD"][0]
+t = open(r"${fixture(SDF)}", encoding="utf-8", errors="replace").read()
+d = {}
+r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
+bad = [x for x in r if x["city"] in ("A", "ARMERS", "EST") or re.search(r"-\\d+$", x["city"] or "")]
+names = {x["name"] for x in r}
+print(len(r), d.get("pdfLinesJoined"), len(bad), "FREDERICK" in names, sep="|")`).split("|");
+  assert.ok(Number(out[0]) >= 290, `${out[0]} records — the rejoin lost some`);
+  assert.ok(Number(out[1]) > 50, "no wrapped lines were joined at all");
+  assert.ok(Number(out[2]) <= 5, `${out[2]} records still have a fragment for a town`);
+  assert.equal(out[3], "False", 'a company called "FREDERICK" is a wrapped name read as a record');
 });

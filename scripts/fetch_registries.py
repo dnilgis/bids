@@ -156,9 +156,14 @@ SOURCES = [
     # town, so the name has to be greedy or the S of SUNFLOWER becomes the permit.
     {"state": "SD", "kind": "dealer+warehouse", "note": "PUC licence list", "route": "pdf",
      "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf",
+     # The Class column is only ever A+VCS, A or B. Accepting any capitalised
+     # word as a class is what let "FREDERICK FARMERS ELEVATOR" parse as a
+     # company in a town called ARMERS with a class of ELEVATOR.
      "pattern": r"^(?P<name>.+)\s(?P<licence>[BFSW])(?P<city>[A-Z][A-Za-z0-9.'&/-]*"
                 r"(?: [A-Z0-9][A-Za-z0-9.'&/-]*)*?)(?:,\s*(?P<st>[A-Z]{2}))?"
-                r"\s+(?P<cls>[A-Z][A-Z+]{2,})\s*$"},
+                r"\s+(?P<cls>A\+VCS|A|B)\s*$",
+     "continuation": r"^[BFSW][A-Z][A-Za-z0-9 .,'&/-]*\s+(?:A\+VCS|A|B)$",
+     "cityStrip": r"-\d+$"},
 
     # NEBRASKA REFRESHES ITS LIST CONSTANTLY AND PUTS THE DATE IN THE FILENAME,
     # so a hard-coded URL is a scraper with an expiry date on it. The link is
@@ -499,7 +504,7 @@ def pdf_text(raw, diag):
         return None
 
 
-def pdf_records(text, diag, pattern=None):
+def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
     """With a pattern, read the document's own shape; without one, fall back to
     lines carrying a phone.
 
@@ -517,6 +522,24 @@ def pdf_records(text, diag, pattern=None):
     city called "Inc. Berne".
     """
     lines = [re.sub(r"\s+", " ", l.strip()) for l in (text or "").splitlines() if l.strip()]
+    # A RECORD THAT WRAPS ONTO A SECOND LINE IS STILL ONE RECORD.
+    # South Dakota's PDF wraps long licensee names, so the document holds
+    #     FREDERICK FARMERS ELEVATOR
+    #     BHARROLD A+VCS
+    # — a name with no location, and a location with no name. Matched one line at
+    # a time that produced garbage that LOOKED like data: a company called
+    # "FREDERICK" in a town called "ARMERS". Thirty-one of South Dakota's
+    # records were shapes like that, and a wrong town is worse than a missing
+    # one because it puts a pin somewhere real.
+    if cont:
+        rxc, joined = re.compile(cont), []
+        for l in lines:
+            if rxc.match(l) and joined:
+                joined[-1] += " " + l
+            else:
+                joined.append(l)
+        diag["pdfLinesJoined"] = len(lines) - len(joined)
+        lines = joined
     diag["pdfLines"] = len(lines)
     if pattern:
         rx = re.compile(pattern)
@@ -533,6 +556,10 @@ def pdf_records(text, diag, pattern=None):
                 continue
             rec = {k: (v or "").strip() for k, v in m.groupdict().items() if v}
             rec.pop("no", None); rec.pop("cls", None); rec.pop("status", None)
+            # Agtegra's locations carry a facility number — "ALPENA-098",
+            # "ANDOVER-064". The town is the part a gazetteer has heard of.
+            if citystrip and rec.get("city"):
+                rec["city"] = re.sub(citystrip, "", rec["city"]).strip()
             _two_word_city(rec)
             if len(rec.get("name", "")) > 2:
                 out.append(rec)
@@ -656,7 +683,8 @@ def fetch_file(src, timeout, diag, dump):
         text = pdf_text(raw, diag)
         if text is None:
             return []
-        recs = pdf_records(text, diag, src.get("pattern"))
+        recs = pdf_records(text, diag, src.get("pattern"),
+                           src.get("continuation"), src.get("cityStrip"))
         told = stated_total(text)
         if told and told[1]:
             diag["statedTotal"] = {"total": told[1]}
@@ -703,7 +731,8 @@ def fetch_file(src, timeout, diag, dump):
         text = pdf_text(raw, diag)
         if text is None:
             return []
-        recs = pdf_records(text, diag, src.get("pattern"))
+        recs = pdf_records(text, diag, src.get("pattern"),
+                           src.get("continuation"), src.get("cityStrip"))
         told = stated_total(text)
         if told and told[1]:
             diag["statedTotal"] = {"total": told[1]}
@@ -994,6 +1023,33 @@ def probe_pagination(url, timeout, diag):
 COUNTY_TAIL = re.compile(r",\s*[A-Za-z]{2}\.?\s*$")
 
 
+OUT_OF_STATE = re.compile(r"^\s*out[\s-]*of[\s-]*state\s*$", re.I)
+
+
+def mark_out_of_state(rec):
+    """A state's list is who it LICENSES, not who is inside its borders.
+
+    Iowa writes "out-of-state" in the county column for a business licensed to
+    buy Iowa grain from somewhere else, and thirty-one of them were being
+    counted as Iowa elevators and looked for in the Iowa gazetteer: Lighthouse
+    Commodities of Bismarck (701 = North Dakota), Viserion of Boulder, Bunge of
+    Chesterfield (314 = Missouri). They never resolved, which is the right
+    outcome for the wrong reason — the town is fine, it is simply not in Iowa.
+
+    So the licensing state is kept as `licensedBy` and `state` is emptied rather
+    than guessed. Nothing here knows where Boulder is; the phone's area code is
+    a hint, not an address. An unplaced pin is honest. A pin in the wrong state
+    is not, and neither is a state count inflated by thirty-one businesses that
+    are somewhere else.
+    """
+    if OUT_OF_STATE.match(str(rec.get("county") or "")):
+        rec["outOfState"] = True
+        rec["licensedBy"] = rec.get("state")
+        rec["county"] = None
+        rec["st"] = ""                       # do not claim the licensing state
+    return rec
+
+
 def clean_county(v):
     """Missouri writes the county as "Clinton, MO". The state is already its
     own column; repeating it inside the county turns every county key into a
@@ -1160,6 +1216,7 @@ def scrape(src, pages, timeout, verbose, dump=None):
             r["kind"] = src["kind"]
             if r.get("county"):
                 r["county"] = clean_county(r["county"])
+            mark_out_of_state(r)
         mark_truncation(recs, diag)
         diag["kept"] = len(recs)
         if verbose and recs:
@@ -1172,6 +1229,7 @@ def scrape(src, pages, timeout, verbose, dump=None):
             r["kind"] = src["kind"]
             if r.get("county"):
                 r["county"] = clean_county(r["county"])
+            mark_out_of_state(r)
         mark_truncation(recs, diag)
         diag["kept"] = len(recs)
         if verbose and recs:
@@ -1231,6 +1289,7 @@ def scrape(src, pages, timeout, verbose, dump=None):
     for r in recs:
         if r.get("county"):
             r["county"] = clean_county(r["county"])
+        mark_out_of_state(r)
     mark_truncation(recs, diag)
     diag["kept"] = len(recs)
     if verbose and recs:
@@ -1337,6 +1396,8 @@ def main():
                                   # and 42 elevators in two-word towns got no pin.
                                   # The same shape of bug as nameTruncated: a field
                                   # list that has to be edited in two places.
+                                  "outOfState": r.get("outOfState") or None,
+                                  "licensedBy": r.get("licensedBy"),
                                   "cityAlt": r.get("cityAlt"),
                                   "nameAlt": r.get("nameAlt"),
                                   "licences": [],
