@@ -17,4 +17,13 @@ crons = [
   # Weekends every three hours. The board does not move; this is a heartbeat,
   # and three rather than four for the reason poll.yml documents at length.
   "20 */3 * * 6,0",
+
+  # THE DISCOVERY SWEEP, ADDED 2026-08-28.
+  # Same six slots discover-sweep.yml already asks GitHub for, so nothing about
+  # the workflow changes and GitHub stays armed underneath as the fallback.
+  # This is the queue that turns a grey pin green: 45 operator sites a run,
+  # 614 still unasked. Six fires a day empties it in under three days; the one
+  # in six GitHub delivers takes a fortnight.
+  # src/index.js routes this cron to discover-sweep.yml by exact string.
+  "35 1,4,7,16,19,22 * * *",
 ]

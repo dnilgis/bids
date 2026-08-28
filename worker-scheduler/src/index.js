@@ -49,13 +49,55 @@
 
 const OWNER = "dnilgis";
 const REPO = "bids";
-const WORKFLOW = "poll.yml";
 const REF = "main";
+
+/* WHICH CRON FIRES WHICH WORKFLOW.
+ *
+ * ADDED 2026-08-28. This Worker was written to rescue poll.yml, and it did:
+ * GitHub cron delivered 66 of 380 asked over 18-26 August, 17.4%, while the
+ * Worker delivered 47 of 48 in the trading window on the 28th, 97.9%.
+ *
+ * But `discover-sweep.yml` was left on GitHub cron, and that is the workflow
+ * that turns a grey pin into a green one: it asks each operator's own site
+ * what board it runs, 45 hosts a run, six runs a day. 614 hosts are still
+ * unasked. At the six fires a day it asks for, that queue is empty in under
+ * three days. At the one in six GitHub actually delivers, it is a fortnight.
+ * On 2026-08-28, of five scheduled discover fires due, exactly one arrived.
+ *
+ * So the cheapest single thing that moves national coverage is four lines
+ * here, not new scraper code.
+ *
+ * Cloudflare hands `event.cron` back as the exact string from wrangler.toml,
+ * so routing on it is an equality test and cannot drift.
+ *
+ * DOUBLE FIRING IS SAFE, and on discover it is useful. Both schedulers are
+ * armed on purpose -- GitHub stays as the fallback the README describes. Both
+ * workflows hold a `concurrency` group with `cancel-in-progress: false`, so a
+ * duplicate queues rather than running twice; and because discover keeps a
+ * ledger and resumes past every URL already decided, the queued run does the
+ * NEXT 45 hosts instead of repeating the last 45. */
+const ROUTES = {
+  "*/10 12-21 * * 1-5":        "poll.yml",
+  "20 0-11,22-23 * * 1-5":     "poll.yml",
+  "20 */3 * * 6,0":            "poll.yml",
+  "35 1,4,7,16,19,22 * * *":   "discover-sweep.yml",
+};
+const DEFAULT_WORKFLOW = "poll.yml";
+const WORKFLOWS = [...new Set(Object.values(ROUTES))];
+
+/* An unrecognised cron falls back to the reader rather than throwing.
+ * A typo in wrangler.toml then costs one wasted poll, which is cheap and
+ * idempotent, instead of silently dropping every fire in that slot. The log
+ * line carries `unmatchedCron` so it is still findable. */
+function routeFor(cron) {
+  const workflow = ROUTES[cron];
+  return { workflow: workflow ?? DEFAULT_WORKFLOW, unmatchedCron: !workflow };
+}
 const UA = "agsist-bid-scheduler (+https://agsist.com; sig@farmers1st.com)";
 
-async function dispatch(env, why) {
-  if (!env.GH_PAT) return { ok: false, status: 0, why, detail: "GH_PAT is not set on this Worker" };
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`;
+async function dispatch(env, why, workflow = DEFAULT_WORKFLOW) {
+  if (!env.GH_PAT) return { ok: false, status: 0, why, workflow, detail: "GH_PAT is not set on this Worker" };
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${workflow}/dispatches`;
   const r = await fetch(url, {
     method: "POST",
     headers: {
@@ -74,12 +116,13 @@ async function dispatch(env, why) {
      almost always the token not being scoped to this repository. Those two
      mistakes look identical from the outside unless the reason is printed. */
   const detail = r.status === 204 ? "" : (await r.text()).slice(0, 300);
-  return { ok: r.status === 204, status: r.status, why, detail };
+  return { ok: r.status === 204, status: r.status, why, workflow, detail };
 }
 
 export default {
   async scheduled(event, env, ctx) {
-    const r = await dispatch(env, event.cron);
+    const { workflow, unmatchedCron } = routeFor(event.cron);
+    const r = { ...(await dispatch(env, event.cron, workflow)), unmatchedCron };
     /* A Worker's log is the only place this is visible, so say enough to
        diagnose it from the log alone. */
     console.log(JSON.stringify({ at: new Date(event.scheduledTime).toISOString(), ...r }));
@@ -93,12 +136,18 @@ export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     if (u.pathname === "/health")
-      return new Response(JSON.stringify({ ok: true, hasToken: Boolean(env.GH_PAT), target: `${OWNER}/${REPO}/${WORKFLOW}` }, null, 1),
+      return new Response(JSON.stringify({ ok: true, hasToken: Boolean(env.GH_PAT), repo: `${OWNER}/${REPO}`, routes: ROUTES }, null, 1),
         { headers: { "content-type": "application/json" } });
     if (u.pathname !== "/fire") return new Response("not found", { status: 404 });
     if (!env.FIRE_KEY) return new Response("FIRE_KEY is not set; refusing to expose an unauthenticated trigger", { status: 403 });
     if (u.searchParams.get("key") !== env.FIRE_KEY) return new Response("forbidden", { status: 403 });
-    const r = await dispatch(env, "manual");
+    /* ?workflow= is checked against the route table's own values, never passed
+       through: this endpoint can fire the two workflows this Worker schedules
+       and nothing else in the repository. */
+    const asked = u.searchParams.get("workflow");
+    if (asked && !WORKFLOWS.includes(asked))
+      return new Response(`workflow must be one of: ${WORKFLOWS.join(", ")}`, { status: 400 });
+    const r = await dispatch(env, "manual", asked || DEFAULT_WORKFLOW);
     return new Response(JSON.stringify(r, null, 1), { status: r.ok ? 200 : 502, headers: { "content-type": "application/json" } });
   },
 };
