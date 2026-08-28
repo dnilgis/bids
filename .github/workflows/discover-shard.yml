@@ -1,0 +1,236 @@
+# THE SWEEP, TWENTY AT A TIME.
+#
+# discover-sweep.yml asks 45 hosts in one serial job and takes about 40
+# minutes doing it. 614 hosts is therefore roughly two days of scheduled fires.
+# This workflow asks the whole list at once by running twenty of that same job
+# side by side, and it exists because of a lesson already paid for in this
+# repository:
+#
+#   THE FIX IS NOT A LONGER RUN. poll.yml records what that cost -- a job that
+#   holds a runner for fifty of every sixty minutes looks like a persistent
+#   server to Actions and gets throttled, and scheduled delivery fell from 81%
+#   to 31%. So: more runners, each for a short time.
+#
+# GitHub Free allows 20 concurrent jobs on standard runners and this repository
+# is PUBLIC, so the minutes are unlimited. Twenty shards of ~31 hosts is about
+# half an hour, once, for the whole list.
+#
+# WHY THE SLICES DO NOT OVERLAP
+#   discover.mjs --resume filters the list against the ledger FIRST, then
+#   applies --start/--limit to what is left. Every shard is therefore handed
+#   the SAME committed data/platforms.json before it starts. If they were given
+#   different ledgers their pools would differ, the offsets would mean
+#   different things, and two shards would ask the same host while a third was
+#   never asked at all.
+#
+# WHY NOBODY BUT THE LAST JOB COMMITS
+#   Twenty jobs writing data/platforms.json is twenty racing pushes. Each shard
+#   uploads its ledger as an artifact instead; the merge job folds them in and
+#   commits once, through scripts/commit-and-push.sh so a poll push landing
+#   mid-run cannot lose the work.
+#
+# THIS DOES NOT REPLACE discover-sweep.yml. That one still runs on its
+# schedule, keeps the list regenerated, and is the thing the Worker rides. This
+# is the button for emptying a list in one go.
+
+name: discover sweep, sharded
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Which list: barchart (the sweep's own, regenerated), national, sweep-2-wi-mn, bushel-candidates, discover-candidates"
+        required: false
+        default: "barchart"
+      shards:
+        description: "How many to run side by side. 20 is the GitHub Free ceiling; more than that queues rather than failing."
+        required: false
+        default: "20"
+      per_shard:
+        description: "Hosts per shard. Blank divides the undecided count evenly, which is what you want."
+        required: false
+        default: ""
+      patience:
+        description: "Seconds to give ONE page before giving up. 45 is the default and lowering it has burned this project before."
+        required: false
+        default: "45"
+      budget:
+        description: "Minutes each shard spends asking before stopping cleanly"
+        required: false
+        default: "40"
+
+permissions:
+  contents: write
+
+# Shares a group with the scheduled sweep on purpose: the two must never write
+# platforms.json at the same time.
+concurrency:
+  group: discover-sweep
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      per: ${{ steps.plan.outputs.per }}
+      left: ${{ steps.plan.outputs.left }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Same regeneration the scheduled sweep does, for the same reason: hosts
+      # we have started reading since the list was written must drop off it.
+      # Rebuilt ONCE, here, not in twenty shards: it is derived from
+      # known-elevators.json and sources/, both of which can move while a sweep
+      # is running, and twenty independent rebuilds could disagree.
+      - name: Rebuild the barchart list
+        if: ${{ (inputs.list || 'barchart') == 'barchart' }}
+        run: node scripts/barchart_sites.mjs > probe-lists/barchart-sites.txt
+
+      - name: Work out the slices
+        id: plan
+        env:
+          LIST: ${{ inputs.list }}
+        run: |
+          set -euo pipefail
+          # The name is taken from a fixed set rather than pasted into a path.
+          # An input that reaches a filename is an input that can reach ../ .
+          case "${LIST:-barchart}" in
+            barchart)            FILE=probe-lists/barchart-sites.txt ;;
+            national)            FILE=probe-lists/national-2026-08-26.txt ;;
+            bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
+            discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
+            sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
+            *) echo "::error title=unknown list::${LIST}. Use barchart, national, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+          esac
+          mkdir -p /tmp/plan
+          cp data/platforms.json /tmp/plan/platforms.json 2>/dev/null || echo '{"sites":{}}' > /tmp/plan/platforms.json
+          # sweep-plan.mjs owns the arithmetic, deduplicates the list, PROVES
+          # the slices are disjoint and complete, and fails the run if they are
+          # not. It writes GITHUB_OUTPUT itself.
+          node scripts/sweep-plan.mjs "$FILE" /tmp/plan/platforms.json /tmp/plan/sweep-list.txt \
+            "${{ inputs.shards || '20' }}" "${{ inputs.per_shard || '' }}" | tee /tmp/plan/plan.json
+          {
+            echo "### plan"
+            echo '```json'
+            cat /tmp/plan/plan.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The list AND the ledger every shard starts from, published once so all
+      # twenty read identical bytes.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sweep-base
+          path: |
+            /tmp/plan/sweep-list.txt
+            /tmp/plan/platforms.json
+          retention-days: 1
+
+  ask:
+    needs: plan
+    if: ${{ needs.plan.outputs.left != '0' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      # ONE DEAD HOST MUST NOT KILL NINETEEN SHARDS.
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sweep-base
+          path: /tmp/base
+
+      - name: Ask this shard's slice
+        continue-on-error: true
+        env:
+          PER: ${{ needs.plan.outputs.per }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -uo pipefail
+          START=$(( SHARD * PER ))
+          cp /tmp/base/platforms.json "/tmp/ledger-${SHARD}.json"
+          echo "shard ${SHARD}: --start ${START} --limit ${PER} of the shared list"
+          node scripts/discover.mjs \
+            --list /tmp/base/sweep-list.txt \
+            --ledger "/tmp/ledger-${SHARD}.json" \
+            --resume \
+            --start "$START" \
+            --limit "$PER" \
+            --budget "${{ inputs.budget || '40' }}" \
+            --patience "${{ inputs.patience || '45' }}" \
+            | tee "/tmp/shard-${SHARD}.txt"
+          {
+            echo "### shard ${SHARD} — ${PER} host(s) from offset ${START}"
+            echo '```'
+            tail -30 "/tmp/shard-${SHARD}.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # if: always() — a shard that ran out of budget still decided hosts, and
+      # throwing that away is the whole failure this is meant to avoid.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ledger-${{ matrix.shard }}
+          path: /tmp/ledger-${{ matrix.shard }}.json
+          if-no-files-found: warn
+          retention-days: 1
+
+  merge:
+    needs: [plan, ask]
+    if: always() && needs.plan.outputs.left != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ledger-*
+          path: shard-ledgers
+
+      - name: Fold the shards into the ledger
+        run: node scripts/merge-ledgers.mjs shard-ledgers data/platforms.json | tee /tmp/merge.txt
+
+      - name: Rebuild the lists and the gap lists
+        continue-on-error: true
+        run: |
+          node scripts/barchart_sites.mjs > probe-lists/barchart-sites.txt || true
+          node scripts/gap_lists.mjs || true
+
+      - name: How much of this is a config row rather than a scraper
+        if: always()
+        run: |
+          node scripts/platform_report.mjs | tee /tmp/report.txt || echo "no ledger yet"
+          {
+            echo '```'
+            cat /tmp/merge.txt
+            echo '```'
+            echo '```'
+            cat /tmp/report.txt 2>/dev/null || echo "no ledger yet"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit
+        if: always()
+        run: |
+          git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
+          git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
+          n=$(node -e "try{const s=require('./data/platforms.json').sites;process.stdout.write(String(Object.keys(s).length))}catch(e){process.stdout.write('0')}")
+          bash scripts/commit-and-push.sh "discover: $n operator sites identified, sharded [skip ci]"
