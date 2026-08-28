@@ -13,8 +13,8 @@ WHAT THE SURVEY FOUND, 2026-08-28
 
 Ten candidates asked once. Seven answered, and no two states are alike:
 
-    MO   html table, 304 rows      a real published list, the best of them
-    IA   html table, 853 rows      one-page report, plus two paginated lists
+    MO   html table, 304 rows      one page, no pager, complete at 288
+    IA   html report, 140 records  plus two lists that page by POST, 251 + 102
     NE   pdf                       the only source with STREET ADDRESSES
     IL   search form               nothing to page through
     US   tableau dashboard         USDA, national, export unknown
@@ -23,21 +23,48 @@ Ten candidates asked once. Seven answered, and no two states are alike:
 
 So this is a table of states, not a script per state. Adding one is a row.
 
-WHAT THE FIRST LIVE RUN TAUGHT, AND WHY THE PARSER LOOKS LIKE THIS
+WHAT THE LIVE RUNS TAUGHT, AND WHY THE PARSER LOOKS LIKE THIS
+
+Four runs, each of which reported success. Every one of these was found by
+reading the page the run committed, not the log it printed.
 
   * The Iowa directory report is NINE NESTED TABLES, 566 rows, with the data in
     one of them. A phone-column detector that wanted a phone in a third of ALL
-    rows found none, so nothing parsed: 8 records out of 300. Tables are judged
-    one at a time.
-  * `?page=2` returned a BYTE-IDENTICAL page. The parameter was ignored, and
-    the run took 25 of Iowa's 251 dealers while reporting success. Pagination
-    is now probed under seven spellings and the diagnostic says which won. A
-    parameter that changes nothing is worse than none: it produces a confident
-    run holding a tenth of the data.
+    rows found none: 8 records out of 300. Tables are judged one at a time.
+  * The report is not a table of records at all. It is a TWO-COLUMN LABEL/VALUE
+    table, one <tr> per field, so the column detector was always going to fail
+    on it. pairs_route reads it exactly: 140 of 140.
+  * `?page=2` returned a BYTE-IDENTICAL page and the run took 25 of Iowa's 251
+    dealers while reporting success. Pagination is probed, not assumed.
+  * Then Missouri answered the FIRST spelling offered, because Incapsula stamps
+    a fresh `cb=` nonce into one script tag on every response — so every body
+    differs from every other body and any parameter "works". The probe compares
+    the BUSINESSES on the page, never the bytes.
+  * The probe found Missouri's `?page=2` and the fetch loop then asked for
+    `?page=1`, which is the page it had already read. Zero new rows, and the
+    zero-new guard broke out before page two was ever requested: 25 of 75 on a
+    controlled server. The loop starts where the probe proved it moved.
+  * Iowa's two lists page by POSTING A RELATIVE OFFSET INSIDE A SESSION —
+    Next posts +25, Prev posts -25, and the server holds the position. Twelve
+    GET spellings were refused because no URL can produce page two. That was
+    never a parameter this project failed to guess; it was a shape it did not
+    have.
+  * Iowa prints "25 out of 251" under its own table. Three runs took the 25 and
+    reported success. A source that publishes its total is checked against it,
+    and a short walk is now the loudest line in the output.
   * The two Iowa sources DISAGREE ON COLUMN ORDER — the lists are
-    Name/City/County/Phone, the report is Name/City/Phone/County. Counting back
-    from the phone column got city wrong on both, so inference is now
+    Name/City/County/Phone, the report is Name/City/Phone/County. Inference is
     order-independent.
+  * Missouri cuts every company name at FORTY CHARACTERS, mid-word, and what it
+    cuts is the town suffix that separates six sibling facilities of the same
+    company. Sixteen of twenty-six were completed from the city column; the rest
+    carry a flag, because "Cottonw" against a city of Caruthersville is
+    Cottonwood Point and nothing here knows that.
+
+THE PAGES ARE COMMITTED. debug/registries/ holds the first two pages of every
+source. All three hosts are unreachable from the machine this parser is written
+on, and every fix above was posted blind into CI and read back out of a log
+until that changed. Fixtures are cheaper than runs.
 
 WHAT THESE LISTS ARE NOT
 
@@ -71,17 +98,23 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "registries.json"
 UA = "agsist-bidreader (+https://agsist.com; sig@farmers1st.com)"
 
-# The one-page report is preferred: the licensing_lists site paginates 25 at a
-# time with no export, and 300 rows is a dozen round trips to somebody's server
-# for something they already publish whole.
-# state, licence kind, url, notes. Adding a state is adding rows.
+# state, licence kind, url, notes. Adding a state is adding a row.
+# A source with a "post" key pages by POSTing an offset inside a session; one
+# with "paginate" pages by a URL parameter that gets probed. Neither is assumed.
 SOURCES = [
     {"state": "IA", "kind": "warehouse", "note": "one-page directory report",
      "url": "http://idalsdata.org/IowaData/grainWarehouseDirectoryReportHtml.cfm?version=HTML"},
-    {"state": "IA", "kind": "warehouse", "note": "licensing list", "paginate": True,
-     "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/"},
-    {"state": "IA", "kind": "dealer", "note": "licensing list", "paginate": True,
-     "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/"},
+    # POST, NOT GET. Both of these page by posting a relative offset inside a
+    # session — see walk_post. Twelve GET spellings were refused before the page
+    # was read; it says "25 out of 251" right under the table.
+    {"state": "IA", "kind": "warehouse", "note": "licensing list",
+     "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
+     "post": {"fields": {"name": "", "location": "", "county": "All", "submit": "filter"},
+              "offsetField": "offset", "delta": 25}},
+    {"state": "IA", "kind": "dealer", "note": "licensing list",
+     "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
+     "post": {"fields": {"name": "", "location": "", "county": "All", "submit": "filter"},
+              "offsetField": "offset", "delta": 25}},
     # Confirmed by the survey: a 304-row HTML table, the largest single list any
     # state was found to publish.
     {"state": "MO", "kind": "dealer+warehouse", "note": "database listing",
@@ -159,6 +192,52 @@ def label_split(text):
         out.append({"name": m.group("name").strip(), "city": m.group("city").strip(),
                     "phone": m.group("phone").strip(), "county": m.group("county").strip()})
     return out
+
+
+LABELS = {"name": "name", "city": "city", "town": "city", "phone": "phone",
+          "telephone": "phone", "county": "county", "address": "address",
+          "zip": "zip", "state": "st", "capacity": "capacity"}
+
+
+def pairs_route(groups):
+    """The Iowa report is a TWO-COLUMN LABEL/VALUE TABLE — one <tr> per field.
+
+        <tr><td>Name:</td>  <td>A & K Feed & Grain Co., Inc.</td></tr>
+        <tr><td>City</td>   <td>Lime Springs</td></tr>
+        <tr><td>Phone:</td> <td>563-566-2291</td></tr>
+        <tr><td>County:</td><td>Howard</td></tr>
+
+    Not one record per row, which is why the column detector found no phone
+    column and kept nothing — and not flat prose either, which is what the
+    labelled-text fallback pretends it is. That fallback works, and loses the
+    LAST record on every page: it closes a record on the next "Name:", and the
+    final one is followed by "Return to Grain Warehouse Bureau" instead. One
+    record in 140 — small, permanent, and invisible.
+
+    Reading the pairs is exact, and it goes through HTMLParser, so entities are
+    already decoded and "A &amp; K Feed & Grain" cannot leak through the way it
+    did on the regex route.
+    """
+    out = []
+    for g in groups:
+        two = [r for r in g if len(r) == 2]
+        if len(two) < 8 or len(two) < len(g) * 0.5:
+            continue
+        cur = None
+        for label, value in two:
+            key = LABELS.get(re.sub(r"[^a-z]", "", (label or "").lower()))
+            if not key:
+                continue
+            value = (value or "").strip()
+            if key == "name":
+                if cur and cur.get("phone"):
+                    out.append(cur)
+                cur = {"name": value} if value else None
+            elif cur is not None and value:
+                cur[key] = value
+        if cur and cur.get("phone"):
+            out.append(cur)
+    return [r for r in out if r.get("name") and len(r["name"]) > 2]
 
 
 def columns_of(headers, rows):
@@ -257,17 +336,160 @@ PAGE_PARAMS = [
 ]
 
 
+def slug(url):
+    return re.sub(r"[^a-z0-9]+", "-", url.lower()).strip("-")[:80]
+
+
+def dump_page(dump, url, body, diag, n):
+    if dump is None or n >= DUMP_PAGES:
+        return
+    try:
+        dump.mkdir(parents=True, exist_ok=True)
+        (dump / (slug(url) + ".html")).write_text(body[:DUMP_CAP], "utf-8")
+    except Exception as ex:
+        diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
+
+
+STATED_TOTAL = re.compile(r"\b(\d+)\s+out of\s+(\d+)\b", re.I)
+
+
+def stated_total(body):
+    """Iowa prints "25 out of 251" under its table. A source that tells you how
+    many rows it has is a completeness check for free, and the only reason the
+    25-of-251 run ever looked like a success is that nobody read it."""
+    m = STATED_TOTAL.search(body)
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def post(url, fields, jar, timeout=45):
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    data = urllib.parse.urlencode(fields).encode()
+    req = urllib.request.Request(url, data=data, headers={
+        "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded"})
+    with op.open(req, timeout=timeout) as r:
+        return r.status, r.read().decode("utf-8", "replace")
+
+
+def get_with(url, jar, timeout=45):
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with op.open(req, timeout=timeout) as r:
+        return r.status, r.read().decode("utf-8", "replace")
+
+
+def walk_post(src, pages, timeout, diag, dump):
+    """Iowa's licensing lists page by POSTING A RELATIVE OFFSET IN A SESSION.
+
+    Twelve GET spellings were tried against these two lists and every one was
+    refused, and the run took 25 of 251 dealers and 25 of 102 warehouses while
+    reporting success three times. The page itself says why:
+
+        <form method="post" action="/licensing_lists/graindealers/">
+          <input type="hidden" name="offset" id="offset">
+        $('#next').click(function() { $('#offset').val(25);  $('#filterBtn').click(); });
+        $('#prev').click(function() { $('#offset').val(-25); $('#filterBtn').click(); });
+
+    Next posts +25 and previous posts -25 — a DELTA, not a position. The server
+    holds where you are in the session, so the walk needs a cookie jar and a
+    POST per page, and no URL will ever produce page two. That is not a
+    parameter this project failed to guess; it is a shape it did not have.
+
+    Some servers written this way read the offset as absolute instead. Both are
+    tried: if the second POST returns businesses already seen, the walk switches
+    to absolute positions and says so in the diagnostic.
+    """
+    import http.cookiejar
+    jar = http.cookiejar.CookieJar()
+    spec = src["post"]
+    delta = int(spec.get("delta", 25))
+    field = spec.get("offsetField", "offset")
+
+    try:
+        status, body = get_with(src["url"], jar, timeout)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("post-walk open: %s" % type(ex).__name__)
+        return []
+    diag.setdefault("pages", []).append({"url": src["url"], "status": status, "bytes": len(body)})
+    dump_page(dump, src["url"], body, diag, 0)
+
+    told = stated_total(body)
+    if told:
+        diag["statedTotal"] = {"shown": told[0], "total": told[1]}
+
+    recs, seen = [], set()
+    for r in extract(body, diag):
+        k = (r.get("name", "").lower(), r.get("city", "").lower())
+        if k not in seen:
+            seen.add(k); recs.append(r)
+    diag.setdefault("newPerPage", []).append(len(recs))
+
+    # DELTA FIRST, ABSOLUTE ON THE FIRST STALL — whenever it comes.
+    # An earlier version only tried absolute if the FIRST post returned nothing,
+    # which a server reading the offset as a position passes: it serves rows
+    # 25-49 quite happily and then repeats them forever, because the walk keeps
+    # posting the same +25. The switch has to arm on the first stall at any
+    # page, and in absolute mode the offset is simply how many rows are already
+    # held, which is self-correcting.
+    mode, tried_absolute = "delta", False
+    for i in range(1, max(1, pages)):
+        fields = dict(spec.get("fields") or {})
+        fields[field] = str(delta if mode == "delta" else len(recs))
+        fields.setdefault("submit", "filter")
+        try:
+            status, body = post(src["url"], fields, jar, timeout)
+        except Exception as ex:
+            diag.setdefault("errors", []).append("post %d: %s" % (i, type(ex).__name__))
+            break
+        diag["pages"].append({"url": "POST %s=%s" % (field, fields[field]),
+                              "status": status, "bytes": len(body)})
+        dump_page(dump, src["url"] + "-post%d" % i, body, diag, i)
+        new = 0
+        for r in extract(body, diag):
+            k = (r.get("name", "").lower(), r.get("city", "").lower())
+            if k in seen:
+                continue
+            seen.add(k); recs.append(r); new += 1
+        diag["newPerPage"].append(new)
+        if new == 0:
+            if mode == "delta" and not tried_absolute:
+                mode, tried_absolute = "absolute", True
+                diag["offsetMode"] = "absolute"
+                continue
+            break
+        if told and len(recs) >= told[1]:
+            break
+        time.sleep(0.4)
+    diag.setdefault("offsetMode", mode)
+    if told and len(recs) < told[1]:
+        diag["INCOMPLETE"] = "the page says %d and this walk took %d" % (told[1], len(recs))
+    return recs
+
+
+def keyset(records):
+    return {(r.get("name", "").strip().lower(), r.get("city", "").strip().lower())
+            for r in records if r.get("name")}
+
+
 def probe_pagination(url, timeout, diag):
-    """Return (url_format, step) for whatever actually turns the page, or None.
+    """Return (url_format, step, base) for whatever actually turns the page.
 
     A parameter that changes nothing is worse than no parameter: it produces a
     confident run that quietly holds a tenth of the data.
+
+    IT COMPARES THE BUSINESSES, NOT THE BYTES. Missouri answered yes to the
+    FIRST spelling offered and the diagnostic recorded `?page=` as working —
+    because Incapsula stamps a fresh `cb=` nonce into one script tag on every
+    response, so every page differs from every other page and any parameter
+    "works". The page has 304 rows, one table and no pager anywhere in it. A
+    nonce, a timestamp, a CSRF token or an analytics id defeats a byte
+    comparison outright; the set of names and towns does not.
     """
     try:
         _, first = fetch(url, timeout)
     except Exception as ex:
         diag.setdefault("errors", []).append("probe: %s" % type(ex).__name__)
         return None
+    firstkeys = keyset(extract(first))
     tried = []
     for tmpl, step, base in PAGE_PARAMS:
         fmt = tmpl.replace("{u}", url)
@@ -276,8 +498,11 @@ def probe_pagination(url, timeout, diag):
         except Exception as ex:
             tried.append({"param": fmt, "error": type(ex).__name__})
             continue
-        moved = second != first
-        tried.append({"param": fmt % (base + step), "bytes": len(second), "changed": moved})
+        fresh = keyset(extract(second)) - firstkeys
+        moved = bool(fresh)
+        tried.append({"param": fmt % (base + step), "bytes": len(second),
+                      "bytesDiffer": second != first, "newBusinesses": len(fresh),
+                      "changed": moved})
         if moved:
             diag["pagination"] = {"works": fmt, "step": step, "base": base, "tried": tried}
             return fmt, step, base
@@ -347,15 +572,103 @@ def mark_truncation(recs, diag):
     diag["namesRepairedFromCity"] = repaired
 
 
-def slug(url):
-    return re.sub(r"[^a-z0-9]+", "-", url.lower()).strip("-")[:80]
+def extract(body, diag=None):
+    """Every record this page yields, by whichever route reads more of it.
+
+    Factored out of the fetch loop so the PAGINATION PROBE can call it. The
+    probe used to ask whether the body changed, and agriculture.mo.gov answered
+    yes to every spelling it was offered — because Incapsula stamps a fresh
+    `cb=` nonce into one script tag on every response. A page with a nonce, a
+    timestamp, a CSRF token or an analytics id defeats a byte comparison
+    outright, and the first parameter tried wins by accident. Records are the
+    only honest signal: if page two holds the same businesses, it is page one.
+    """
+    diag = {} if diag is None else diag
+    p = Tables()
+    try:
+        p.feed(body)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("parse: %s" % type(ex).__name__)
+    diag["tables"] = p.tables
+    diag["headerCells"] = p.headers[:12]
+    diag["rowsSeen"] = diag.get("rowsSeen", 0) + len(p.rows)
+
+    got = []
+    # EACH TABLE ON ITS OWN. A page can be one data table wrapped in eight
+    # layout tables, and treating them as a single pile of rows is what
+    # turned three hundred Iowa warehouses into eight.
+    groups = [g for g in (p.per_table or []) if g] or ([p.rows] if p.rows else [])
+    maps = []
+    for g in groups:
+        idx = columns_of(p.headers, g)
+        if "phone" not in idx:
+            continue                            # not the data table
+        # ONE CELL PER ROW IS NOT A TABLE. When the phone column and the
+        # name column are the same index, every "record" is the entire line
+        # — "Name: ADM Grain Company City Clinton Phone: ..." — and the
+        # business name comes out as the whole sentence. That parsed as
+        # seven confident records on the Iowa report fixture, which is
+        # exactly the kind of success that hides a failure.
+        if idx.get("phone") == idx.get("name"):
+            continue
+        maps.append({"rows": len(g), "map": idx})
+        for r in g:
+            if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
+                continue                        # header or spacer row
+            rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
+            # "Phone:" arrived as a business name from a header row that
+            # happened to carry a phone-shaped cell. A name that is a bare
+            # label, or two characters long, is not a business.
+            nm = (rec.get("name") or "").strip()
+            if nm and len(nm) > 2 and not nm.rstrip(":").lower() in (
+                    "name", "phone", "city", "county", "company", "address", "state", "zip"):
+                got.append(rec)
+    diag["columnMap"] = maps or columns_of(p.headers, p.rows)
+    diag["tablesWithData"] = len(maps)
+    p_rows_seen = len(p.rows)
+    # A TABLE ROUTE THAT "SUCCEEDS" WITH ALMOST NOTHING IS STILL A FAILURE.
+    # The Iowa directory report has 561 rows in its data table and the
+    # table route kept TWO of them, because the rows are not cells of a
+    # record — they are lines of "Name: X City Y Phone: Z County: W". Two
+    # is non-zero, so the fallback never ran and the run reported success
+    # while holding 0.4% of the state. Whichever route reads more of the
+    # page wins.
+    pairs = pairs_route(groups)
+    if len(pairs) > len(got):
+        diag["parsedVia"] = "label/value pairs (%d) beat the table route (%d)" % (len(pairs), len(got))
+        got = pairs
+
+    flat = None
+    if len(got) < max(5, p_rows_seen // 5):
+        flat = label_split(re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", body))))
+    if flat is not None and len(flat) > len(got):
+        diag["parsedVia"] = "labelled text (%d) beat the table route (%d)" % (len(flat), len(got))
+        got = flat
+    elif got:
+        diag.setdefault("parsedVia", "table")
+    elif flat:
+        got = flat
+        diag["parsedVia"] = "labelled text, not a table"
+    if not got:
+        diag["firstRowRaw"] = (p.rows[0] if p.rows else body[:400])
+    return got
 
 
 def scrape(src, pages, timeout, verbose, dump=None):
     """Returns (records, diagnostic). Never raises: one dead list must not cost
     the other two."""
     diag = {"url": src["url"], "kind": src["kind"], "note": src["note"]}
-    _ = pages
+    if src.get("post"):
+        recs = walk_post(src, pages, timeout, diag, dump)
+        for r in recs:
+            r["kind"] = src["kind"]
+            if r.get("county"):
+                r["county"] = clean_county(r["county"])
+        mark_truncation(recs, diag)
+        diag["kept"] = len(recs)
+        if verbose and recs:
+            diag["sample"] = recs[:3]
+        return recs, diag
     urls = [src["url"]]
     if src.get("paginate"):
         # PROBE THE PARAMETER, DO NOT ASSUME IT. `?page=2` returned a
@@ -383,7 +696,7 @@ def scrape(src, pages, timeout, verbose, dump=None):
             diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
             break
         diag.setdefault("pages", []).append({"url": u, "status": status, "bytes": len(body)})
-        if dump is not None and dumped < DUMP_PAGES:
+        if True:
             # THE HOSTS ARE UNREACHABLE FROM WHERE THIS PARSER IS WRITTEN.
             # idalsdata.org, data.iowaagriculture.gov and agriculture.mo.gov
             # are all blocked from the machine that writes this file, so every
@@ -391,74 +704,9 @@ def scrape(src, pages, timeout, verbose, dump=None):
             # log. Committing the page itself turns that into a fixture: one
             # run, then the markup can be read directly and the next fix is
             # measured before it ships. Public pages, no key, no header.
-            try:
-                dump.mkdir(parents=True, exist_ok=True)
-                (dump / (slug(u) + ".html")).write_text(body[:DUMP_CAP], "utf-8")
-                dumped += 1
-            except Exception as ex:
-                diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
-        p = Tables()
-        try:
-            p.feed(body)
-        except Exception as ex:
-            diag.setdefault("errors", []).append("parse: %s" % type(ex).__name__)
-        diag["tables"] = p.tables
-        diag["headerCells"] = p.headers[:12]
-        diag["rowsSeen"] = diag.get("rowsSeen", 0) + len(p.rows)
-
-        got = []
-        # EACH TABLE ON ITS OWN. A page can be one data table wrapped in eight
-        # layout tables, and treating them as a single pile of rows is what
-        # turned three hundred Iowa warehouses into eight.
-        groups = [g for g in (p.per_table or []) if g] or ([p.rows] if p.rows else [])
-        maps = []
-        for g in groups:
-            idx = columns_of(p.headers, g)
-            if "phone" not in idx:
-                continue                            # not the data table
-            # ONE CELL PER ROW IS NOT A TABLE. When the phone column and the
-            # name column are the same index, every "record" is the entire line
-            # — "Name: ADM Grain Company City Clinton Phone: ..." — and the
-            # business name comes out as the whole sentence. That parsed as
-            # seven confident records on the Iowa report fixture, which is
-            # exactly the kind of success that hides a failure.
-            if idx.get("phone") == idx.get("name"):
-                continue
-            maps.append({"rows": len(g), "map": idx})
-            for r in g:
-                if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
-                    continue                        # header or spacer row
-                rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
-                # "Phone:" arrived as a business name from a header row that
-                # happened to carry a phone-shaped cell. A name that is a bare
-                # label, or two characters long, is not a business.
-                nm = (rec.get("name") or "").strip()
-                if nm and len(nm) > 2 and not nm.rstrip(":").lower() in (
-                        "name", "phone", "city", "county", "company", "address", "state", "zip"):
-                    got.append(rec)
-        diag["columnMap"] = maps or columns_of(p.headers, p.rows)
-        diag["tablesWithData"] = len(maps)
-        p_rows_seen = len(p.rows)
-        # A TABLE ROUTE THAT "SUCCEEDS" WITH ALMOST NOTHING IS STILL A FAILURE.
-        # The Iowa directory report has 561 rows in its data table and the
-        # table route kept TWO of them, because the rows are not cells of a
-        # record — they are lines of "Name: X City Y Phone: Z County: W". Two
-        # is non-zero, so the fallback never ran and the run reported success
-        # while holding 0.4% of the state. Whichever route reads more of the
-        # page wins.
-        flat = None
-        if len(got) < max(5, p_rows_seen // 5):
-            flat = label_split(re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", body))))
-        if flat is not None and len(flat) >= len(got):
-            diag["parsedVia"] = "labelled text (%d) beat the table route (%d)" % (len(flat), len(got))
-            got = flat
-        elif got:
-            diag["parsedVia"] = "table"
-        elif flat:
-            got = flat
-            diag["parsedVia"] = "labelled text, not a table"
-        if not got:
-            diag["firstRowRaw"] = (p.rows[0] if p.rows else body[:400])
+            dump_page(dump, u, body, diag, dumped)
+            dumped += 1
+        got = extract(body, diag)
         new = 0
         for g in got:
             key = (g.get("name", "").lower(), g.get("city", "").lower())
@@ -489,43 +737,32 @@ def main():
     ap.add_argument("--states", default="", help="comma-separated, e.g. IA,MO (blank = all)")
     ap.add_argument("--fixture", help="parse this local HTML file instead of the network")
     ap.add_argument("--dump-dir", default="", help="write each fetched page here as a fixture")
+    ap.add_argument("--post-walk", action="store_true",
+                    help="with --probe-url, page by POSTing an offset in a session")
     ap.add_argument("--probe-url", default="",
                     help="scrape this one URL and print {records, diagnostic} as JSON; "
                          "how the pagination behaviour is tested against a real server")
     a = ap.parse_args()
 
     if a.fixture:
-        body = Path(a.fixture).read_text()
+        # IT CALLS extract(), NOT A COPY OF IT. This branch used to re-implement
+        # the route selection, so it could — and did — report a different winner
+        # than the run it was meant to predict. One code path, one answer.
+        body = Path(a.fixture).read_text(errors="replace")
         p = Tables()
         p.feed(body)
-        print("fixture: %d tables, %d rows, headers %s" % (p.tables, len(p.rows), p.headers[:8]))
-        groups = [g for g in (p.per_table or []) if g] or ([p.rows] if p.rows else [])
-        kept = 0
-        for n, g in enumerate(groups):
-            idx = columns_of(p.headers, g)
-            if "phone" not in idx:
-                print("   table %d: %d rows, no phone column — skipped" % (n, len(g)))
-                continue
-            if idx.get("phone") == idx.get("name"):
-                print("   table %d: %d rows, one cell per row — not a table, skipped" % (n, len(g)))
-                continue
-            print("   table %d: %d rows, map %s" % (n, len(g), idx))
-            for r in g:
-                if len(r) > idx["phone"] and not PHONE.search(r[idx["phone"]] or ""):
-                    continue
-                rec = {k: (r[i].strip() if len(r) > i else "") for k, i in idx.items()}
-                if rec.get("name"):
-                    kept += 1
-                    if kept <= 3:
-                        print("      %s" % rec)
-        flat = label_split(re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", body))))
-        print("   table route kept %d, labelled-text route found %d" % (kept, len(flat)))
-        route = ("labelled text" if (kept < max(5, len(p.rows) // 5) and len(flat) >= kept) or kept == 0
-                 else "table")
-        print("   -> this run would use the %s route" % route)
-        if route == "labelled text" and flat:
-            for r in flat[:3]:
-                print("      %s" % r)
+        diag = {}
+        recs = extract(body, diag)
+        print("fixture: %d tables, %d rows, headers %s"
+              % (p.tables, len(p.rows), p.headers[:8]))
+        print("   route: %s" % diag.get("parsedVia", "nothing parsed"))
+        print("   column map: %s" % json.dumps(diag.get("columnMap"))[:200])
+        told = stated_total(body)
+        if told:
+            print("   the page says: %d out of %d" % told)
+        print("   %d records" % len(recs))
+        for r in recs[:3]:
+            print("      %s" % r)
         return 0
 
     dump = Path(a.dump_dir) if a.dump_dir else None
@@ -533,8 +770,14 @@ def main():
         dump = ROOT / a.dump_dir
 
     if a.probe_url:
-        recs, diag = scrape({"state": "XX", "kind": "dealer", "note": "probe",
-                             "url": a.probe_url, "paginate": True},
+        probe_src = {"state": "XX", "kind": "dealer", "note": "probe", "url": a.probe_url}
+        if a.post_walk:
+            probe_src["post"] = {"fields": {"name": "", "location": "", "county": "All",
+                                            "submit": "filter"},
+                                 "offsetField": "offset", "delta": 25}
+        else:
+            probe_src["paginate"] = True
+        recs, diag = scrape(probe_src,
                             a.pages, a.timeout, verbose=False, dump=dump)
         print(json.dumps({"records": len(recs), "diagnostic": diag}))
         return 0
@@ -546,9 +789,16 @@ def main():
         recs, diag = scrape(src, a.pages, a.timeout, verbose=True, dump=dump)
         diag["state"] = src["state"]
         diags.append(diag)
+        note = ""
+        if not recs:
+            note = "   ** nothing parsed, see the diagnostic **"
+        elif diag.get("INCOMPLETE"):
+            # THE FAILURE THAT LOOKED LIKE A SUCCESS FOR THREE RUNS.
+            # 25 of 251 printed as "-> 25 records" and nothing else. A source
+            # that publishes its own total is checked against it, out loud.
+            note = "   ** INCOMPLETE: %s **" % diag["INCOMPLETE"]
         print("%-3s %-16s %-52s -> %d records%s"
-              % (src["state"], src["kind"], src["url"][:52], len(recs),
-                 "" if recs else "   ** nothing parsed, see the diagnostic **"))
+              % (src["state"], src["kind"], src["url"][:52], len(recs), note))
         for r in recs:
             r["state"] = src["state"]
         allrecs += recs
@@ -587,6 +837,9 @@ def main():
     for e in out:
         per_state[e["state"]] = per_state.get(e["state"], 0) + 1
     counts = {"businesses": len(out),
+              "incompleteSources": [{"url": d["url"], "state": d.get("state"),
+                                     "why": d["INCOMPLETE"]} for d in diags
+                                    if d.get("INCOMPLETE")],
               "byState": per_state,
               "both_licences": sum(1 for e in out if len(e["licences"]) > 1),
               "with_phone": sum(1 for e in out if e.get("phone"))}
@@ -600,6 +853,12 @@ def main():
         "diagnostics": diags,
         "businesses": out,
     }, indent=1) + "\n")
+
+    short = [d for d in diags if d.get("INCOMPLETE")]
+    if short:
+        print("\nINCOMPLETE SOURCES — each of these publishes a total this run did not reach:")
+        for d in short:
+            print("   %-3s %-58s %s" % (d.get("state"), d["url"][:58], d["INCOMPLETE"]))
 
     print("\n%d businesses  %s" % (len(out), json.dumps(per_state)))
     print("   %d hold both licences, %d carry a phone" % (counts["both_licences"], counts["with_phone"]))
