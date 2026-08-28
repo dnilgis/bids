@@ -1,0 +1,37 @@
+{
+  "id": "seatonvilleelevator-hennepin",
+  "operator": "Seatonville Elevator Co",
+  "location": "Marquis",
+  "state": "IL",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/seatonville/cash-bids",
+  "locationId": null,
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "note": "BUILT FROM THE SHARDED SWEEP, 2026-08-28, run 33219871278. discover.mjs loaded https://seatonvilleelevator.com/ and watched it call marketplace.graindiscovery.com/api/public-sites/seatonville/cash-bids. The company token is theirs, read off their own page, not guessed. Operator, town, state, street address, coordinate and phone are copied verbatim from data/known-elevators.json, the Barchart directory harvest — not derived, not looked up, not invented. Nothing here has been polled yet.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers.",
+  "_pending": "THREE THINGS BEFORE ENABLING. (1) NOBODY HAS OPENED THIS BOARD. locationId is null, which asserts their page carries exactly one location and does not key its rows. The directory lists exactly one facility on this host, which is a reason to believe it and not a reason to state it. The first poll proves or disproves it; until then treat null as untested. (2) cashRounding is NOT set and MUST NOT be guessed. It is measured from a real board against real futures, the way sources/chsfarmersalliance-mitchell.json records. (3) bands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs. They are sanity floors, not a claim about what this elevator trades. Anything else on their board falls through to DEFAULT_BANDS by substring.",
+  "address": "Prairie Industrial Parkway ",
+  "zip": "61327",
+  "lat": 41.266657,
+  "lon": -89.311155,
+  "phone": "815-925-9590",
+  "email": null,
+  "website": "https://seatonvilleelevator.com/",
+  "inMerge": true
+}
