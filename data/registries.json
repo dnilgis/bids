@@ -1,9 +1,15 @@
 {
- "generated": "2026-08-28T13:49:07Z",
+ "generated": "2026-08-28T14:09:39Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
   "businesses": 581,
-  "incompleteSources": [],
+  "incompleteSources": [
+   {
+    "url": "https://psc.nebraska.gov/grain",
+    "state": "NE",
+    "why": "the document says 116 and this parse found 0"
+   }
+  ],
   "byState": {
    "AR": 6,
    "IA": 296,
@@ -27,6 +33,7 @@
    "url": "http://idalsdata.org/IowaData/grainWarehouseDirectoryReportHtml.cfm?version=HTML",
    "kind": "warehouse",
    "note": "one-page directory report",
+   "route": "html",
    "pages": [
     {
      "url": "http://idalsdata.org/IowaData/grainWarehouseDirectoryReportHtml.cfm?version=HTML",
@@ -84,6 +91,7 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
    "kind": "warehouse",
    "note": "licensing list",
+   "route": "html",
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
@@ -184,6 +192,7 @@
    "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
    "kind": "dealer",
    "note": "licensing list",
+   "route": "html",
    "pages": [
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
@@ -333,6 +342,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "kind": "dealer+warehouse",
    "note": "database listing",
+   "route": "html",
    "pagination": {
     "works": null,
     "tried": [
@@ -352,7 +362,7 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?p=2",
-      "bytes": 279732,
+      "bytes": 279730,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -366,14 +376,14 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?start=50",
-      "bytes": 279732,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?offset=50",
-      "bytes": 279730,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -387,7 +397,7 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
-      "bytes": 279733,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -401,7 +411,7 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page_num=2",
-      "bytes": 279733,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -415,14 +425,14 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
-      "bytes": 279732,
+      "bytes": 279733,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
-      "bytes": 279733,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -438,7 +448,7 @@
     {
      "url": "https://agriculture.mo.gov/grains/grainsearch.php",
      "status": 200,
-     "bytes": 279733
+     "bytes": 279732
     }
    ],
    "tables": 1,
@@ -523,6 +533,202 @@
     }
    ],
    "state": "MO"
+  },
+  {
+   "url": "https://dam.assets.ohio.gov/raw/upload/v1745847679/Grain.csv",
+   "kind": "dealer+warehouse",
+   "note": "csv export",
+   "route": "csv",
+   "pages": [
+    {
+     "url": "https://dam.assets.ohio.gov/raw/upload/v1745847679/Grain.csv",
+     "status": 200,
+     "bytes": 46815
+    }
+   ],
+   "csvColumns": [
+    "s",
+    "s",
+    "s",
+    "s",
+    "s",
+    "s",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "rowsSeen": 336,
+   "columnMap": [
+    {
+     "rows": 336,
+     "map": {}
+    }
+   ],
+   "errors": [
+    "no name column in ['s', 's', 's', 's', 's', 's', '', '', '', '', '', '']"
+   ],
+   "kept": 0,
+   "state": "OH"
+  },
+  {
+   "url": "https://lars.ndda.nd.gov/public/allLicenses/4/",
+   "kind": "dealer+warehouse",
+   "note": "licence register",
+   "route": "html",
+   "pages": [
+    {
+     "url": "https://lars.ndda.nd.gov/public/allLicenses/4/",
+     "status": 200,
+     "bytes": 81780
+    }
+   ],
+   "tables": 1,
+   "headerCells": [
+    "License Number",
+    "Company Name",
+    "County",
+    "City",
+    "Zip"
+   ],
+   "rowsSeen": 286,
+   "columnMap": {
+    "name": 1,
+    "city": 3,
+    "county": 2,
+    "zip": 4,
+    "licence": 0
+   },
+   "tablesWithData": 0,
+   "firstRowRaw": [
+    "License Number",
+    "Company Name",
+    "County",
+    "City",
+    "Zip"
+   ],
+   "newPerPage": [
+    0
+   ],
+   "kept": 0,
+   "state": "ND"
+  },
+  {
+   "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/",
+   "kind": "warehouse",
+   "note": "warehouse list",
+   "route": "html",
+   "pages": [
+    {
+     "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/",
+     "status": 200,
+     "bytes": 385184
+    }
+   ],
+   "tables": 1,
+   "headerCells": [
+    "License No",
+    "Company",
+    "Office City",
+    "State"
+   ],
+   "rowsSeen": 33,
+   "columnMap": {
+    "name": 1,
+    "city": 2,
+    "st": 3,
+    "licence": 0
+   },
+   "tablesWithData": 0,
+   "firstRowRaw": [
+    "License No",
+    "Company",
+    "Office City",
+    "State"
+   ],
+   "newPerPage": [
+    0
+   ],
+   "kept": 0,
+   "state": "AR"
+  },
+  {
+   "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1",
+   "kind": "dealer+warehouse",
+   "note": "licensees by county",
+   "route": "pdf",
+   "pages": [
+    {
+     "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1",
+     "status": 200,
+     "bytes": 1082068
+    }
+   ],
+   "pdfPages": 10,
+   "pdfLinesWithPhone": 0,
+   "kept": 0,
+   "state": "IN"
+  },
+  {
+   "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf",
+   "kind": "dealer+warehouse",
+   "note": "PUC licence list",
+   "route": "pdf",
+   "pages": [
+    {
+     "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf",
+     "status": 200,
+     "bytes": 51164
+    }
+   ],
+   "pdfPages": 13,
+   "pdfLinesWithPhone": 0,
+   "kept": 0,
+   "state": "SD"
+  },
+  {
+   "url": "https://psc.nebraska.gov/grain",
+   "kind": "dealer",
+   "note": "PSC dealer list",
+   "route": "pdf",
+   "discovered": "https://psc.nebraska.gov/sites/default/files/doc/2026-08-27%20Grain%20Dealer%20List.pdf",
+   "pages": [
+    {
+     "url": "https://psc.nebraska.gov/sites/default/files/doc/2026-08-27%20Grain%20Dealer%20List.pdf",
+     "status": 200,
+     "bytes": 416514
+    }
+   ],
+   "pdfPages": 3,
+   "pdfLinesWithPhone": 0,
+   "statedTotal": {
+    "total": 116
+   },
+   "INCOMPLETE": "the document says 116 and this parse found 0",
+   "kept": 0,
+   "state": "NE"
+  },
+  {
+   "url": "https://psc.nebraska.gov/grain",
+   "kind": "warehouse",
+   "note": "PSC warehouse list",
+   "route": "pdf",
+   "discovered": "https://psc.nebraska.gov/sites/default/files/doc/2026-07-28%20Grain%20Warehouse%20List.pdf",
+   "pages": [
+    {
+     "url": "https://psc.nebraska.gov/sites/default/files/doc/2026-07-28%20Grain%20Warehouse%20List.pdf",
+     "status": 200,
+     "bytes": 403313
+    }
+   ],
+   "pdfPages": 1,
+   "pdfLinesWithPhone": 0,
+   "kept": 0,
+   "state": "NE"
   }
  ],
  "businesses": [
