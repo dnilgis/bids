@@ -85,6 +85,13 @@ jobs:
         continue-on-error: true
         run: python scripts/survey_registries.py
 
+      # Ten of the twenty-two states checked publish their list as a PDF. pypdf
+      # is a pure-python wheel; if it were missing the run would degrade to
+      # "this source needs pypdf" rather than losing the state, but there is no
+      # reason to make it degrade.
+      - name: Install the PDF reader
+        run: pip install --quiet pypdf
+
       - name: Fetch the state registries
         id: fetch
         continue-on-error: true
