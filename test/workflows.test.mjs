@@ -478,6 +478,29 @@ test("the resume line counts this list, not the whole ledger", () => {
  * Conflating them would put 1,930 businesses that have no website into a queue
  * of "sites we failed to scrape", which is a queue nobody can work.
  */
+/* A FILE NAME IS A CLAIM.
+ *
+ * no-website.csv said "no website" and 288 of its 1,930 rows are ADM, Bunge,
+ * Cargill, CHS, MFA and Landus — companies that obviously have websites. The
+ * state registry does not publish one; that is a fact about our data.
+ *
+ * no-board-published.csv said the operator publishes no bids. A hand audit of
+ * twelve rows found ONE genuine negative and NINE with a correctly named cash
+ * bids page — commodity, basis and cash-price headers, live timestamps, Barchart
+ * disclaimers — everything but the numbers, which arrive by JavaScript.
+ *
+ * Both are worklists about our own coverage. Naming them after somebody else's
+ * business was the error, and it is the kind that survives because a file name
+ * is never reviewed. */
+test("neither list is named as a claim about somebody else's business", () => {
+  const g = readFileSync(new URL("../scripts/gap_lists.mjs", import.meta.url), "utf8");
+  assert.match(g, /no-website-on-file\.csv/, "the file still claims the company has no website");
+  assert.match(g, /board-not-read\.csv/, "the file still claims the operator publishes no bids");
+  assert.ok(!/"data\/gaps\/no-website\.csv"|no-board-published\.csv"/.test(g),
+    "an old, overclaiming filename is still being written");
+  assert.match(g, /UNRESOLVED/, "the unread list must not read as a set of negatives");
+});
+
 test("both gap lists are rebuilt and committed wherever their inputs move", () => {
   for (const f of ["registries.yml", "discover-sweep.yml"]) {
     const y = readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), "utf8");
@@ -540,4 +563,41 @@ test("a redirect does not cost us the page body", () => {
     "the body is kept only on an exact URL match — one redirect and the links vanish");
   assert.match(d, /sameSite\(u, pageUrl\)/, "same-site HTML is not being kept");
   assert.match(d, /const sameSite = /, "there is no host comparison to keep by");
+});
+
+/* THE BROWSER WAS TELLING EVERY SITE IT WAS A BOT.
+ *
+ * Chromium's default user-agent carries the literal token "HeadlessChrome",
+ * which is the commonest thing a bot filter keys on. Assumption Coop publishes
+ * a full board at acoop2.com/cashbids and this browser got TWO responses from
+ * it — not one third-party host, no analytics, nothing a real page load makes.
+ * It was served a stripped page, and the sweep filed the co-operative as an
+ * elevator that posts no bids online.
+ *
+ * lib/cdp.mjs is also what poll.mjs reads every browser source with, so this is
+ * not only a sweep fix.
+ *
+ * The identifier stays on the end. This is a real Chrome engine rendering what
+ * a farmer's browser renders, and anyone reading their access log can see who
+ * called and how to reach us — the same stance as every other read here.
+ */
+test("the browser does not announce itself as headless", () => {
+  const c = readFileSync(new URL("../lib/cdp.mjs", import.meta.url), "utf8");
+  assert.match(c, /--user-agent=\$\{UA\}/, "the default UA is being used, and it says HeadlessChrome");
+  /* The declaration is a multi-line concatenation and the FIRST semicolon after
+     it sits inside "(X11; Linux x86_64)" — slicing there cut the string in half
+     and failed on a UA that was correct. Take every quoted piece instead. */
+  const decl = /export const UA =([\s\S]*?);\n/.exec(c);
+  assert.ok(decl, "no UA declaration found in lib/cdp.mjs");
+  const full = [...decl[1].matchAll(/"([^"]*)"/g)].map((m) => m[1]).join("");
+  assert.ok(!/Headless/i.test(full), `the replacement UA still says Headless: ${full}`);
+  assert.match(full, /Chrome\/\d/, `it must present as a real Chrome build: ${full}`);
+  assert.match(full, /agsist/, "we do not read anyone's board anonymously");
+});
+
+test("a better browser identity re-asks every negative taken with the old one", () => {
+  const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  const v = Number(/export const PROBE_VERSION = (\d+)/.exec(d)[1]);
+  assert.ok(v >= 4, `PROBE_VERSION is ${v} — the user-agent change did not bump it, so ` +
+    "every page asked as HeadlessChrome stays written off");
 });

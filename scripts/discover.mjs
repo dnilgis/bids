@@ -55,8 +55,13 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
  *   1  first sweep: home page only
  *   2  follow the operator's own Cash Bids link; conventional paths
  *   3  keep any same-site HTML (redirect-proof); /cashbids and eight more paths
+ *   4  a real Chrome user-agent — the default carried "HeadlessChrome" and sites
+ *      served us a stripped page for it. acoop2.com answered with TWO responses
+ *      and no third-party host at all; the same page in a browser is a full
+ *      board. Every negative below this was possibly asked of a page nobody else
+ *      is served.
  */
-export const PROBE_VERSION = 3;
+export const PROBE_VERSION = 4;
 
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
                              "--budget", "--list", "--ledger"]);
