@@ -227,10 +227,45 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # THE RESULT IS SAVED BEFORE THE PUSH IS ATTEMPTED.
+      # 2026-08-28: the merge produced the whole 674-host ledger and then could
+      # not push, twice. The answer existed and was out of reach because the
+      # only copy was on a runner that was about to be destroyed. A push is the
+      # one step here that depends on the outside world, so the artifact goes
+      # up first and keeps for a week: a failed push then costs a download, not
+      # thirty minutes of twenty runners.
+      - name: Save the merged ledger before trying to push
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platforms-merged
+          path: |
+            data/platforms.json
+            probe-lists/barchart-sites.txt
+          retention-days: 7
+
       - name: Commit
         if: always()
         run: |
           git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
-          git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
+          # --cached LEFT THEM ON DISK AS UNTRACKED FILES, AND THAT BROKE A PUSH.
+          # 2026-08-28, run 33214328053: the sharded sweep decided all 674
+          # hosts, merged twenty ledgers, committed -- and then the push was
+          # rejected because the poller had pushed first, which is routine and
+          # is what commit-and-push.sh retries. The rebase could not run:
+          #
+          #   error: The following untracked working tree files would be
+          #   overwritten by checkout: data/gaps/no-board-published.csv
+          #
+          # gap_lists.mjs now writes no-website-on-file.csv and
+          # board-not-read.csv, so the two old names are stale. Untracking
+          # them with --cached removed them from the index but LEFT them in
+          # the working tree, where they then collided with the same paths
+          # arriving from the remote. Thirty minutes of twenty runners was
+          # committed locally and never landed.
+          #
+          # Without --cached the files leave the working tree too, so there is
+          # nothing left to collide with.
+          git rm -q --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           n=$(node -e "try{const s=require('./data/platforms.json').sites;process.stdout.write(String(Object.keys(s).length))}catch(e){process.stdout.write('0')}")
           bash scripts/commit-and-push.sh "discover: $n operator sites identified, sharded [skip ci]"
