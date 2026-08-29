@@ -112,8 +112,11 @@ jobs:
             # asked. Counting LINES across the four lists suggested a thousand
             # hosts were left. Counting HOSTS across all seven sources -- the
             # four lists plus directory.json, registries.json and
-            # known-elevators.json -- says 868 exist and 674 were asked on
-            # 2026-08-28, so 194 remain. That is what this file is.
+            # known-elevators.json -- said 868 exist and 674 had been asked, so
+            # 194 remained. Run 90048424223 asked all 194 and every one came
+            # back: the ledger reached 868, which is every URL this project
+            # holds. Kept because the file is the record of that, and because
+            # a future harvest will put new hosts in it.
             everything-unasked)  FILE=probe-lists/everything-unasked-20260829.txt ;;
             *) echo "::error title=unknown list::${LIST}. Use barchart, national, sweep-2-wi-mn, bushel-candidates, discover-candidates or everything-unasked."; exit 2 ;;
           esac
@@ -205,7 +208,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # ref: main IS THE FIX FOR 2026-08-29, AND CONCURRENCY WAS NEVER GOING TO
+      # BE IT.
+      #
+      # Run 90048424223 asked all 194 remaining hosts, merged ten ledgers, got
+      # to 868 -- and then could not push:
+      #
+      #   CONFLICT (content): Merge conflict in data/platforms.json
+      #   ##[error]the work is committed locally and NOT on the remote
+      #
+      # This workflow and discover-sweep.yml already share `concurrency: group:
+      # discover-sweep`, and it did its job: the two runs did not overlap. The
+      # scheduled sweep ran 00:37-00:56 and pushed 393fa32..bbea70d; this run
+      # waited its turn and started after.
+      #
+      # But a queued workflow_dispatch pins github.sha AT CREATION, and bare
+      # `actions/checkout` fetches that pinned SHA. So this job waited
+      # correctly and then checked out 393fa32 -- a commit that was already
+      # behind by the time it ran. It folded 194 new sites onto a stale
+      # platforms.json, and git was then asked to text-merge two independently
+      # rewritten 300KB JSON files. There is no version of that which succeeds.
+      #
+      # CONCURRENCY PREVENTS OVERLAP, NOT STALENESS. `ref: main` resolves at
+      # checkout time instead, so the fold lands on whatever is actually on the
+      # remote. merge-ledgers.mjs is built for exactly this: it never lets a
+      # shard downgrade a known platform, so folding onto a NEWER base keeps
+      # the newer base's facts and adds the shards' on top.
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -215,8 +246,16 @@ jobs:
           pattern: ledger-*
           path: shard-ledgers
 
-      - name: Fold the shards into the ledger
-        run: node scripts/merge-ledgers.mjs shard-ledgers data/platforms.json | tee /tmp/merge.txt
+      # Belt and braces. `ref: main` is resolved when THIS job starts; the ask
+      # shards can run for forty minutes, and the scheduled sweep can land
+      # inside that window. One fetch here costs a second and removes the last
+      # gap between "what we folded onto" and "what we are about to push to".
+      - name: Fold the shards into the ledger, onto whatever is on the remote now
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main --quiet
+          echo "folding onto $(git rev-parse --short HEAD)"
+          node scripts/merge-ledgers.mjs shard-ledgers data/platforms.json | tee /tmp/merge.txt
 
       - name: Rebuild the lists and the gap lists
         continue-on-error: true
