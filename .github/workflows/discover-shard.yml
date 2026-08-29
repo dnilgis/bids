@@ -39,7 +39,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which list: barchart (the sweep's own, regenerated), national, sweep-2-wi-mn, bushel-candidates, discover-candidates"
+        description: "Which list: everything-unasked (every host we hold that has never been asked), barchart (the sweep's own, regenerated), national, sweep-2-wi-mn, bushel-candidates, discover-candidates"
         required: false
         default: "barchart"
       shards:
@@ -105,7 +105,17 @@ jobs:
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
             sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use barchart, national, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+            # THE ONLY LIST THAT IS A COMPLETE STATEMENT RATHER THAN A PILE.
+            # Every other entry above is one place a URL happened to be written
+            # down, and they overlap heavily: national-2026-08-26.txt is 477
+            # lines but 292 distinct hosts, and 149 of those had already been
+            # asked. Counting LINES across the four lists suggested a thousand
+            # hosts were left. Counting HOSTS across all seven sources -- the
+            # four lists plus directory.json, registries.json and
+            # known-elevators.json -- says 868 exist and 674 were asked on
+            # 2026-08-28, so 194 remain. That is what this file is.
+            everything-unasked)  FILE=probe-lists/everything-unasked-20260829.txt ;;
+            *) echo "::error title=unknown list::${LIST}. Use barchart, national, sweep-2-wi-mn, bushel-candidates, discover-candidates or everything-unasked."; exit 2 ;;
           esac
           mkdir -p /tmp/plan
           cp data/platforms.json /tmp/plan/platforms.json 2>/dev/null || echo '{"sites":{}}' > /tmp/plan/platforms.json
