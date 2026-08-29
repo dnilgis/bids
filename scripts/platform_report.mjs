@@ -47,11 +47,33 @@ for (const [, v] of Object.entries(sites)) {
   }
 }
 
+/* THE DENOMINATOR IS THE LEDGER, NOT ONE LIST -- 2026-08-29.
+ *
+ * This printed, on the run that finished the sweep:
+ *
+ *     BARCHART SWEEP — 646 host(s) to ask, 868 asked so far
+ *        696 decided (108%), 172 unreachable
+ *        -222 not yet asked
+ *
+ * 108% and a negative count, on the headline number of the whole project.
+ *
+ * `all` is probe-lists/barchart-sites.txt, which barchart_sites.mjs REBUILDS
+ * every run and which SHRINKS as sources get written -- it skips any host we
+ * already read. The ledger only grows, and since 2026-08-29 it also holds every
+ * host from the national and candidate lists, which were never in `all` at all.
+ * Dividing one by the other stopped meaning anything the moment those two
+ * populations diverged.
+ *
+ * So: percentages are against everything ASKED, which is what the ledger is a
+ * record of. "not yet asked" is counted by membership, never by subtraction --
+ * a subtraction between two different populations is how you get -222. */
+const asked = new Set(Object.keys(sites));
+const waiting = all.filter((u) => !asked.has(u));
 const pct = (n, d) => (d ? ` (${Math.round((100 * n) / d)}%)` : "");
-console.log(`BARCHART SWEEP — ${all.length} host(s) to ask, ${decided.length + unreachable} asked so far`);
-console.log(`   ${decided.length} decided${pct(decided.length, all.length)}, ` +
-            `${unreachable} unreachable (they come round again)`);
-console.log(`   ${all.length - decided.length - unreachable} not yet asked\n`);
+console.log(`DISCOVER LEDGER — ${asked.size} host(s) asked, ${all.length} on the current list`);
+console.log(`   ${decided.length} decided${pct(decided.length, asked.size)}, ` +
+            `${unreachable} unreachable${pct(unreachable, asked.size)} (they come round again)`);
+console.log(`   ${waiting.length} on the list and not yet asked\n`);
 
 console.log("what they run:");
 for (const [p, n] of [...byPlatform].sort((a, b) => b[1] - a[1])) {
