@@ -5,7 +5,7 @@
   "state": "MN",
   "platform": "graindesk",
   "url": "https://marketplace.graindiscovery.com/api/public-sites/argylecoop/cash-bids",
-  "locationId": "Argyle Co-Op ",
+  "locationId": "Argyle Co-Op",
   "bands": {
     "corn": [
       2,
@@ -23,7 +23,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "BUILT FROM THE SHARDED SWEEP (run 33219871278) AND PROVEN BY THE GRAIN DESK SWEEP, run 90042308698, 2026-08-29 00:03 UTC. discover.mjs watched https://argyle-coop.com/ call this endpoint; the gd sweep then read the board itself: 18 offer(s) across 1 destination(s) [Argyle Co-Op ], commodities Wheat, Soybeans, Corn. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it. lib/adapters/graindesk.mjs sets every row's locationId to o.destination, and filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold. A null here would match zero rows and refuse the source. Operator, town, state, street, coordinate and phone are copied verbatim from data/known-elevators.json.",
+  "note": "BUILT FROM THE SHARDED SWEEP (run 33219871278) AND PROVEN BY THE GRAIN DESK SWEEP, run 90042308698, 2026-08-29 00:03 UTC. discover.mjs watched https://argyle-coop.com/ call this endpoint; the gd sweep then read the board itself: 18 offer(s) across 1 destination(s) [Argyle Co-Op ], commodities Wheat, Soybeans, Corn. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it. lib/adapters/graindesk.mjs sets every row's locationId to o.destination, and filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold. A null here would match zero rows and refuse the source. Operator, town, state, street, coordinate and phone are copied verbatim from data/known-elevators.json. LOCATIONID TRIMMED 2026-08-29: the gd sweep reported this destination as \"Argyle Co-Op \", with whitespace, but lib/adapters/graindesk.mjs trims o.destination before it sets each row locationId. filterLocation compares by exact string equality, so the untrimmed form matched zero rows and the source refused with \"parsed 18 bids but none for location\".",
   "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "101 3rd St",
   "zip": "56713",
