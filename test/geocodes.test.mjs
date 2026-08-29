@@ -76,7 +76,7 @@ test("THE TWO CORRECTED PINS STAY CORRECTED", () => {
   }
 });
 
-test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE THE MIDWEST", () => {
+test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE THE CONTINENTAL US", () => {
   /* The precision heuristic above works on the TSV, where the two populations
      differ exactly that way, and it does NOT transfer to the manifests: JSON
      drops trailing zeros, so albertlea's honest 43.65500 arrives as 43.655 and
@@ -88,7 +88,57 @@ test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE THE MIDWEST", () => {
     const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
     if (s.lat == null && s.lon == null) continue;
     assert.ok(s.lat != null && s.lon != null, `${s.id}: half a coordinate is worse than none`);
-    assert.ok(s.lat > 38 && s.lat < 50, `${s.id}: latitude ${s.lat} is outside the Midwest`);
-    assert.ok(s.lon > -104 && s.lon < -82, `${s.id}: longitude ${s.lon} is outside the Midwest`);
+    /* WIDENED 2026-08-29, FROM THE MIDWEST TO THE CONTINENTAL US, and the old
+       numbers are kept here because the reason they were right matters.
+
+       This was `lat > 38 && lat < 50, lon > -104 && lon < -82`. That box was
+       drawn when the project was Wisconsin and Minnesota, and it did its job:
+       the rows it caught were "a latitude in the low 30s, a longitude in the
+       80s", which is what a transposed or garbage pair looks like.
+
+       By 2026-08-29 it was failing on FOUR correctly geocoded elevators that
+       the project had legitimately grown into --
+
+         pinebluffsfeedandgrain-pinebluffs   41.18, -104.07   Wyoming
+         piquacoop-piqua                     37.92,  -95.53   Kansas
+         abbyvillecoop-abbyville             37.97,  -98.20   Kansas
+         agcentral-newcastle                 40.94,  -80.42   Pennsylvania
+
+       -- plus two held Ontario sources. A red check that is red because the
+       project succeeded is a check nobody reads any more, which is worse than
+       no check. And the direction is now explicitly national, so it was going
+       to fail harder every week.
+
+       The new bounds are exactly the ones `validateSource` in lib/sources.mjs
+       has ALWAYS enforced at load time. So this is not a loosening: it is this
+       test finally agreeing with the guard that actually ships. What it still
+       adds over the validator is that it walks every file on disk, including
+       the ones that are disabled and therefore never loaded. */
+    assert.ok(s.lat > 24 && s.lat < 50, `${s.id}: latitude ${s.lat} is not in the continental US`);
+    assert.ok(s.lon > -125 && s.lon < -66, `${s.id}: longitude ${s.lon} is not in the continental US`);
   }
+});
+
+test("A FILLED COORDINATE SAYS HOW PRECISE IT IS", () => {
+  /* geocodes/places.json is blunt about this and the manifests must not lose
+     it: "'street' is where the elevator is; 'town' is the centroid of its
+     town's ZIPs and can be miles off. The map must say which."
+     scripts/geocode-fill.mjs writes `latPrecision` beside the pin it fills, so
+     anything drawing a distance can tell a yard from a town centre. A pin
+     placed by hand before that tool existed carries no such field, and that is
+     allowed -- what is not allowed is the field without a pin. */
+  const dir = new URL("../sources/", import.meta.url);
+  let street = 0, town = 0;
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".json"))) {
+    const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
+    if (s.latPrecision === undefined) continue;
+    assert.ok(["street", "town"].includes(s.latPrecision),
+      `${s.id}: latPrecision "${s.latPrecision}" is neither street nor town`);
+    assert.ok(typeof s.lat === "number",
+      `${s.id}: says how precise its coordinate is and does not have one`);
+    if (s.latPrecision === "street") street++; else town++;
+  }
+  /* Not a threshold, a tripwire: if this ever reads 0 and 0 the fill has been
+     undone by something and nobody would otherwise notice. */
+  if (street + town > 0) assert.ok(street > 0 && town > 0, "both kinds should be present once the fill has run");
 });

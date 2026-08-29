@@ -14,7 +14,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { lintWorkflow } from "../lib/check-workflows.mjs";
@@ -232,9 +232,31 @@ test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
      matching only the assembled string would fail on a correct refactor, and
      matching only the template would pass while pointing at another
      workflow. */
-  assert.match(js, /const WORKFLOW = "poll\.yml"/, "the scheduler targets some other workflow");
+  /* CORRECTED 2026-08-29, and the old assertion is kept above the new one
+     because the reason it broke is the point.
+
+     This required `const WORKFLOW = "poll.yml"` — right for as long as the
+     Worker drove exactly one workflow. On 2026-08-28 `discover-sweep.yml` was
+     put on the same scheduler, because GitHub cron was delivering one fire in
+     six and that workflow is the one that turns a grey pin green. The single
+     constant became a ROUTES map keyed on the cron string Cloudflare hands
+     back, and this test has been red ever since.
+
+     The code was right every day it was red. Rule 16: read the failure before
+     touching the code. What the test should have been asserting all along is
+     not "there is one workflow and it is poll.yml" but "every workflow this
+     thing can fire is one we meant it to fire" — which is what it asserts now,
+     and which would have survived the refactor that broke it. */
+  const routed = [...js.matchAll(/"[^"]+":\s*"([a-z0-9-]+\.yml)"/g)].map((m) => m[1]);
+  assert.ok(routed.length, "the scheduler routes no workflow at all");
+  assert.ok(routed.includes("poll.yml"), "the scheduler no longer fires the reader");
+  for (const w of new Set(routed))
+    assert.ok(existsSync(new URL(`../.github/workflows/${w}`, import.meta.url)),
+      `the scheduler routes a cron to ${w}, which is not in .github/workflows`);
+  assert.match(js, /const DEFAULT_WORKFLOW = "poll\.yml"/,
+    "an unrecognised cron must fall back to the reader, not throw");
   assert.match(js, /const REPO = "bids"/, "the scheduler targets some other repository");
-  assert.match(js, /actions\/workflows\/\$\{WORKFLOW\}\/dispatches/,
+  assert.match(js, /actions\/workflows\/\$\{workflow\}\/dispatches|actions\/workflows\/\$\{WORKFLOW\}\/dispatches/i,
     "the scheduler does not hit the workflow-dispatch endpoint");
   assert.doesNotMatch(js, /ghp_|github_pat_/, "a token is hard-coded in the Worker");
   assert.match(js, /env\.GH_PAT/, "the token does not come from the Worker's secrets");
