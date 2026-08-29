@@ -101,9 +101,8 @@
 # ── THE LIST, REBUILT — 2026-08-29 ─────────────────────────────────────────
 #
 # The sharded sweep finished the country. The ledger now holds 40 hosts on
-# Bushel: 19 already read live every hour, 4 are not customers, and these 17
-# are what is left to probe. Every URL below is the boardPage discover.mjs
-# MEASURED, not the homepage guessed at.
+# Bushel: 19 already read live every hour, 4 are not customers, and these were
+# the 17 left to probe.
 #
 # Every line above is commented out rather than deleted. A page that is now
 # live is still the evidence for its own source file, and a probe run should
@@ -121,10 +120,10 @@
 # body, and the sweep never opens the body. That is why platform_report.mjs
 # counted all 40 as config rows and not one of them was.
 #
-# FOUR HOSTS ARE NOT CUSTOMERS and are deliberately absent:
+# FOUR HOSTS ARE NOT CUSTOMERS and were deliberately absent:
 #     portal.bushelpowered.com          Bushel own portal
 #     bushelpowered.com/customers       Bushel own marketing page
-#     agp.o.bushelsites.com             a bushelsites copy of agp.com, listed below
+#     agp.o.bushelsites.com             *** THIS WAS WRONG — see below ***
 #     delphoscoop.dev.bushelsites.com   a DEV subdomain, not a production board
 # Named rather than quietly dropped, so nobody re-adds them next month.
 #
@@ -137,20 +136,80 @@
 # The parser takes the first whitespace-delimited token per line, so the
 # operator names are safe where they are.
 
-https://www.agp.com/bids/                             # AGP
-https://luckeyfarmers.com/                            # Luckey Farmers, Inc.
-https://meyerbrothersgrain.com/cash-bids/             # Meyer Brothers Grain
-https://riceland.coop/                                # Riceland Co-op
-https://rivercountrycoop.com/                         # River Country Co-Op
-https://westcentralag.com/                            # West Central Ag Services
-https://centralplainsag.net/                          # Central Plains Ag Services
-https://chsgarrison.com/                              # CHS - Garrison
-https://chsnortherngrain.com/                         # CHS Northern Grain
-https://chssunprairie.com/                            # CHS - SunPrairie Grain
-https://gerberandsons.com/                            # Gerber & Sons, Inc.
-https://inco-grain.com/                               # Inco Grain, Ltd.
+# ── WHAT RUN 90064858519 MEASURED — 2026-08-29 evening ─────────────────────
+#
+# The run asked ten of these seventeen and was then CANCELLED at the twenty-
+# minute job timeout; seven were never asked. The workflow now allows 75. What
+# the ten did say changed this list in four ways.
+#
+# 1. THE LINE ABOVE SAYING "Every URL below is the boardPage discover.mjs
+#    MEASURED, not the homepage guessed at" IS NOT TRUE OF THE BARE DOMAINS,
+#    and that is what cost the run. discover records the host it reached, and
+#    for eight of these it reached the front door. A CHS front page loads
+#
+#        .../chs-theme/dist/js/bushel/futures-front-end.BBj_hpbM.js
+#
+#    -- the FUTURES widget. The board is on the cash-bids page and loads
+#    cash-bids-front-end.<hash>.js. Every one of the nineteen Bushel hosts we
+#    already read every hour is a /cash-bids/ URL in its own source file, and
+#    not one is a homepage. The paths below were looked up one at a time.
+#    Note CHS Garrison in particular: /grain/cash-bids/ is a 404 there, it is
+#    /cash-bids/, so the CHS path is a family resemblance and not a rule.
+#
+# 2. AGP'S BOARD IS IN A CROSS-ORIGIN IFRAME, so the wrapper page can never
+#    show it to the probe: www.agp.com/bids/ made eighteen requests, all of
+#    them WordPress and iframe-resizer, and none of them Bushel. The <iframe
+#    src> is https://agp.o.bushelsites.com/cash-bids -- the very host excluded
+#    above as "a bushelsites copy". It is not a copy, it IS the board, and it
+#    is what should be probed. THE GENERAL RULE: when a page makes requests but
+#    none of them are the platform's, look for a frame before concluding the
+#    site is not a customer.
+#
+# 3. TWO OF THE SEVENTEEN LAND ON A HOST WE ALREADY READ. westcentralag.com and
+#    chsnortherngrain.com BOTH navigated to www.chsagservices.com -- same
+#    OneTrust consent id e429ffb3-bb00-4b94-a2fc-d9f9ba9c60bd on both, and CHS
+#    Ag Services has fourteen locations live since this morning. Note 2 further
+#    up this file had already said chsnortherngrain is titled "Home - CHS Ag
+#    Services" and it was probed anyway. Landmark/ALCIVIA, a third time.
+#
+# 4. RICELAND ANSWERED, AND ON THE OTHER GENERATION. 71,864 characters from
+#    https://futures.bushelops.com/api/v1/cash-bids -- which measures that
+#    origin for the first time -- nesting under "data" with the UUID we need
+#    as bushel_location_id. lib/adapters/bushel.mjs handles the GetBidsList
+#    shape only and says so in its own header. It stays on the list: the next
+#    run turns the dump box up and reads a whole location, and the branch gets
+#    written from a body somebody has actually read.
+
+# ── STRUCK 2026-08-29 evening, with the reason ─────────────────────────────
+#  READ AND LIVE:  https://meyerbrothersgrain.com/cash-bids/   # 6 rows, 1 location, floor-cent explains all 6
+#  IS www.chsagservices.com, 14 locations already live:  https://westcentralag.com/
+#  IS www.chsagservices.com, 14 locations already live:  https://chsnortherngrain.com/
+#  NOT THE BOARD, it is the wrapper around the iframe:   https://www.agp.com/bids/
+
+https://agp.o.bushelsites.com/cash-bids               # AGP — the iframe www.agp.com/bids/ embeds
+https://luckeyfarmers.com/grain-bids/                 # Luckey Farmers, Inc.
+https://riceland.coop/                                # Riceland Co-op — answers on futures.bushelops.com, shape not handled yet
+https://www.rivercountrycoop.com/grain                # River Country Co-Op — homepage loads cash-bids-front-end.js but never fires
+https://centralplainsag.net/                          # Central Plains Ag Services — SEE THE WARNING BELOW
+https://www.chsgarrison.com/cash-bids/                # CHS - Garrison — /grain/cash-bids/ is a 404 here
+https://chssunprairie.com/grain/cash-bids/            # CHS - SunPrairie Grain — 302s to http://, mind isBrowsablePage when writing the source
+https://www.gerberandsons.com/future-test             # Gerber & Sons, Inc. — their own name for the page
+https://inco-grain.com/                               # Inco Grain, Ltd. — nav says "Live Bids", path not published; root is the only address we have
 https://www.chsbigsky.com/grain/cash-bids             # operator not in our data
-https://www.chsmountainwest.com/grain/cash-bids/      # operator not in our data
+https://www.chsmountainwest.com/grain/cash-bids/      # operator not in our data — page confirmed present
 https://www.chsprimeland.com/grain/cash-bids/         # operator not in our data
-https://www.chsrochester.com/grain/cash-bids/         # operator not in our data
-https://grower.coopelev.com/                          # operator not in our data
+https://www.chsrochester.com/grain/cash-bids/         # operator not in our data — page confirmed present
+https://grower.coopelev.com/                          # Cooperative Elevator — grower portal, bids shown publicly above the login
+https://chsgarrison.com/                              # kept as a second address for Garrison; drop it once /cash-bids/ answers
+
+# WARNING, centralplainsag.net — TWO MEASUREMENTS THAT DISAGREE, 2026-08-29.
+# In the runner it navigated to www.chsdevilslake.com and made all 75 of its
+# requests there, carrying CHS Devils Lake's own OneTrust consent id
+# d643bbbd-916f-410a-ab32-1a1b7bdc3384. Fetched directly the same evening it
+# served Central Plains Ag Services' own site -- a co-operative in east central
+# North Dakota, five locations -- and chsdevilslake.com does not mention
+# Central Plains Ag anywhere. chsdevilslake-hannaford is already live.
+# BOTH READINGS ARE WRITTEN DOWN AND NEITHER IS RESOLVED. If the next run lands
+# on chsdevilslake.com again, it is an alias and comes off the list; if it
+# reaches its own board, it is a real operator. Do not write a source file for
+# it from either reading alone.

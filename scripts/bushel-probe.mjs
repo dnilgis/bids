@@ -64,7 +64,16 @@ import { extract } from "../lib/adapters/bushel.mjs";
  *
  * ORDER MATTERS ONLY FOR SPEED. A page is loaded once per target until one
  * answers, so the generation that already worked for five sites is tried
- * first. */
+ * first.
+ *
+ * THE ORIGIN IS NOW MEASURED — 2026-08-29, run 90064858519. Riceland answered
+ * the second entry and the probe printed the full URL it captured:
+ *
+ *     https://futures.bushelops.com/api/v1/cash-bids
+ *
+ * which is the origin the comment above could only record from discover's
+ * ledger. The entry below STAYS A PATH anyway: one site measured is one site,
+ * and a substring target costs nothing while a wrong origin costs a run. */
 const TARGETS = [
   "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
   "/api/v1/cash-bids",
@@ -118,8 +127,14 @@ function verdict(e) {
          `residual rather than reaching for a round number.`;
 }
 
+/* RETURNS { body, from } ON EVERY PATH. A fixture has no address to report,
+   and returning a bare string from this one branch is what broke the first
+   version of this change: probeOne destructures the result, and destructuring
+   a string yields undefined for both halves and refuses with "Body was 0
+   character(s)". The fixture run is the cheapest check in the file and it is
+   what said so. */
 async function bodyFor({ page, fixture }) {
-  if (fixture) return readFileSync(fixture, "utf8");
+  if (fixture) return { body: readFileSync(fixture, "utf8"), from: null };
   const problems = [];
   for (const target of TARGETS) {
     try {
@@ -129,9 +144,13 @@ async function bodyFor({ page, fixture }) {
         timeoutMs: Number(process.env.PROBE_MS || 60000),
       });
       /* WHICH ADDRESS ANSWERED IS THE FINDING, not a detail. It is how the
-         second generation's real origin gets measured instead of assumed. */
-      if (got?.url) console.log(`   read from ${got.url}`);
-      return got?.body ?? got;
+         second generation's real origin gets measured instead of assumed.
+         IT IS RETURNED, NOT PRINTED — 2026-08-29 evening. Printing it here put
+         the line ABOVE the `── page` header its caller had not written yet, so
+         in run 90064858519 Meyer Brothers' address appeared under Luckey
+         Farmers and Riceland's under Meyer Brothers. A reader copying that log
+         would have attributed both to the wrong operator. */
+      return { body: got?.body ?? got, from: got?.url ?? null };
     } catch (e) {
       problems.push(`${target}: ${e.message}`);
     }
@@ -143,19 +162,40 @@ async function bodyFor({ page, fixture }) {
                   `endpoint(s):\n     ${problems.join("\n     ")}`);
 }
 
+/* A SEPARATOR THAT CANNOT OCCUR IN EITHER HALF. Added 2026-08-29 evening.
+   The key was built as `${r.locationId}${r.location}` with NOTHING between the
+   two halves, and was then taken apart with `k.split("")` — which does not
+   split on a separator, it splits a string INTO ITS CHARACTERS. So `id` was
+   the first character of the key and `name` the second. Meyer Brothers printed
+
+       5
+          locationId  0
+
+   against a live source file whose locationId is
+   055d5343-343c-4cb3-b3d2-83b870a4c399 at Elk Mound: "0" and "5" are that
+   string's first two characters. EVERY IDENTITY THIS PROBE HAS EVER PRINTED
+   WAS ONE CHARACTER WIDE — and the identity is the one value a person is meant
+   to copy out of this log into a manifest. The rows, the rounding and the
+   residuals were never affected; the key still grouped correctly, it was only
+   unreadable. Rule 20: a wrong answer printed confidently is worse than none. */
+const SEP = "\u001f";
+
 export async function probeOne(where, opts = {}) {
-  const body = await bodyFor(opts);
+  /* THE HEADER GOES FIRST so that everything printed afterwards — the address
+     that answered, the locations, or a refusal from main's catch — belongs to
+     the page named on it and to no other. */
+  console.log(`\n── ${where}`);
+  const { body, from } = await bodyFor(opts);
+  if (from) console.log(`   read from ${from}`);
   const rows = extract(body, opts.page || opts.fixture || where);
   const byLoc = new Map();
   for (const r of rows) {
-    const k = `${r.locationId}${r.location}`;
-    if (!byLoc.has(k)) byLoc.set(k, []);
-    byLoc.get(k).push(r);
+    const k = `${r.locationId}${SEP}${r.location}`;
+    if (!byLoc.has(k)) byLoc.set(k, { id: r.locationId, name: r.location, rows: [] });
+    byLoc.get(k).rows.push(r);
   }
-  console.log(`\n── ${where}`);
   console.log(`   ${rows.length} row(s) across ${byLoc.size} location(s)`);
-  for (const [k, rs] of byLoc) {
-    const [id, name] = k.split("");
+  for (const { id, name, rows: rs } of byLoc.values()) {
     const e = roundingEvidence(rs);
     const commodities = [...new Set(rs.map((r) => r.commodity))].join(", ");
     console.log(`\n   ${name}`);
@@ -193,8 +233,10 @@ export async function main() {
     try { done.push(await probeOne(p, { page: p })); }
     catch (e) {
       /* ONE PAGE FAILING IS NOT THE RUN FAILING. Ten candidates and one
-         certificate problem should still leave nine answers on the screen. */
-      console.log(`\n── ${p}\n   COULD NOT READ: ${e.message}`);
+         certificate problem should still leave nine answers on the screen.
+         probeOne has already printed the `── page` header, so this adds the
+         reason under it rather than opening a second header for the same page. */
+      console.log(`   COULD NOT READ: ${e.message}`);
       done.push({ where: p, locations: 0, rows: 0, error: e.message });
     }
   }
