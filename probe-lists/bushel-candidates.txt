@@ -22,16 +22,16 @@
 # reads unchanged. "Bushel" is who powers the site, not necessarily how the
 # board arrives. Check for a server-rendered table before writing an adapter.
 
-https://www.chs-illinois.com/grain/cash-bids/
-https://www.chsagservices.com/grain/cash-bids/
-https://www.chs-herman.com/grain/cash-bids/
-https://www.chsdakotaplainsag.com/grain/cash-bids/
-https://www.chsdrayton.com/grain/cash-bids/
-https://www.chsfarmersalliance.com/grain/cash-bids/
-https://www.chsriverplains.com/grain/cash-bids/
-https://fscooperatives.com/gatewayfs/agriculture/cash-bids
-https://grower.coopelev.com/
-https://www.michag.com/bids/
+#  READING LIVE, 2026-08-29:      https://www.chs-illinois.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsagservices.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chs-herman.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsdakotaplainsag.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsdrayton.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsfarmersalliance.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsriverplains.com/grain/cash-bids/
+#  no bushel response in the ledger:  https://fscooperatives.com/gatewayfs/agriculture/cash-bids
+#  moved to the 2026-08-29 block below, with the page the sweep measured:
+#  READING LIVE, 2026-08-29:      https://www.michag.com/bids/
 
 # ── SEVEN MORE CHS REGIONS, from the national sweep at start=400 (2026-08-26) ──
 # Every one of these answered Bushel in a real browser -- not a guess off the
@@ -42,13 +42,12 @@ https://www.michag.com/bids/
 #
 # chsprimeland and chssunbasingrowers answered on BOTH /cash-bids and /futures;
 # the same board serves both pages, so probing one is enough.
-https://www.chsprimeland.com/grain/cash-bids
-https://www.chssunbasingrowers.com/grain/cash-bids
-https://www.chsbigsky.com/grain/cash-bids
-https://www.chssunprairie.com/grain/cash-bids
-https://www.chshighplains.com/grain/cash-bids
-https://www.chsholdrege.com/grain/cash-bids
-https://www.chsunitedplainsag.com/grain/cash-bids
+#  moved to the 2026-08-29 block below, with the page the sweep measured:
+#  READING LIVE, 2026-08-29:      https://www.chssunbasingrowers.com/grain/cash-bids
+#  moved to the 2026-08-29 block below, with the page the sweep measured:
+#  READING LIVE, 2026-08-29:      https://www.chshighplains.com/grain/cash-bids
+#  READING LIVE, 2026-08-29:      https://www.chsholdrege.com/grain/cash-bids
+#  READING LIVE, 2026-08-29:      https://www.chsunitedplainsag.com/grain/cash-bids
 
 # ── NINE MORE CHS REGIONS, found 2026-08-26 ────────────────────────────────
 # CHS has no public directory of its regional co-operatives -- chsinc.com/locations
@@ -71,15 +70,15 @@ https://www.chsunitedplainsag.com/grain/cash-bids
 # clean negative, which is how CHS Northwest was ruled out rather than assumed.
 #
 # 92 locations claimed across these nine.
-https://chsag.com/grain/cash-bids/
-https://www.chsdevilslake.com/grain/cash-bids/
-https://www.chs-texoma.com/grain/cash-bids/
-https://www.chssouthwestgrain.com/grain/cash-bids/
-https://www.chsrochester.com/grain/cash-bids/
-https://www.chsbrandon.com/grain/cash-bids/
-https://www.chsfarmerselevator.com/grain/cash-bids/
-https://www.chsmountainwest.com/grain/cash-bids/
-https://www.chssouthcentral.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://chsag.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsdevilslake.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chs-texoma.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chssouthwestgrain.com/grain/cash-bids/
+#  moved to the 2026-08-29 block below, with the page the sweep measured:
+#  READING LIVE, 2026-08-29:      https://www.chsbrandon.com/grain/cash-bids/
+#  READING LIVE, 2026-08-29:      https://www.chsfarmerselevator.com/grain/cash-bids/
+#  moved to the 2026-08-29 block below, with the page the sweep measured:
+#  READING LIVE, 2026-08-29:      https://www.chssouthcentral.com/grain/cash-bids/
 #
 # THREE THINGS TO KNOW BEFORE WRITING MANIFESTS FROM THE PROBE OUTPUT:
 #
@@ -98,3 +97,60 @@ https://www.chssouthcentral.com/grain/cash-bids/
 # acquired January 2025) is on the same template, but its host failed TLS
 # certificate verification on every attempt so no board could be confirmed.
 # Worth one retry.
+
+# ── THE LIST, REBUILT — 2026-08-29 ─────────────────────────────────────────
+#
+# The sharded sweep finished the country. The ledger now holds 40 hosts on
+# Bushel: 19 already read live every hour, 4 are not customers, and these 17
+# are what is left to probe. Every URL below is the boardPage discover.mjs
+# MEASURED, not the homepage guessed at.
+#
+# Every line above is commented out rather than deleted. A page that is now
+# live is still the evidence for its own source file, and a probe run should
+# not spend a browser load re-asking a board we read every hour.
+#
+# WHY DISCOVER COULD NOT ANSWER THIS. Its bushel signature keys on the LAST
+# PATH SEGMENT of each response:
+#
+#     id: (u) => ({ endpoint: new URL(u).pathname.split("/").filter(Boolean).pop() })
+#
+# Across all 40 hosts that returned GetMarketsConfig 29 times, GetBidsList 24,
+# futures 9, cash-bids 6 -- and modernizr, jquery.main.js and ScriptResource.axd
+# besides. Endpoint names: the same strings for every Bushel operator alive.
+# The locationId a source file needs is the location UUID INSIDE the GetBidsList
+# body, and the sweep never opens the body. That is why platform_report.mjs
+# counted all 40 as config rows and not one of them was.
+#
+# FOUR HOSTS ARE NOT CUSTOMERS and are deliberately absent:
+#     portal.bushelpowered.com          Bushel own portal
+#     bushelpowered.com/customers       Bushel own marketing page
+#     agp.o.bushelsites.com             a bushelsites copy of agp.com, listed below
+#     delphoscoop.dev.bushelsites.com   a DEV subdomain, not a production board
+# Named rather than quietly dropped, so nobody re-adds them next month.
+#
+# ROUNDING IS THE REASON TO PROBE BEFORE WRITING ANYTHING. On 2026-08-25 six
+# Bushel operators were enabled without measuring it and every one refused on
+# cash - basis = futures: Ag-Land floors 80 rows of 80, CHS floors 12 of 12,
+# and three others round BOTH displayed figures independently so no rule on
+# one of them can ever reconcile the pair. Same evidence, three answers.
+#
+# The parser takes the first whitespace-delimited token per line, so the
+# operator names are safe where they are.
+
+https://www.agp.com/bids/                             # AGP
+https://luckeyfarmers.com/                            # Luckey Farmers, Inc.
+https://meyerbrothersgrain.com/cash-bids/             # Meyer Brothers Grain
+https://riceland.coop/                                # Riceland Co-op
+https://rivercountrycoop.com/                         # River Country Co-Op
+https://westcentralag.com/                            # West Central Ag Services
+https://centralplainsag.net/                          # Central Plains Ag Services
+https://chsgarrison.com/                              # CHS - Garrison
+https://chsnortherngrain.com/                         # CHS Northern Grain
+https://chssunprairie.com/                            # CHS - SunPrairie Grain
+https://gerberandsons.com/                            # Gerber & Sons, Inc.
+https://inco-grain.com/                               # Inco Grain, Ltd.
+https://www.chsbigsky.com/grain/cash-bids             # operator not in our data
+https://www.chsmountainwest.com/grain/cash-bids/      # operator not in our data
+https://www.chsprimeland.com/grain/cash-bids/         # operator not in our data
+https://www.chsrochester.com/grain/cash-bids/         # operator not in our data
+https://grower.coopelev.com/                          # operator not in our data
