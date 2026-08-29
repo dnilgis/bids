@@ -14,6 +14,26 @@
 # real network. Bushel's board is fetched by the customer's own page in the
 # reader's browser, so loading that page is the whole of the authorisation --
 # we hold no key, exactly as with dtn-cs.
+#
+# ── THE TIMEOUT IS ARITHMETIC, NOT A ROUND NUMBER — 2026-08-29 ──────────────
+#
+# Run 90064858519 was CANCELLED at the twenty-minute job timeout having asked
+# ten of seventeen pages. Nothing failed: the probe was still working, and
+# seven candidates were never asked at all.
+#
+# The cost of one page is bounded and knowable. A page that does not answer is
+# loaded ONCE PER TARGET and each load waits PROBE_MS for a matching response,
+# so the worst case is
+#
+#     pages x targets x PROBE_MS  =  17 x 2 x 60s  =  34 minutes
+#
+# of waiting alone, before a single page load is counted. Twenty minutes could
+# never have finished the list. The job now allows 75, which covers the worst
+# case with room for the loads themselves, and a `probe_ms` box makes a fast
+# sighting run possible without editing this file.
+#
+# THIS IS THE SAME CLASS OF ERROR AS THE 10-MINUTE CRON: a schedule set by what
+# felt reasonable rather than by what the work costs. Measure, don't reason.
 
 name: bushel probe
 
@@ -21,13 +41,21 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Probe every page in probe-lists/bushel-candidates.txt (17 of them as of 2026-08-29). Leave the box below blank."
+        description: "Probe every page in probe-lists/bushel-candidates.txt (15 of them as of 2026-08-29 evening). Leave the page box below blank."
         type: boolean
         default: true
       page:
         description: "Or ONE cash-bids page, e.g. https://www.chs-herman.com/grain/cash-bids/ — only used when the box above is off"
         required: false
         default: ""
+      probe_ms:
+        description: "How long to wait for each address, in milliseconds. 60000 is the default and the list's timeout is sized for it; 25000 gives a faster sighting run that may miss a slow board."
+        required: false
+        default: "60000"
+      dump_body:
+        description: "Print more of an unreadable body (characters). 200 is normal. Turn it up to ~6000 to read a whole location of the older bushelops shape so its branch can be written from evidence."
+        required: false
+        default: "200"
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -35,7 +63,9 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 17 pages x 2 targets x 60s = 34 minutes of waiting in the worst case,
+    # before the page loads themselves. See the note at the top of this file.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,6 +83,8 @@ jobs:
         env:
           LIST: ${{ inputs.list }}
           PAGE: ${{ inputs.page }}
+          PROBE_MS: ${{ inputs.probe_ms }}
+          BUSHEL_DESCRIBE_CHARS: ${{ inputs.dump_body }}
         run: |
           if [ "$LIST" = "true" ]; then
             node scripts/bushel-probe.mjs --list probe-lists/bushel-candidates.txt
