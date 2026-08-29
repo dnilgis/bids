@@ -8,20 +8,27 @@
   "locationId": "Buckman",
   "companyToken": "sunriseagcoop",
   "bands": {
-    "corn": [2.0, 12.0],
-    "soybeans": [6.0, 25.0]
+    "corn": [
+      2,
+      12
+    ],
+    "soybeans": [
+      6,
+      25
+    ]
   },
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Found 2026-08-19 by testing candidate company tokens against the Grain Desk endpoint directly - no page source needed, because the token turned out to be the obvious slug. Eleven candidates were tried and this was the only hit; a nonexistent token returns 401 exactly like a private one, so a 401 carries no information and only a 200 counts. Confirmed live: destination Buckman, commodities Soybeans, Oats and Corn. Oats needs no band entry here - DEFAULT_BANDS already carries oat at 1.5 to 12.0 and substring matching catches the plural. The co-op also runs Pierz, Lastrup and Little Rock, but only Buckman appears in this feed, so those are not sources until they show up. COORDINATES ARE NULL AND THAT IS DELIBERATE: the Census geocoder returns zero matches for 9361 Creamery Dr, Buckman MN 56364 in two address forms, and a coordinate that is not derived from a source is not a coordinate. Geocode it and fill these in before relying on a map pin for this source.",
+  "note": "Found 2026-08-19 by testing candidate company tokens against the Grain Desk endpoint directly - no page source needed, because the token turned out to be the obvious slug. Eleven candidates were tried and this was the only hit; a nonexistent token returns 401 exactly like a private one, so a 401 carries no information and only a 200 counts. Confirmed live: destination Buckman, commodities Soybeans, Oats and Corn. Oats needs no band entry here - DEFAULT_BANDS already carries oat at 1.5 to 12.0 and substring matching catches the plural. The co-op also runs Pierz, Lastrup and Little Rock, but only Buckman appears in this feed, so those are not sources until they show up. COORDINATES ARE NULL AND THAT IS DELIBERATE: the Census geocoder returns zero matches for 9361 Creamery Dr, Buckman MN 56364 in two address forms, and a coordinate that is not derived from a source is not a coordinate. Geocode it and fill these in before relying on a map pin for this source. COORDINATE filled 45.8975,-94.0936 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Buckman\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
   "cashRoundingCents": 0,
   "publicNote": "Their publicly posted cash board at Buckman, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "zip": "56364",
-  "lat": null,
-  "lon": null,
+  "lat": 45.8975,
+  "lon": -94.0936,
   "phone": "320-468-6433",
   "email": null,
   "website": "https://www.sunriseagcoop.com/",
-  "inMerge": true
+  "inMerge": true,
+  "latPrecision": "town"
 }

@@ -9,31 +9,32 @@
   "locationId": "96201bd3-98ce-4522-9969-16bd13b811bd",
   "bands": {
     "corn": [
-      2.0,
-      12.0
+      2,
+      12
     ],
     "soybeans": [
-      6.0,
-      25.0
+      6,
+      25
     ],
     "wheat": [
-      3.0,
-      20.0
+      3,
+      20
     ]
   },
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "THE FIRST BUSHEL SOURCE, and the shape behind ten operators \u2014 seven of them CHS regions. Built 2026-08-21 from a real board captured live: fixtures/bushel-chsfarmersalliance.json, four locations and 24 rows of corn, soybeans and wheat. It took four discover runs to find, and the reason is recorded in lib/adapters/bushel.mjs: the signature matched Bushel by hostname and returned no identifying facts, so every Bushel response on a page collapsed into one and an 899-byte disclaimer config beat the 80KB board. locationId is the location's UUID because that is the key their payload uses and a display name is the thing a vendor re-cases. Read through a browser, like dtn-cs: their own page fetches the board at runtime and we hold no credential. ENABLED 2026-08-25. It had never been switched on, so it had never been given the chance to prove itself: a disabled source is not polled at all. The adapter was built against a real captured board (fixtures/bushel-chsfarmersalliance.json) and the suite exercises it, but the first LIVE read is the proof and that can only happen on the runner. CASH ROUNDING MEASURED, NOT GUESSED. Refused on its first live run with residuals of -0.25c to -0.75c against quarter-cent futures. Tested against all 12 refused rows: floor-to-the-cent explains 12 of 12, round explains 8, ceiling explains 0.",
+  "note": "THE FIRST BUSHEL SOURCE, and the shape behind ten operators — seven of them CHS regions. Built 2026-08-21 from a real board captured live: fixtures/bushel-chsfarmersalliance.json, four locations and 24 rows of corn, soybeans and wheat. It took four discover runs to find, and the reason is recorded in lib/adapters/bushel.mjs: the signature matched Bushel by hostname and returned no identifying facts, so every Bushel response on a page collapsed into one and an 899-byte disclaimer config beat the 80KB board. locationId is the location's UUID because that is the key their payload uses and a display name is the thing a vendor re-cases. Read through a browser, like dtn-cs: their own page fetches the board at runtime and we hold no credential. ENABLED 2026-08-25. It had never been switched on, so it had never been given the chance to prove itself: a disabled source is not polled at all. The adapter was built against a real captured board (fixtures/bushel-chsfarmersalliance.json) and the suite exercises it, but the first LIVE read is the proof and that can only happen on the runner. CASH ROUNDING MEASURED, NOT GUESSED. Refused on its first live run with residuals of -0.25c to -0.75c against quarter-cent futures. Tested against all 12 refused rows: floor-to-the-cent explains 12 of 12, round explains 8, ceiling explains 0. COORDINATE filled 43.7094,-98.0298 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Mitchell\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
   "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
-  "_pending": "THREE THINGS BEFORE ENABLING. (1) cashRounding is NOT stated, though floor explained all 24 rows against round's 16 and the residuals were {0, 0.25, 0.5, 0.75} \u2014 the eighths remainder, the same signature Ag Partners shows. One snapshot does not establish a mode: four Country Partners locations read round-cent at 20:59 and floor-cent at 21:21 on 2026-08-20 from identical row counts. Confirm on a second day's prices. (2) No street address, no lat/lon. Mitchell SD is the town their own board names; nothing else about the site has been read from CHS, and a coordinate will not be invented. (3) Nothing has polled this URL through poll.mjs yet \u2014 the board was read by discover, which is recon and not the reader.",
+  "_pending": "THREE THINGS BEFORE ENABLING. (1) cashRounding is NOT stated, though floor explained all 24 rows against round's 16 and the residuals were {0, 0.25, 0.5, 0.75} — the eighths remainder, the same signature Ag Partners shows. One snapshot does not establish a mode: four Country Partners locations read round-cent at 20:59 and floor-cent at 21:21 on 2026-08-20 from identical row counts. Confirm on a second day's prices. (2) No street address, no lat/lon. Mitchell SD is the town their own board names; nothing else about the site has been read from CHS, and a coordinate will not be invented. (3) Nothing has polled this URL through poll.mjs yet — the board was read by discover, which is recon and not the reader.",
   "address": null,
   "zip": null,
-  "lat": null,
-  "lon": null,
+  "lat": 43.7094,
+  "lon": -98.0298,
   "phone": null,
   "email": null,
   "website": "https://www.chsfarmersalliance.com/grain/cash-bids/",
   "inMerge": true,
-  "cashRounding": "floor-cent"
+  "cashRounding": "floor-cent",
+  "latPrecision": "town"
 }

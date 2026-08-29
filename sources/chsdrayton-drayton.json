@@ -9,16 +9,16 @@
   "locationId": "e218ab05-f430-4095-80bb-766d44cd80b4",
   "bands": {
     "corn": [
-      2.0,
-      12.0
+      2,
+      12
     ],
     "soybeans": [
-      6.0,
-      25.0
+      6,
+      25
     ],
     "wheat": [
-      3.0,
-      20.0
+      3,
+      20
     ]
   },
   "cadence": "grain-day",
@@ -26,13 +26,14 @@
   "enabled": true,
   "cashRounding": "floor-cent",
   "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
-  "note": "READ THROUGH THEIR OWN PAGE, holding no credential: Bushel's board is fetched by the customer's site in the reader's browser, so loading that page is the whole of the authorisation. One call to GetBidsList carries every location this operator quotes, so each is a source file and none is new code.\n\nMEASURED BY scripts/bushel-probe.mjs ON 2026-08-25. 18 rows here, and floor-to-the-cent explained EVERY one -- as it did at all 85 locations across the eight Bushel boards that answered. Corn trades in quarter cents and this board displays cash to the whole cent, so residuals come out in quarters; floor makes cash - basis = futures exact again, which is why no tolerance is set and none is wanted.\n\nTHE STATE AND STREET ARE NOT IN THE PAYLOAD -- Bushel's location object is {id, name, groups} and nothing else -- so both were read off CHS Drayton's own locations page on 2026-08-25. Not pedantry: this operator's board crosses state lines.",
+  "note": "READ THROUGH THEIR OWN PAGE, holding no credential: Bushel's board is fetched by the customer's site in the reader's browser, so loading that page is the whole of the authorisation. One call to GetBidsList carries every location this operator quotes, so each is a source file and none is new code.\n\nMEASURED BY scripts/bushel-probe.mjs ON 2026-08-25. 18 rows here, and floor-to-the-cent explained EVERY one -- as it did at all 85 locations across the eight Bushel boards that answered. Corn trades in quarter cents and this board displays cash to the whole cent, so residuals come out in quarters; floor makes cash - basis = futures exact again, which is why no tolerance is set and none is wanted.\n\nTHE STATE AND STREET ARE NOT IN THE PAYLOAD -- Bushel's location object is {id, name, groups} and nothing else -- so both were read off CHS Drayton's own locations page on 2026-08-25. Not pedantry: this operator's board crosses state lines. COORDINATE filled 48.5531,-97.17765 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"7875 OLD HWY 44, DRAYTON, ND, 58225\" via census. It is a STREET-level fix on the elevator itself. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
   "address": "7875 Old Highway 44, Drayton ND 58225",
   "zip": null,
-  "lat": null,
-  "lon": null,
+  "lat": 48.5531,
+  "lon": -97.17765,
   "phone": null,
   "email": null,
   "website": "https://www.chsdrayton.com/grain/cash-bids/",
-  "inMerge": true
+  "inMerge": true,
+  "latPrecision": "street"
 }
