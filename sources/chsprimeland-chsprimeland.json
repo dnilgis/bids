@@ -1,0 +1,43 @@
+{
+  "id": "chsprimeland-chsprimeland",
+  "operator": "CHS Primeland",
+  "location": "CHS Primeland",
+  "state": null,
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chsprimeland.com/grain/cash-bids/",
+  "locationId": "ad86e438-0649-43af-a168-6b5b2a9ecfe4",
+  "bands": {
+    "wheat": [
+      3,
+      20
+    ],
+    "hrw": [
+      3,
+      20
+    ],
+    "hrs": [
+      3,
+      20
+    ],
+    "sww": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM bushel probe run 90062058376, 2026-08-29 02:55 UTC. The probe loaded https://www.chsprimeland.com/grain/cash-bids/ in the runner's Chromium and read the response that page's own widget asked api.bushelpowered.com for: 11 row(s) at this location, commodities Wheat SWW, Wheat, HRW 11.5%, Wheat, HRS 14%. locationId is the location UUID the payload itself carries, which is the only thing that identifies a Bushel location -- and the reason the sharded sweep could never supply it: discover.mjs keys a Bushel response on its last path segment, which is \"GetBidsList\" for every operator alive. cashRounding is MEASURED, not guessed: floor-cent explains ALL 11 rows, residuals -0.75c, -0.25c, 0c. bands are DEFAULT_BANDS values from lib/board.mjs, copied, for the commodities this location actually quotes. The hrw/hrs/sww entries were added to DEFAULT_BANDS earlier tonight after 47 wheat rows across the DTN probe were found to match no band at all and were being silently withheld. state is null. The Bushel payload carries a location name and a UUID and no address at all -- the probe prints \"NOT IN THE PAYLOAD\" for every one of the fourteen locations it read. It has not been looked up and will not be invented.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.chsprimeland.com/",
+  "inMerge": true,
+  "cashRounding": "floor-cent",
+  "_pending": "NOT A TOWN. \"CHS Primeland\" is the operator's own label for a facility, not a place -- CHS Primeland is the co-operative's own name. lat and lon are null and must stay null. A real bid, worth carrying; on a map it belongs to whoever runs it.\n\naddress, zip and phone are null. The payload has a location name and a UUID; those are lookups, not measurements."
+}

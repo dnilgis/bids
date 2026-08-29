@@ -1,0 +1,35 @@
+{
+  "id": "meyerbrothersgrain-elkmound",
+  "operator": "Meyer Brothers Grain",
+  "location": "Elk Mound",
+  "state": "WI",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://meyerbrothersgrain.com/cash-bids/",
+  "locationId": "055d5343-343c-4cb3-b3d2-83b870a4c399",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM bushel probe run 90062058376, 2026-08-29 02:55 UTC. The probe loaded https://meyerbrothersgrain.com/cash-bids/ in the runner's Chromium and read the response that page's own widget asked api.bushelpowered.com for: 6 row(s) at this location, commodities Corn, Soybeans. locationId is the location UUID the payload itself carries, which is the only thing that identifies a Bushel location -- and the reason the sharded sweep could never supply it: discover.mjs keys a Bushel response on its last path segment, which is \"GetBidsList\" for every operator alive. cashRounding is MEASURED, not guessed: floor-cent explains ALL 6 rows, residuals -0.5c, 0c. bands are DEFAULT_BANDS values from lib/board.mjs, copied, for the commodities this location actually quotes. The hrw/hrs/sww entries were added to DEFAULT_BANDS earlier tonight after 47 wheat rows across the DTN probe were found to match no band at all and were being silently withheld. state is WI, and lat/lon are copied from known-elevators.json for Elk Mound, WI. Town precision, not street.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": 44.877918,
+  "lon": -91.670626,
+  "phone": null,
+  "email": null,
+  "website": "https://meyerbrothersgrain.com/",
+  "inMerge": true,
+  "cashRounding": "floor-cent",
+  "_pending": "address, zip and phone are null. The payload has a location name and a UUID; those are lookups, not measurements."
+}
