@@ -2,7 +2,7 @@
   "id": "premiercooperative-homelandlawler",
   "operator": "Premier Cooperative",
   "location": "Homeland (Lawler)",
-  "state": "SET THIS",
+  "state": null,
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/E0266901/cash-bids?units=us",
   "browserPage": "https://www.premiercooperative.com/agricultural/detailed-cash-bids",
@@ -14,17 +14,19 @@
       12
     ]
   },
+  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": false,
-  "note": "DTN Content Services cash-bids-table-widget. Read from ONE call to https://api.dtn.com/markets/sites/E0266901/cash-bids?units=us \u2014 the site id E0266901 carries this location and its neighbours together, so every one of them is a source file and none of them is new code. IT IS READ THROUGH A BROWSER AND NOT BY A FETCH: DTN answered a server-side probe with \"The api key is valid, but it is valid to be used within a browser only\", so their gateway scopes these widget keys to browser use. poll.mjs loads https://www.premiercooperative.com/agricultural/detailed-cash-bids in a real Chromium and reads the response their own widget asks for, which means we hold no key at all \u2014 theirs is public in their page, as it must be for the widget to work. THE LOCATION KEY IS THE NUMERIC location.id (10168) AND NOT THE NAME: a display name is exactly the thing a vendor re-cases, and some of these names are companies rather than towns. cashRounding is DELIBERATELY ABSENT. One run said round-cent (11 testable rows, margin 9) and there is no second run to agree with it. A mode is a property of how they compute their board, so it needs the same answer on a different day's prices. Left off, the identity guard stays exact and a board that does not reconcile refuses loudly instead of publishing under a mode nobody established. COORDINATES ARE NULL AND THAT IS DELIBERATE: the feed carries no coordinate, and a town centroid is a different place from a yard \u2014 measured at 1.4 miles on babgrain-auburn. Geocode the street address before relying on a map pin. Built by scripts/dtn-build.mjs from a dtn-probe log; 11 row(s) for this location. STILL DISABLED, AND THE REASON IS THE STATE. Not on Premier's own contact page. Unconfirmed. Rule 1: do not invent a town or a state.",
-  "cashRoundingCents": 0,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.premiercooperative.com/agricultural/detailed-cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0266901 returned this location keyed 10168. 11 row(s): Corn — rounding UNRESOLVED [11 testable: exact 3, round 10, floor 7]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Homeland (Lawler)\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
   "zip": null,
   "lat": null,
   "lon": null,
   "phone": null,
   "email": null,
-  "website": "SET THIS",
-  "inMerge": true
+  "website": "https://www.premiercooperative.com/",
+  "inMerge": true,
+  "_pending": "HELD DISABLED — ROUNDING UNRESOLVED. The probe tested this location's own rows and no single mode explained all of them: 11 row(s): Corn — rounding UNRESOLVED [11 testable: exact 3, round 10, floor 7]. A board is not enabled on a rounding we cannot state. Re-run the dtn probe on a second day's prices and pass the earlier VERDICTS lines in the `against` box; the two days together usually settle it.\n\nNO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\nNO STATE.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
 }

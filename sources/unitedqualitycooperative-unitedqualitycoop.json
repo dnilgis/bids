@@ -1,0 +1,52 @@
+{
+  "id": "unitedqualitycooperative-unitedqualitycoop",
+  "operator": "United Quality Cooperative",
+  "location": "UNITED QUALITY COOP",
+  "state": "ND",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0220701/cash-bids?units=us",
+  "browserPage": "https://www.uqcoop.com/grain-cash-bids",
+  "locationId": "9077",
+  "siteId": "E0220701",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ],
+    "canola": [
+      6,
+      35
+    ],
+    "durum": [
+      4,
+      25
+    ],
+    "flax": [
+      6,
+      40
+    ]
+  },
+  "cashRoundingCents": 0,
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.uqcoop.com/grain-cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0220701 returned this location keyed 9077. 9 row(s): Canola (100 wt), Corn, Durum, Flax, Soybeans, Spring Wheat, Winter Wheat — rounding UNRESOLVED [9 testable: exact 1, round 2, floor 3] NOT A TOWN? \"UNITED QUALITY COOP\" carries a company suffix (coop) — a business, not a place. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is ND, the one state where \"UNITED QUALITY COOP\" matches a town this repo already holds for this operator. lat/lon are null and must stay null: \"UNITED QUALITY COOP\" carries a company suffix (coop) — a business, not a place website is the origin of this source's own browserPage. Nothing was looked up.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.uqcoop.com/",
+  "inMerge": true,
+  "_pending": "HELD DISABLED — ROUNDING UNRESOLVED. The probe tested this location's own rows and no single mode explained all of them: 9 row(s): Canola (100 wt), Corn, Durum, Flax, Soybeans, Spring Wheat, Winter Wheat — rounding UNRESOLVED [9 testable: exact 1, round 2, floor 3] NOT A TOWN? \"UNITED QUALITY COOP\" carries a company suffix (coop) — a business, not a place. A board is not enabled on a rounding we cannot state. Re-run the dtn probe on a second day's prices and pass the earlier VERDICTS lines in the `against` box; the two days together usually settle it.\n\nNOT A TOWN. \"UNITED QUALITY COOP\" carries a company suffix (coop) — a business, not a place This is a real bid and worth carrying, but it is somewhere the grain GOES, not a facility this co-operative owns. It must never be geocoded, and on a map it belongs to whoever runs it, not to United Quality Cooperative.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+}
