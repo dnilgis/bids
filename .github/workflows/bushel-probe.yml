@@ -41,7 +41,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Probe every page in probe-lists/bushel-candidates.txt (15 of them as of 2026-08-29 evening). Leave the page box below blank."
+        description: "Probe every page in probe-lists/bushel-candidates.txt (8 of them as of 2026-08-29 night). Leave the page box below blank."
         type: boolean
         default: true
       page:
@@ -63,7 +63,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    # 17 pages x 2 targets x 60s = 34 minutes of waiting in the worst case,
+    # 8 pages x 2 targets x 60s = 16 minutes of waiting in the worst case,
     # before the page loads themselves. See the note at the top of this file.
     timeout-minutes: 75
     steps:
