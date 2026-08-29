@@ -1,0 +1,33 @@
+{
+  "id": "incograin-goodland",
+  "operator": "Inco Grain",
+  "location": "Inco Grain",
+  "state": "IN",
+  "platform": "bushel",
+  "url": "https://futures.bushelops.com/api/v1/cash-bids",
+  "browserPage": "https://inco-grain.com/",
+  "locationId": "755bf688-2cbd-4824-954b-1f078bd23e35",
+  "bands": {
+    "corn": [
+      2.0,
+      12.0
+    ],
+    "soybean": [
+      6.0,
+      32.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "note": "BUILT FROM bushel probe run 90137349451, 2026-08-29. The probe loaded https://inco-grain.com/ in the runner's Chromium and read the response that page's own widget asked futures.bushelops.com for: 4 row(s) at this location, commodities Corn, Soybeans. THIS IS THE SECOND BUSHEL GENERATION — the payload nests under `data` in snake_case and the location key is `bushel_location_id`, not `id`; lib/adapters/bushel.mjs branches on the body, not the URL. ROUNDING: floor-cent explained ALL 4 rows. Residuals -0.5c, 0c. Measured on ONE trading day — a mode that is wrong costs a REFUSAL and never a wrong price, because the identity guard is what enforces it, so this is safe to read now and worth re-checking on a second day's prices. STATE came from Inco Grain's own website, which publishes the postal address 4463 E Highway 24, Goodland, IN 47948, not from the payload — Bushel's location object carries a name and an id and no address. `location` is the name the payload itself carries (\"Inco Grain\"), not the town — filterLocation matches on locationId alone and never on the name, so the label is for a reader and the UUID does the work. This operator's WHOLE board is the fixture the second-generation adapter was written from: fixtures/bushel-incograin-gen2.json, 2,951 characters, the complete document.",
+  "publicNote": "Their publicly posted cash board at Goodland, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": "4463 E Highway 24",
+  "zip": "47948",
+  "lat": null,
+  "lon": null,
+  "phone": "219-233-5975",
+  "website": "https://inco-grain.com/",
+  "inMerge": true
+}

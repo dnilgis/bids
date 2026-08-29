@@ -1,0 +1,28 @@
+{
+  "id": "riceland-desarc",
+  "operator": "Riceland Foods",
+  "location": "Des Arc",
+  "state": "AR",
+  "platform": "bushel",
+  "url": "https://futures.bushelops.com/api/v1/cash-bids",
+  "browserPage": "https://riceland.coop/",
+  "locationId": "dff1cf41-3cbf-4eb3-b687-f854d08dbafe",
+  "bands": {
+    "soybean": [
+      6.0,
+      32.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "exact",
+  "cashRoundingCents": 0,
+  "note": "BUILT FROM bushel probe run 90137349451, 2026-08-29. The probe loaded https://riceland.coop/ in the runner's Chromium and read the response that page's own widget asked futures.bushelops.com for: 2 row(s) at this location, commodities 2026 Rice, 2026 Soybeans. THIS IS THE SECOND BUSHEL GENERATION — the payload nests under `data` in snake_case and the location key is `bushel_location_id`, not `id`; lib/adapters/bushel.mjs branches on the body, not the URL. ROUNDING: EXACT. Every testable residual across all fourteen Riceland locations was 0c, so the identity holds with no display rounding at all and cashRoundingCents is 0 — the strictest declaration available. Read at BOARD level, not per location (rule 15): most locations offer only two or three testable rows, where four rules explain the data equally and that is the same as explaining none. Residuals 0c. Measured on ONE trading day — a mode that is wrong costs a REFUSAL and never a wrong price, because the identity guard is what enforces it, so this is safe to read now and worth re-checking on a second day's prices. STATE came from Riceland's own website, which lists this facility under Arkansas, not from the payload — Bushel's location object carries a name and an id and no address. THIS BOARD ALSO POSTS RICE AND THE RICE ROWS ARE WITHHELD. `2026 Rice` matches no key in DEFAULT_BANDS and none is invented here — Sig, 2026-08-29: \"please dont worry about rice or other obscure crops for now.\" Said out loud because a withheld row and a row that was never posted look identical to a reader (rule 20). Three Riceland locations post rice ONLY — New Madrid, Poplar Bluff and Waldenburg — and are deliberately not written as sources at all, because a manifest that can publish nothing is a green pin with no board behind it.",
+  "publicNote": "Their publicly posted cash board at Des Arc, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "website": "https://riceland.coop/",
+  "inMerge": true
+}
