@@ -5,7 +5,7 @@
   "state": "IL",
   "platform": "graindesk",
   "url": "https://marketplace.graindiscovery.com/api/public-sites/bockerruff/cash-bids",
-  "locationId": null,
+  "locationId": "POLO",
   "bands": {
     "corn": [
       2,
@@ -22,10 +22,9 @@
   },
   "cadence": "grain-day",
   "provenance": "scraped",
-  "enabled": false,
-  "note": "BUILT FROM THE SHARDED SWEEP, 2026-08-28, run 33219871278. discover.mjs loaded https://bockerruff.com/ and watched it call marketplace.graindiscovery.com/api/public-sites/bockerruff/cash-bids. The company token is theirs, read off their own page, not guessed. Operator, town, state, street address, coordinate and phone are copied verbatim from data/known-elevators.json, the Barchart directory harvest — not derived, not looked up, not invented. Nothing here has been polled yet.",
-  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers.",
-  "_pending": "THREE THINGS BEFORE ENABLING. (1) NOBODY HAS OPENED THIS BOARD. locationId is null, which asserts their page carries exactly one location and does not key its rows. The directory lists exactly one facility on this host, which is a reason to believe it and not a reason to state it. The first poll proves or disproves it; until then treat null as untested. (2) cashRounding is NOT set and MUST NOT be guessed. It is measured from a real board against real futures, the way sources/chsfarmersalliance-mitchell.json records. (3) bands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs. They are sanity floors, not a claim about what this elevator trades. Anything else on their board falls through to DEFAULT_BANDS by substring.",
+  "enabled": true,
+  "note": "BUILT FROM THE SHARDED SWEEP (run 33219871278) AND PROVEN BY THE GRAIN DESK SWEEP, run 90042308698, 2026-08-29 00:03 UTC. discover.mjs watched https://bockerruff.com/ call this endpoint; the gd sweep then read the board itself: 15 offer(s) across 1 destination(s) [POLO], commodities Soybeans, Corn. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it. lib/adapters/graindesk.mjs sets every row's locationId to o.destination, and filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold. A null here would match zero rows and refuse the source. Operator, town, state, street, coordinate and phone are copied verbatim from data/known-elevators.json.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "13155 US-52",
   "zip": "61064",
   "lat": 42.002773,
@@ -33,5 +32,6 @@
   "phone": "8159462033",
   "email": null,
   "website": "https://bockerruff.com/",
-  "inMerge": true
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed. It is measured from a real board against real futures, the way sources/chsfarmersalliance-mitchell.json records. Expect the first live poll to refuse if this board floors or rounds to the cent; that refusal IS the measurement.\n\nbands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs. They are sanity floors, not a claim about what this elevator trades. Anything else on their board falls through to DEFAULT_BANDS by substring."
 }

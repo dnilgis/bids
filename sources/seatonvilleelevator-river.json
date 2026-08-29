@@ -1,0 +1,37 @@
+{
+  "id": "seatonvilleelevator-river",
+  "operator": "Seatonville Elevator Co",
+  "location": "River",
+  "state": "IL",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/seatonville/cash-bids",
+  "locationId": "River",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM THE SHARDED SWEEP (run 33219871278) AND PROVEN BY THE GRAIN DESK SWEEP, run 90042308698, 2026-08-29 00:03 UTC. discover.mjs watched https://seatonvilleelevator.com/ call this endpoint; the gd sweep then read the board itself: 29 offer(s) across 3 destination(s) [River, Seatonville, Marquis], commodities Soybeans, Corn. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it. lib/adapters/graindesk.mjs sets every row's locationId to o.destination, and filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold. A null here would match zero rows and refuse the source. The Barchart directory has no facility for this destination, so operator and state come from the parent record and nothing else has been derived. See _pending.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://seatonvilleelevator.com/",
+  "inMerge": true,
+  "_pending": "NO COORDINATE, AND NONE WILL BE INVENTED. \"River\" is the destination string off their own board. data/known-elevators.json has no facility matching it under this operator, so address, zip, lat, lon and phone are null rather than borrowed from the parent record - borrowing would put this destination's pin on another town. Whether \"River\" is a town at all is unverified: on some boards it is the operator's own label for a facility.\n\ncashRounding is NOT set and must not be guessed. It is measured from a real board against real futures, the way sources/chsfarmersalliance-mitchell.json records. Expect the first live poll to refuse if this board floors or rounds to the cent; that refusal IS the measurement.\n\nbands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs. They are sanity floors, not a claim about what this elevator trades. Anything else on their board falls through to DEFAULT_BANDS by substring."
+}
