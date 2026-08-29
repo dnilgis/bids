@@ -1,0 +1,33 @@
+{
+  "id": "southwestiowarenewableenergy-sire",
+  "operator": "Southwest Iowa Renewable Energy",
+  "location": "SIRE",
+  "state": "IA",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/e0250201/cash-bids?units=us",
+  "browserPage": "https://sireethanol.com/cash-bids/",
+  "locationId": "9811",
+  "siteId": "e0250201",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ]
+  },
+  "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://sireethanol.com/cash-bids/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id e0250201 returned this location keyed 9811. 10 row(s): Corn — round-cent [10 testable: exact 4, round 10, floor 7]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is IA, the one state where \"SIRE\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for SIRE, IA. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": 41.17303,
+  "lon": -95.82543,
+  "phone": null,
+  "email": null,
+  "website": "https://sireethanol.com/",
+  "inMerge": true,
+  "_pending": "address, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+}

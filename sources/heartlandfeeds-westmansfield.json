@@ -1,0 +1,33 @@
+{
+  "id": "heartlandfeeds-westmansfield",
+  "operator": "Heartland Feeds",
+  "location": "West Mansfield",
+  "state": "OH",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0386102/cash-bids?units=us",
+  "browserPage": "https://heartlandfeeds.com/cash-bids/",
+  "locationId": "16242",
+  "siteId": "E0386102",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ]
+  },
+  "cashRounding": "floor-cent",
+  "cashRoundingCents": 0,
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://heartlandfeeds.com/cash-bids/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0386102 returned this location keyed 16242. 3 row(s): Corn — floor-cent [3 testable: exact 0, round 0, floor 3]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is OH, the one state where \"West Mansfield\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for West Mansfield, OH. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": 40.43216,
+  "lon": -83.56746,
+  "phone": null,
+  "email": null,
+  "website": "https://heartlandfeeds.com/",
+  "inMerge": true,
+  "_pending": "address, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+}

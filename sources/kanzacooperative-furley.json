@@ -1,7 +1,7 @@
 {
   "id": "kanzacooperative-furley",
   "operator": "Kanza Cooperative",
-  "location": "Valley Center",
+  "location": "FURLEY",
   "state": "KS",
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/e0013301/cash-bids?units=us",
@@ -20,15 +20,24 @@
     "wheat": [
       3,
       20
+    ],
+    "milo": [
+      2,
+      14
+    ],
+    "hrw": [
+      3,
+      20
     ]
   },
   "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a dtn-probe run (site e0013301) plus the operator's OWN locations page, which is where the state and the address come from -- THE FEED CARRIES NEITHER. Bushel and DTN both hand back {id, name} and nothing else, so a state taken from the co-operative's home state would be a guess, and this project has already been bitten by that: one operator's CEDAR RAPIDS is in Nebraska. Verified here: https://www.kanzacoop.com/about/our-locations — 'Furley, 10745 N Avenue F, Valley Center, KS 67147, (316) 744-0438'. Contacts page: 'Furley (Valley Center) — Agronomy, Grain, 1.022 mil bu licensed capacity'. cashRounding is the mode the probe measured across every testable row on this board, not a guess. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard -- measured at 1.4 miles on babgrain-auburn. Geocode the street address before relying on a map pin.",
-  "cashRoundingCents": 0,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.kanzacoop.com/services/grain/cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id e0013301 returned this location keyed 25743. 8 row(s): Corn, Milo, Soybeans, Wheat, HRW — round-cent [8 testable: exact 3, round 8, floor 3]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is KS, the one state where \"FURLEY\" matches a town this repo already holds for this operator. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
   "zip": null,
   "lat": null,
   "lon": null,
@@ -36,6 +45,5 @@
   "email": null,
   "website": "https://www.kanzacoop.com/",
   "inMerge": true,
-  "address": "10745 N Avenue F, Valley Center, KS 67147",
-  "labelInFeed": "FURLEY"
+  "_pending": "NO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
 }

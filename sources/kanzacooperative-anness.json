@@ -1,7 +1,7 @@
 {
   "id": "kanzacooperative-anness",
   "operator": "Kanza Cooperative",
-  "location": "Milton",
+  "location": "ANNESS",
   "state": "KS",
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/e0013301/cash-bids?units=us",
@@ -12,14 +12,20 @@
     "wheat": [
       3,
       20
+    ],
+    "hrw": [
+      3,
+      20
     ]
   },
+  "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a dtn-probe run (site e0013301) plus the operator's OWN locations page, which is where the state and the address come from -- THE FEED CARRIES NEITHER. Bushel and DTN both hand back {id, name} and nothing else, so a state taken from the co-operative's home state would be a guess, and this project has already been bitten by that: one operator's CEDAR RAPIDS is in Nebraska. Verified here: https://www.kanzacoop.com/about/our-locations — 'Anness, 11430 S Main St, Milton, KS 67106'. Confirmed at https://www.kanzacoop.com/about/employee-directory/contacts-by-location: 'Anness (Milton) — Grain, NH3 Plant'. Anness is a Sumner County, KS locality; the co-op's postal town for it is Milton. cashRounding is the mode the probe measured across every testable row on this board, not a guess. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard -- measured at 1.4 miles on babgrain-auburn. Geocode the street address before relying on a map pin. ROUNDING INHERITED FROM THE BOARD, 2026-08-26. This location posts too few testable rows for the probe to name a mode from its own evidence -- it said TOO FEW TO STATE, which is the right answer for one or two rows -- so it shipped with no mode, ran the exact identity check, and refused on a quarter of a cent the first time it was read. The mode written here is the one the probe measured for THE WHOLE SITE (e0013301): 163 rows across 24 locations. Rounding is a property of the board, not of the location: one feed, one platform, one operator, and every location on it is rendered by the same code. A site-level measurement over a hundred and sixty rows is far stronger evidence than two rows at one elevator. It stays self-checking -- if this location's rows ever stop fitting, it refuses and says so.",
-  "cashRoundingCents": 0,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.kanzacoop.com/services/grain/cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id e0013301 returned this location keyed 25745. 2 row(s): Wheat, HRW — round-cent [2 testable: exact 0, round 2, floor 0]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is KS, the one state where \"ANNESS\" matches a town this repo already holds for this operator. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
   "zip": null,
   "lat": null,
   "lon": null,
@@ -27,7 +33,5 @@
   "email": null,
   "website": "https://www.kanzacoop.com/",
   "inMerge": true,
-  "address": "11430 S Main St, Milton, KS 67106",
-  "labelInFeed": "ANNESS",
-  "cashRounding": "round-cent"
+  "_pending": "NO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
 }

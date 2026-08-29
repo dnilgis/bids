@@ -1,8 +1,8 @@
 {
   "id": "farmerspridecoop-nelighoakdale",
   "operator": "Farmers Pride Coop",
-  "location": "Neligh",
-  "state": "NE",
+  "location": "Neligh-Oakdale",
+  "state": null,
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/E0025201/cash-bids?units=us",
   "browserPage": "https://www.farmerspridecoop.com/grain/cash-bids",
@@ -19,12 +19,13 @@
     ]
   },
   "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a dtn-probe run (site E0025201) plus the operator's OWN pages, which is where the state and the address come from -- THE FEED CARRIES NEITHER. cashRounding is the mode the probe measured for the whole site (60 rows across 6 locations); rounding is a property of the board, not the location, and a site-level measurement is far stronger than a handful of rows at one elevator. Verified here: One posted facility under a two-town name. https://www.farmerspridecoop.com/locations/neligh-oakdale is titled 'NELIGH/OAKDALE' and publishes a single address, '1001 E Hwy 275, Neligh, NE 68756', 402-887-5463, services Energy/Feed/Grain, with staff titled 'Location Manager - Neligh/Oakdale' and 'Grain Origination Coordinator - Neligh/Oakdale'. https://www.farmerspridecoop.com/l COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard. Geocode the street address before relying on a map pin.",
-  "cashRoundingCents": 0,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.farmerspridecoop.com/grain/cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0025201 returned this location keyed 3947. 10 row(s): Corn, Soybeans — round-cent [10 testable: exact 4, round 10, floor 6] NOT A TOWN? \"Neligh-Oakdale\" joins two names — decide which town this bid belongs to, or whether it is one. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Neligh-Oakdale\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null and must stay null: \"Neligh-Oakdale\" joins two names — decide which town this bid belongs to, or whether it is one website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
   "zip": null,
   "lat": null,
   "lon": null,
@@ -32,6 +33,5 @@
   "email": null,
   "website": "https://www.farmerspridecoop.com/",
   "inMerge": true,
-  "labelInFeed": "Neligh-Oakdale",
-  "address": "1001 E Hwy 275, Neligh, NE 68756"
+  "_pending": "NOT A TOWN. \"Neligh-Oakdale\" joins two names — decide which town this bid belongs to, or whether it is one This is a real bid and worth carrying, but it is somewhere the grain GOES, not a facility this co-operative owns. It must never be geocoded, and on a map it belongs to whoever runs it, not to Farmers Pride Coop.\n\nNO STATE.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
 }

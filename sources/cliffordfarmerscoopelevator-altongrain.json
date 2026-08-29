@@ -1,0 +1,44 @@
+{
+  "id": "cliffordfarmerscoopelevator-altongrain",
+  "operator": "Clifford Farmers Coop Elevator",
+  "location": "Alton Grain",
+  "state": null,
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0415001/cash-bids?units=us",
+  "browserPage": "https://www.cliffordfarmerscoop.com/grain/cash-bids",
+  "locationId": "25979",
+  "siteId": "E0415001",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ],
+    "hrs": [
+      3,
+      20
+    ]
+  },
+  "cashRoundingCents": 0,
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://www.cliffordfarmerscoop.com/grain/cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0415001 returned this location keyed 25979. 15 row(s): Corn, Soybeans, Wheat, HRS 14% — rounding UNRESOLVED [15 testable: exact 3, round 10, floor 4] NOT A TOWN? \"Alton Grain\" carries a company suffix (grain) — a business, not a place. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Alton Grain\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null and must stay null: \"Alton Grain\" carries a company suffix (grain) — a business, not a place website is the origin of this source's own browserPage. Nothing was looked up.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.cliffordfarmerscoop.com/",
+  "inMerge": true,
+  "_pending": "HELD DISABLED — ROUNDING UNRESOLVED. The probe tested this location's own rows and no single mode explained all of them: 15 row(s): Corn, Soybeans, Wheat, HRS 14% — rounding UNRESOLVED [15 testable: exact 3, round 10, floor 4] NOT A TOWN? \"Alton Grain\" carries a company suffix (grain) — a business, not a place. A board is not enabled on a rounding we cannot state. Re-run the dtn probe on a second day's prices and pass the earlier VERDICTS lines in the `against` box; the two days together usually settle it.\n\nNOT A TOWN. \"Alton Grain\" carries a company suffix (grain) — a business, not a place This is a real bid and worth carrying, but it is somewhere the grain GOES, not a facility this co-operative owns. It must never be geocoded, and on a map it belongs to whoever runs it, not to Clifford Farmers Coop Elevator.\n\nNO STATE.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+}

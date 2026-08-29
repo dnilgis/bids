@@ -1,8 +1,8 @@
 {
   "id": "auroracooperative-sedan",
   "operator": "Aurora Cooperative",
-  "location": "Edgar",
-  "state": "NE",
+  "location": "Sedan",
+  "state": null,
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/E0339801/cash-bids?units=us",
   "browserPage": "https://auroracoop.com/markets",
@@ -19,12 +19,13 @@
     ]
   },
   "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a dtn-probe run (site E0339801) plus the operator's OWN locations page, which is where the state and the address come from -- THE FEED CARRIES NEITHER. Bushel and DTN both hand back {id, name} and nothing else, so a state taken from the co-operative's home state would be a guess, and this project has already been bitten by that: one operator's CEDAR RAPIDS is in Nebraska. Verified here: https://auroracoop.com/locations/page/6/ — 'Sedan | Edgar, NE | 2449 Rd 4500, Edgar, NE 68935 | 402-224-4177'. Checked deliberately because a Sedan also exists in Kansas (Chautauqua County); Aurora's own page puts this one in Nebraska with an Edgar postal address, so it is the Nebraska locality of Sedan, not the Kansas town. cashRounding is the mode the probe measured across every testable row on this board, not a guess. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard -- measured at 1.4 miles on babgrain-auburn. Geocode the street address before relying on a map pin.",
-  "cashRoundingCents": 0,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://auroracoop.com/markets in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0339801 returned this location keyed 11868. 9 row(s): Corn, Soybeans, White Corn — round-cent [9 testable: exact 4, round 9, floor 4]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Sedan\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
   "zip": null,
   "lat": null,
   "lon": null,
@@ -32,6 +33,5 @@
   "email": null,
   "website": "https://auroracoop.com/",
   "inMerge": true,
-  "address": "2449 Rd 4500, Edgar, NE 68935",
-  "labelInFeed": "Sedan"
+  "_pending": "NO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\nNO STATE.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
 }

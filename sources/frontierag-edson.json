@@ -1,0 +1,40 @@
+{
+  "id": "frontierag-edson",
+  "operator": "Frontier Ag",
+  "location": "Edson",
+  "state": "KS",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0217501/cash-bids?units=us",
+  "browserPage": "https://frontieraginc.com/grain/cash-bids",
+  "locationId": "25945",
+  "siteId": "E0217501",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "wheat": [
+      3,
+      20
+    ],
+    "milo": [
+      2,
+      14
+    ]
+  },
+  "cashRoundingCents": 0,
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://frontieraginc.com/grain/cash-bids in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0217501 returned this location keyed 25945. 6 row(s): Corn, Milo, Wheat — rounding UNRESOLVED [6 testable: exact 2, round 5, floor 3]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is KS, the one state where \"Edson\" matches a town this repo already holds for this operator. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://frontieraginc.com/",
+  "inMerge": true,
+  "_pending": "HELD DISABLED — ROUNDING UNRESOLVED. The probe tested this location's own rows and no single mode explained all of them: 6 row(s): Corn, Milo, Wheat — rounding UNRESOLVED [6 testable: exact 2, round 5, floor 3]. A board is not enabled on a rounding we cannot state. Re-run the dtn probe on a second day's prices and pass the earlier VERDICTS lines in the `against` box; the two days together usually settle it.\n\nNO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+}
