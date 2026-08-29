@@ -1,0 +1,71 @@
+# Fill the coordinate a manifest is missing, from the file that already has it.
+#
+# WHY THIS IS A WORKFLOW AND NOT A ZIP. The join changes 216 source manifests
+# in one pass. Sig works in the browser and uploads complete files, and 216
+# uploads is not a thing to ask of anybody -- so the code goes up once and the
+# runner does the writing. It is also repeatable: every time the registries job
+# grows geocodes/places.json, running this again picks up whatever it added
+# without anybody diffing two files by hand.
+#
+# WHAT IT DOES NOT DO. It never overwrites a coordinate that is already there.
+# Several pins in this repo were corrected by hand against an operator's own
+# published address -- flashgrain-thorp's note records a previous one that sat
+# 6.5 km from the yard because it was the town and not the elevator -- and a
+# ZIP centroid must never win against somebody who looked.
+#
+# DRY RUN IS THE DEFAULT. It prints the plan, the disagreements and the
+# refusals, and writes nothing until the box is ticked.
+
+name: geocode fill
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Actually write the manifests and commit. Leave OFF for a dry run that only prints what it would do."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: geocode-fill
+  cancel-in-progress: false
+
+jobs:
+  fill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        # ref: main, not the pinned SHA. A queued workflow_dispatch fetches the
+        # commit it was CREATED at, and folding 216 manifests onto a tree two
+        # commits behind is how the sharded merge broke on 2026-08-29.
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # The fill writes to files the poll reads every hour. The guards that
+      # decide whether a manifest is publishable run first, every time.
+      - name: Test the guards
+        run: node --test test/geocodefill.test.mjs test/geocodes.test.mjs test/sources.test.mjs
+
+      - name: Fill
+        run: node scripts/geocode-fill.mjs ${{ inputs.write && '--write' || '' }}
+
+      # Belt and braces: every manifest on disk must still validate AFTER the
+      # write, not just the ones the fill touched.
+      - name: Validate every manifest
+        if: ${{ inputs.write }}
+        run: node --test test/sources.test.mjs test/geocodes.test.mjs
+
+      - name: Commit
+        if: ${{ inputs.write }}
+        run: |
+          git config user.name "bids bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add sources
+          n=$(git diff --staged --name-only | wc -l)
+          [ "$n" = "0" ] && echo "nothing to commit" && exit 0
+          bash scripts/commit-and-push.sh "geocode: filled $n manifest(s) from geocodes/places.json [skip ci]"
