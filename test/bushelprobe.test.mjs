@@ -55,3 +55,46 @@ test("every location comes back with an id and a name", () => {
     assert.ok(name && name.trim().length, `${id} has no name`);
   }
 });
+
+/* ── THE CANOLA PROBLEM — added 2026-08-29 after run 90133552278 ───────────
+ *
+ * Six CHS boards came back "NO RULE EXPLAINS IT" with residuals of -69522c,
+ * -73537c, -66040c. Hundreds of dollars, on boards whose ordinary rows carry
+ * the clean floor-cent signature. Every one of them quotes CANOLA in USD/CWT
+ * against futures in another unit, so `cash === basis + futures` was never
+ * going to hold between the two printed numbers -- and one such row in twenty
+ * was enough to report the whole board as unmeasurable. That is the same
+ * expensive wrong answer the futures-symbol bug gave, arriving by a new route:
+ * it sends somebody to widen a tolerance on a board that floors cleanly.
+ */
+
+test("A ROW QUOTED IN ANOTHER UNIT IS NOT EVIDENCE ABOUT ROUNDING", () => {
+  const clean = roundingEvidence(rows);
+  const poisoned = roundingEvidence([
+    ...rows,
+    /* Canola's shape, from CHS Big Sky: cash per CWT, futures per tonne. */
+    { ...rows[0], commodity: "Canola USD/CWT (cwt)", cash: 22.5,
+      basis: 0.4, basisCents: 40, futuresPrice: 69562, identityCheckable: false },
+  ]);
+  assert.equal(poisoned.otherUnit, 1, "the row was not set aside");
+  assert.equal(poisoned.testable, clean.testable, "it was counted as testable anyway");
+  assert.deepEqual(poisoned.residuals, clean.residuals,
+    "a residual in the hundreds of dollars reached the evidence");
+  assert.equal(poisoned.floor, poisoned.testable, "the board still floors");
+});
+
+test("and the verdict SAYS how many it set aside", () => {
+  /* Rule 20: a reader told "floor-cent explains ALL 24" about a 25-row board
+     must be able to see where the twenty-fifth went. */
+  const e = roundingEvidence([
+    ...rows,
+    { ...rows[0], identityCheckable: false, cash: 22.5, basisCents: 40, futuresPrice: 69562 },
+  ]);
+  assert.equal(e.otherUnit, 1);
+});
+
+test("a row that does not carry the field is tested exactly as before", () => {
+  /* Every source written before this field existed, and every fixture. */
+  const bare = rows.map(({ identityCheckable, ...r }) => r);
+  assert.deepEqual(roundingEvidence(bare), { ...roundingEvidence(rows), otherUnit: 0 });
+});

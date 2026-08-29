@@ -92,9 +92,23 @@ const arg = (name, dflt = null) => {
    whole cent cannot reconcile exactly. */
 export function roundingEvidence(rows) {
   const cents = (n) => Math.round(n * 100);
-  let exact = 0, round = 0, floor = 0, ceil = 0, testable = 0;
+  let exact = 0, round = 0, floor = 0, ceil = 0, testable = 0, otherUnit = 0;
   const residuals = new Set();
   for (const r of rows) {
+    /* A ROW QUOTED IN ANOTHER UNIT IS NOT EVIDENCE ABOUT ROUNDING.
+       Added 2026-08-29 evening, run 90133552278. Six CHS boards came back
+       "NO RULE EXPLAINS IT" with residuals of -69522c, -73537c, -66040c --
+       hundreds of dollars, on boards whose ordinary rows carry the clean
+       floor-cent signature {0, -0.25, -0.5, -0.75}. Every one of those boards
+       quotes CANOLA in USD/CWT against a futures contract in another unit, so
+       `cash === basis + futures` was never going to hold between the two
+       printed numbers, and testing it produced a verdict calling the whole
+       board unmeasurable when only the canola was.
+       The adapter already knows -- it folds the unit into the commodity name
+       so DEFAULT_BANDS cannot match it and board.mjs withholds the row. It now
+       says so in a field instead of only in a string. Rows from a source that
+       does not set it are tested exactly as before. */
+    if (r.identityCheckable === false) { otherUnit++; continue; }
     /* `futures` IS THE SYMBOL, "ZCU26". The price is `futuresPrice`, and it is
        already in CENTS -- 476.25 -- which is where the quarter comes from.
        Reading r.futures as the number gave NaN on every row of the fixture and
@@ -109,20 +123,25 @@ export function roundingEvidence(rows) {
     if (Math.abs(got - Math.floor(want + 1e-9)) < 0.005) floor++;
     if (Math.abs(got - Math.ceil(want - 1e-9)) < 0.005) ceil++;
   }
-  return { testable, exact, round, floor, ceil,
+  return { testable, exact, round, floor, ceil, otherUnit,
            residuals: [...residuals].sort((a, b) => a - b) };
 }
 
 /* SAY BOTH AND LET A PERSON LOOK. A probe that picked the winning rule itself
    would be the same guess, made somewhere harder to see. */
 function verdict(e) {
-  if (!e.testable) return "no testable row -- nothing carried cash, basis and futures together";
+  /* SAY WHAT WAS SET ASIDE. A silent withholding is worse than a refusal
+     (rule 20): a reader told "floor-cent explains ALL 13" about a twenty-row
+     board has to be able to see where the other seven went. */
+  const aside = e.otherUnit
+    ? ` (${e.otherUnit} row(s) set aside -- quoted in another unit, identity not checkable)` : "";
+  if (!e.testable) return `no testable row -- nothing carried cash, basis and futures together${aside}`;
   const best = [["exact", e.exact], ["floor-cent", e.floor],
                 ["round-cent", e.round], ["ceil-cent", e.ceil]]
     .filter(([, n]) => n === e.testable).map(([k]) => k);
-  if (best.length) return `${best.join(" or ")} explains ALL ${e.testable}`;
+  if (best.length) return `${best.join(" or ")} explains ALL ${e.testable}${aside}`;
   return `NO RULE EXPLAINS IT: floor ${e.floor}, round ${e.round}, ceil ${e.ceil}, ` +
-         `exact ${e.exact} of ${e.testable}. Both displayed figures are probably ` +
+         `exact ${e.exact} of ${e.testable}${aside}. Both displayed figures are probably ` +
          `rounded independently -- see cashRoundingCents, and measure the maximum ` +
          `residual rather than reaching for a round number.`;
 }
