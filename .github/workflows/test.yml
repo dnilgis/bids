@@ -1,0 +1,93 @@
+# Run the whole suite. Every file, both languages, on every human push.
+#
+# WHY THIS DID NOT EXIST UNTIL 2026-09-01, AND WHY THAT MATTERED
+#
+# This repository has 1,112 tests. Thirteen workflows, and not one of them ran
+# `npm test`. Each runs a hand-picked list instead — bushel-probe runs three
+# files, geocode-fill runs three, discover runs three — which left
+#
+#     24 of 42 test files run by NOTHING
+#
+# among them board.test.mjs, parse.test.mjs, guards.test.mjs and
+# registries.test.mjs: the readers this whole repository is. They passed only
+# when somebody typed `npm test` on a laptop, and Sig works in the browser, so
+# that was nobody.
+#
+# It was found the third time Sig asked "are you sure". The first answer had
+# been "two python guards are never run" — which was true and far too small.
+# The real answer was that the suite itself had never been wired to anything.
+#
+# THE HAND-PICKED LISTS STAY. A job about to spend an hour geocoding should
+# check its own readers first and fail in two seconds if they are broken; that
+# is cheap and it fails fast at the right moment. This is the backstop
+# underneath them, not a replacement for them.
+#
+# ON: PUSH, AND WHY THAT IS ENOUGH HERE
+#
+# A push made with GITHUB_TOKEN triggers nothing — that is a GitHub rule and it
+# is why the briefing heartbeat had to be rebuilt as a dispatch on 2026-09-01.
+# So the poller's commits, and this repo's other bot commits, will NOT fire
+# this. Sig uploading files through the browser WILL, and that is the moment
+# that matters: it is the only time a person changes the code.
+#
+# The daily cron is the backstop for everything the push trigger cannot see,
+# including a dependency or a Node change that breaks a test nobody touched.
+
+name: tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # 11:07 UTC daily. Not on the hour: GitHub's scheduler is most congested at
+    # :00, when every cron on the platform fires at once.
+    - cron: "7 11 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    # The suite runs in about 100 seconds. Ten minutes is six times that and
+    # still nowhere near GitHub's six-hour default, which a job with no ceiling
+    # inherits.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # THE WHOLE JAVASCRIPT SUITE. Not a list — the glob, so a new test file is
+      # covered the moment it is added and nobody has to remember a workflow.
+      - name: node
+        run: npm test
+
+      # AND THE PYTHON GUARDS, WHICH THE GLOB CANNOT SEE.
+      # `npm test` is `node --test test/*.test.mjs`. A guard written in python is
+      # invisible to it, which is exactly how registry-run-together.test.py and
+      # unplaced-reason.test.py came to be committed, passing, and unrun.
+      # Globbed here too, for the same reason: a list would go stale.
+      - name: python
+        run: |
+          shopt -s nullglob
+          found=0
+          for t in test/*.test.py; do
+            echo "── $t"
+            python "$t"
+            found=$((found + 1))
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "no python test files found — if that is a surprise, the glob moved"
+          else
+            echo "$found python test file(s) passed"
+          fi

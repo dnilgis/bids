@@ -92,6 +92,21 @@ jobs:
       - name: Install the PDF reader
         run: pip install --quiet pypdf
 
+      # ══════════════════════════════════════════════════════════════════
+      #  THE GUARDS RUN BEFORE THE FETCH, NOT AFTER
+      # ══════════════════════════════════════════════════════════════════
+      #  These two suites cover fetch_registries.py's run-together backstop and
+      #  build_geocodes.py's rejection sentences. They were written on
+      #  2026-09-01 and NOTHING RAN THEM: npm test globs test/*.test.mjs, so a
+      #  python guard sits in the repo passing only when somebody remembers it
+      #  by hand. A guard that never runs is a draft. They cost two seconds and
+      #  they run before the network calls, so a regression is caught before an
+      #  hour of geocoding is spent on data it would mangle.
+      - name: Test the readers this run is about to use
+        run: |
+          python test/registry-run-together.test.py
+          python test/unplaced-reason.test.py
+
       - name: Fetch the state registries
         id: fetch
         continue-on-error: true

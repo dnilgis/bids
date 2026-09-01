@@ -1,0 +1,189 @@
+# Ask Barchart where the elevators are, and build the one feed AGSIST reads.
+#
+# WHAT THIS REPLACES. AGSIST ran its own Barchart fetch against fifty hand-picked
+# city ZIPs and committed a slim selection, throwing roughly 17,200 bids away
+# every half hour. Measured 2026-09-01: those fifty queries reached 405
+# facilities — 22% of the 1,806 this repository had already geocoded. The feed
+# was never the ceiling. The question was.
+#
+# data/barchart-grid.json chooses the centres by covering the elevators instead:
+# 116 queries at 45 miles reach 1,802 of 1,806 known facilities, 99.8%.
+#
+# WHY 45 MILES AND NOT 60. getGrainBids caps at totalLocations and a truncated
+# answer looks exactly like a complete one. At 60 miles the busiest centre
+# already sits on 199 known facilities against a cap of 200 — before counting
+# anything Barchart has there that we have never seen. 45 miles costs more calls
+# and that is the point. The run reports saturation per query, so the first live
+# run says whether the headroom holds. Measure, do not reason.
+#
+# CADENCE. Four times through the trading day, on the half hour to dodge the
+# congestion at :00 — GitHub's scheduler is best effort and :00 is when every
+# cron on the platform fires at once. Bids do not move fast enough to want more,
+# and 116 queries is not a call budget to spend idly.
+#
+# THIS REPO IS PUBLIC, which is what makes the schedule affordable: Actions
+# minutes are unmetered on public repos.
+
+name: Barchart + merge
+
+on:
+  schedule:
+    - cron: "32 13 * * 1-5"     # 8:32 Central
+    - cron: "32 16 * * 1-5"     # 11:32
+    - cron: "32 19 * * 1-5"     # 14:32
+    - cron: "32 21 * * 1-5"     # 16:32, after the close
+  workflow_dispatch:
+    inputs:
+      total_locations:
+        description: "locations per query (blank = 200)"
+        required: false
+        default: ""
+      limit:
+        description: "only ask this many ZIPs (blank = the whole grid)"
+        required: false
+        default: ""
+
+concurrency:
+  group: barchart
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-and-merge:
+    runs-on: ubuntu-latest
+    # 116 queries at a 250ms pause is about a minute of waiting plus the calls
+    # themselves. Twenty minutes is many times a normal run and still well clear
+    # of the next fire. Every other workflow here sets a ceiling; a job with no
+    # timeout inherits GitHub's default of SIX HOURS, and this one holds a
+    # concurrency group.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # build_geocodes.py runs below. ubuntu-latest ships a python3, but the step
+      # invokes `python`, and on 2026-09-01 schedule-guard.yml went red with
+      # "ModuleNotFoundError: No module named 'yaml'" because a workflow that
+      # needed python installed nothing. Pin it and let the step say `python`.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ══════════════════════════════════════════════════════════════════
+      #  THE GUARDS RUN BEFORE THE CALLS, NOT AFTER
+      # ══════════════════════════════════════════════════════════════════
+      #  A workflow that has never run is a draft. These three suites cover
+      #  every rule the merge applies, and they cost seconds. Running them
+      #  first means a broken classifier is caught before 116 API calls are
+      #  spent on data it would mangle.
+      - name: Test what this run is about to use
+        run: |
+          node --test test/crop.test.mjs test/delivery.test.mjs \
+                      test/merge.test.mjs test/grid.test.mjs \
+                      test/fetch-barchart.test.mjs
+
+      # ══════════════════════════════════════════════════════════════════
+      #  ASK BARCHART
+      # ══════════════════════════════════════════════════════════════════
+      #  The key is a repository secret. Secrets never live in files.
+      #
+      #  The fetcher REFUSES TO WRITE when every query failed, and when fewer
+      #  than 70% answered. An empty file over a good one is how a feed goes
+      #  dark without anybody noticing, and a partial run published as a whole
+      #  one understates coverage everywhere.
+      - name: Fetch
+        env:
+          BARCHART_API_KEY: ${{ secrets.BARCHART_API_KEY }}
+          BARCHART_TOTAL_LOCATIONS: ${{ inputs.total_locations }}
+        run: |
+          node scripts/fetch_barchart.mjs \
+            ${{ inputs.limit && format('--limit {0}', inputs.limit) || '' }}
+
+      # ══════════════════════════════════════════════════════════════════
+      #  CLOSE THE LOOP — THE FETCH FEEDS THE NEXT FETCH
+      # ══════════════════════════════════════════════════════════════════
+      #  Until 2026-09-01 this chain ran the long way round and mostly did not
+      #  run at all:
+      #
+      #     agsist fetches Barchart -> agsist/data/elevator-directory.json
+      #       -> sync_known.py       WEEKLY
+      #       -> build_geocodes.py   MONTHLY (it only runs inside registries.yml)
+      #       -> build_grid.mjs      never, on any schedule
+      #
+      #  A facility Barchart started pricing today reached the grid up to a
+      #  MONTH later, and only if agsist had caught it first. merge_bids.mjs
+      #  printed `facilitiesNotYetInDirectory` every run and nothing consumed it.
+      #
+      #  Now the directory is built from the fetch that just happened, the new
+      #  facilities are placed, and the grid is rebuilt — so a facility found
+      #  today is queried directly next time.
+      - name: Rebuild the directory from our own fetch
+        run: node scripts/build_known.mjs
+
+      #  NO_CENSUS=1 ON PURPOSE. build_geocodes.py will spend up to seven minutes
+      #  on the Census street-address geocoder, which is the right thing MONTHLY
+      #  in registries.yml and the wrong thing four times a day. Without it the
+      #  new facilities are placed on their town's ZIP centroid — precision
+      #  "town", which is exactly what the grid needs to aim a 45-mile radius,
+      #  and which the monthly run then refines to street level. Fast placement
+      #  here, accurate placement there.
+      - name: Place anything new
+        run: |
+          pip install --quiet zipcodes
+          NO_CENSUS=1 python scripts/build_geocodes.py
+
+      #  build_grid.mjs REFUSES to write a grid that covers less than the one on
+      #  disk, so this step cannot quietly cost coverage; it can only add.
+      - name: Rebuild the grid
+        run: node scripts/build_grid.mjs --radius 45
+
+      # ══════════════════════════════════════════════════════════════════
+      #  BUILD THE ONE FEED
+      # ══════════════════════════════════════════════════════════════════
+      #  Scraped boards plus Barchart, one shape, first-party winning any
+      #  disagreement and the loser reported rather than dropped in silence.
+      #
+      #  Writes data/merged-index.json plus a shard per place under
+      #  data/merged/. One file would be about 55 MB at full grid coverage,
+      #  which GitHub warns about at 50 and refuses at 100.
+      - name: Merge
+        run: node scripts/merge_bids.mjs
+
+      # A run that produced a much smaller feed than the last one is either a
+      # real outage or a bug in something above, and either way it must not be
+      # committed quietly. This compares against the file already in the repo.
+      - name: Refuse a sudden collapse
+        run: |
+          node -e '
+            const fs = require("fs");
+            const now = JSON.parse(fs.readFileSync("data/merged-index.json", "utf8"));
+            let was = null;
+            try {
+              was = JSON.parse(
+                require("child_process").execSync("git show HEAD:data/merged-index.json", { encoding: "utf8" }));
+            } catch { console.log("no previous merged-index.json — nothing to compare against"); process.exit(0); }
+            const a = was.counts.rows, b = now.counts.rows;
+            console.log(`rows ${a} -> ${b}`);
+            if (b < a * 0.6) {
+              console.error(`REFUSED: the feed fell from ${a} rows to ${b}, more than 40%.`);
+              console.error("  That is an outage or a bug, not a market. Nothing is committed.");
+              process.exit(1);
+            }
+          '
+
+      - name: Commit
+        run: |
+          git config user.name  "bids"
+          git config user.email "bids@users.noreply.github.com"
+          git add data/barchart.json data/known-elevators.json data/barchart-grid.json \
+                  geocodes/places.json data/merged-index.json data/merged
+          scripts/commit-and-push.sh "barchart + merge: $(node -e '
+            const m=require("./data/merged-index.json");
+            process.stdout.write(`${m.counts.rows} bids, ${m.counts.places} places, `
+              + `${Object.keys(m.counts.byState).length} states`)')"
