@@ -1,0 +1,80 @@
+# Put misplaced files back, in one click.
+#
+# WHY. BIDS-FEED-SEQUENCED shipped 323 per-place shards for data/merged/.
+# Uploaded through the GitHub web interface on 2026-09-01, 294 landed where they
+# belong and 29 landed directly in data/ — a browser upload split a folder,
+# which is a thing browser uploads do.
+#
+# They are harmless to the feed: merge_bids.mjs knows a shard by its schema and
+# skips it. They are not harmless to READ, because data/ is where the 312 board
+# files live and 29 impostors make that a worse place to look.
+#
+# AND DELETING TWENTY-NINE FILES ONE AT A TIME IN A BROWSER IS NOT A THING TO
+# ASK OF ANYBODY. Standing decision: Sig works in the browser. So the runner
+# does it.
+#
+# DISPATCH ONLY. Nothing here should ever happen on a schedule: a job that moves
+# and deletes files, running unattended, is a job nobody is watching the one time
+# it is wrong. Press the button, read the summary, done.
+#
+# It identifies a shard by the schema INSIDE the file, never by its name, and it
+# MOVES rather than deletes unless data/merged/ already holds a byte-identical
+# copy. A board file is a price; nothing that is not provably redundant is
+# destroyed.
+
+name: tidy misplaced files
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "actually move them (leave unticked for a dry run first)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tidy
+  cancel-in-progress: false
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # ALWAYS DRY-RUN FIRST, EVEN WHEN ASKED TO WRITE. The list of what is
+      # about to move is in the log above the move itself, so the record of what
+      # happened does not depend on the move having gone well.
+      - name: What would move
+        run: node scripts/tidy_shards.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Move them
+        if: ${{ inputs.write }}
+        run: node scripts/tidy_shards.mjs --write | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The merge is rebuilt so the index and the shards agree again before
+      # anything is committed. Pure local computation, about a second.
+      - name: Rebuild the feed
+        if: ${{ inputs.write }}
+        run: node scripts/merge_bids.mjs
+
+      - name: Commit
+        if: ${{ inputs.write }}
+        run: |
+          git config user.name  "bids"
+          git config user.email "bids@users.noreply.github.com"
+          git add -A data/
+          if git diff --cached --quiet; then
+            echo "nothing to commit — the tree was already tidy"
+            exit 0
+          fi
+          scripts/commit-and-push.sh "tidy: misplaced merged shards moved into data/merged/"
