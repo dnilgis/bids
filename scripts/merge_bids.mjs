@@ -66,7 +66,19 @@ const arg = (name, dflt) => {
 };
 const has = (name) => process.argv.includes(name);
 
-const NOT_A_BOARD = new Set(["index.json", "directory.json", "platforms.json", "registries.json"]);
+/* data/ HOLDS BOARDS AND ALSO SIX THINGS THAT ARE NOT BOARDS.
+ * This list was written when there were four. Adding data/barchart-grid.json,
+ * data/known-elevators.json and data/merged-index.json in this same package and
+ * NOT adding them here is how they came to be reported as "board file with no
+ * entry in index.json" — my own files, blamed on the index. A denylist that the
+ * author of a new file has to remember is a denylist that goes stale, so the
+ * unexpected case below reports rather than assumes, and this list only keeps
+ * the noise down for files we put there on purpose. */
+const NOT_A_BOARD = new Set([
+  "index.json", "directory.json", "platforms.json", "registries.json",
+  "registry-ia.json", "registry-survey.json", "us-states.json",
+  "known-elevators.json", "barchart-grid.json", "merged-index.json", "merged.json",
+]);
 const norm = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 const r5 = (n) => (typeof n === "number" ? Math.round(n * 1e5) / 1e5 : null);
 
@@ -171,7 +183,25 @@ function readScraped(index, places, tally) {
     if (NOT_A_BOARD.has(f)) continue;
     const id = f.replace(/\.json$/, "");
     const s = byId.get(id);
-    if (!s) { tally.drop("board file with no entry in index.json", id); continue; }
+    if (!s) {
+      /* A SHARD IS NOT A BOARD, AND IT SAYS SO IN ITS OWN SCHEMA.
+         On 2026-09-01 an upload of this package put 29 of its 323 shards in
+         data/ instead of data/merged/ — a browser upload split a folder, which
+         is a thing browser uploads do. They fell into this branch and were
+         reported as "no entry in index.json", which is TRUE and USELESS: it
+         points at the index when the fix is to move a file. The schema on the
+         file says exactly what it is, so it is asked before blame is assigned.
+         The order matters and is the whole bug: this test used to run before
+         the file was ever opened. */
+      let peek = null;
+      try { peek = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); } catch { /* not JSON */ }
+      if (peek && peek.schema === SHARD_SCHEMA) {
+        tally.drop("a merged shard filed in data/ instead of data/merged/ — move or delete it", f);
+      } else {
+        tally.drop("board file with no entry in index.json", id);
+      }
+      continue;
+    }
     /* inMerge is this repository's existing switch: "read this board" and "put it
      * on the map" are deliberately two different questions. A board read without
      * a state is harmless; a published row whose state says SET THIS is a wrong
@@ -180,6 +210,17 @@ function readScraped(index, places, tally) {
     let j;
     try { j = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); }
     catch { tally.drop("board file would not parse", f); continue; }
+    /* A SHARD IS NOT A BOARD, AND IT SAYS SO IN ITS OWN SCHEMA.
+       On 2026-09-01 an upload of this package put 29 of its 323 shards in data/
+       instead of data/merged/ — a browser upload split a folder, which is a
+       thing browser uploads do. They then read as boards with no entry in
+       index.json and were dropped under that reason, which is TRUE and USELESS:
+       it points at the index when the fix is to move a file. Named for what
+       they are, and counted apart, so the message says what to do. */
+    if (j && j.schema === SHARD_SCHEMA) {
+      tally.drop("a merged shard filed in data/ instead of data/merged/ — move or delete it", f);
+      continue;
+    }
     if (s.status !== "ok") { tally.drop(`source status is "${s.status}"`, id); continue; }
     const g = coordOf(s, places);
     for (const b of j.bids || []) {
@@ -324,6 +365,17 @@ function main() {
     rows = rows.concat(r.out);
     console.log(`  ${barchartRead} bids matched to a geocoded place`);
     bcTally.report("barchart");
+  }
+
+  const misfiled = Object.entries(scrapeTally.n)
+    .filter(([k]) => k.startsWith("a merged shard filed in data/"))
+    .reduce((a, [, n]) => a + n, 0);
+  if (misfiled) {
+    console.log(`\n${misfiled} MERGED SHARD(S) SIT IN data/ RATHER THAN data/merged/.`);
+    console.log("  Harmless to the feed — they are skipped — but they clutter the board");
+    console.log("  directory and every run from here will report them. Delete them: they");
+    console.log(`  are the files directly in data/ whose schema is "${SHARD_SCHEMA}".`);
+    console.log("  scripts/tidy_shards.mjs --write does it in one pass.");
   }
 
   console.log("\nguards…");
