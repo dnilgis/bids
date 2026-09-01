@@ -77,6 +77,30 @@ jobs:
       # invisible to it, which is exactly how registry-run-together.test.py and
       # unplaced-reason.test.py came to be committed, passing, and unrun.
       # Globbed here too, for the same reason: a list would go stale.
+      # THE DEPENDENCIES THE PYTHON GUARDS PULL IN, INSTALLED BEFORE THEY RUN.
+      #
+      # This step shipped without this line and FAILED ON ITS FIRST REAL RUN,
+      # 2026-09-01, run 90958378657:
+      #
+      #     ── test/unplaced-reason.test.py
+      #     FATAL: pip install zipcodes
+      #     ##[error]Process completed with exit code 2.
+      #
+      # That guard imports scripts/build_geocodes.py to read the sentences it
+      # builds, and build_geocodes.py imports `zipcodes` at module level.
+      #
+      # IT IS THE THIRD TIME. schedule-guard.yml went red with "No module named
+      # 'yaml'" on 2026-08-31 for the same reason, and registries.yml already
+      # carries a pip install for pypdf that exists because of the same thing.
+      # A workflow that needs a package and installs nothing is a workflow that
+      # goes red the first time it matters — and this one went red in the very
+      # file added to stop guards from never running.
+      #
+      # test/every-guard-runs.test.mjs now checks this, so the fourth time is
+      # caught here rather than on the runner.
+      - name: python dependencies
+        run: pip install --quiet zipcodes pypdf
+
       - name: python
         run: |
           shopt -s nullglob
@@ -86,8 +110,16 @@ jobs:
             python "$t"
             found=$((found + 1))
           done
+          # FINDING NOTHING IS A FAILURE, NOT A QUIET SUCCESS.
+          # This printed a note and exited 0, which means a green tick could mean
+          # "every python guard passed" or "the glob matched nothing and I ran
+          # none of them", and nobody could tell which. There ARE python guards
+          # in this repository; zero means they moved or were deleted, and that
+          # is exactly the state this workflow exists to notice.
           if [ "$found" -eq 0 ]; then
-            echo "no python test files found — if that is a surprise, the glob moved"
-          else
-            echo "$found python test file(s) passed"
+            echo "::error::no test/*.test.py found. There are python guards in this repo —"
+            echo "::error::if they moved, this glob has to move with them. Running none of"
+            echo "::error::them must never be a green tick."
+            exit 1
           fi
+          echo "$found python test file(s) passed"
