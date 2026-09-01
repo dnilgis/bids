@@ -88,6 +88,31 @@ if node scripts/build_directory.mjs; then
 else
   echo "::warning::directory bake failed; committing the price without it"
 fi
+# THE MERGED FEED, REBUILT EVERY PASS THAT COMMITS — AND HERE IS WHY IT MOVED.
+#
+# It was built four times a weekday in barchart.yml, alongside the Barchart
+# fetch that needs a schedule because it costs API calls. But the merge needs
+# nothing: it reads data/*.json, geocodes/places.json and data/barchart.json off
+# the checkout and writes an index and its shards. No network, about a second.
+#
+# Leaving it on the fetch's clock meant the one file AGSIST reads was HOURS
+# BEHIND the boards feeding it, all day. This job refreshes 336 boards every ten
+# minutes; a consumer reading a four-times-a-day merge of them is reading a
+# stale copy of data that is sitting right there, correct, in the same
+# repository. That is the worst kind of staleness because nothing is broken.
+#
+# Cost, measured before moving it: the index is about 2.3 MB at 2,500 places and
+# deltas to 19 KB per commit once packed — 1.1 MB a day at this cadence. A shard
+# is only rewritten when its own bids change, which is the same reason 356 board
+# files are affordable here.
+#
+# SAME FAIL-OPEN RULE as the dashboard and the directory above: a merge that
+# cannot be rebuilt must never stop a price reaching the repo.
+if node scripts/merge_bids.mjs; then
+  git add data/merged-index.json data/merged
+else
+  echo "::warning::merge failed; committing the prices without refreshing the feed"
+fi
 # The message carries the front month, so `git log --oneline` reads
 # as a price history rather than a list of identical commits, and a
 # heartbeat says so instead of impersonating a price change.

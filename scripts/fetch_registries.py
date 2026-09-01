@@ -162,6 +162,30 @@ SOURCES = [
      "pattern": r"^(?P<name>.+)\s(?P<licence>[BFSW])(?P<city>[A-Z][A-Za-z0-9.'&/-]*"
                 r"(?: [A-Z0-9][A-Za-z0-9.'&/-]*)*?)(?:,\s*(?P<st>[A-Z]{2}))?"
                 r"\s+(?P<cls>A\+VCS|A|B)\s*$",
+     # THIS PATTERN SWALLOWED SIXTY-THREE COMPLETE RECORDS.
+     #
+     # A continuation is meant to catch the SECOND half of a wrapped licensee —
+     # "BHARROLD A+VCS", a location with no name. But the shape of that fragment
+     # is also the shape of an ordinary record whose company name simply STARTS
+     # with B, F, S or W, and this document has sixty-three of those:
+     #
+     #     BUNGE USA GRAIN LLC FKIMBALL A+VCS
+     #     FREMAR, LLC FCANOVA A+VCS
+     #     SUNBIRD, INC BHURON A+VCS
+     #
+     # Each matched, each was glued onto the line above it, and because the join
+     # is sequential a RUN of them collapsed into one line. That is where the
+     # 296-character record naming eight businesses across four states came
+     # from, and it is why it was pinned on a single town in Indiana.
+     #
+     # THE TEST IS NOT THE FRAGMENT'S SHAPE, IT IS WHETHER THE LINE IS ALREADY A
+     # RECORD. Tightening the character class was the wrong fix and I tried it
+     # first: it kept 29 lines and lost every genuine wrap, because no character
+     # class can separate "BHARROLD A+VCS" from "BS GRAIN, LLC BGETTYSBURG B" —
+     # only the record pattern can, and it already exists two lines up.
+     # pdf_records() now refuses to treat any line as a continuation if that
+     # line parses as a record on its own. Measured on the committed page: 81
+     # lines matched this shape, 18 are genuine wraps, 63 are records.
      "continuation": r"^[BFSW][A-Z][A-Za-z0-9 .,'&/-]*\s+(?:A\+VCS|A|B)$",
      "cityStrip": r"-\d+$"},
 
@@ -531,10 +555,21 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
     # "FREDERICK" in a town called "ARMERS". Thirty-one of South Dakota's
     # records were shapes like that, and a wrong town is worse than a missing
     # one because it puts a pin somewhere real.
+    #
+    # AND A LINE THAT IS ALREADY A RECORD IS NEVER A CONTINUATION.
+    # The fragment "BHARROLD A+VCS" and the record "BS GRAIN, LLC BGETTYSBURG B"
+    # have the same shape, because plenty of companies begin with B, F, S or W.
+    # Joining on shape alone glued 63 of South Dakota's own records onto the
+    # line above them, and since the join is sequential a run of them collapsed
+    # into one: the worst was 296 characters, named eight businesses across four
+    # states, and carried a single town in Indiana into the geocoder. The record
+    # pattern is the only thing in this file that can tell them apart, so it
+    # decides. A genuine wrap has no company name and cannot match it.
     if cont:
         rxc, joined = re.compile(cont), []
+        rxr = re.compile(pattern) if pattern else None
         for l in lines:
-            if rxc.match(l) and joined:
+            if rxc.match(l) and joined and not (rxr and rxr.match(l)):
                 joined[-1] += " " + l
             else:
                 joined.append(l)
@@ -566,6 +601,23 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
         diag["pdfLinesMatched"] = len(out)
         return out
     return _pdf_phone_lines(text, diag)
+
+
+# Every US state a grain registry names, for the run-together test below.
+_STATE_RX = re.compile(r"\b(A[LKZR]|C[AOT]|D[EC]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]"
+                       r"|N[CDEHJMVY]|O[HKR]|P[AR]|RI|S[CD]|T[NX]|UT|V[AT]|W[AIVY])\b,?")
+_NAME_MAX = 90
+
+
+def _run_together(name):
+    """True when a record is several licensees the PDF ran onto one line.
+
+    Two independent signs, either is enough: a name longer than any real one,
+    or a name that mentions two states — which happens when the next row's
+    "CITY, ST" got glued to this row's name.
+    """
+    n = (name or "").strip()
+    return len(n) > _NAME_MAX or len(_STATE_RX.findall(n)) >= 2
 
 
 # Words a company name genuinely ends in. Anything else at the end of a name,
@@ -1419,6 +1471,31 @@ def main():
                 e[f] = r[f]
 
     out = sorted(merged.values(), key=lambda e: (e.get("state") or "", e.get("city") or "", e.get("name") or ""))
+    # ── A RUN-TOGETHER RECORD IS NOT A BUSINESS, AND IT IS NOT DROPPED EITHER
+    #
+    # The joiner fix above closes the way these were made — the eleven known
+    # mashed names all disappear at the source. This stays as a BACKSTOP,
+    # because a PDF that changes shape can make new ones and nothing downstream
+    # can tell a mashed name from a merely long one.
+    #
+    # THE THRESHOLD IS MEASURED, NOT PICKED. Operator-name length across the
+    # 1,832 geocoded registry records runs 24 at the median, 36 at the ninetieth
+    # and 61 at the ninety-ninth — and 395 at the top. Past ninety characters, or
+    # naming two states at once, is nowhere near an honest licensee name. On the
+    # committed South Dakota page it now catches nothing, which is what a
+    # backstop behind a working fix is supposed to do.
+    #
+    # They are REPORTED, not silently discarded: a quiet drop tells the next
+    # reader the registry is smaller than it is.
+    mashed = [e for e in out if _run_together(e.get("name"))]
+    if mashed:
+        out = [e for e in out if not _run_together(e.get("name"))]
+        print("\n%d REGISTRY ROWS ARRIVED WITH SEVERAL LICENSEES RUN TOGETHER "
+              "and were not written:" % len(mashed))
+        for e in mashed:
+            print("   %-4s %s…" % (e.get("licensedBy") or e.get("state") or "?",
+                                   (e.get("name") or "")[:88]))
+
     # A COUNT WITH A KEY CALLED "null" IS A COUNT NOBODY CAN READ.
     # Emptying the state on an out-of-state licensee was right; letting the
     # tally print {"null": 31} alongside real state codes was not. They are

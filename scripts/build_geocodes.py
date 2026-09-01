@@ -323,6 +323,22 @@ def main():
             stats["unplaced"] += 1
             unplaced.append((s, why))
             continue
+        # NO STATE IS NOT THE SAME AS THE WRONG STATE, AND THE MESSAGE MUST SAY SO.
+        # in_state() returns False when the state is missing, because there is no
+        # box to be inside. That is the right verdict — an unverifiable coordinate
+        # should not go on the map — but the reason came out as
+        #     "coordinate rejected: 40.8528,-98.0201 is outside "
+        # with the state's name simply absent. Six sources read like that on the
+        # first coverage map, and a reason with a hole in it sent me looking for a
+        # bad coordinate when the real fault was a missing field.
+        if not (st or "").strip():
+            stats["rejected_out_of_state"] += 1
+            why = ("coordinate rejected: %.4f,%.4f may well be right, but this source "
+                   "has no state on file, so there is nothing to check it against"
+                   % (lat, lon))
+            unplaced.append((s, why))
+            print("  REJECTED %-28s %.4f,%.4f — no state on file" % (sid, lat, lon))
+            continue
         if not in_state(lat, lon, st, boxes):
             stats["rejected_out_of_state"] += 1
             unplaced.append((s, "coordinate rejected: %.4f,%.4f is outside %s" % (lat, lon, st)))

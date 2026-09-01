@@ -466,12 +466,18 @@ print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
   assert.equal(out[2], "541 GRAIN COMPANY, LLC");
 });
 
-/* SD is 293, not the 265 this once asserted: its wrapped lines are rejoined now
-   and its class column is constrained, which recovered 28 real records and
-   removed 27 fragments. The call below passes the source's FULL config —
-   pattern, continuation and cityStrip — because a test that exercises less than
-   the run does is a test of something nobody runs. */
-for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 293], ["NE", PDFS.NE, 114]]) {
+/* SD is 354. It was 265 before the wrapped lines were rejoined, then 293 once
+   they were — and 293 was still wrong, because the rejoin was also eating 63 of
+   the document's own records: every licensee whose name begins with B, F, S or
+   W has the same line shape as a wrapped fragment. Gating the join on the
+   record pattern gives those 63 back and leaves the 18 genuine wraps joined.
+   The number went UP because records were being lost, not because a threshold
+   was relaxed; 354 is what the committed page contains.
+
+   The call below passes the source's FULL config — pattern, continuation and
+   cityStrip — because a test that exercises less than the run does is a test of
+   something nobody runs. */
+for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 354], ["NE", PDFS.NE, 114]]) {
   test(`the ${st} bid sheet's own line shape is read`, { skip: !existsSync(fixture(file)) }, () => {
     const out = pyOn(`
 src = [s for s in m.SOURCES if s["state"] == "${st}" and s.get("pattern")][0]
@@ -603,9 +609,27 @@ d = {}
 r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
 bad = [x for x in r if x["city"] in ("A", "ARMERS", "EST") or re.search(r"-\\d+$", x["city"] or "")]
 names = {x["name"] for x in r}
-print(len(r), d.get("pdfLinesJoined"), len(bad), "FREDERICK" in names, sep="|")`).split("|");
-  assert.ok(Number(out[0]) >= 290, `${out[0]} records — the rejoin lost some`);
-  assert.ok(Number(out[1]) > 50, "no wrapped lines were joined at all");
+# THE 63 THE JOINER USED TO EAT MUST EACH BE PRESENT AS THEIR OWN RECORD.
+# Re-implementing the join here would be circular — it would carry the same gate
+# and could only ever report success. So this asks the OUTPUT instead: take every
+# line that has a wrapped fragment's shape but is really a record, and require
+# that its own name came through. Before the gate, none of them did.
+lines = [re.sub(r"\\s+", " ", l.strip()) for l in t.splitlines() if l.strip()]
+rxc, rxr = re.compile(src["continuation"]), re.compile(src["pattern"])
+lookalikes = [rxr.match(l) for l in lines if rxc.match(l) and rxr.match(l)]
+have = {x["name"] for x in r}
+missing = [g.group("name").strip() for g in lookalikes if g.group("name").strip() not in have]
+mashed = [x for x in r if m._run_together(x["name"])]
+print(len(r), d.get("pdfLinesJoined"), len(bad), "FREDERICK" in names,
+      "%d/%d" % (len(missing), len(lookalikes)), len(mashed), sep="|")`).split("|");
+  assert.ok(Number(out[0]) >= 350, `${out[0]} records — the rejoin lost some`);
+  /* EXACTLY THE GENUINE WRAPS, AND NOTHING ELSE. This used to assert "more than
+     50 joined", which passed at 81 — and 63 of that 81 were whole records being
+     glued onto the line above. A floor cannot catch over-joining, so the number
+     is exact and the next assertion states the rule behind it. */
+  assert.equal(Number(out[1]), 18, `${out[1]} lines joined; the document has 18 wraps`);
+  assert.equal(out[4], "0/63", `${out[4]} records whose line looked like a fragment were eaten by the joiner`);
   assert.ok(Number(out[2]) <= 5, `${out[2]} records still have a fragment for a town`);
   assert.equal(out[3], "False", 'a company called "FREDERICK" is a wrapped name read as a record');
+  assert.equal(out[5], "0", `${out[5]} records name two states — several licensees on one line`);
 });

@@ -38,7 +38,64 @@ UA = "agsist-bidreader (+https://agsist.com; sig@farmers1st.com)"
 SHRINK_FLOOR = 0.66
 
 
+# ── THIS SCRIPT'S OWN PREMISE EXPIRED ON 2026-09-01 ─────────────────────────
+#
+# The header above says agsist writes the directory "because that is where the
+# Barchart key and the full national pull live". That was true. It is not any
+# more: the key and the pull moved into this repository, and
+# scripts/build_known.mjs now builds the directory from data/barchart.json in
+# the same job that fetched it.
+#
+# Two reasons this file is still here rather than deleted:
+#
+#   1. Until BARCHART_API_KEY is set on this repository, build_known.mjs never
+#      runs, and this is the only thing keeping the directory fresh.
+#   2. If our own fetch ever breaks for a long stretch, this is a second way in.
+#
+# But it must not FIGHT the local build. It REPLACES the file; build_known.mjs
+# takes a union across every fetch. Left as it was, a weekly run here would drop
+# every facility our own queries had found that agsist had not — and the grid
+# would shrink the following Sunday with nothing to show why.
+#
+# So it stands down when the local build is doing the job, and says so.
+LOCAL_SOURCE_MARK = "this repository's own fetch"
+STAND_DOWN_AFTER_DAYS = 10
+
+
+def _local_build_is_current():
+    """True when known-elevators.json was written here, recently, by our fetch."""
+    if not OUT.exists():
+        return None
+    try:
+        d = json.loads(OUT.read_text())
+    except Exception:
+        return None
+    if LOCAL_SOURCE_MARK not in (d.get("from") or ""):
+        return None
+    stamp = d.get("generated") or ""
+    try:
+        from datetime import datetime, timezone
+        age = (datetime.now(timezone.utc)
+               - datetime.fromisoformat(stamp.replace("Z", "+00:00"))).total_seconds() / 86400
+    except Exception:
+        return None
+    return {"age_days": age, "facilities": len(d.get("elevators") or [])}
+
+
 def main():
+    local = _local_build_is_current()
+    if local and local["age_days"] <= STAND_DOWN_AFTER_DAYS:
+        print("STANDING DOWN. data/known-elevators.json was built here by "
+              "scripts/build_known.mjs %.1f days ago from this repository's own Barchart "
+              "fetch, and holds %d facilities." % (local["age_days"], local["facilities"]))
+        print("  Borrowing agsist's directory now would REPLACE that union with a snapshot")
+        print("  and drop whatever our own queries found that agsist has not seen.")
+        print("  Nothing fetched, nothing written. This is the expected state.")
+        return 0
+    if local:
+        print("the local build has not run for %.1f days — falling back to agsist's directory"
+              % local["age_days"])
+
     try:
         req = urllib.request.Request(SRC, headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=45) as r:
