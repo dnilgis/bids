@@ -88,6 +88,18 @@ if node scripts/build_directory.mjs; then
 else
   echo "::warning::directory bake failed; committing the price without it"
 fi
+
+# THE SWITCH-OFF SCOREBOARD, EVERY RUN.
+# Barchart goes off region by region on a measured figure, and a figure nobody
+# publishes is a figure nobody acts on. It reads the directory this step just
+# wrote, so it runs after it. It must never fail the pass: a coverage number is
+# a report, and a report that can stop the prices going out has the priority
+# backwards.
+if node scripts/coverage.mjs; then
+  git add data/coverage.json 2>/dev/null || true
+else
+  echo "::warning title=coverage::the coverage figure did not compute; prices are unaffected"
+fi
 # THE MERGED FEED, REBUILT EVERY PASS THAT COMMITS — AND HERE IS WHY IT MOVED.
 #
 # It was built four times a weekday in barchart.yml, alongside the Barchart

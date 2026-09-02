@@ -48,20 +48,74 @@
   .tile span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-top:3px}
   .mapbox{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:6px;position:relative}
   svg{display:block;width:100%;height:auto}
-  .state{fill:var(--land);stroke:var(--edge);stroke-width:.5;vector-effect:non-scaling-stroke}
-  .pin{stroke:var(--card);stroke-width:.6;vector-effect:non-scaling-stroke;cursor:pointer}
+  /* The map is now a Leaflet canvas, so it needs a real height — an SVG had
+     an intrinsic one from its viewBox and a div has none. 68vh keeps the
+     stats above it and the gap table below it reachable without scrolling
+     past a full screen of ground. */
+  #map{height:68vh;min-height:420px;border-radius:3px;background:var(--land);cursor:grab}
+  #map:active{cursor:grabbing}
+  .leaflet-container{font:inherit;background:var(--land)}
+  .leaflet-control-attribution{background:rgba(0,0,0,.55);color:var(--mute);font-size:11px}
+  .leaflet-control-attribution a{color:var(--gold)}
+  /* THE GAP TABLE IS 816px WIDE AND THE PHONE IS 390. It has overflowed the
+     document sideways since it was written — four columns of operator,
+     location, state and a full sentence of reason do not fold. Scrolling it
+     inside its own box is the fix; letting it push the whole page sideways
+     was never one. */
+  .gapscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .gapscroll table{min-width:640px}
+  .tilewarn{margin:8px 0 0;padding:8px 10px;border:1px solid var(--gold);border-radius:3px;
+            background:rgba(212,162,63,.08);font-size:12.5px;line-height:1.5}
+  /* CLUSTER BUBBLES CARRY THE WORST STATUS INSIDE THEM, not an average: one
+     withdrawn elevator in a green bubble must not read as green. */
+  /* One dot per elevator, as a divIcon: markercluster drives its children
+     through the icon API, which a CircleMarker (a Path) does not have. */
+  .epin i{display:block;width:11px;height:11px;border-radius:50%;
+          border:1.5px solid rgba(0,0,0,.45);box-sizing:border-box}
+  .epin{cursor:pointer}
+  .epin.p-read i{background:var(--read)}
+  .epin.p-stale i{background:var(--stale)}
+  .epin.p-down i{background:var(--refuse)}
+  .epin.p-barchart i{background:var(--barchart)}
+  .epin.p-known i{background:var(--known);width:9px;height:9px}
+  /* Hollow ring = town centre, not the yard. */
+  .epin.town i{background:transparent;border-width:2.5px}
+  .epin.town.p-read i{border-color:var(--read)}
+  .epin.town.p-stale i{border-color:var(--stale)}
+  .epin.town.p-down i{border-color:var(--refuse)}
+  .epin.suspect i{box-shadow:0 0 0 2px var(--gold)}
+  .epin:hover i{transform:scale(1.35)}
+  .ecluster div{width:34px;height:34px;margin:2px;border-radius:50%;display:flex;
+                align-items:center;justify-content:center;border:2px solid rgba(0,0,0,.35);
+                font-weight:700;font-size:12px;color:#11150f}
+  .ecluster.big div{font-size:11px}
+  .ecluster.c-read div{background:var(--read)}
+  .ecluster.c-stale div{background:var(--stale)}
+  .ecluster.c-down div{background:var(--refuse)}
+  .ecluster.c-known div{background:var(--known)}
+  /* A ring says "something in here is broken" without overstating the fill. */
+  .ecluster.has-stale div{box-shadow:0 0 0 3px var(--stale)}
+  .ecluster.has-down div{box-shadow:0 0 0 3px var(--refuse)}
+  /* The card is pinned to the map's corner now; it used to chase the cursor,
+     which a draggable map cannot support and a phone never could. The
+     positioning lives with the rest of the .card rule below — TWO .card rules
+     is how the z-index below silently won and put the panel underneath the
+     map's own panes, visible in innerText and unclickable on screen. */
+  .cardx{position:absolute;top:4px;right:6px;background:none;border:none;color:var(--mute);
+         font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
+  .cardx:hover{color:var(--ink)}
+  @media (max-width:640px){
+    #map{height:56vh}
+    .card{right:8px;left:8px;max-width:none;top:8px}
+  }
   /* `color` is set alongside `fill` so the town ring below can use
      currentColor and always match its own status, instead of inheriting
      whatever the page's text colour happens to be. */
-  .pin.read{fill:var(--read);color:var(--read)}
   /* THREE STATES FOR A PRICE, NOT TWO.
      "stale" is an elevator whose last read failed but whose price is still
      inside the fourteen-hour window -- it IS in the merged feed, and drawing
      it red would say the opposite. It is the same amber the status board uses
      for the same fact. */
-  .pin.stale{fill:var(--stale);color:var(--stale)}
-  .pin.down{fill:var(--refuse);color:var(--refuse)}
-  .pin.known{fill:var(--known);color:var(--known)}
   /* THREE POPULATIONS, NOT TWO. Green is a board we read ourselves. Blue is one
      Barchart is serving today — which is to say, one we have a price for right
      up until the subscription lapses, and then do not. Grey is an elevator we
@@ -70,26 +124,33 @@
      came from Barchart. That is not a bug in the map, it is the shape of the
      problem: the grey pins arrive with the state licence registries, and when
      they do the blue ones are the ones with a clock on them. */
-  .pin.barchart{fill:var(--barchart);color:var(--barchart)}
   /* A TOWN-CENTRE PIN IS A RING, NOT A FADED DOT.
      It was drawn as fill-opacity .25 over the land, which measured 1.41
      contrast in light and 1.62 in dark -- and 212 of the 247 pins were that,
      so most of the map was very nearly invisible. The ring carries the
      visibility and the pale middle carries the "this is the town, not the
      elevator" signal, which is what the fade was for in the first place. */
-  .pin.town{fill-opacity:.28;stroke:currentColor;stroke-width:1.3}
   /* A coordinate we do not fully believe. Six of the first 950, each more than
      20 km from the centre of its own ZIP — one of them 395 km, and one sitting
      across the Mississippi from the state it claims. Kept, because dropping a
      real elevator to avoid a questionable dot is the worse trade, but never
      drawn as though it were certain. */
-  .pin.suspect{stroke:var(--gold);stroke-width:1.6}
-  .pin:hover,.pin.on{stroke:var(--ink);stroke-width:1.4}
   .legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 0;font-size:12.5px;color:var(--mute)}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-  .card{position:absolute;z-index:5;background:var(--card);border:1px solid var(--line);
+  /* z-index 1000, not 5. Leaflet's own panes run 200-700 and its controls sit
+     at 1000; at 5 this panel rendered UNDERNEATH the map. The text was in the
+     DOM the whole time, which is exactly why it looked like it worked — the
+     close button could not be clicked because the map was on top of it. */
+  .card{position:absolute;left:auto;right:14px;top:14px;max-width:320px;
+        z-index:1000;background:var(--card);border:1px solid var(--line);
     border-radius:3px;padding:9px 11px;max-width:270px;box-shadow:0 6px 22px rgba(0,0,0,.18);
-    pointer-events:none;font-size:13px;line-height:1.45}
+    /* pointer-events:auto, and it was none. Correct when this was a tooltip
+       that chased the cursor -- a click-through panel is the only way such a
+       thing does not block the pins under it. Wrong the moment it became a
+       panel you click to open and click a button to close: the card rendered,
+       its text was in the DOM, and every pointer went straight through it to
+       the map. Nothing about it looked broken. */
+    pointer-events:auto;font-size:13px;line-height:1.45}
   .card h3{margin:0 0 2px;font-size:13.5px}
   .card .op{color:var(--mute);font-size:12px}
   .card dl{margin:7px 0 0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px}
@@ -104,6 +165,11 @@
   a{color:inherit}
   .foot{margin-top:26px;padding-top:12px;border-top:1px solid var(--line);color:var(--mute);font-size:12px}
 </style>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css">
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.markercluster.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -113,7 +179,8 @@
   <div class="tiles" id="tiles"></div>
 
   <div class="mapbox" id="mapbox">
-    <svg id="map" viewBox="0 0 975 610" role="img" aria-label="Map of the United States with one dot per grain elevator"></svg>
+    <div id="map" role="application" aria-label="Zoomable aerial map of the United States with one marker per grain elevator"></div>
+    <div id="tilewarn" class="tilewarn" hidden></div>
     <div class="card" id="card" hidden></div>
   </div>
 
@@ -130,28 +197,41 @@
 
   <h2 id="gaptitle">Known, but not on the map</h2>
   <p class="sub" id="gapnote"></p>
-  <table id="gaps"><thead><tr><th>Operator</th><th>Location</th><th>State</th><th>Why</th></tr></thead><tbody></tbody></table>
+  <div class="gapscroll"><table id="gaps"><thead><tr><th>Operator</th><th>Location</th><th>State</th><th>Why</th></tr></thead><tbody></tbody></table></div>
 
   <p class="foot" id="foot"></p>
 </div>
 
 <script>
-/* The same Albers the outlines were baked with. d3's geoAlbersUsa uses plain
-   geoAlbers for the lower 48, and every elevator in this project is
-   continental, so these agree exactly rather than approximately. */
-var W = 975, H = 610, S = 1300, R = Math.PI / 180;
-var p1 = 29.5 * R, p2 = 45.5 * R, lam0 = -96 * R;
-var n = (Math.sin(p1) + Math.sin(p2)) / 2;
-var C = Math.cos(p1) * Math.cos(p1) + 2 * n * Math.sin(p1);
-function raw(lon, lat) {
-  var r = Math.sqrt(C - 2 * n * Math.sin(lat * R)) / n, th = n * (lon * R - lam0);
-  return [r * Math.sin(th), r * Math.cos(th)];
-}
-var c0 = raw(-96.6, 38.7);                    /* d3's center([-0.6, 38.7]) */
-function project(lon, lat) {
-  var p = raw(lon, lat);
-  return [W / 2 + S * (p[0] - c0[0]), H / 2 + S * (p[1] - c0[1])];
-}
+/* AERIAL IMAGERY FROM THE USGS NATIONAL MAP, AND WHAT THAT COST.
+ *
+ * This map used to make NO network calls at all: the outlines were baked into
+ * data/us-states.json as Albers-projected SVG paths and the page carried the
+ * same projection in twenty lines. Nothing could break it when somebody changed
+ * their terms. That was a real property and it is now partly gone, because Sig
+ * asked to see the ground -- and on an ag map that is the right trade: at zoom
+ * 15 you can see the bins, the driveway and which side of the tracks the yard
+ * is on, and none of that is inferable from a dot on a flat fill.
+ *
+ * What was given up, and what was kept:
+ *
+ *   GIVEN UP  the tiles. basemap.nationalmap.gov has to answer. Chosen over
+ *             Esri because it is US government imagery, public domain, needs no
+ *             key and has no terms to change; the tradeoff is that it stops at
+ *             the border, so the Ontario sources sit on empty ground.
+ *   KEPT      the code. Leaflet and the cluster plugin are COMMITTED under
+ *             vendor/leaflet, not linked from a CDN -- see the README there. A
+ *             CDN outage would otherwise take down a page whose data is local.
+ *   KEPT      failing honestly. If the tiles do not answer, the markers still
+ *             draw at the right coordinates and the page SAYS the imagery is
+ *             missing rather than showing a plausible blank continent.
+ *
+ * ARCGIS TILES ARE {z}/{y}/{x}, NOT {z}/{x}/{y}. Leaflet's default is the
+ * latter. Get it wrong and the map still renders -- with the wrong piece of
+ * ground under every pin, which is the worst kind of wrong on a page whose
+ * whole claim is that the dot is where the elevator is.
+ */
+var USGS_IMAGERY = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
 
 var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; };
 var ago = function (iso) {
@@ -165,10 +245,12 @@ var ago = function (iso) {
   return Math.round(h / 24) + " days ago";
 };
 
-Promise.all([
-  fetch("data/us-states.json").then(function (r) { return r.json(); }),
-  fetch("data/directory.json").then(function (r) { return r.json(); })
-]).then(function (a) { draw(a[0], a[1]); }).catch(function (e) {
+/* ONE FETCH, NOT TWO. data/us-states.json is 157 KB of Albers-projected SVG
+   paths for outlines this page no longer draws — the imagery is the basemap
+   now. It stays in the repo because scripts still build it; the page stops
+   asking for it. */
+fetch("data/directory.json").then(function (r) { return r.json(); })
+  .then(function (dir) { draw(dir); }).catch(function (e) {
   document.getElementById("stamp").textContent = "could not load the map data: " + e.message;
 });
 
@@ -182,50 +264,138 @@ var READ_WORDS = { refused: "refused — the page was not the board we wanted",
                    broken: "failed — the site did not answer",
                    skipped: "not attempted — its platform was tripped this pass" };
 
-function draw(us, dir) {
-  var svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
-  var land = document.createElementNS(NS, "g");
-  us.states.forEach(function (s) {
-    var p = document.createElementNS(NS, "path");
-    p.setAttribute("d", s.d); p.setAttribute("class", "state");
-    land.appendChild(p);
-  });
-  svg.appendChild(land);
 
-  var pins = document.createElementNS(NS, "g");
-  var placed = dir.elevators.filter(function (e) { return e.placed; });
-  var indexOfEl = new Map(dir.elevators.map(function (e, i) { return [e, i]; }));
+function draw(dir) {
+  var map = L.map("map", {
+    center: [39.5, -96.5], zoom: 4, minZoom: 3, maxZoom: 17,
+    worldCopyJump: false,
+    /* Scroll-wheel zoom off by default: this map sits in a scrolling page and
+       a wheel that zooms the map instead of the article is the single most
+       complained-about behaviour in embedded maps. Ctrl/⌘+wheel still zooms,
+       and the buttons and pinch always work. */
+    scrollWheelZoom: false
+  });
+
+  L.tileLayer(USGS_IMAGERY, {
+    /* USGS serves imagery to 16 in most of the country; beyond that Leaflet
+       upscales the z16 tile rather than requesting a 404. Better a soft image
+       than a grey hole when somebody zooms into a yard. */
+    maxNativeZoom: 16, maxZoom: 17,
+    attribution: 'Imagery: <a href="https://basemap.nationalmap.gov/" target="_blank" rel="noopener">USGS The National Map</a>'
+  }).on("tileerror", function () {
+    /* Once, not once per tile. */
+    var w = document.getElementById("tilewarn");
+    if (w && w.hidden) {
+      w.hidden = false;
+      w.innerHTML = "<strong>Aerial imagery is not loading.</strong> The markers below are still " +
+        "at their real coordinates and everything else on this page is local \u2014 only the " +
+        "picture of the ground is missing.";
+    }
+  }).addTo(map);
+
+  L.control.scale({ imperial: true, metric: false }).addTo(map);
+
+  /* A HANDLE ON THE MAP, BECAUSE preferCanvas MEANS THE PINS ARE NOT DOM.
+     Canvas rendering is what keeps 3,873 markers smooth, and the cost is that
+     a marker is pixels, not an element: nothing can query it, click it or
+     assert on it from outside. The map object is the only way back in, so it
+     is hung on its own container rather than on window. */
+  map.getContainer()._leafletMap = map;
+
+  /* CLUSTERED, BECAUSE 3,873 MARKERS IS NOT A MAP.
+     Drawn individually they merge into one shape over Iowa and tell you
+     nothing; the number in the bubble is the fact you actually want when you
+     are looking at coverage. They split apart on zoom down to single yards. */
+  var cluster = L.markerClusterGroup({
+    chunkedLoading: true,
+    maxClusterRadius: 55,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    /* A cluster is coloured by the WORST thing inside it: one withdrawn
+       elevator inside a green bubble must not read as green. */
+    iconCreateFunction: function (c) {
+      /* COLOURED BY WHAT MOST OF IT IS, NOT BY THE BEST THING IN IT.
+       *
+       * The first rule was "worst status wins", which sounds cautious and was
+       * the opposite: `known` -- an elevator we have never read -- ranked ZERO,
+       * so a bubble of 1,499 unread elevators holding ONE we read came out
+       * GREEN. That is what the first render showed over the eastern corn belt,
+       * where the real coverage is a rounding error. On a map whose entire job
+       * is showing the gap, it was the worst thing the page could say.
+       *
+       * Fill is the majority: grey means most of these have nothing behind
+       * them. The problems are not lost -- a cluster holding anything withdrawn
+       * or held gets a ring in that colour, so a red edge on a grey bubble
+       * reads correctly as "mostly unread, and something in here is broken".
+       */
+      var n = c.getChildCount(), tally = {}, ring = null;
+      c.getAllChildMarkers().forEach(function (m) {
+        var st = m.options.elevatorStatus || "known";
+        tally[st] = (tally[st] || 0) + 1;
+        if (st === "down") ring = "down";
+        else if (st === "stale" && ring !== "down") ring = "stale";
+      });
+      var top = "known", best = -1;
+      for (var k in tally) { if (tally[k] > best) { best = tally[k]; top = k; } }
+      return L.divIcon({
+        html: "<div><span>" + n + "</span></div>",
+        className: "ecluster c-" + top + (ring ? " has-" + ring : "") + (n > 999 ? " big" : ""),
+        iconSize: L.point(38, 38)
+      });
+    }
+  });
+
+  /* divIcon MARKERS, NOT CircleMarker — AND THIS IS NOT A STYLE CHOICE.
+   *
+   * The first version drew each elevator as an L.CircleMarker with
+   * preferCanvas, which is the fast way to put thousands of dots on a map.
+   * The clusters rendered, the counts were right, and zooming split them
+   * correctly — and clicking an elevator did nothing at all. Measured at zoom
+   * 15 over a single yard: ZERO CircleMarkers on the map. The cluster group
+   * was holding every one of them and never releasing any.
+   *
+   * L.CircleMarker is a Path, not a Marker. Leaflet.markercluster drives its
+   * children through the icon API — _icon, setOpacity — which a Path does not
+   * have, so the children could never be handed back to the map. The clusters
+   * looked perfect because the plugin builds those itself.
+   *
+   * A divIcon is a real Marker with a real DOM node: markercluster supports
+   * it, it takes the colour classes the legend already promises, and the
+   * clustering is what keeps it fast — only the visible, unclustered handful
+   * is ever in the DOM. preferCanvas is gone with it; it applied to Paths.
+   */
+  function pinIcon(e) {
+    var cls = "epin p-" + (e.status === "known" && e.knownFrom === "barchart" ? "barchart" : e.status);
+    /* Hollow = TOWN CENTRE, NOT THE ELEVATOR. The same promise the old map
+       made. Only on the ones we read, where the difference between a street
+       address and a centroid is a claim about accuracy; a known-but-unread
+       pin is only ever a centroid, and hollowing an already-grey dot would
+       say nothing while making it almost invisible. */
+    if (e.precision === "town" && e.status !== "known") cls += " town";
+    if (e.suspect) cls += " suspect";
+    return L.divIcon({ className: cls, iconSize: [11, 11], html: "<i></i>" });
+  }
+
+  var placed = dir.elevators.filter(function (e) { return e.placed && e.lat != null; });
   placed.forEach(function (e) {
-    var idx = indexOfEl.get(e);
-    var xy = project(e.lon, e.lat);
-    var c = document.createElementNS(NS, "circle");
-    c.setAttribute("cx", xy[0].toFixed(1));
-    c.setAttribute("cy", xy[1].toFixed(1));
-    c.setAttribute("r", 3.4);
-    c.setAttribute("class", "pin " + e.status);
-    /* A town-centre pin is drawn hollow. It is not the elevator's location and
-       the map must not pretend otherwise at a glance. */
-    /* Hollow means "town centre, not the elevator". It is applied to the ones
-       we READ, where the distinction between a real address and a town centre
-       is a claim about accuracy. A known-but-unread pin is never anything but
-       a town centre, so hollowing it too would say nothing and would make a
-       pin that is already grey almost invisible — and an invisible grey pin
-       defeats the one thing Sig asked these for. */
-    if (e.precision === "town" && e.status !== "known") c.classList.add("town");
-    if (e.status === "known") c.setAttribute("r", 3);
-    if (e.status === "known" && e.knownFrom === "barchart") c.classList.add("barchart");
-    if (e.suspect) c.classList.add("suspect");
-    /* indexOf() inside this loop was a linear scan of 3,916 elevators for each
-       of 3,873 pins -- fifteen million comparisons to draw a map. The index is
-       already in hand. */
-    c.dataset.i = String(idx);
-    pins.appendChild(c);
+    var m = L.marker([e.lat, e.lon], {
+      icon: pinIcon(e), elevatorStatus: e.status,
+      keyboard: false, title: (e.operator || "") + " — " + (e.location || "")
+    });
+    m.on("click", function (ev) {
+      /* Stop the click here: it also reaches the map, whose handler dismisses
+         the card, so the card would open and close in the same tick. */
+      L.DomEvent.stopPropagation(ev);
+      show(e);
+    });
+    cluster.addLayer(m);
   });
-  svg.appendChild(pins);
+  map.addLayer(cluster);
 
-  var card = document.getElementById("card"), box = document.getElementById("mapbox");
-  function show(e, evt) {
+  var card = document.getElementById("card");
+  function show(e) {
     card.innerHTML =
+      '<button class="cardx" aria-label="Close">\u00d7</button>' +
       '<h3>' + esc(e.location || e.id) + (e.state ? ", " + esc(e.state) : "") + '</h3>' +
       '<div class="op">' + esc(e.operator || "") + '</div>' +
       '<dl>' +
@@ -240,30 +410,15 @@ function draw(us, dir) {
       (e.precision === "town" ? '<div class="warn">Pin is the centre of ' + esc(e.location) +
         ', not the elevator. No street address on file yet.</div>' : '') +
       (e.address ? '<div class="op" style="margin-top:5px">' + esc(e.address) + '</div>' : '') +
-      (e.suspect ? '<div class="warn">Coordinate is ' + esc(e.suspect) + ' — treat the pin as approximate.</div>' : '') +
+      (e.suspect ? '<div class="warn">Coordinate is ' + esc(e.suspect) + ' \u2014 treat the pin as approximate.</div>' : '') +
       (e.why && !e.suspect ? '<div class="warn">' + esc(e.why) + '</div>' : '');
     card.hidden = false;
-    var r = box.getBoundingClientRect();
-    var x = evt.clientX - r.left + 14, y = evt.clientY - r.top + 14;
-    /* Keep it inside the box: a card that runs off the right edge on a phone
-       is the commonest way a hover panel breaks. */
-    if (x + card.offsetWidth > r.width - 6) x = Math.max(6, evt.clientX - r.left - card.offsetWidth - 14);
-    if (y + card.offsetHeight > r.height - 6) y = Math.max(6, evt.clientY - r.top - card.offsetHeight - 14);
-    card.style.left = x + "px"; card.style.top = y + "px";
+    /* PINNED TO A CORNER, NOT FOLLOWING THE CURSOR. The old card chased the
+       mouse, which cannot work on a map you drag, and never worked on a
+       phone at all -- there is no hover on a touchscreen. */
+    card.querySelector(".cardx").onclick = function () { card.hidden = true; };
   }
-  pins.addEventListener("mouseover", function (ev) {
-    var t = ev.target; if (t.tagName !== "circle") return;
-    show(dir.elevators[+t.dataset.i], ev);
-  });
-  pins.addEventListener("mousemove", function (ev) {
-    var t = ev.target; if (t.tagName === "circle" && !card.hidden) show(dir.elevators[+t.dataset.i], ev);
-  });
-  pins.addEventListener("mouseout", function () { card.hidden = true; });
-  /* Touch: a tap is the only hover a phone has. */
-  pins.addEventListener("click", function (ev) {
-    var t = ev.target; if (t.tagName !== "circle") return;
-    show(dir.elevators[+t.dataset.i], ev);
-  });
+  map.on("click", function () { card.hidden = true; });
 
   var s = dir.counts.byStatus || {}, p = dir.counts.byPrecision || {};
   var bc = dir.elevators.filter(function (e) {
