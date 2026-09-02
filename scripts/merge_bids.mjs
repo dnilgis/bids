@@ -107,6 +107,28 @@ class Tally {
   }
 }
 
+/* NO RUN TIMESTAMP IN A SHARD, AND THIS COST ME THE WHOLE POINT OF SHARDING.
+ *
+ * The comment above says a shard is only rewritten when its bids change, so
+ * a quiet board makes no new git object — which is the entire reason 300-odd
+ * files at a ten-minute cadence are affordable. Then this line put the RUN's
+ * `generated` inside every shard, so all 310 changed on every pass whatever
+ * the market did. Measured: two runs a second apart, no data movement,
+ * different md5 on every file. "0 unchanged" in the run output said so
+ * plainly and I read past it twice.
+ *
+ * The shard carries the board's OWN clocks instead — pricedAt and checkedAt,
+ * which are already on every row and only move when the board does. When the
+ * feed is when the shard was built, ask data/merged-index.json: it has one
+ * `generated` for the run, which is the honest place for it. */
+export function shardOf(place, bids) {
+  const f = bids[0];
+  return { schema: SHARD_SCHEMA, place,
+           operator: f.operator, city: f.city, state: f.state,
+           lat: f.lat, lon: f.lon,
+           pricedAt: f.pricedAt, checkedAt: f.checkedAt, bids };
+}
+
 /* ── ONE ROW SHAPE ───────────────────────────────────────────────────────────
  * The board's own words are never overwritten: `commodity` and `delivery` are
  * verbatim. `crop` and `period` are ADDED beside them for anything that has to
@@ -503,9 +525,7 @@ function main() {
       periods: [...new Set(bids.map((b) => b.period))].sort(),
       best, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
-    const shard = { schema: SHARD_SCHEMA, place, generated: out.generated,
-                    operator: f.operator, city: f.city, state: f.state,
-                    lat: f.lat, lon: f.lon, bids };
+    const shard = shardOf(place, bids);
     const path = join(outDir, `${slug}.json`);
     const text = JSON.stringify(shard, null, 1);
     /* Compare before writing. An identical rewrite still updates the mtime and

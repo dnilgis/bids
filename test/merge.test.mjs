@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { placeKey, row, keepable, dedupe, Tally, shardName } from "../scripts/merge_bids.mjs";
+import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf } from "../scripts/merge_bids.mjs";
 
 const ASOF = "2026-09-01T12:00:00Z";
 const base = {
@@ -240,4 +240,43 @@ test("the index's best-per-crop carries the period it is for", () => {
   assert.equal(best.corn.cash, 4.90);
   assert.equal(best.corn.period, "2027-07",
     "the best bid must say which period it is for, or it reads as a spot price");
+});
+
+/* ── A SHARD MUST NOT CARRY THE CLOCK OF THE RUN THAT WROTE IT ──────────────
+ *
+ * The whole reason 300-odd shard files are affordable at a ten-minute cadence
+ * is that a quiet board makes no new git object. The first version put the
+ * RUN's `generated` inside every shard, so all 310 changed on every pass
+ * whatever the market did — and the run's own output said "0 unchanged" every
+ * time, which I read past twice before md5summing two runs a second apart.
+ *
+ * A shard carries the board's own clocks. When the FEED was built is one fact
+ * about the run, and it belongs in the index, once.
+ */
+test("two runs over unchanged bids produce byte-identical shards", () => {
+  const bids = [mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 })];
+  const a = JSON.stringify(shardOf("Acme Coop||Thorp|WI", bids));
+  const b = JSON.stringify(shardOf("Acme Coop||Thorp|WI", bids));
+  assert.equal(a, b);
+  /* and the same content built a second later must still match — the real
+     failure was a timestamp, so a second call is not enough on its own */
+  assert.equal(a, JSON.stringify(shardOf("Acme Coop||Thorp|WI",
+    [mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 })])));
+});
+
+test("a shard carries the board's clocks and never the run's", () => {
+  const sh = shardOf("Acme Coop||Thorp|WI",
+    [mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 })]);
+  assert.ok(!("generated" in sh),
+    "a shard carrying the run's `generated` changes on every pass and every quiet "
+    + "board costs a git object — which is the whole cost sharding was meant to avoid");
+  assert.ok("checkedAt" in sh && "pricedAt" in sh,
+    "a shard must still say when its board was read and when it last moved");
+});
+
+test("a shard changes when its bids change, and only then", () => {
+  const base = () => mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 });
+  const same = JSON.stringify(shardOf("p", [base()]));
+  const moved = JSON.stringify(shardOf("p", [mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.25, basis: -0.25 })]));
+  assert.notEqual(same, moved, "a price moved and the shard did not");
 });
