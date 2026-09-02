@@ -13,7 +13,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -167,3 +167,53 @@ test("merge_bids publishes a held board and withdraws a stale one", () => {
     assert.equal(bySource.get("held-broken").basis, -0.35);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test("a withdrawal is announced where somebody will see it, grouped by operator", () => {
+  /* 2026-09-02: twenty-six CHS elevators left the feed when their co-op merged
+     and the old domain began redirecting to a homepage. Every read spent its
+     45-second timeout, every source aged past fourteen hours, and they dropped
+     out — while the run stayed GREEN, because a withdrawal was a counted line
+     in a tally nobody reads. Seventeen hours passed before anyone noticed, and
+     the person who noticed was Sig, looking at the board.
+     Withdrawn means a farmer opens the page and sees nothing for that
+     elevator. It is the loudest thing this script does. */
+  const dir = mkdtempSync(join(tmpdir(), "withdrawn-"));
+  try {
+    mkdirSync(join(dir, "data"), { recursive: true });
+    mkdirSync(join(dir, "geocodes"), { recursive: true });
+    const board = (h) => ({ schema: "board/1", count: 1, pricedAt: at(h), checkedAt: at(h),
+      bids: [{ commodity: "Corn", delivery: "SEP 2026", cash: 4.25, basisDollars: -0.35,
+               futuresMonth: "ZCZ26", futuresPriceCents: 460 }] });
+    const cases = [["gone-a", "CHS High Plains", 20], ["gone-b", "CHS High Plains", 20],
+                   ["gone-c", "United Equity", 30], ["fine", "Working Co", 0.2]];
+    for (const [id, , h] of cases) writeFileSync(join(dir, "data", `${id}.json`), JSON.stringify(board(h)));
+    writeFileSync(join(dir, "data", "index.json"), JSON.stringify({
+      generated: at(0), counts: {},
+      sources: cases.map(([id, operator, h]) => ({
+        id, operator, location: id, usState: "CO", status: h > 14 ? "broken" : "ok",
+        health: h > 14 ? "broken" : "live", inMerge: true, platform: "bushel",
+        lat: 40.1, lon: -103.2, pricedAt: at(h), checkedAt: at(h), rows: 1 })),
+    }));
+    writeFileSync(join(dir, "geocodes", "places.json"), JSON.stringify({ places: {}, known: {} }));
+
+    const out = execFileSync(process.execPath, [join(ROOT, "scripts", "merge_bids.mjs"),
+      "--no-barchart", "--root", dir, "--now", new Date(NOW).toISOString()],
+      { stdio: ["pipe", "pipe", "pipe"], encoding: "utf8" });
+    const all = out + execSync_stderr(dir);
+
+    assert.match(all, /::warning title=3 source\(s\) withdrawn from the feed/,
+      "the count must be in the annotation title, where the run summary shows it");
+    assert.match(all, /CHS High Plains \(2\)/, "grouped by operator, with a count");
+    assert.match(all, /United Equity \(1\)/);
+    assert.doesNotMatch(all, /Working Co/, "a source that is publishing is not a withdrawal");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+/* The annotation goes to stderr, which execFileSync does not return. Re-run and
+   capture it, rather than asserting on a stream this test cannot see — a guard
+   that reads the wrong stream passes for the wrong reason. */
+function execSync_stderr(dir) {
+  const r = spawnSync(process.execPath, [join(ROOT, "scripts", "merge_bids.mjs"),
+    "--no-barchart", "--root", dir, "--now", new Date(NOW).toISOString()], { encoding: "utf8" });
+  return r.stderr ?? "";
+}

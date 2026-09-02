@@ -5,7 +5,7 @@
   "state": "CO",
   "platform": "bushel",
   "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
-  "browserPage": "https://www.chshighplains.com/grain/cash-bids",
+  "browserPage": "https://www.chsunitedplains.com/grain/cash-bids/",
   "locationId": "6175d7cc-cd25-4889-b5e3-d25ad9bdeab3",
   "labelInFeed": "Byers",
   "bands": {
@@ -22,7 +22,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a bushel-probe run plus the operator's OWN grain-locations page, which is where the state and the address come from -- BUSHEL'S PAYLOAD CARRIES NEITHER: its location object is {id, name, groups} and nothing more. cashRounding is what the probe measured on this board's own rows, not a guess. Verified here: https://www.chshighplains.com/grain/grain-locations/ - 'Byers - 66310 E Hwy. 40, Byers, CO 80103 | (303) 822-5203'. https://www.chshighplains.com/locations heading 'Byers, Colorado'. Note the 303 area code (Denver metro) rather than 970 - Byers is the co-op's far-western outlier, well away from the Colorado/Nebraska line. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard. Geocode the street address before relying on a map pin. COORDINATE filled 39.6985,-104.2019 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Byers\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "Built 2026-08-26 from a bushel-probe run plus the operator's OWN grain-locations page, which is where the state and the address come from -- BUSHEL'S PAYLOAD CARRIES NEITHER: its location object is {id, name, groups} and nothing more. cashRounding is what the probe measured on this board's own rows, not a guess. Verified here: https://www.chshighplains.com/grain/grain-locations/ - 'Byers - 66310 E Hwy. 40, Byers, CO 80103 | (303) 822-5203'. https://www.chshighplains.com/locations heading 'Byers, Colorado'. Note the 303 area code (Denver metro) rather than 970 - Byers is the co-op's far-western outlier, well away from the Colorado/Nebraska line. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is a different place from a yard. Geocode the street address before relying on a map pin. COORDINATE filled 39.6985,-104.2019 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Byers\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance. MERGER, 2026-09-02: CHS High Plains and CHS United Plains Ag now trade as CHS United Plains on ONE site. The old domain redirects to https://www.chsunitedplains.com/ -- the ROOT, with the path dropped -- so the browser landed on a homepage carrying no bids widget and GetBidsList never fired. Measured in run 91003295176 and after: the page made 29 requests (the site is UP, which is why the breaker correctly did not trip) and every read spent its full 45-second timeout; all 26 sources aged past the 14h withdrawal at 17.3h and left the merged feed. bushel-probe run 91145450312 against https://www.chsunitedplains.com/grain/cash-bids/ returned 132 rows across 27 locations and THIS SOURCE'S locationId still resolves there UNCHANGED -- the merger moved the url and kept the ids, so only browserPage and website change here. The operator name is left alone deliberately: renaming it would change the place key, and with it the shard filename every consumer already points at.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "66310 E Hwy. 40, Byers, CO 80103",
   "zip": null,
@@ -30,7 +30,7 @@
   "lon": -104.2019,
   "phone": null,
   "email": null,
-  "website": "https://www.chshighplains.com/grain/cash-bids",
+  "website": "https://www.chsunitedplains.com/grain/cash-bids/",
   "inMerge": true,
   "latPrecision": "town"
 }

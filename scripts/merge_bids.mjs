@@ -224,7 +224,7 @@ function coordOf(s, places) {
   return { lat: null, lon: null, precision: null, via: null };
 }
 
-function readScraped(index, places, tally, nowMs) {
+function readScraped(index, places, tally, nowMs, withdrawn = []) {
   const byId = new Map(index.sources.map((s) => [s.id, s]));
   const out = [];
   for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
@@ -284,7 +284,20 @@ function readScraped(index, places, tally, nowMs) {
        that choice for them and makes it wrongly, because an empty cell reads
        as "this elevator has no bid" and the elevator does. */
     const fv = feedVerdict(s.status, j.checkedAt ?? j.pricedAt, nowMs);
-    if (!fv.publish) { tally.drop(`${s.status}: ${fv.why ?? "withdrawn"}`, id); continue; }
+    if (!fv.publish) {
+      tally.drop(`${s.status}: ${fv.why ?? "withdrawn"}`, id);
+      /* A WITHDRAWAL IS THE LOUDEST THING THIS SCRIPT DOES, AND IT USED TO BE
+         SILENT. On 2026-09-02 twenty-six CHS elevators left the feed because
+         their co-op merged and the old domain started redirecting to a
+         homepage. Every read spent its 45-second timeout, every source aged
+         past fourteen hours, and they dropped out — and the run stayed GREEN,
+         because a withdrawal was a counted line in a tally nobody reads. The
+         first anybody knew was Sig looking at the board seventeen hours later.
+         Withdrawn means a farmer opens the page and sees nothing for that
+         elevator. It gets an annotation. */
+      withdrawn.push({ id, operator: s.operator ?? "—", why: fv.why ?? "withdrawn" });
+      continue;
+    }
     const g = coordOf(s, places);
     for (const b of j.bids || []) {
       out.push(row({
@@ -413,12 +426,30 @@ function main() {
 
   const scrapeTally = new Tally(), bcTally = new Tally(), keepTally = new Tally();
   console.log("reading the scraped boards…");
-  let rows = readScraped(index, places, scrapeTally, nowMs);
+  const withdrawn = [];
+  let rows = readScraped(index, places, scrapeTally, nowMs, withdrawn);
   const liveBoards = index.sources.filter((s) => s.status === "ok").length;
   const held = new Set(rows.filter((r) => r.stale).map((r) => r.source)).size;
   console.log(`  ${rows.length} bids from ${liveBoards} live boards` +
     (held ? ` + ${held} held boards (last good price, inside the ${WITHDRAW_H}h window)` : ""));
   scrapeTally.report("scrape");
+
+  /* SAID WHERE IT WILL BE SEEN, GROUPED BY OPERATOR.
+     One annotation, not thirty-nine: a run summary with thirty-nine warnings on
+     it is a run summary nobody reads either. Operators first, biggest first,
+     because "CHS High Plains, 19 locations" is a thing to go and fix and
+     "chshighplains-akron" is not. */
+  if (withdrawn.length) {
+    const byOp = new Map();
+    for (const w of withdrawn) byOp.set(w.operator, (byOp.get(w.operator) ?? 0) + 1);
+    const named = [...byOp.entries()].sort((a, b) => b[1] - a[1])
+      .map(([op, n]) => `${op} (${n})`);
+    console.error(`::warning title=${withdrawn.length} source(s) withdrawn from the feed`
+      + `::Their last good price is past the ${WITHDRAW_H}h window, so nothing is published for `
+      + `them at all: ${named.slice(0, 8).join(", ")}`
+      + `${named.length > 8 ? ` and ${named.length - 8} more operator(s)` : ""}. `
+      + `Example: ${withdrawn[0].id} — ${withdrawn[0].why}.`);
+  }
 
   let unknownPlaces = new Map(), barchartRead = 0;
   const bcPath = arg("--barchart", join(ROOT, "data", "barchart.json"));

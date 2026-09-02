@@ -5,7 +5,7 @@
   "state": "CO",
   "platform": "bushel",
   "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
-  "browserPage": "https://www.chshighplains.com/grain/cash-bids",
+  "browserPage": "https://www.chsunitedplains.com/grain/cash-bids/",
   "locationId": "a8e2ee6a-bc90-48ad-9941-30aee5ac5442",
   "labelInFeed": "Hyde",
   "bands": {
@@ -18,7 +18,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a bushel-probe run plus CHS High Plains' own grain-locations page -- BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS. Verified: Label is a facility/locality name, not a town. https://www.chshighplains.com/grain/grain-locations/ - 'Hyde - 39143 CR YY, Otis, CO 80743 | (970) 848-5431'. The mailing town is Otis, CO; https://www.chshighplains.com/locations heads it 'Hyde, Colorado' with the same Otis address. Separate site from the Otis elevator (202 S. Washington, di ROUNDING INHERITED FROM THE BOARD. This location posts two testable rows and the probe reported 'floor-cent OR round-cent explains ALL 2' -- two rows cannot separate the two rules, which is the probe being right rather than unhelpful. The mode written here is the one it measured across the rest of this same board, where seventeen other locations resolve to floor-cent outright. Rounding is a property of the board: one feed, one platform, one operator, every location rendered by the same code. It stays self-checking -- if these rows ever stop fitting, this source refuses and says so. COORDINATE filled 40.203,-102.9392 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Otis\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "Built 2026-08-26 from a bushel-probe run plus CHS High Plains' own grain-locations page -- BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS. Verified: Label is a facility/locality name, not a town. https://www.chshighplains.com/grain/grain-locations/ - 'Hyde - 39143 CR YY, Otis, CO 80743 | (970) 848-5431'. The mailing town is Otis, CO; https://www.chshighplains.com/locations heads it 'Hyde, Colorado' with the same Otis address. Separate site from the Otis elevator (202 S. Washington, di ROUNDING INHERITED FROM THE BOARD. This location posts two testable rows and the probe reported 'floor-cent OR round-cent explains ALL 2' -- two rows cannot separate the two rules, which is the probe being right rather than unhelpful. The mode written here is the one it measured across the rest of this same board, where seventeen other locations resolve to floor-cent outright. Rounding is a property of the board: one feed, one platform, one operator, every location rendered by the same code. It stays self-checking -- if these rows ever stop fitting, this source refuses and says so. COORDINATE filled 40.203,-102.9392 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Otis\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance. MERGER, 2026-09-02: CHS High Plains and CHS United Plains Ag now trade as CHS United Plains on ONE site. The old domain redirects to https://www.chsunitedplains.com/ -- the ROOT, with the path dropped -- so the browser landed on a homepage carrying no bids widget and GetBidsList never fired. Measured in run 91003295176 and after: the page made 29 requests (the site is UP, which is why the breaker correctly did not trip) and every read spent its full 45-second timeout; all 26 sources aged past the 14h withdrawal at 17.3h and left the merged feed. bushel-probe run 91145450312 against https://www.chsunitedplains.com/grain/cash-bids/ returned 132 rows across 27 locations and THIS SOURCE'S locationId still resolves there UNCHANGED -- the merger moved the url and kept the ids, so only browserPage and website change here. The operator name is left alone deliberately: renaming it would change the place key, and with it the shard filename every consumer already points at.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "39143 CR YY, Otis, CO 80743",
   "zip": null,
@@ -26,7 +26,7 @@
   "lon": -102.9392,
   "phone": null,
   "email": null,
-  "website": "https://www.chshighplains.com/grain/cash-bids",
+  "website": "https://www.chsunitedplains.com/grain/cash-bids/",
   "inMerge": true,
   "latPrecision": "town"
 }

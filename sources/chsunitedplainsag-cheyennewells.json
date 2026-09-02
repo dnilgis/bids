@@ -5,7 +5,7 @@
   "state": "CO",
   "platform": "bushel",
   "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
-  "browserPage": "https://www.chsunitedplainsag.com/grain/cash-bids",
+  "browserPage": "https://www.chsunitedplains.com/grain/cash-bids/",
   "locationId": "35c27107-e683-40e1-9ec3-88d34f424373",
   "labelInFeed": "Cheyenne Wells",
   "bands": {
@@ -26,7 +26,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Built 2026-08-26 from a bushel-probe run plus the operator's OWN grain-locations page -- BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS, its location object is {id, name, groups} and nothing more. cashRounding is what the probe measured on this board's own rows. Verified: http://www.chsunitedplainsag.com/locations/ — \"Phone: 719-767-5625 Address: 935 S 4th St. West Cheyenne Wells, CO 80810\". Also http://www.chsunitedplainsag.com/grain/grain-locations/ heads the entry \"Cheyenne Wells, Colorado\". Colorado confirmed from the operator's own page, not inferred. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is not a yard. Geocode the street address before relying on a map pin. COORDINATE filled 38.82376,-102.35857 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"935 N 4TH ST W, CHEYENNE WELLS, CO, 80810\" via census. It is a STREET-level fix on the elevator itself. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "Built 2026-08-26 from a bushel-probe run plus the operator's OWN grain-locations page -- BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS, its location object is {id, name, groups} and nothing more. cashRounding is what the probe measured on this board's own rows. Verified: http://www.chsunitedplainsag.com/locations/ — \"Phone: 719-767-5625 Address: 935 S 4th St. West Cheyenne Wells, CO 80810\". Also http://www.chsunitedplainsag.com/grain/grain-locations/ heads the entry \"Cheyenne Wells, Colorado\". Colorado confirmed from the operator's own page, not inferred. COORDINATES ARE NULL DELIBERATELY: the feed carries none and a town centroid is not a yard. Geocode the street address before relying on a map pin. COORDINATE filled 38.82376,-102.35857 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"935 N 4TH ST W, CHEYENNE WELLS, CO, 80810\" via census. It is a STREET-level fix on the elevator itself. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance. MERGER, 2026-09-02: CHS High Plains and CHS United Plains Ag now trade as CHS United Plains on ONE site. The old domain redirects to https://www.chsunitedplains.com/ -- the ROOT, with the path dropped -- so the browser landed on a homepage carrying no bids widget and GetBidsList never fired. Measured in run 91003295176 and after: the page made 29 requests (the site is UP, which is why the breaker correctly did not trip) and every read spent its full 45-second timeout; all 26 sources aged past the 14h withdrawal at 17.3h and left the merged feed. bushel-probe run 91145450312 against https://www.chsunitedplains.com/grain/cash-bids/ returned 132 rows across 27 locations and THIS SOURCE'S locationId still resolves there UNCHANGED -- the merger moved the url and kept the ids, so only browserPage and website change here. The operator name is left alone deliberately: renaming it would change the place key, and with it the shard filename every consumer already points at.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "935 S 4th St. West, Cheyenne Wells, CO 80810",
   "zip": null,
@@ -34,7 +34,7 @@
   "lon": -102.35857,
   "phone": null,
   "email": null,
-  "website": "https://www.chsunitedplainsag.com/grain/cash-bids",
+  "website": "https://www.chsunitedplains.com/grain/cash-bids/",
   "inMerge": true,
   "latPrecision": "street"
 }
