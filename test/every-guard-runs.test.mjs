@@ -19,6 +19,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -195,4 +196,56 @@ test("every python guard's third-party imports are installed by the workflow tha
     `a python guard imports a package the workflow running it never installs:\n`
     + gaps.map((m) => `    ${m}`).join("\n")
     + `\n  It passes here and fails on the runner, which is the worst place to find out.`);
+});
+
+/* ── A SHELL SCRIPT THAT IS NOT EXECUTABLE MUST BE CALLED WITH bash ─────────
+ *
+ * scripts/commit-and-push.sh is mode 100644 in this repository. Calling it by
+ * bare path gives "Permission denied" and exit 126 — and because it is always
+ * the LAST step, everything the job did is thrown away at the moment it tries
+ * to keep it.
+ *
+ * That is how tidy.yml failed on its first write run (90998381312): 29 files
+ * moved, feed rebuilt, all of it discarded on the line that was supposed to
+ * commit it. barchart.yml carried the identical defect and would have done the
+ * same after spending 116 Barchart calls.
+ *
+ * Seven workflows already wrote `bash scripts/...` and two did not. The two
+ * that did not were the two I wrote, because I copied the usage line out of the
+ * script's own header — which reads `scripts/commit-and-push.sh "the message"`
+ * and is wrong about the file it documents.
+ *
+ * So this asks git, not me: any .sh invoked by a workflow must either be
+ * executable or be invoked through an interpreter.
+ */
+test("a workflow never invokes a non-executable script by bare path", () => {
+  const modes = new Map();
+  for (const line of execFileSync("git", ["ls-files", "-s", "scripts", "tools"],
+                                  { cwd: ROOT, encoding: "utf8" }).trim().split("\n")) {
+    const m = line.match(/^(\d{6})\s+\w+\s+\d+\s+(.+)$/);
+    if (m && m[2].endsWith(".sh")) modes.set(m[2], m[1]);
+  }
+  if (!modes.size) return;
+
+  const bad = [];
+  for (const w of readdirSync(WORKFLOWS)) {
+    const text = stripComments(readFileSync(join(WORKFLOWS, w), "utf8"));
+    for (const [path, mode] of modes) {
+      if (mode === "100755") continue;                       // executable: a bare call is fine
+      /* A bare call is the path at the start of a command — not preceded by an
+         interpreter, and not part of a longer word. */
+      const bare = new RegExp(String.raw`(?:^|[;&|]|\bthen\b|\bdo\b)\s*(?:\./)?${path}\b`, "m");
+      const viaInterpreter = new RegExp(String.raw`\b(?:bash|sh|source|\.)\s+(?:\./)?${path}\b`);
+      const lines = text.split("\n").filter((l) => l.includes(path));
+      for (const l of lines) {
+        if (viaInterpreter.test(l)) continue;
+        if (bare.test(l)) bad.push(`${w}: ${l.trim().slice(0, 90)}`);
+      }
+    }
+  }
+  assert.deepEqual(bad, [],
+    `these call a NON-EXECUTABLE script by bare path — "Permission denied", exit 126,\n`
+    + `and since it is always the last step, everything the job did is lost:\n`
+    + bad.map((b) => `    ${b}`).join("\n")
+    + `\n  Write "bash <path>", as the other workflows do.`);
 });
