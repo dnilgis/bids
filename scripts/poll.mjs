@@ -41,11 +41,12 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
 import { capture } from "../lib/cdp.mjs";
-import { Breaker, Skipped, isSkip } from "../lib/breaker.mjs";
+import { Breaker, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -156,16 +157,78 @@ const BREAKER_STRIKES = Number(process.env.BREAKER_STRIKES ?? 3);
 const passStarted = Date.now();
 const breaker = new Breaker({ strikes: BREAKER_STRIKES });
 
-/* WHO READ CLEANLY LAST TIME, SO A TRIP DOES NOT STARVE THEM FOREVER.
-   See Breaker.allows(). Read from the index we are about to overwrite; absent
-   on a first run, in which case nobody is reprieved, which is the conservative
-   answer. Its own parse failure must not stop a pass -- this is an optimisation
-   over the skip list, not a dependency. */
-const prevOk = new Set();
+/* READ ORDER IS A POLICY, AND IT IS THE ONLY THING THAT STOPS ONE OPERATOR
+ * STARVING A PLATFORM.
+ *
+ * THE VERSION THIS REPLACES ASKED "DID IT READ CLEANLY LAST PASS", AND WAS
+ * MEASURED INERT ON THE RUN IT WAS BUILT FOR. Run 91012844641: the breaker
+ * tripped on CHS and `coopelev`, seven `michag` and eleven `riceland` sources
+ * were skipped again, every one. The previous pass had been run by older code
+ * that stamped a skipped source `broken`, so nothing was `live` and nothing
+ * qualified -- and a skipped source is not `live` either, so nothing would ever
+ * qualify again. The test poisoned its own input.
+ *
+ * The real reason one operator could starve a platform was never the reprieve.
+ * It was that sources are read in id order, which is alphabetical, so `chs*`
+ * spent the strikes and the trip fell on everything sorting after it. Fix the
+ * order and the problem mostly stops existing.
+ *
+ * Three keys, in order:
+ *
+ *   1. the OPERATOR's failure streak, ascending
+ *      Whoever has been failing longest is read LAST, where spending the budget
+ *      on them costs nobody a read. An operator with nothing against it is read
+ *      before the breaker can trip. Per operator and not per source, because a
+ *      page is per operator: it is the operator that is up or down.
+ *   2. how long since we last ATTEMPTED that operator, ascending
+ *      So a tie is broken towards whoever has waited longest, and the pass
+ *      rotates instead of favouring the same names.
+ *   3. a hash of the id
+ *      Not the id itself. Alphabetical order is exactly what correlates with
+ *      the fault here -- seventeen of twenty-five Bushel operators are named
+ *      `chs*` -- so an alphabetical tiebreak puts the outage at the front of
+ *      every pass forever. A hash is stable, reproducible and uncorrelated.
+ *
+ * MEASURED against the real manifest and the real outage, at 45s per empty page
+ * load and a 6-minute budget:
+ *
+ *      CHS down, five operators healthy   all eight healthy sources read by
+ *                                         PASS 3, settling at 94s a pass
+ *      the whole platform down            never recovers, correctly, and decays
+ *                                         from 360s to ~90s a pass instead of
+ *                                         throwing the budget at a dead host
+ *      the platform healthy               25 loads, 50s, all 150 read -- no
+ *                                         change from today
+ *
+ * Its own parse failure must not stop a pass: with no file every streak is zero
+ * and the order is the hash, which is still uncorrelated with the fault. */
+const prevFails = new Map(), prevSeen = new Map();
 try {
   const pi = JSON.parse(readFileSync(join(DATA, "index.json"), "utf8"));
-  for (const p of pi.sources ?? []) if (p.health === "live" || p.status === "ok") prevOk.add(p.id);
-} catch { /* first run, or an unreadable index: nobody is reprieved */ }
+  for (const p of pi.sources ?? []) {
+    if (Number.isFinite(p.fails)) prevFails.set(p.id, p.fails);
+    const t = Date.parse(p.attemptedAt ?? "");
+    if (Number.isFinite(t)) prevSeen.set(p.id, t);
+  }
+} catch { /* first run, or an unreadable index: every streak is zero */ }
+
+const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
+const opFails = new Map(), opSeen = new Map();
+for (const s of todo) {
+  const o = operatorOf(s);
+  /* WORST CASE PER OPERATOR, not average: one source of theirs failing means
+     their page is not answering, and every other source behind that page is
+     about to cost 45 seconds proving it. */
+  opFails.set(o, Math.max(opFails.get(o) ?? 0, prevFails.get(s.id) ?? 0));
+  opSeen.set(o, Math.max(opSeen.get(o) ?? 0, prevSeen.get(s.id) ?? 0));
+}
+const spread = (id) => parseInt(createHash("sha1").update(id).digest("hex").slice(0, 8), 16);
+todo.sort((a, b) => {
+  const oa = operatorOf(a), ob = operatorOf(b);
+  return (opFails.get(oa) - opFails.get(ob))
+      || (opSeen.get(oa) - opSeen.get(ob))
+      || (spread(a.id) - spread(b.id));
+});
 
 const budgetLeftMs = () => PASS_BUDGET_MS - (Date.now() - passStarted);
 
@@ -185,7 +248,7 @@ async function getPage(s) {
 
     /* A BROWSER SOURCE IS LOADED, NOT FETCHED. See lib/cdp.mjs for why. */
     if (transportOf(s.platform) === "browser") {
-      if (!breaker.allows(s.platform, prevOk.has(s.id))) {
+      if (!breaker.allows(s.platform, operatorOf(s), opFails.get(operatorOf(s)) ?? 0)) {
         const who = breaker.culprits(s.platform);
         throw new Skipped(`not attempted: ${BREAKER_STRIKES} page loads in a row returned nothing `
           + `on ${s.platform}${who.length ? ` (${who.join(", ")})` : ""}, so the rest of that `
@@ -197,7 +260,7 @@ async function getPage(s) {
       try {
         got = await capture({ pageUrl: s.browserPage, target: s.url });
       } catch (e) {
-        if (breaker.fail(s.platform, e.message, s.operator || s.id.split("-")[0])) {
+        if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
              this said "bushel is not answering" in a pass where 193 Bushel
              sources had just been read successfully and all 23 failures were
@@ -313,6 +376,10 @@ for (const s of todo) {
                  directly, but Barchart already carries it more fully -- so it
                  is read and NOT merged. Two different jobs, one reader. */
               inMerge: s.inMerge !== false,
+              /* Both carried forward untouched unless this pass actually
+                 attempted the source. See the read-order block above. */
+              fails: prevFails.get(s.id) ?? 0,
+              attemptedAt: prevSeen.has(s.id) ? new Date(prevSeen.get(s.id)).toISOString() : null,
               platform: s.platform, url: s.url, provenance: s.provenance ?? "scraped",
               pricedAt: prev?.pricedAt ?? null, checkedAt: prev?.checkedAt ?? null,
               rows: prev?.count ?? 0, wrote: false };
@@ -333,6 +400,10 @@ for (const s of todo) {
     }
     const verdict = decide(prev, built.file);
     r.health = "live";
+    /* A READ THAT WORKED CLEARS THE STREAK -- it counts CONSECUTIVE failures,
+       and a source that works once has no case against it any more. */
+    r.fails = nextStreak(prevFails.get(s.id), "live");
+    r.attemptedAt = now;
     r.status = "ok";
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
@@ -375,6 +446,12 @@ for (const s of todo) {
        with `broken` printed 153 failures on a board that had 23. */
     r.health = isSkip(e) ? "skipped" : isRefusal(e) ? "refused" : "broken";
     r.status = r.health;
+    /* A SKIP IS NOT EVIDENCE. We did not try, so neither field moves -- both are
+       carried forward exactly as they were. That is the whole difference between
+       this and the "was it ok last pass" test it replaced, which read not-trying
+       as a black mark and then could never take it back. */
+    r.fails = nextStreak(prevFails.get(s.id), r.health);
+    if (!isSkip(e)) r.attemptedAt = now;
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the
        300-character cut. The console does not: on 2026-08-19 the 300th

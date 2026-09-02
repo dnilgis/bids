@@ -114,30 +114,41 @@ test("the trip names who actually failed, not where they are hosted", () => {
   assert.deepEqual(b.culprits("dtn-cs"), [], "a platform nobody blamed blames nobody");
 });
 
-test("a source that read cleanly last pass is still attempted after a trip", () => {
+test("a trip stops the operators there is evidence against, and only those", () => {
+  /* Run 91012844641. The first version of this asked "did it read cleanly LAST
+     pass?", and the previous pass -- run by older code -- had labelled every
+     skipped source `broken`. Nothing qualified, `coopelev` and seven `michag`
+     boards were starved a second time, and because a skipped source is not
+     `live` either, nothing would ever have qualified again. It poisoned its own
+     input. Evidence, not last pass's verdict. */
   const b = tripped();
-  assert.equal(b.allows("bushel", false), false, "no evidence: skipped, as before");
-  assert.equal(b.allows("bushel", true), true, "read cleanly last pass: still worth one load");
+  assert.equal(b.allows("bushel", "chsoperator0", 1), false, "spent the strikes");
+  assert.equal(b.allows("bushel", "Some Other Co", 3), false, "has a failure streak of its own");
+  assert.equal(b.allows("bushel", "Cooperative Elevator Co.", 0), true,
+    "nothing against it: worth a load, and it is read before the trip anyway");
+  assert.equal(b.allows("bushel", null, 0), false, "no operator to judge by is no evidence of innocence");
+  assert.equal(b.allows("dtn-cs", "Anyone", 9), true, "an untripped platform is not this breaker's business");
 });
 
-test("a single operator's outage cannot starve the platform, pass after pass", () => {
-  /* The real shape: CHS is down, michag is fine. michag must be read every
-     pass, indefinitely — its successful load resets the reprieve. */
+test("a clean operator is never starved, pass after pass, while one tenant is down", () => {
+  /* The shape that mattered: CHS down, michag fine. michag must be attempted
+     every pass indefinitely — its streak stays 0 because it keeps working. */
   const b = tripped();
   for (let pass = 0; pass < 50; pass++) {
-    assert.equal(b.allows("bushel", true), true, `starved on pass ${pass}`);
-    b.ok("bushel");                       // michag loaded
+    assert.equal(b.allows("bushel", "Michigan Agricultural Commodities", 0), true, `starved on pass ${pass}`);
+    b.ok("bushel");
   }
 });
 
-test("a genuine platform outage stops after `strikes` more loads, not forever", () => {
-  /* The other shape: Bushel really is down. The reprieve must be bounded or a
-     platform-wide outage costs one page load per previously-ok source — which
-     on this manifest is 190 of them, or two and a half hours. */
+test("a platform-wide outage stops paying for itself as the streaks accumulate", () => {
+  /* There is no separate reprieve counter to tune. Once an operator has failed
+     once it carries a streak, and this refuses it from then on — so a dead
+     platform costs less every pass instead of the same forever. Measured over
+     the real manifest: 360s on pass one decaying to about 90s by pass eight. */
   const b = tripped();
-  let extra = 0;
-  while (b.allows("bushel", true) && extra < 500) { b.fail("bushel", EMPTY_LOAD, "anyone"); extra++; }
-  assert.equal(extra, 3, "bounded by the same strike limit, and no larger");
+  assert.equal(b.allows("bushel", "First Unknown", 0), true, "one load to find out");
+  b.fail("bushel", EMPTY_LOAD, "First Unknown");
+  assert.equal(b.allows("bushel", "First Unknown", 1), false, "and never again while it keeps failing");
 });
 
 test("a reprieved load that fails does not re-announce the trip", () => {
