@@ -45,6 +45,7 @@ import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
 import { capture } from "../lib/cdp.mjs";
+import { Breaker } from "../lib/breaker.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -111,6 +112,52 @@ for (const name of needed) {
 const todo = only ? enabled.filter((s) => s.id === only) : enabled;
 if (!todo.length) { console.error(`FAILED: no enabled source matches ${only ?? "(any)"}`); process.exit(1); }
 
+/* ══════════════════════════════════════════════════════════════════════════
+ *  A DEAD PLATFORM MUST NOT EAT THE PASS, AND THE PASS MUST ALWAYS FINISH
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * 2026-09-02, run 33580292481. Every Bushel-hosted page began returning
+ * "The page did make 0 request(s)" — the site loads nothing at all, so each one
+ * burns its full 45-second browser timeout. There are 150 Bushel sources behind
+ * 25 distinct pages:
+ *
+ *     25 pages x 45s = 18.8 MINUTES, inside a pass budgeted at `timeout 8m`
+ *
+ * The pass could not finish. The log shows it exactly: pass one started
+ * 01:40:20Z and the retry started 01:48:20Z — killed at the eight-minute mark
+ * having reached nine Bushel pages out of twenty-five. Then it retried, and was
+ * killed again. Every source alphabetically after "chsfarmersalliance" went
+ * unread for hours, including every board that was working perfectly.
+ *
+ * ONE PLATFORM'S OUTAGE TOOK DOWN THE WHOLE READER. That is the fault to fix,
+ * not Bushel — Bushel will come back on its own and something else will break
+ * on another Tuesday.
+ *
+ * TWO GUARDS, AND THEY DO DIFFERENT JOBS.
+ *
+ * The BREAKER is about not repeating a known answer. After three consecutive
+ * page loads on one platform come back empty, the rest of that platform is
+ * skipped for this pass. Three, not one: a single failure is a bad minute, and
+ * a platform that is genuinely up deserves better than being written off by one
+ * flaky load.
+ *
+ * The BUDGET is the backstop underneath it, and it is what makes the promise.
+ * Whatever fails and however it fails, reading STOPS with time left to write and
+ * commit — because a pass that gets killed publishes nothing at all, and a pass
+ * that reads two hundred sources and commits them is worth more than a pass that
+ * reads three hundred and fifty and dies.
+ *
+ * NOTHING IS INVENTED FOR A SKIPPED SOURCE. It keeps its previous file, its
+ * checkedAt stops advancing, and every consumer's age threshold withdraws it on
+ * schedule — the same behaviour a refusal already has. The skip is loud here,
+ * in the annotations, and in the index. */
+const PASS_BUDGET_MS = Number(process.env.PASS_BUDGET_MS ?? 6 * 60 * 1000);
+const BREAKER_STRIKES = Number(process.env.BREAKER_STRIKES ?? 3);
+const passStarted = Date.now();
+const breaker = new Breaker({ strikes: BREAKER_STRIKES });
+
+const budgetLeftMs = () => PASS_BUDGET_MS - (Date.now() - passStarted);
+
 /* ---------- one fetch per page ---------- */
 const pages = new Map();
 async function getPage(s) {
@@ -127,7 +174,25 @@ async function getPage(s) {
 
     /* A BROWSER SOURCE IS LOADED, NOT FETCHED. See lib/cdp.mjs for why. */
     if (transportOf(s.platform) === "browser") {
-      const got = await capture({ pageUrl: s.browserPage, target: s.url });
+      if (!breaker.allows(s.platform)) {
+        throw new Error(`skipped: ${s.platform} returned an empty page ${BREAKER_STRIKES} times `
+          + `in a row this pass, so the rest of that platform was not attempted. Its last good `
+          + `file is untouched and its checkedAt has stopped advancing, which is what withdraws `
+          + `it downstream. Nothing about this source is known to be wrong.`);
+      }
+      let got;
+      try {
+        got = await capture({ pageUrl: s.browserPage, target: s.url });
+      } catch (e) {
+        if (breaker.fail(s.platform, e.message)) {
+          console.error(`::error title=${s.platform} is not answering::${BREAKER_STRIKES} page `
+            + `loads in a row returned nothing. Skipping the rest of ${s.platform} for this pass `
+            + `so the other platforms still get read. Each of those loads costs 45 seconds and `
+            + `the pass has ${Math.round(budgetLeftMs() / 1000)}s left.`);
+        }
+        throw e;
+      }
+      breaker.ok(s.platform);   // a page that loaded resets the count
       if (!got.body.length) throw new Error(`${got.url} answered ${got.status} with an empty body`);
       /* got.url has already had any key in it redacted, which matters: it is
          what gets stamped into the committed file and printed on failure. */
@@ -187,8 +252,16 @@ async function getPage(s) {
 const now = new Date().toISOString();
 const results = [];
 
+let skippedForTime = 0;
 for (const s of todo) {
   const out = join(DATA, `${s.id}.json`);
+  /* THE BUDGET IS CHECKED BEFORE EACH SOURCE, NOT AFTER. Checking afterwards
+     lets one 45-second load start with two seconds left and take the pass over
+     the wall anyway. */
+  if (budgetLeftMs() <= 0) {
+    skippedForTime++;
+    continue;
+  }
   /* A FILE THAT WILL NOT PARSE MUST NOT KILL THE RUN.
      This JSON.parse sat OUTSIDE the per-source try, so one corrupt
      data/<id>.json threw before any catch and took every other source with it
@@ -292,6 +365,22 @@ for (const s of todo) {
     console.error(`::warning title=${s.id} ${r.health}::${full.slice(0, 900)}`);
   }
   results.push(r);
+}
+
+/* WHAT THE PASS DID NOT REACH, SAID OUT LOUD.
+   A pass that quietly reads two hundred of three hundred and fifty looks exactly
+   like a pass that read them all, and the difference is somebody's price. */
+if (breaker.down.length) {
+  console.error(`\n${breaker.down.join(", ")} was skipped after ${BREAKER_STRIKES} empty page `
+    + `loads in a row. Those sources keep their last good file and their checkedAt stops `
+    + `advancing, which is what withdraws them downstream on schedule.`);
+}
+if (skippedForTime) {
+  console.error(`::error title=pass budget spent::${skippedForTime} source(s) were not reached `
+    + `within ${Math.round(PASS_BUDGET_MS / 1000)}s. Everything read before the wall IS written and `
+    + `committed — which is the point: a pass killed by the outer timeout publishes nothing at all. `
+    + `The next pass starts from the top, so a persistent overrun starves the end of the alphabet: `
+    + `if this line keeps appearing, something is timing out that should not be.`);
 }
 
 /* ---------- index ---------- */
