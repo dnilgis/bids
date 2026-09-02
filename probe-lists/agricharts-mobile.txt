@@ -25,6 +25,24 @@
 # somebody has to establish whether the 403 is by IP or by client, and the only
 # cheap test left is one run with an ordinary desktop User-Agent.
 #
+# THAT RUN NOW EXISTS -- 2026-09-02. "agricharts probe" in Actions, or
+# `node scripts/agricharts-probe.mjs`, asks every URL below once per header
+# profile: our poller's user-agent, the browser one from lib/cdp.mjs (which is
+# what was refused), the same string with our "agsist-bidreader" token removed,
+# a full browser header set, and no user-agent at all. Same address, same
+# second, same path -- the only variable is who we say we are.
+#
+# It carries two controls and neither is optional. A network control, because a
+# runner with no egress makes every 403 below meaningless; and this file's own
+# platform control, zzznotarealcoopxyz.mobile.agricharts.com, because a 500
+# there proves we are reaching AgriCharts and a 403 there would prove we are not.
+#
+# If a profile gets in, the run writes that board to fixtures/ verbatim and
+# commits it, and the adapter gets written against those bytes rather than
+# against a description of them. If every profile is refused while both controls
+# are healthy, the answer is the network, no further user-agent is worth trying,
+# and the run says so in those words rather than leaving it to be inferred.
+#
 # EVERYTHING BELOW THIS LINE WAS TRUE WHEN MEASURED FROM A DIFFERENT NETWORK.
 #
 # AGRICHARTS, READ THROUGH THE MOBILE PATH -- AND THE LIMITS OF IT

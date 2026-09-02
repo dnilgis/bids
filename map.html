@@ -269,11 +269,20 @@ function draw(dir) {
   var map = L.map("map", {
     center: [39.5, -96.5], zoom: 4, minZoom: 3, maxZoom: 17,
     worldCopyJump: false,
-    /* Scroll-wheel zoom off by default: this map sits in a scrolling page and
-       a wheel that zooms the map instead of the article is the single most
-       complained-about behaviour in embedded maps. Ctrl/⌘+wheel still zooms,
-       and the buttons and pinch always work. */
-    scrollWheelZoom: false
+    /* SCROLL-WHEEL ZOOM IS ON. It was off, on the standard argument that a map
+       inside a scrolling page which eats the wheel is the most complained-about
+       behaviour in embedded maps. That argument is about a map embedded in an
+       article. This page IS the map -- there are four stat tiles above it and a
+       table below it -- and the first thing Sig said about it was that the wheel
+       not zooming is annoying. He is right, and the general rule was answering a
+       question nobody asked here.
+
+       wheelPxPerZoomLevel is raised from Leaflet's 60 so one notch of a mouse
+       wheel is closer to one zoom level than to three; the default is tuned for
+       trackpads and on a wheel it overshoots the county you were aiming at. */
+    scrollWheelZoom: true,
+    wheelPxPerZoomLevel: 110,
+    wheelDebounceTime: 25
   });
 
   L.tileLayer(USGS_IMAGERY, {
@@ -308,8 +317,49 @@ function draw(dir) {
      are looking at coverage. They split apart on zoom down to single yards. */
   var cluster = L.markerClusterGroup({
     chunkedLoading: true,
-    maxClusterRadius: 55,
+    /* THE RADIUS IS NOT ONE NUMBER, BECAUSE THE JOB CHANGES WITH THE ZOOM.
+     *
+     * It was a flat 55 pixels. Measured at 1440x900 over central Iowa, that
+     * left 71 bubbles and a 19-elevator bubble at zoom 10, and a 7-elevator
+     * bubble still unsplit at zoom 12 -- by which point you are looking at one
+     * town and the honest answer is seven pins, not one circle with a 7 in it.
+     * Sig: "the clustering is too aggressive". It was.
+     *
+     * Nationally the bubble is the whole point -- 3,873 pins drawn flat merge
+     * into one shape over Iowa and say nothing. So the radius stays wide where
+     * that is true and tightens as the screen starts to mean something: state,
+     * then a few counties, then a town. */
+    maxClusterRadius: function (z) {
+      if (z <= 4) return 55;   /* unchanged: at national zoom the bubble IS the answer */
+      if (z === 5) return 46;
+      if (z === 6) return 34;
+      if (z === 7) return 25;
+      if (z === 8) return 18;
+      if (z === 9) return 13;
+      if (z === 10) return 9;
+      if (z === 11) return 5;
+      return 1;
+    },
+    /* IT NEVER REACHES ZERO, AND THAT IS NOT A ROUNDING CHOICE.
+     *
+     * The obvious fix for "too aggressive" is disableClusteringAtZoom, and it
+     * was written that way first. Then the coordinates were counted:
+     *
+     *     3,873 placed elevators sit on 2,565 distinct coordinates.
+     *     2,098 of them share a coordinate with at least one other.
+     *     The biggest single stack is FIFTEEN.
+     *
+     * Most of this directory is geocoded to a town or a ZIP centroid, so those
+     * fifteen are not near each other -- they are on the same point, exactly.
+     * Turning clustering off would have drawn one pin and hidden fourteen
+     * elevators underneath it, unclickable and uncounted, which is a worse lie
+     * than a bubble. A radius of one pixel separates everything that is
+     * genuinely apart and keeps a bubble around everything that is not, so the
+     * count stays visible and stays clickable all the way in. */
     spiderfyOnMaxZoom: true,
+    /* And at full zoom that last bubble opens: fifteen markers on one point fan
+       out far enough apart to read and to click one at a time. */
+    spiderfyDistanceMultiplier: 1.4,
     showCoverageOnHover: false,
     /* A cluster is coloured by the WORST thing inside it: one withdrawn
        elevator inside a green bubble must not read as green. */
