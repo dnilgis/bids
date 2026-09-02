@@ -14,7 +14,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { cronsOf, rawCronsOf, loopOf, expandLoop, cronField, cronMatches, nextFire, agoWords, dueWords, render } from "../scripts/status.mjs";
+import { cronsOf, rawCronsOf, loopOf, expandLoop, cronField, cronMatches, nextFire, agoWords, dueWords, render, missedRuns } from "../scripts/status.mjs";
 
 const WF = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
 const CRONS = cronsOf(WF);
@@ -148,10 +148,51 @@ test("an overdue board says so in the baked HTML too, not only once the script r
   /* 14:49:30.654 to 15:36:00.000 is 46 min 29 s, which rounds to 46. The first
      draft of this test said 47 because the arithmetic was done in my head
      without the .654. The code was right.
-     The "was due" figure has moved twice as the schedule moved: 43 at ten
-     minutes, 29 while the job looped and fired hourly, and back to 43 now that
-     the last due read is 14:53 again. */
-  assert.match(html, /read 46 minutes ago · next run was due 43 minutes ago/);
+
+     THE SECOND HALF OF THIS LINE CHANGED, AND WHY.
+     It used to assert "next run was due 43 minutes ago". That sentence was
+     produced by measuring the next fire from the READ rather than from NOW:
+     nextFire(crons, readMs) is 14:53, the FIRST MISSED fire, and the header
+     called it "next". Reported as "that timing in the header has always been
+     out of sequence".
+
+     Counted by hand from the cron `3,13,23,33,43,53 12-21 * * 1-5` and a
+     Thursday: after 14:49:30 the schedule fires at 14:53, 15:03, 15:13, 15:23
+     and 15:33 -- five fires that came and went with nothing read -- and the
+     genuinely next one is 15:43, seven minutes after 15:36.
+
+     So the old assertion pinned a true fact about the wrong instant and hid
+     four of the five misses. The new one is three facts measured from three
+     correct instants, and the missed count is the one that says the schedule
+     is not being honoured. */
+  assert.match(html, /read 46 minutes ago · 5 runs missed · next run due in 7 minutes/);
+  /* And the machine-readable half must agree with the words, or the ticker
+     will contradict the page it is written into as soon as it first fires. */
+  assert.match(html, /data-due="2026-08-20T15:43:00\.000Z"/);
+});
+
+test("a board read on time says nothing about misses, because there are none", () => {
+  /* The count must be silent at zero. A header that always carries "0 runs
+     missed" trains the eye to skip the field that matters on the bad day. */
+  const html = render(INDEX, Date.parse("2026-08-20T14:51:00Z"), CRONS);
+  assert.match(html, /read 1 minute ago · next run due in 2 minutes/);
+  assert.doesNotMatch(html, /runs missed/);
+});
+
+test("the missed count counts fires, not minutes, and stops at the cap", () => {
+  /* Built with cronsOf, not by hand. A hand-made {m:[0,30],h:null,...} was
+     tried first and silently matched nothing -- these are cron STRINGS, parsed
+     on demand by cronMatches, and a test that constructs the internal shape
+     tests my idea of the shape rather than the code. */
+  const c = cronsOf('    - cron: "0,30 * * * *"');   // twice an hour, every day
+  const t0 = Date.parse("2026-08-20T00:00:00Z");
+  assert.equal(missedRuns(c, t0, t0), 0, "no time has passed");
+  assert.equal(missedRuns(c, t0, t0 + 29 * 60000), 0, "00:30 has not arrived yet");
+  assert.equal(missedRuns(c, t0, t0 + 30 * 60000), 1, "00:30 exactly counts");
+  assert.equal(missedRuns(c, t0, t0 + 3 * 3600000), 6, "three hours is six fires");
+  assert.equal(missedRuns(c, t0, t0 + 3 * 3600000, 4), 4, "the cap holds");
+  assert.equal(missedRuns([], t0, t0 + 1e7), 0, "no schedule, nothing missed");
+  assert.equal(missedRuns(c, NaN, t0), 0, "an unreadable read time claims nothing");
 });
 
 test("with no schedule the board still says how old the read is and claims nothing more", () => {

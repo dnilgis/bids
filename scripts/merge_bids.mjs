@@ -40,13 +40,27 @@
  * the licence position ever changes, this is the flag, not a rebuild.
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { crop, ppu, plausible, basisCents, basisDollars, PPU_BAND } from "../lib/crop.mjs";
 import { delivery } from "../lib/delivery.mjs";
+import { feedVerdict, WITHDRAW_H } from "../lib/freshness.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+/* --root, SO THE MERGE CAN BE RUN END TO END AGAINST A SCRATCH TREE.
+ *
+ * test/merge.test.mjs imports the pure functions out of this file and tests
+ * them thoroughly. It never runs the script. That is why changing the one line
+ * that decides whether a source reaches the feed at all -- line 246, the
+ * status gate -- broke none of 1,141 assertions in either direction.
+ *
+ * A build step that can only be exercised by committing to main is a build step
+ * nobody tests. One flag fixes that. Default unchanged. */
+const argv = process.argv;
+const rootFlag = (() => { const i = argv.indexOf("--root"); return i === -1 ? null : argv[i + 1]; })();
+const ROOT = rootFlag
+  ? resolve(rootFlag)
+  : join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCHEMA = "agsist-merged-index/1";
 const SHARD_SCHEMA = "agsist-merged-place/1";
 
@@ -175,6 +189,18 @@ function row(o) {
     mappable: r5(o.lat) != null && r5(o.lon) != null && !!norm(o.state),
 
     via: o.via, source: o.source,
+
+    /* WHY A CONSUMER CAN TRUST THIS ROW, IN TWO FIELDS.
+       `stale` is the one a renderer needs: true means the read failed and this
+       is the last good price, still inside the withdrawal window. `ageHours`
+       is how stale, so a consumer with a tighter threshold than ours can apply
+       it without re-deriving the age from checkedAt and our clock. A live row
+       carries stale:false and its real age, not null -- a field that is only
+       present when something is wrong is a field nobody writes code against. */
+    sourceStatus: o.sourceStatus ?? "ok",
+    stale: !!o.stale,
+    ageHours: Number.isFinite(o.ageHours) ? Math.round(o.ageHours * 10) / 10 : null,
+
     pricedAt: o.pricedAt || null, checkedAt: o.checkedAt || null,
   };
 }
@@ -198,7 +224,7 @@ function coordOf(s, places) {
   return { lat: null, lon: null, precision: null, via: null };
 }
 
-function readScraped(index, places, tally) {
+function readScraped(index, places, tally, nowMs) {
   const byId = new Map(index.sources.map((s) => [s.id, s]));
   const out = [];
   for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
@@ -243,7 +269,22 @@ function readScraped(index, places, tally) {
       tally.drop("a merged shard filed in data/ instead of data/merged/ — move or delete it", f);
       continue;
     }
-    if (s.status !== "ok") { tally.drop(`source status is "${s.status}"`, id); continue; }
+    /* WITHDRAW ON AGE, NOT ON STATUS. See lib/freshness.mjs for the run that
+       forced this. In short: this line used to read `if (s.status !== "ok")`,
+       which threw a source out of the feed the instant one read failed --
+       while its last good file, minutes old, sat on disk untouched. That is
+       the "withdraw" half of poll.mjs's "hold, then withdraw" with the "hold"
+       half missing. On 2026-09-02 it cost the feed 1,706 bids from 151 sources
+       whose held prices were 6.2-6.7 hours old, against a 14h policy the
+       Emmert Worker has honoured all along.
+
+       A held price is published and FLAGGED. Flagged, not hidden: a consumer
+       that wants only live prices filters on `stale`, and one that would
+       rather show this morning's bid than an empty cell can. Hiding it makes
+       that choice for them and makes it wrongly, because an empty cell reads
+       as "this elevator has no bid" and the elevator does. */
+    const fv = feedVerdict(s.status, j.checkedAt ?? j.pricedAt, nowMs);
+    if (!fv.publish) { tally.drop(`${s.status}: ${fv.why ?? "withdrawn"}`, id); continue; }
     const g = coordOf(s, places);
     for (const b of j.bids || []) {
       out.push(row({
@@ -255,6 +296,7 @@ function readScraped(index, places, tally) {
         cash: b.cash, basis: b.basisDollars ?? b.basisCents,
         futuresMonth: b.futuresMonth, futuresCents: b.futuresPriceCents,
         via: "scrape", source: id,
+        sourceStatus: s.status, stale: fv.stale, ageHours: fv.ageH,
         pricedAt: j.pricedAt, checkedAt: j.checkedAt, asOf: j.pricedAt || j.checkedAt,
       }));
     }
@@ -359,10 +401,23 @@ function main() {
   const index = JSON.parse(readFileSync(idxPath, "utf8"));
   const places = JSON.parse(readFileSync(plPath, "utf8"));
 
+  /* NOW IS THE RUN'S CLOCK, NOT THE INDEX'S STAMP.
+     `index.generated` is when the poll finished. Ages measured against it
+     would freeze the moment the poller stopped -- so a reader that has been
+     dead for a day would judge every held price to be seconds old and publish
+     all of it. --now is for tests, which need a fixed clock; the default is
+     the real one, and Rule 8 applies to the clock too. */
+  const nowArg = arg("--now", null);
+  const nowMs = nowArg ? Date.parse(nowArg) : Date.now();
+  if (!Number.isFinite(nowMs)) { console.error(`--now ${nowArg} is not a date`); process.exit(1); }
+
   const scrapeTally = new Tally(), bcTally = new Tally(), keepTally = new Tally();
   console.log("reading the scraped boards…");
-  let rows = readScraped(index, places, scrapeTally);
-  console.log(`  ${rows.length} bids from ${index.sources.filter((s) => s.status === "ok").length} live boards`);
+  let rows = readScraped(index, places, scrapeTally, nowMs);
+  const liveBoards = index.sources.filter((s) => s.status === "ok").length;
+  const held = new Set(rows.filter((r) => r.stale).map((r) => r.source)).size;
+  console.log(`  ${rows.length} bids from ${liveBoards} live boards` +
+    (held ? ` + ${held} held boards (last good price, inside the ${WITHDRAW_H}h window)` : ""));
   scrapeTally.report("scrape");
 
   let unknownPlaces = new Map(), barchartRead = 0;

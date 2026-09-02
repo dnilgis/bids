@@ -27,11 +27,11 @@
   :root{
     --bg:#f6f3ec; --card:#fff; --ink:#14100a; --mute:#6b6b6b; --line:#e3ded4;
     --land:#e9e4d8; --edge:#cfc7b6;
-    --read:#1f6f2a; --refuse:#b3261e; --known:#8a8073; --gold:#8a6b1f; --barchart:#1f5f8a;
+    --read:#1f6f2a; --stale:#a5741a; --refuse:#b3261e; --known:#8a8073; --gold:#8a6b1f; --barchart:#1f5f8a;
   }
   @media (prefers-color-scheme:dark){
     :root{ --bg:#12100c; --card:#191510; --ink:#ece6da; --mute:#9a9186; --line:#332d24;
-           --land:#241f18; --edge:#3d3529; --read:#5fbf6a; --refuse:#e2705f; --known:#8f8578; --barchart:#6cb6e4;
+           --land:#241f18; --edge:#3d3529; --read:#5fbf6a; --stale:#e0a53c; --refuse:#e2705f; --known:#8f8578; --barchart:#6cb6e4;
            --gold:#d9ad4e; }
   }
   *{box-sizing:border-box}
@@ -54,7 +54,13 @@
      currentColor and always match its own status, instead of inheriting
      whatever the page's text colour happens to be. */
   .pin.read{fill:var(--read);color:var(--read)}
-  .pin.refusing,.pin.broken{fill:var(--refuse);color:var(--refuse)}
+  /* THREE STATES FOR A PRICE, NOT TWO.
+     "stale" is an elevator whose last read failed but whose price is still
+     inside the fourteen-hour window -- it IS in the merged feed, and drawing
+     it red would say the opposite. It is the same amber the status board uses
+     for the same fact. */
+  .pin.stale{fill:var(--stale);color:var(--stale)}
+  .pin.down{fill:var(--refuse);color:var(--refuse)}
   .pin.known{fill:var(--known);color:var(--known)}
   /* THREE POPULATIONS, NOT TWO. Green is a board we read ourselves. Blue is one
      Barchart is serving today — which is to say, one we have a price for right
@@ -113,7 +119,8 @@
 
   <div class="legend">
     <span><i style="background:var(--read)"></i>reading its board</span>
-    <span><i style="background:var(--refuse)"></i>refusing or broken</span>
+    <span><i style="background:var(--stale)"></i>held price — last read failed, still published</span>
+    <span><i style="background:var(--refuse)"></i>withdrawn — nothing fresh enough to publish</span>
     <span><i style="background:var(--barchart)"></i>Barchart serves it, we do not scrape it</span>
     <span><i style="background:var(--known)"></i>known to exist, nothing behind it</span>
     <span>hollow ring = town centre, not the elevator itself</span>
@@ -165,6 +172,16 @@ Promise.all([
   document.getElementById("stamp").textContent = "could not load the map data: " + e.message;
 });
 
+/* The map says what state the PRICE is in; the card also says what happened on
+   the last READ, because they are different questions and only the second one
+   tells you where to go and look. */
+var PRICE_WORDS = { read: "read just now", stale: "held — last read failed, still published",
+                    down: "withdrawn — nothing fresh enough", known: "none — no source behind it yet",
+                    disabled: "none — source switched off" };
+var READ_WORDS = { refused: "refused — the page was not the board we wanted",
+                   broken: "failed — the site did not answer",
+                   skipped: "not attempted — its platform was tripped this pass" };
+
 function draw(us, dir) {
   var svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
   var land = document.createElementNS(NS, "g");
@@ -177,7 +194,9 @@ function draw(us, dir) {
 
   var pins = document.createElementNS(NS, "g");
   var placed = dir.elevators.filter(function (e) { return e.placed; });
+  var indexOfEl = new Map(dir.elevators.map(function (e, i) { return [e, i]; }));
   placed.forEach(function (e) {
+    var idx = indexOfEl.get(e);
     var xy = project(e.lon, e.lat);
     var c = document.createElementNS(NS, "circle");
     c.setAttribute("cx", xy[0].toFixed(1));
@@ -196,7 +215,10 @@ function draw(us, dir) {
     if (e.status === "known") c.setAttribute("r", 3);
     if (e.status === "known" && e.knownFrom === "barchart") c.classList.add("barchart");
     if (e.suspect) c.classList.add("suspect");
-    c.dataset.i = String(dir.elevators.indexOf(e));
+    /* indexOf() inside this loop was a linear scan of 3,916 elevators for each
+       of 3,873 pins -- fifteen million comparisons to draw a map. The index is
+       already in hand. */
+    c.dataset.i = String(idx);
     pins.appendChild(c);
   });
   svg.appendChild(pins);
@@ -207,7 +229,8 @@ function draw(us, dir) {
       '<h3>' + esc(e.location || e.id) + (e.state ? ", " + esc(e.state) : "") + '</h3>' +
       '<div class="op">' + esc(e.operator || "") + '</div>' +
       '<dl>' +
-        '<dt>status</dt><dd>' + esc(e.status) + '</dd>' +
+        '<dt>price</dt><dd>' + esc(PRICE_WORDS[e.status] || e.status) + '</dd>' +
+        (e.health && e.health !== "live" ? '<dt>last read</dt><dd>' + esc(READ_WORDS[e.health] || e.health) + '</dd>' : '') +
         (e.commodities && e.commodities.length ? '<dt>bids</dt><dd>' + esc(e.commodities.join(", ")) + '</dd>' : '') +
         (e.rows != null ? '<dt>rows</dt><dd>' + esc(e.rows) + '</dd>' : '') +
         '<dt>read</dt><dd>' + esc(ago(e.checkedAt)) + '</dd>' +
@@ -247,8 +270,9 @@ function draw(us, dir) {
     return e.status === "known" && e.knownFrom === "barchart"; }).length;
   var tiles = [
     [dir.counts.total, "elevators known"],
-    [s.read || 0, "boards we read"],
-    [(s.refusing || 0) + (s.broken || 0), "refusing or broken"],
+    [s.read || 0, "boards read just now"],
+    [s.stale || 0, "held prices still published"],
+    [s.down || 0, "withdrawn from the feed"],
     [bc, "on Barchart only"],
     [(s.known || 0) - bc, "no source at all"],
     [p.unplaced || 0, "no location yet"],
@@ -263,11 +287,15 @@ function draw(us, dir) {
     "Last read " + ago(dir.generated) + " · " + placed.length + " of " + dir.counts.total +
     " placed · " + (p.street || 0) + " at a street address, " + (p.town || 0) + " at a town centre.";
 
-  var gaps = dir.elevators.filter(function (e) { return !e.placed || e.status !== "read"; });
+  /* A HELD PRICE IS NOT A GAP. It is on the map, it is in the feed, and a
+     farmer can act on it. Listing all 151 of them under "we cannot read this"
+     buries the ones that genuinely have nothing behind them. */
+  var HAS_PRICE = { read: 1, stale: 1 };
+  var gaps = dir.elevators.filter(function (e) { return !e.placed || !HAS_PRICE[e.status]; });
   /* Unplaced and suspect first: those are ours to fix, and they would otherwise
      be buried under several hundred elevators that merely need an adapter. */
   gaps.sort(function (a, b) {
-    var rank = function (e) { return !e.placed ? 0 : e.suspect ? 1 : e.status !== "read" && e.status !== "known" ? 2 : 3; };
+    var rank = function (e) { return !e.placed ? 0 : e.suspect ? 1 : e.status === "down" ? 2 : 3; };
     return rank(a) - rank(b) || (a.state || "").localeCompare(b.state || "");
   });
   var SHOW = 250;
@@ -277,9 +305,19 @@ function draw(us, dir) {
   }).join("");
   var unpl = gaps.filter(function (e) { return !e.placed; }).length;
   var susp = gaps.filter(function (e) { return e.suspect; }).length;
+  /* TWO DIFFERENT LISTS WERE BEING COUNTED AS ONE NUMBER.
+     "3613 we cannot draw or cannot read" put 3,559 elevators we have simply
+     not built an adapter for -- the roadmap, and the whole point of the grey
+     pins -- in the same breath as the eleven whose source is broken. One is
+     work not started; the other is work that has stopped working, and only the
+     second is a fault. */
+  var noSource = gaps.filter(function (e) { return e.status === "known" || e.status === "disabled"; }).length;
+  var failing = gaps.length - noSource;
   document.getElementById("gapnote").textContent = gaps.length
-    ? gaps.length + " we cannot draw or cannot read — " + unpl + " with no location, " +
-      susp + " with a coordinate to check, the rest waiting on an adapter." +
+    ? failing + " with a source that is not producing a price" +
+      (unpl ? ", " + unpl + " with no location" : "") +
+      (susp ? ", " + susp + " with a coordinate to check" : "") +
+      " · " + noSource + " more we know of and have not built a reader for yet." +
       (gaps.length > SHOW ? " Showing the first " + SHOW + "." : "")
     : "Nothing. Every elevator on file is read and placed.";
   document.getElementById("gaps").hidden = !gaps.length;

@@ -45,7 +45,7 @@ import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
 import { capture } from "../lib/cdp.mjs";
-import { Breaker } from "../lib/breaker.mjs";
+import { Breaker, Skipped, isSkip } from "../lib/breaker.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -156,6 +156,17 @@ const BREAKER_STRIKES = Number(process.env.BREAKER_STRIKES ?? 3);
 const passStarted = Date.now();
 const breaker = new Breaker({ strikes: BREAKER_STRIKES });
 
+/* WHO READ CLEANLY LAST TIME, SO A TRIP DOES NOT STARVE THEM FOREVER.
+   See Breaker.allows(). Read from the index we are about to overwrite; absent
+   on a first run, in which case nobody is reprieved, which is the conservative
+   answer. Its own parse failure must not stop a pass -- this is an optimisation
+   over the skip list, not a dependency. */
+const prevOk = new Set();
+try {
+  const pi = JSON.parse(readFileSync(join(DATA, "index.json"), "utf8"));
+  for (const p of pi.sources ?? []) if (p.health === "live" || p.status === "ok") prevOk.add(p.id);
+} catch { /* first run, or an unreadable index: nobody is reprieved */ }
+
 const budgetLeftMs = () => PASS_BUDGET_MS - (Date.now() - passStarted);
 
 /* ---------- one fetch per page ---------- */
@@ -174,21 +185,30 @@ async function getPage(s) {
 
     /* A BROWSER SOURCE IS LOADED, NOT FETCHED. See lib/cdp.mjs for why. */
     if (transportOf(s.platform) === "browser") {
-      if (!breaker.allows(s.platform)) {
-        throw new Error(`skipped: ${s.platform} returned an empty page ${BREAKER_STRIKES} times `
-          + `in a row this pass, so the rest of that platform was not attempted. Its last good `
-          + `file is untouched and its checkedAt has stopped advancing, which is what withdraws `
-          + `it downstream. Nothing about this source is known to be wrong.`);
+      if (!breaker.allows(s.platform, prevOk.has(s.id))) {
+        const who = breaker.culprits(s.platform);
+        throw new Skipped(`not attempted: ${BREAKER_STRIKES} page loads in a row returned nothing `
+          + `on ${s.platform}${who.length ? ` (${who.join(", ")})` : ""}, so the rest of that `
+          + `platform was left for the next pass. Its last good file is untouched and still `
+          + `published while it is inside the withdrawal window. Nothing about this source is `
+          + `known to be wrong.`);
       }
       let got;
       try {
         got = await capture({ pageUrl: s.browserPage, target: s.url });
       } catch (e) {
-        if (breaker.fail(s.platform, e.message)) {
-          console.error(`::error title=${s.platform} is not answering::${BREAKER_STRIKES} page `
-            + `loads in a row returned nothing. Skipping the rest of ${s.platform} for this pass `
-            + `so the other platforms still get read. Each of those loads costs 45 seconds and `
-            + `the pass has ${Math.round(budgetLeftMs() / 1000)}s left.`);
+        if (breaker.fail(s.platform, e.message, s.operator || s.id.split("-")[0])) {
+          /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
+             this said "bushel is not answering" in a pass where 193 Bushel
+             sources had just been read successfully and all 23 failures were
+             CHS. Anyone acting on that message goes and looks at Bushel. */
+          const who = breaker.culprits(s.platform);
+          console.error(`::error title=${who.join(", ") || s.platform} is not answering`
+            + `::${BREAKER_STRIKES} page loads in a row returned nothing, all of them `
+            + `${who.join(", ")} on ${s.platform}. The rest of ${s.platform} is left for the next `
+            + `pass, except sources that read cleanly last time — those are still attempted, so a `
+            + `single operator's outage cannot starve the platform. Each empty load costs 45 `
+            + `seconds and the pass has ${Math.round(budgetLeftMs() / 1000)}s left.`);
         }
         throw e;
       }
@@ -350,7 +370,10 @@ for (const s of todo) {
     /* An adapter's own refusal is a refusal, not a crash: it means we read a
        page and it was not the board we wanted, which is exactly what Refused
        means. Only an unexpected throw is "broken". */
-    r.health = isRefusal(e) ? "refused" : "broken";
+    /* THREE OUTCOMES, NOT TWO. `skipped` means we never tried -- it is not a
+       claim about the source and must never be counted as one. Conflating it
+       with `broken` printed 153 failures on a board that had 23. */
+    r.health = isSkip(e) ? "skipped" : isRefusal(e) ? "refused" : "broken";
     r.status = r.health;
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the
@@ -370,10 +393,14 @@ for (const s of todo) {
 /* WHAT THE PASS DID NOT REACH, SAID OUT LOUD.
    A pass that quietly reads two hundred of three hundred and fifty looks exactly
    like a pass that read them all, and the difference is somebody's price. */
-if (breaker.down.length) {
-  console.error(`\n${breaker.down.join(", ")} was skipped after ${BREAKER_STRIKES} empty page `
-    + `loads in a row. Those sources keep their last good file and their checkedAt stops `
-    + `advancing, which is what withdraws them downstream on schedule.`);
+for (const platform of breaker.down) {
+  const who = breaker.culprits(platform);
+  const n = results.filter((r) => r.health === "skipped" && r.platform === platform).length;
+  console.error(`\n${platform} tripped after ${BREAKER_STRIKES} empty page loads in a row, all `
+    + `of them ${who.join(", ") || "unattributed"}. ${n} source(s) on ${platform} were not `
+    + `attempted this pass. They keep their last good file, are still published while inside `
+    + `the withdrawal window, and are counted as "skipped" — NOT as broken, which is a claim `
+    + `about a source we did not touch.`);
 }
 if (skippedForTime) {
   console.error(`::error title=pass budget spent::${skippedForTime} source(s) were not reached `
@@ -392,6 +419,7 @@ const index = {
     live: ok.length,
     refused: results.filter((r) => r.health === "refused").length,
     broken: results.filter((r) => r.health === "broken").length,
+    skipped: results.filter((r) => r.health === "skipped").length,
   },
   sources: results.map(({ wrote, ...keep }) => keep),
 };

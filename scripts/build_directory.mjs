@@ -36,6 +36,7 @@
  *
  * Node, no dependencies, reads only files already in the checkout.
  */
+import { stateOf as uiState } from "../lib/freshness.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,16 +60,43 @@ const sources = existsSync(dir)
 const live = new Map((index.sources || []).map((s) => [s.id, s]));
 
 /* WHY health AND status ARE BOTH READ. poll.mjs sets `health` to live /
-   refused / broken and mirrors it into `status`. Reading only one of them is
-   how a guard in this repository went blind before. Take health, fall back. */
-const stateOf = (s, l) => {
+   refused / broken / skipped and mirrors it into `status`. Reading only one of
+   them is how a guard in this repository went blind before. Take health,
+   fall back. */
+/* AND WHY AGE IS READ TOO.
+ *
+ * This function used to be four equality tests on `health` and a fall-through
+ * to "known". Two things were wrong with that.
+ *
+ * The fall-through: a health word it did not recognise became "known", which
+ * on the map is a GREY pin meaning "we know you exist and have not got to you
+ * yet". Adding `skipped` to poll.mjs would silently have painted 127 elevators
+ * as never-read when we were holding a good price for every one of them.
+ * A default branch that means something specific is a trap, so there is now no
+ * default: an unrecognised word is named and reported.
+ *
+ * The age: a source last read successfully twenty hours ago still says "live",
+ * because nothing flips it. The map drew that as a green "reading its board"
+ * pin forever -- the most confident colour on the page, on the one record with
+ * the most reason to be doubted. The board and the merged feed both decide
+ * this by age; the map now uses the same function they do, so the three cannot
+ * disagree about whether an elevator has a price.
+ */
+const MAP_STATUS = { live: "read", late: "stale", down: "down" };
+const stateOf = (s, l, nowMs) => {
   if (!l) return s.enabled === false ? "disabled" : "known";
   const h = l.health || l.status;
-  if (h === "live") return "read";
-  if (h === "refused") return "refusing";
-  if (h === "broken") return "broken";
-  return "known";
+  if (!KNOWN_HEALTH.has(h)) {
+    unknownHealth.set(h, (unknownHealth.get(h) ?? 0) + 1);
+    return "down";     // loudly wrong-looking, never quietly "known"
+  }
+  return MAP_STATUS[uiState({ health: h, checkedAt: l.checkedAt }, nowMs)];
 };
+const KNOWN_HEALTH = new Set(["live", "refused", "broken", "skipped"]);
+const unknownHealth = new Map();
+
+/* One clock for the whole build, so two pins cannot be judged a second apart. */
+const NOW_MS = Date.now();
 
 const elevators = sources
   .filter((s) => s.enabled !== false)
@@ -80,13 +108,18 @@ const elevators = sources
       operator: s.operator || null,
       location: s.location || null,
       state: (s.state || "").toUpperCase() || null,
-      status: stateOf(s, l),
+      status: stateOf(s, l, NOW_MS),
       platform: s.platform || null,
       website: s.website || s.browserPage || null,
       commodities: l?.commodities ?? null,
       rows: l?.rows ?? null,
       checkedAt: l?.checkedAt ?? null,
       pricedAt: l?.pricedAt ?? null,
+      /* THE PRICE'S STATE AND THE READ'S OUTCOME ARE TWO DIFFERENT FACTS.
+         "stale" says the price is held and still published; "skipped" says why
+         nothing newer arrived. Collapsing them into one word is what made a
+         held elevator indistinguishable from one we have never touched. */
+      health: l ? (l.health || l.status || null) : null,
       placed: Boolean(g),
     };
     if (g) { e.lat = g.lat; e.lon = g.lon; e.precision = g.precision; }
@@ -96,8 +129,12 @@ const elevators = sources
        generic sentence here would throw that away and make the work queue
        useless. Fall back only when the table predates the reasons. */
     if (!g) e.why = noGeo[s.id] || "location not resolved";
-    else if (e.status === "refusing") e.why = l?.reason || l?.error || "the source refused the read";
-    else if (e.status === "broken") e.why = l?.error || "the read threw";
+    /* The map's words are about the PRICE (read / stale / down); the reason is
+       about the READ, and the read is what a person goes and fixes. So the
+       reason is taken whenever the last read failed, whatever the price's age
+       has since made of it. */
+    else if (l && (l.health || l.status) !== "live")
+      e.why = l?.reason || l?.error || l?.note || "the last read did not succeed";
     return e;
   })
   ;
@@ -235,6 +272,14 @@ writeFileSync(join(ROOT, "data", "directory.json"),
 console.log("directory: %d elevators, %d placed, %d states, %d operators",
   counts.total, counts.placed, counts.states, counts.operators);
 console.log("  status:   ", JSON.stringify(counts.byStatus));
+/* A HEALTH WORD THIS BUILD DOES NOT KNOW IS A BUG IN THIS BUILD, SAID OUT LOUD.
+   Silence here is what would have painted 127 held elevators grey. */
+if (unknownHealth.size) {
+  for (const [h, n] of unknownHealth)
+    console.error(`::warning title=unknown health::${n} source(s) report health "${h}", which ` +
+      `scripts/build_directory.mjs does not recognise. They are drawn as down, not as unread. ` +
+      `Add it to KNOWN_HEALTH and MAP_STATUS.`);
+}
 console.log("  precision:", JSON.stringify(counts.byPrecision));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);

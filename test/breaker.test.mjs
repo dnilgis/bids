@@ -6,7 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Breaker, loadedNothing } from "../lib/breaker.mjs";
+import { Breaker, loadedNothing, Skipped, isSkip } from "../lib/breaker.mjs";
 
 /* Verbatim from the run that started this. */
 const EMPTY = "no readable response matching https://api.bushelpowered.com/api/markets/"
@@ -84,4 +84,75 @@ test("the numbers that forced this are written down", () => {
     "if this ever stops being true the breaker's justification has changed");
   assert.equal(Math.floor(budgetS / timeoutS), 10,
     "a pass can reach about ten dead pages before the outer timeout kills it");
+});
+
+/* ── THE STARVATION, AND THE LABEL ──────────────────────────────────────────
+ *
+ * Run 91003295176, 02:11Z. The breaker did its job: it tripped after three
+ * empty page loads (2.3 min) and saved twenty-two more (16.5 min) against a
+ * six-minute pass budget. Both of the things it got wrong were downstream of
+ * that correct decision.
+ *
+ *   1. It reported "bushel is not answering" in a pass where 193 Bushel
+ *      sources had just been read successfully. All 23 failures were CHS.
+ *   2. Sources are read in id order, so the trip took down everything
+ *      alphabetically after chs* on the same platform -- `coopelev` and seven
+ *      `michag` sources, every one of them `ok` at 19:59. And it would have
+ *      taken them down again on every following pass, for as long as CHS was
+ *      out. Nothing in the design would have let them back.
+ */
+const EMPTY_LOAD = "no readable response within 45000ms. The page did make 0 request(s): []";
+const tripped = (strikes = 3) => {
+  const b = new Breaker({ strikes });
+  for (let i = 0; i < strikes; i++) b.fail("bushel", EMPTY_LOAD, `chsoperator${i}`);
+  return b;
+};
+
+test("the trip names who actually failed, not where they are hosted", () => {
+  const b = tripped();
+  assert.deepEqual(b.culprits("bushel"), ["chsoperator0", "chsoperator1", "chsoperator2"]);
+  assert.deepEqual(b.culprits("dtn-cs"), [], "a platform nobody blamed blames nobody");
+});
+
+test("a source that read cleanly last pass is still attempted after a trip", () => {
+  const b = tripped();
+  assert.equal(b.allows("bushel", false), false, "no evidence: skipped, as before");
+  assert.equal(b.allows("bushel", true), true, "read cleanly last pass: still worth one load");
+});
+
+test("a single operator's outage cannot starve the platform, pass after pass", () => {
+  /* The real shape: CHS is down, michag is fine. michag must be read every
+     pass, indefinitely — its successful load resets the reprieve. */
+  const b = tripped();
+  for (let pass = 0; pass < 50; pass++) {
+    assert.equal(b.allows("bushel", true), true, `starved on pass ${pass}`);
+    b.ok("bushel");                       // michag loaded
+  }
+});
+
+test("a genuine platform outage stops after `strikes` more loads, not forever", () => {
+  /* The other shape: Bushel really is down. The reprieve must be bounded or a
+     platform-wide outage costs one page load per previously-ok source — which
+     on this manifest is 190 of them, or two and a half hours. */
+  const b = tripped();
+  let extra = 0;
+  while (b.allows("bushel", true) && extra < 500) { b.fail("bushel", EMPTY_LOAD, "anyone"); extra++; }
+  assert.equal(extra, 3, "bounded by the same strike limit, and no larger");
+});
+
+test("a reprieved load that fails does not re-announce the trip", () => {
+  const b = tripped();
+  assert.equal(b.fail("bushel", EMPTY_LOAD, "x"), false,
+    "returning true again would print a second ::error for one outage");
+});
+
+test("not attempted is its own class, and it is not an Error we sniff for", () => {
+  /* poll.mjs used to classify by "is it a Refused? no -> broken", so a source
+     it had chosen not to touch was recorded as broken. 127 of them, in a run
+     the board reported as 153 failures out of 23. A type, so the test is a
+     type test and not a regex over prose somebody will reword. */
+  assert.equal(isSkip(new Skipped("not attempted")), true);
+  assert.equal(isSkip(new Error("not attempted")), false);
+  assert.equal(isSkip(null), false);
+  assert.ok(new Skipped("x") instanceof Error, "it still behaves as an Error at the throw site");
 });
