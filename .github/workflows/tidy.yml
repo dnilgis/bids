@@ -77,4 +77,12 @@ jobs:
             echo "nothing to commit — the tree was already tidy"
             exit 0
           fi
-          scripts/commit-and-push.sh "tidy: misplaced merged shards moved into data/merged/"
+          # `bash`, NOT a bare path. scripts/commit-and-push.sh is mode 100644 in
+          # this repository — it is not executable — so calling it directly gives
+          # "Permission denied" and exit 126. That is exactly how this workflow
+          # failed on its first write run, 2026-09-01 (run 90998381312): it moved
+          # all 29 files, rebuilt the feed, and then threw the lot away at the
+          # commit. Every other workflow here already writes `bash scripts/...`;
+          # I copied the usage line out of the script's own header, which says
+          # `scripts/commit-and-push.sh "the message"` and is wrong about itself.
+          bash scripts/commit-and-push.sh "tidy: misplaced merged shards moved into data/merged/"

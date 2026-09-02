@@ -183,7 +183,10 @@ jobs:
           git config user.email "bids@users.noreply.github.com"
           git add data/barchart.json data/known-elevators.json data/barchart-grid.json \
                   geocodes/places.json data/merged-index.json data/merged
-          scripts/commit-and-push.sh "barchart + merge: $(node -e '
+          # `bash`, not a bare path — see tidy.yml. This had the same defect and
+          # would have failed on its first run, at the commit, after spending 116
+          # API calls.
+          bash scripts/commit-and-push.sh "barchart + merge: $(node -e '
             const m=require("./data/merged-index.json");
             process.stdout.write(`${m.counts.rows} bids, ${m.counts.places} places, `
               + `${Object.keys(m.counts.byState).length} states`)')"
