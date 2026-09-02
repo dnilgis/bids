@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-02T13:17:15Z",
+ "generated": "2026-09-02T13:27:13Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 3247,
-   "boards": 296,
-   "generated": "2026-09-02T13:11:06.668Z"
+   "rows": 3323,
+   "boards": 306,
+   "generated": "2026-09-02T13:21:05.538Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,73 +15,75 @@
   }
  },
  "counts": {
-  "rows": 3247,
-  "places": 301,
+  "rows": 3323,
+  "places": 312,
   "byCrop": {
-   "wheat": 616,
-   "soybeans": 1100,
+   "wheat": 619,
+   "soybeans": 1133,
    "sorghum": 107,
-   "corn": 1422,
+   "corn": 1462,
    "oats": 2
   },
   "byVia": {
-   "scrape": 3247
+   "scrape": 3323
   },
   "byState": {
    "KS": 301,
    "PA": 6,
-   "IL": 217,
-   "MN": 1062,
+   "IL": 250,
+   "MN": 1082,
    "WI": 158,
    "NE": 409,
    "null": 111,
-   "ND": 352,
+   "ND": 353,
    "IN": 51,
-   "OH": 14,
+   "OH": 20,
    "MO": 5,
    "OK": 9,
    "SD": 253,
    "MT": 26,
-   "IA": 105,
+   "IA": 118,
    "WA": 26,
    "MI": 134,
-   "WY": 8
+   "WY": 8,
+   "AR": 3
   },
   "byPeriodVia": {
-   "explicit-range": 244,
-   "month-year": 1903,
-   "month-inferred-year": 161,
+   "explicit-range": 310,
+   "month-year": 1908,
+   "month-inferred-year": 162,
    "season": 288,
-   "contract-pair": 134,
+   "contract-pair": 135,
    "month-pair": 180,
    "quarter": 7,
-   "month-pair-inferred-year": 5,
+   "month-pair-inferred-year": 8,
    "spot-word": 163,
    "iso-date": 162
   },
   "collisionsBetweenFeeds": 0,
-  "unmappable": 266,
-  "unmappableNoCoordinate": 258,
+  "unmappable": 281,
+  "unmappableNoCoordinate": 273,
   "unmappableNoState": 111
  },
  "dropped": {
   "scrape": {
    "inMerge is false on the source": 1,
-   "broken: price is 17.8h old, past the 14h withdrawal": 26,
-   "refused: price is 32.9h old, past the 14h withdrawal": 1,
-   "board file with no entry in index.json": 18
+   "broken: price is 17.9h old, past the 14h withdrawal": 26,
+   "refused: price is 33.1h old, past the 14h withdrawal": 1,
+   "broken: price is 37.1h old, past the 14h withdrawal": 1,
+   "board file with no entry in index.json": 6
   },
   "barchart": {},
   "guards": {
    "delivery unreadable (unreadable-season-no-year)": 14,
-   "delivery unreadable (unreadable)": 16
+   "delivery unreadable (unreadable)": 18
   }
  },
  "collisions": [],
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 301,
+  "written": 312,
   "unchanged": 0,
   "orphaned": [
    "aurora-cooperative-aurora-south-c77c998c.json",
@@ -110,17 +112,6 @@
    "chs-united-plains-ag-wallace-ks-82371a58.json",
    "chs-united-plains-ag-weskan-ks-f2f3f945.json",
    "farmers-pride-coop-neligh-oakdale-4762ca83.json",
-   "riceland-foods-des-arc-ar-5be14baa.json",
-   "riceland-foods-pendleton-ar-d23e9e70.json",
-   "riceland-foods-tuckerman-ar-49bc1445.json",
-   "seatonville-elevator-co-marquis-il-f7cbfc8f.json",
-   "seatonville-elevator-co-river-il-dbaa360c.json",
-   "seatonville-elevator-co-seatonville-il-cf404d1b.json",
-   "sorells-farm-supply-raymond-il-4853a2a2.json",
-   "southwest-iowa-renewable-energy-sire-ia-be7634ec.json",
-   "stryker-farmers-exchange-stryker-oh-77c802ad.json",
-   "sunrise-ag-cooperative-buckman-mn-620a40e9.json",
-   "the-mill-inc-colwell-ia-b138879b.json",
    "verbio-north-america-llc-nevada-ia-f2c8db38.json",
    "waldron-grain-and-fuel-co-waldron-mi-19ce8183.json",
    "walsh-grain-farms-inc-walsh-grain-wi-e9a5725e.json",
@@ -5727,7 +5718,7 @@
    "mappable": true,
    "via": "scrape",
    "source": "chsdevilslake-hannaford",
-   "bids": 12,
+   "bids": 13,
    "crops": [
     "corn",
     "soybeans",
@@ -5768,8 +5759,8 @@
      "delivery": "March"
     }
    },
-   "pricedAt": "2026-09-02T13:01:06.141Z",
-   "checkedAt": "2026-09-02T13:01:06.141Z"
+   "pricedAt": "2026-09-02T13:21:05.538Z",
+   "checkedAt": "2026-09-02T13:21:05.538Z"
   },
   {
    "place": "CHS Drayton||Cavalier|ND",
@@ -15418,6 +15409,478 @@
      "period": "2026-09/2026-11",
      "commodity": "1ysoybean",
      "delivery": "Fall 26 (02 Sep 2026 to 30 Nov 2026)"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Riceland Foods||Des Arc|AR",
+   "shard": "merged/riceland-foods-des-arc-ar-5be14baa.json",
+   "operator": "Riceland Foods",
+   "branch": null,
+   "city": "Des Arc",
+   "state": "AR",
+   "lat": 34.9751,
+   "lon": -91.5113,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "riceland-desarc",
+   "bids": 1,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-10/2026-11"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.78,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-10/2026-11",
+     "commodity": "2026 Soybeans",
+     "delivery": "OCT-NOV"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Riceland Foods||Pendleton|AR",
+   "shard": "merged/riceland-foods-pendleton-ar-d23e9e70.json",
+   "operator": "Riceland Foods",
+   "branch": null,
+   "city": "Pendleton",
+   "state": "AR",
+   "lat": null,
+   "lon": null,
+   "precision": null,
+   "mappable": false,
+   "via": "scrape",
+   "source": "riceland-pendleton",
+   "bids": 1,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09/2026-11"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.03,
+     "basis": 0,
+     "basisCents": 0,
+     "period": "2026-09/2026-11",
+     "commodity": "2026 Soybeans",
+     "delivery": "SEP-NOV"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Riceland Foods||Tuckerman|AR",
+   "shard": "merged/riceland-foods-tuckerman-ar-49bc1445.json",
+   "operator": "Riceland Foods",
+   "branch": null,
+   "city": "Tuckerman",
+   "state": "AR",
+   "lat": 35.7307,
+   "lon": -91.2003,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "riceland-tuckerman",
+   "bids": 1,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-10/2026-11"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.69,
+     "basis": -0.34,
+     "basisCents": -34,
+     "period": "2026-10/2026-11",
+     "commodity": "2026 Soybeans",
+     "delivery": "OCT-NOV"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Seatonville Elevator Co||Marquis|IL",
+   "shard": "merged/seatonville-elevator-co-marquis-il-f7cbfc8f.json",
+   "operator": "Seatonville Elevator Co",
+   "branch": null,
+   "city": "Marquis",
+   "state": "IL",
+   "lat": null,
+   "lon": null,
+   "precision": null,
+   "mappable": false,
+   "via": "scrape",
+   "source": "seatonvilleelevator-marquis",
+   "bids": 2,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-10",
+    "2026-11"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.1075,
+     "basis": -0.27,
+     "basisCents": -27,
+     "period": "2026-10",
+     "commodity": "Corn",
+     "delivery": "01 Oct 2026 to 31 Oct 2026"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Seatonville Elevator Co||River|IL",
+   "shard": "merged/seatonville-elevator-co-river-il-dbaa360c.json",
+   "operator": "Seatonville Elevator Co",
+   "branch": null,
+   "city": "River",
+   "state": "IL",
+   "lat": null,
+   "lon": null,
+   "precision": null,
+   "mappable": false,
+   "via": "scrape",
+   "source": "seatonvilleelevator-river",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-10",
+    "2026-11",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.1375,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-04",
+     "commodity": "Soybeans",
+     "delivery": "01 Apr 2027 to 30 Apr 2027"
+    },
+    "corn": {
+     "cash": 5.495,
+     "basis": -0.03,
+     "basisCents": -3,
+     "period": "2027-04",
+     "commodity": "Corn",
+     "delivery": "01 Apr 2027 to 30 Apr 2027"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Seatonville Elevator Co||Seatonville|IL",
+   "shard": "merged/seatonville-elevator-co-seatonville-il-cf404d1b.json",
+   "operator": "Seatonville Elevator Co",
+   "branch": null,
+   "city": "Seatonville",
+   "state": "IL",
+   "lat": 41.3613,
+   "lon": -89.2691,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "seatonvilleelevator-seatonville",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-10",
+    "2026-11",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.8875,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-04",
+     "commodity": "Soybeans",
+     "delivery": "01 Apr 2027 to 30 Apr 2027"
+    },
+    "corn": {
+     "cash": 5.275,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-04",
+     "commodity": "Corn",
+     "delivery": "01 Apr 2027 to 30 Apr 2027"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Sorells Farm Supply||Raymond|IL",
+   "shard": "merged/sorells-farm-supply-raymond-il-4853a2a2.json",
+   "operator": "Sorells Farm Supply",
+   "branch": null,
+   "city": "Raymond",
+   "state": "IL",
+   "lat": 39.31999,
+   "lon": -89.57269,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "sorrellsfarmsupply-raymond",
+   "bids": 7,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-07",
+    "2026-08",
+    "2026-10",
+    "2027-01"
+   ],
+   "best": {
+    "wheat": {
+     "cash": 7.1925,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2026-07",
+     "commodity": "Wheat #1",
+     "delivery": "01 Jul 2026 to 31 Jul 2026"
+    },
+    "soybeans": {
+     "cash": 13.0025,
+     "basis": -0.18,
+     "basisCents": -18,
+     "period": "2027-01",
+     "commodity": "#2 Yellow Soybeans",
+     "delivery": "01 Jan 2027 to 31 Jan 2027"
+    },
+    "corn": {
+     "cash": 5.275,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-01",
+     "commodity": "#2 Yellow Corn",
+     "delivery": "01 Jan 2027 to 31 Jan 2027"
+    }
+   },
+   "pricedAt": "2026-09-02T13:01:06.141Z",
+   "checkedAt": "2026-09-02T13:01:06.141Z"
+  },
+  {
+   "place": "Southwest Iowa Renewable Energy||SIRE|IA",
+   "shard": "merged/southwest-iowa-renewable-energy-sire-ia-be7634ec.json",
+   "operator": "Southwest Iowa Renewable Energy",
+   "branch": null,
+   "city": "SIRE",
+   "state": "IA",
+   "lat": 41.17303,
+   "lon": -95.82543,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "southwestiowarenewableenergy-sire",
+   "bids": 6,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04/2027-05"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.34,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-04/2027-05",
+     "commodity": "Corn",
+     "delivery": "A/M 2027"
+    }
+   },
+   "pricedAt": "2026-09-02T13:01:06.141Z",
+   "checkedAt": "2026-09-02T13:01:06.141Z"
+  },
+  {
+   "place": "Stryker Farmers Exchange||Stryker|OH",
+   "shard": "merged/stryker-farmers-exchange-stryker-oh-77c802ad.json",
+   "operator": "Stryker Farmers Exchange",
+   "branch": null,
+   "city": "Stryker",
+   "state": "OH",
+   "lat": 41.5028,
+   "lon": -84.41956,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "strykerfarmers-stryker",
+   "bids": 6,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-06/2026-07",
+    "2026-06/2026-08",
+    "2026-10/2026-11",
+    "2027-07"
+   ],
+   "best": {
+    "wheat": {
+     "cash": 7.475,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-07",
+     "commodity": "Wheat",
+     "delivery": "July 2027 (01 Jul 2027 to 31 Jul 2027)"
+    },
+    "soybeans": {
+     "cash": 12.9325,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2026-06/2026-07",
+     "commodity": "Soybeans",
+     "delivery": "CASH (30 Jun 2026 to 31 Jul 2026)"
+    },
+    "corn": {
+     "cash": 5.1775,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2026-06/2026-07",
+     "commodity": "Corn",
+     "delivery": "CASH (30 Jun 2026 to 31 Jul 2026)"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "Sunrise Ag Cooperative||Buckman|MN",
+   "shard": "merged/sunrise-ag-cooperative-buckman-mn-620a40e9.json",
+   "operator": "Sunrise Ag Cooperative",
+   "branch": null,
+   "city": "Buckman",
+   "state": "MN",
+   "lat": 45.8975,
+   "lon": -94.0936,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "sunriseag-buckman",
+   "bids": 20,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-04/2027-05",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.3,
+     "basis": -1,
+     "basisCents": -100,
+     "period": "2027-06/2027-07",
+     "commodity": "Soybeans",
+     "delivery": "01 Jun 2027 to 30 Jul 2027"
+    },
+    "corn": {
+     "cash": 4.865,
+     "basis": -0.75,
+     "basisCents": -75,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "01 Jun 2027 to 30 Jun 2027"
+    }
+   },
+   "pricedAt": "2026-09-02T12:51:06.710Z",
+   "checkedAt": "2026-09-02T12:51:06.710Z"
+  },
+  {
+   "place": "The Mill, Inc.||Colwell|IA",
+   "shard": "merged/the-mill-inc-colwell-ia-b138879b.json",
+   "operator": "The Mill, Inc.",
+   "branch": null,
+   "city": "Colwell",
+   "state": "IA",
+   "lat": 43.15682,
+   "lon": -92.59148,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "themillinc-colwell",
+   "bids": 7,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.7225,
+     "basis": -0.31,
+     "basisCents": -31,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "01 Sep 2026 to 30 Sep 2026"
+    },
+    "corn": {
+     "cash": 4.9775,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2026-12",
+     "commodity": "Corn",
+     "delivery": "01 Dec 2026 to 31 Dec 2026"
     }
    },
    "pricedAt": "2026-09-02T12:51:06.710Z",
