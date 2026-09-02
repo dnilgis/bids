@@ -97,7 +97,47 @@ jobs:
       #  than 70% answered. An empty file over a good one is how a feed goes
       #  dark without anybody noticing, and a partial run published as a whole
       #  one understates coverage everywhere.
+      # ══════════════════════════════════════════════════════════════════
+      #  NO KEY IS A REASON TO STOP, NOT A REASON TO GO RED
+      # ══════════════════════════════════════════════════════════════════
+      #  Sig, 2026-09-02: "i havent put the api key in the git secrets yet, but
+      #  i want it to work without the key irregardless."
+      #
+      #  Everything downstream already works without Barchart — merge_bids.mjs
+      #  builds the feed from the scraped boards alone and says so. What was
+      #  wrong was this workflow FAILING when the secret is absent: four red
+      #  crosses a day, on a schedule, for a state that is completely expected.
+      #  A workflow that is always red is a workflow nobody looks at, and then
+      #  the day it goes red for a real reason nobody looks at that either.
+      #
+      #  So an absent key SKIPS the Barchart half and the job goes green. The
+      #  day the secret is added, the same file starts fetching with no other
+      #  change. A key that is present but WRONG still fails loudly — that is a
+      #  fault, not a choice.
+      - name: Is there a key
+        id: key
+        env:
+          BARCHART_API_KEY: ${{ secrets.BARCHART_API_KEY }}
+        run: |
+          if [ -n "$BARCHART_API_KEY" ]; then
+            echo "have=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=no" >> "$GITHUB_OUTPUT"
+            {
+              echo "### No Barchart key set"
+              echo ""
+              echo "BARCHART_API_KEY is not a repository secret on this repo, so the Barchart"
+              echo "half of this job was skipped. **This is not a failure.** The merged feed is"
+              echo "rebuilt from the scraped boards below and published as usual."
+              echo ""
+              echo "To turn Barchart on: Settings → Secrets and variables → Actions →"
+              echo "New repository secret, named \`BARCHART_API_KEY\`. Nothing else changes."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "no BARCHART_API_KEY — skipping the fetch, building from the scraped boards"
+          fi
+
       - name: Fetch
+        if: steps.key.outputs.have == 'yes'
         env:
           BARCHART_API_KEY: ${{ secrets.BARCHART_API_KEY }}
           BARCHART_TOTAL_LOCATIONS: ${{ inputs.total_locations }}
@@ -124,6 +164,7 @@ jobs:
       #  facilities are placed, and the grid is rebuilt — so a facility found
       #  today is queried directly next time.
       - name: Rebuild the directory from our own fetch
+        if: steps.key.outputs.have == 'yes'
         run: node scripts/build_known.mjs
 
       #  NO_CENSUS=1 ON PURPOSE. build_geocodes.py will spend up to seven minutes
@@ -134,6 +175,7 @@ jobs:
       #  and which the monthly run then refines to street level. Fast placement
       #  here, accurate placement there.
       - name: Place anything new
+        if: steps.key.outputs.have == 'yes'
         run: |
           pip install --quiet zipcodes
           NO_CENSUS=1 python scripts/build_geocodes.py
@@ -141,6 +183,7 @@ jobs:
       #  build_grid.mjs REFUSES to write a grid that covers less than the one on
       #  disk, so this step cannot quietly cost coverage; it can only add.
       - name: Rebuild the grid
+        if: steps.key.outputs.have == 'yes'
         run: node scripts/build_grid.mjs --radius 45
 
       # ══════════════════════════════════════════════════════════════════
@@ -181,8 +224,9 @@ jobs:
         run: |
           git config user.name  "bids"
           git config user.email "bids@users.noreply.github.com"
-          git add data/barchart.json data/known-elevators.json data/barchart-grid.json \
-                  geocodes/places.json data/merged-index.json data/merged
+          # -A over the paths that exist: without a key there is no
+          # data/barchart.json to add, and `git add` on a missing path fails.
+          git add -A data/ geocodes/places.json
           # `bash`, not a bare path — see tidy.yml. This had the same defect and
           # would have failed on its first run, at the commit, after spending 116
           # API calls.
