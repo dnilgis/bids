@@ -1,0 +1,90 @@
+# AgriCharts — one run that settles whether the 403 is about us or about where
+# we are standing.
+#
+# AgriCharts is the largest unread platform in this repository. 211 sites,
+# roughly 945 locations, one adapter. Their mobile board serves everything as
+# plain HTML and eight boards were read and verified from a workstation on
+# 2026-08-26. From this runner the same URL answered 520 bytes of
+# "403 Forbidden", and that is the third time AgriCharts has refused a runner.
+#
+# Nobody has established WHY, and the two possible answers need completely
+# different work — a header, or a different egress. probe-lists/agricharts-
+# mobile.txt says so in as many words and closes with the cheap test that was
+# never run. This is that test, with controls.
+#
+# IT DOES NOT PUBLISH AND IT CANNOT. It touches no source, no data file and no
+# feed. The only thing it may write is a captured board under fixtures/, which
+# exists so that whoever writes the adapter writes it against bytes somebody
+# actually received rather than against a description of them.
+#
+# IT GOES GREEN ON A REFUSAL. A refusal is the finding. dtn-probe exits 1 when
+# it writes nothing, so every honest run of it shows a red tick and the tick
+# has stopped meaning anything; this exits non-zero only when it could not ask.
+
+name: agricharts probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Board URLs, one per line. Blank uses probe-lists/agricharts-mobile.txt."
+        required: false
+        default: ""
+      profiles:
+        description: "Comma-separated subset of bidreader,cdp,chrome,browser,bare. Blank runs all five."
+        required: false
+        default: ""
+      commit:
+        description: "Commit any captured board under fixtures/"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write         # only ever fixtures/, and only when a board came back
+
+concurrency:
+  group: agricharts-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # The verdict this prints decides a day of work in one direction or the
+      # other, so the function that picks it is tested before it is trusted.
+      - name: Test the guards
+        run: node --test test/agricharts-probe.test.mjs
+
+      - name: Ask
+        # THE INPUTS GO THROUGH env AND NOT INTO THE COMMAND LINE, the same way
+        # dtn-probe does it. A URL a human typed is not a shell fragment.
+        env:
+          URLS: ${{ inputs.urls }}
+          PROFILES: ${{ inputs.profiles }}
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ -n "$PROFILES" ]; then ARGS="--profiles $PROFILES"; fi
+          if [ -n "$URLS" ]; then
+            printf '%s\n' "$URLS" > /tmp/agricharts-targets.txt
+            node scripts/agricharts-probe.mjs --list /tmp/agricharts-targets.txt $ARGS
+          else
+            node scripts/agricharts-probe.mjs $ARGS
+          fi
+
+      # `if: always()` because the capture is the valuable half and a later step
+      # failing must not throw it away. It commits nothing when nothing changed.
+      - name: Keep whatever came back
+        if: ${{ always() && inputs.commit }}
+        run: |
+          git add -A fixtures/ || true
+          if git diff --cached --quiet; then
+            echo "no board captured; nothing to commit"
+          else
+            bash scripts/commit-and-push.sh "agricharts: captured board(s) from the runner"
+          fi
