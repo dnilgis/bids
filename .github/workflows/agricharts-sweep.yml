@@ -1,0 +1,104 @@
+# The rest of AgriCharts — find every mobile board and write a manifest per
+# location.
+#
+# Sig, 2026-09-03: "can you get the rest of the elvators in the country please"
+#
+# 211 AgriCharts sites are in data/platforms.json; four of them are read. This
+# asks the other 207 for a mobile board, reads every one it finds through the
+# same adapter a poll would use, and writes a source manifest for each location
+# it can give a town to.
+#
+# WHY THIS IS A WORKFLOW AND NOT A ZIP. It produces hundreds of files.
+# geocode-fill.yml settled the same question in August: "216 uploads is not a
+# thing to ask of anybody -- so the code goes up once and the runner does the
+# writing." What gets reviewed is the report and the diff.
+#
+# DRY RUN IS THE DEFAULT. It prints every host it tried, every board it found,
+# every manifest it would write and every location it had to skip, and writes
+# nothing until the box is ticked.
+#
+# IT NEVER OVERWRITES A MANIFEST. A file in sources/ was either written by an
+# earlier run of this and reviewed, or edited by somebody who looked at the
+# yard. Running it twice is safe and writes nothing the second time.
+#
+# IT NEVER INVENTS A TOWN. A location needs a town, a state and a ZIP, and the
+# only honest source is data/known-elevators.json. A location with no entry
+# there is REPORTED and left alone -- it is a queue, not a rounding error.
+
+name: agricharts sweep
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Actually write the manifests and commit. Leave OFF for a dry run that only prints the plan."
+        type: boolean
+        default: false
+      limit:
+        description: "How many sites to ask this run. Blank asks all of them."
+        required: false
+        default: ""
+      start:
+        description: "Skip this many sites first, for running the list in batches"
+        required: false
+        default: ""
+      only:
+        description: "Comma-separated substrings — ask only sites whose URL contains one. For trying a single co-op."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: agricharts-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # Every decision this makes about what goes in a file is tested against
+      # the four boards already live. It writes source manifests; it does not
+      # get to run untested.
+      - name: Test the guards
+        run: node --test test/agricharts-sweep.test.mjs test/agricharts.test.mjs test/identity-alternative.test.mjs
+
+      - name: Sweep
+        # Inputs go through env, never into the command line — a co-op's URL
+        # typed by a human is not a shell fragment.
+        env:
+          WRITE: ${{ inputs.write }}
+          LIMIT: ${{ inputs.limit }}
+          START: ${{ inputs.start }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ "$WRITE" = "true" ]; then ARGS="$ARGS --write"; fi
+          if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
+          if [ -n "$START" ]; then ARGS="$ARGS --start $START"; fi
+          if [ -n "$ONLY" ]; then ARGS="$ARGS --only $ONLY"; fi
+          node scripts/agricharts-sweep.mjs $ARGS
+
+      # A manifest that does not load is worse than no manifest: it is dropped
+      # silently and the elevator simply is not there. Every source in the
+      # repository is loaded before any of this is committed.
+      - name: Every manifest still loads
+        if: ${{ inputs.write }}
+        run: node --test test/sources.test.mjs test/manifest.test.mjs
+
+      - name: Commit what it wrote
+        if: ${{ always() && inputs.write }}
+        run: |
+          git add -A sources/ || true
+          if git diff --cached --quiet; then
+            echo "no new manifests; nothing to commit"
+          else
+            bash scripts/commit-and-push.sh "agricharts: sources written by the sweep"
+          fi
