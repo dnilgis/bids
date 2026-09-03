@@ -1,0 +1,100 @@
+# AGRICHARTS OPERATORS BARCHART CARRIES AND WE DO NOT — 2026-09-03
+#
+# 61 sites, 70 operators, 394 Barchart facilities.
+# 60 of those sites have never been asked: 360 facilities.
+#
+# WHERE THE LIST CAME FROM. The Barchart coverage gap measured 2026-09-03:
+# 1,801 facilities Barchart carries, 258 of them read by this repository. Of
+# the 1,543 uncovered, 494 sit behind a platform this repo ALREADY HAS AN
+# ADAPTER FOR, and 394 of those 494 are AgriCharts. That is the largest block
+# of elevators in the country reachable with no new parsing code at all — the
+# adapter, the quote pages and the identity check exist and already read 84
+# boards.
+#
+# WHY THE SWEEP HAS NOT ALREADY ASKED THEM. agricharts-sweep.mjs takes its
+# sites from data/platforms.json, which holds what the discover runs happened
+# to visit. None of the eight largest operators here are in it, and of the 124
+# mobile candidates these 61 sites generate, exactly ONE is on
+# probe-lists/agricharts-mobile.txt. The sweep has not asked them because
+# nothing ever put them in front of it.
+#
+# ONE LINE IS NOT LIKE THE OTHERS. www.farmersco-operative.com is a master
+# board serving 10 co-operatives with 34 facilities between them, and
+# farmersco-operative.mobile.agricharts.com IS ALREADY READ — it is one of the
+# 84. Those 34 facilities are not a sweep problem: they are locations on a
+# board we read whose manifests were never written, which means the directory
+# join could not give them a town. Asking again is harmless (the sweep never
+# overwrites and never invents a town) and the run will say so in its unmatched
+# list, which is where that queue belongs. Discount it from what a sweep can
+# win: 360, not 394.
+#
+# THE FACILITY COUNTS ARE BARCHART'S, NOT OURS. The number after each site is
+# how many facilities Barchart carries for that operator that we do not read.
+# The sweep finds its own locations from the board and refuses any it cannot
+# give a town to. Treat these as a ceiling.
+#
+#     Actions -> agricharts sweep -> hosts = probe-lists/agricharts-uncovered-2026-09-03.txt
+#
+# DRY RUN FIRST. `write` stays off until the report reads right.
+#
+https://heartlandcoop.com/                                                  #  48 — Heartland Coop
+https://www.ceagrain.com/anthonyfarmers                                     #  46 — CoMark Equity Alliance LLC
+https://www.innovativeag.com/grain/cash-bids                                #  40 — Innovative Ag Services
+https://www.farmersco-operative.com/grain/grain-cash-bids                   #  34 — Central Ohio Farmers Co-op + 9 more [ALREADY READ — see the note above]
+https://midiowacoop.com/                                                    #  28 — Mid-Iowa Cooperative
+https://agtegra.com/                                                        #  21 — Agtegra
+https://farmerswin.com/                                                     #  19 — Farmers Win Coop
+https://www.newvision.coop/                                                 #  15 — New Vision Coop
+https://primientgrain.com/                                                  #  15 — Primient Grain
+https://www.agmarkllc.com/cashprices                                        #  14 — AgMark LLC
+https://www.agpartnerscoop.com/grain/cash-bids                              #  10 — Ag Partners Coop
+https://mercerlandmark.com/                                                 #  10 — Mercer Landmark
+https://fsgrain.com/cashbidsindex                                           #   8 — FS Grain
+https://tamabentoncoop.com/                                                 #   7 — Tama Benton Coop
+https://www.mkap.com/                                                       #   6 — Minn-Kota Ag Products
+https://dunkertoncoop.com/                                                  #   5 — Dunkerton Coop
+https://linncoop.com/                                                       #   4 — Linn Coop Oil Company
+https://farmward.net/cash-bids/                                             #   4 — Farmward Cooperative
+https://www.fvcoop.com/cash-bids/                                           #   3 — Frenchman Valley Coop
+https://tettensgrain.com/                                                   #   3 — Tettens Grain
+https://www.ceagrain.com/tworiverscoop                                      #   3 — Two Rivers Coop IA
+https://fscooperatives.com/prairielandfs/agriculture/cash-bids              #   3 — Prairieland FS, Inc.
+https://agrowstar.com/                                                      #   2 — AGrowStar
+https://www.nutritionservice.com/grain/                                     #   2 — Nutrition Service Co., LLC.
+https://fscooperatives.com/centralcommodityfs/agriculture/grain-marketing-cash-bids  #   2 — Central Commodity FS
+https://hbspecialties.com/                                                  #   2 — H & B Specialties, Inc.
+https://falmouthfarmsupply.com/                                             #   2 — Falmouth Farm Supply
+https://jbslivepork.com/                                                    #   2 — JBS Live Pork
+https://ridgeville-elevator.com/                                            #   2 — Ridgeville Elevator
+https://walnuthillfeeds.com/                                                #   2 — Walnut Hill Grain LLC
+https://hovenequity.com/                                                    #   2 — Hoven Equity Exchange
+https://cainagra.net/                                                       #   1 — Cain Agra
+https://agriwaypartners.com/                                                #   1 — Agri-Way Partners, LLC.
+https://archercoopgrain.com/                                                #   1 — Archer Coop Grain Co
+https://auroraelevator.com/                                                 #   1 — Aurora Elevator Inc.
+https://circlejgrain.com/                                                   #   1 — Circle J Grain
+https://faasfeed.com/                                                       #   1 — FAAS Feed & Grain
+https://hullfeed.com/                                                       #   1 — Hull Feed & Produce, Inc
+https://lemarsagricenter.com/                                               #   1 — LeMars Agri Center
+https://radcliffecoop.com/                                                  #   1 — Radcliffe Cooperative
+https://schmadekefeedmill.com/                                              #   1 — Schmadeke Feed Mill
+https://agrail.com/                                                         #   1 — AgRail LLC
+https://atkinsongrain.com/                                                  #   1 — Atkinson Grain & Fertilizer Inc.
+https://cissnaparkcoop.com/                                                 #   1 — Cissna Park Co-op
+https://delandfarmersgrain.com/                                             #   1 — Deland Farmer's Grain
+https://grainlandcooperative.com/                                           #   1 — Grainland Farmers
+https://gemstone.ag/                                                        #   1 — Gemstone Ag
+https://knightstownelevator.com/                                            #   1 — Knightstown Elevator, Inc.
+https://leitersgrain.com/                                                   #   1 — Leiters Grain
+https://kansasethanol.net/                                                  #   1 — Kansas Ethanol
+https://turonmill.com/                                                      #   1 — Turon Mill & Elevator, Inc.
+https://sargeantgrain.com/                                                  #   1 — Sargeant Grain Co.
+https://farmerselevator.net/                                                #   1 — Farmers Elevator & Exchange
+http://www.farmersunioncoop.com/                                            #   1 — Farmers Union Cooperative Co.
+https://thomaslivestock.com/                                                #   1 — Thomas Livestock Co
+https://brennco.net/                                                        #   1 — Brennco Pork Inc.
+https://pettisvillegrain.com/                                               #   1 — Pettisville Grain
+https://jewellgrain.com/                                                    #   1 — The Jewell Grain Co.
+https://prairieagpartners.com/                                              #   1 — Prairie Ag Partners
+https://medfordcoop.com/grain-cash-bids/                                    #   1 — Medford Cooperative
+https://uniontowncoop.com/                                                  #   1 — Uniontown Cooperative Association

@@ -45,6 +45,7 @@ import { join } from "node:path";
 import { parseBoard, extract, mergeQuotes, quoteUrls, VERIFIED_BY, cellText }
   from "../lib/adapters/agricharts.mjs";
 import { validateSource } from "../lib/sources.mjs";
+import { urlsFrom } from "./agricharts-probe.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SOURCES = join(ROOT, "sources");
@@ -299,16 +300,38 @@ export function agrichartsHosts(platforms) {
     .sort();
 }
 
-export async function main(argv = process.argv.slice(2)) {
+/** Which sites THIS RUN asks: the file if one was named, else every AgriCharts
+ *  site in data/platforms.json, then --only, then --start/--limit.
+ *
+ *  PULLED OUT BECAUSE THE READER IS THE WHOLE BUG. --hosts used to require a
+ *  whole line to be a URL, which read ZERO sites out of four of the eleven
+ *  files in probe-lists/ and reported "0 site(s)" with a green tick. Testing
+ *  urlsFrom() on its own would not have caught that: the reader was correct
+ *  and simply was not the one being called. This is the seam where a test can
+ *  ask the question that matters -- what will the sweep ask? -- so a future
+ *  edit that swaps the reader back has something to fail.
+ */
+export function hostsFor(cfg, platforms, readText) {
+  let hosts = cfg.hosts ? urlsFrom(readText(cfg.hosts)) : agrichartsHosts(platforms);
+  if (cfg.only) hosts = hosts.filter((h) => cfg.only.some((o) => h.includes(o)));
+  return hosts.slice(cfg.start, cfg.start + cfg.limit);
+}
+
+
+/* THE TWO THINGS THIS TALKS TO, NAMED SO A TEST CAN HOLD THEM.
+ * Not a general dependency-injection habit: it is here because main() choosing
+ * the WRONG LIST is a silent failure -- it prints a tally, exits green and
+ * asks 211 sites nobody asked for -- and no test of hostsFor() on its own can
+ * see it, because the bug is that hostsFor() was not called. With these, one
+ * test runs the real main() and reads the count it prints. */
+export const IO = { readText: (f) => readFileSync(f, "utf8"), get };
+
+export async function main(argv = process.argv.slice(2), io = IO) {
   const cfg = parseArgs(argv);
   const runId = process.env.GITHUB_RUN_ID || null;
 
   const platforms = JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8"));
-  let hosts = cfg.hosts
-    ? readFileSync(cfg.hosts, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => /^https?:\/\/\S+$/.test(l))
-    : agrichartsHosts(platforms);
-  if (cfg.only) hosts = hosts.filter((h) => cfg.only.some((o) => h.includes(o)));
-  hosts = hosts.slice(cfg.start, cfg.start + cfg.limit);
+  const hosts = hostsFor(cfg, platforms, io.readText);
 
   console.log(`AGRICHARTS SWEEP — ${hosts.length} site(s)${cfg.write ? "" : "  (DRY RUN: --write to write files)"}`);
 
@@ -316,7 +339,7 @@ export async function main(argv = process.argv.slice(2)) {
      may be written. Seven requests for the whole sweep. */
   const quoteBodies = [];
   for (const u of quoteUrls()) {
-    const r = await get(u, cfg.timeoutMs);
+    const r = await io.get(u, cfg.timeoutMs);
     if (r.ok && r.status === 200) quoteBodies.push(r.body);
     else console.log(`   quote page failed: ${u} — ${r.error ?? r.status}`);
   }
@@ -342,7 +365,7 @@ export async function main(argv = process.argv.slice(2)) {
     const cands = mobileCandidates(site);
     let hit = null;
     for (const c of cands) {
-      const r = await get(c, cfg.timeoutMs);
+      const r = await io.get(c, cfg.timeoutMs);
       if (!r.ok) { continue; }
       if (r.status !== 200 || r.bytes < 400) continue;
       if (!/cash\s*price/i.test(r.body) || !/<table class="cashprices"/.test(r.body)) continue;

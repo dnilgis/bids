@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import {
   mobileCandidates, operatorFrom, websiteFrom, operatorSlug, slug, joinDirectory,
-  phoneOf, manifestFor, agrichartsHosts, parseArgs,
+  phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main,
 } from "../scripts/agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { VERIFIED_BY } from "../lib/adapters/agricharts.mjs";
@@ -305,4 +305,120 @@ test("a nameless location on a multi-location board is still reported", () => {
   assert.equal(plan.write.length, 45, "45 of Dorchester's 49 are in the directory");
   assert.equal(plan.unmatched.length, 4);
   for (const w of plan.write) assert.deepEqual(validateSource(w.json, new Set()), []);
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   THE HOSTS FILE IS READ THE WAY EVERY OTHER PROBE LIST IS READ
+
+   --hosts used to require a WHOLE LINE to be a URL:
+
+       .split(/\r?\n/).map((l) => l.trim()).filter((l) => /^https?:\/\/\S+$/.test(l))
+
+   Measured 2026-09-03 against the eleven files in probe-lists/: that read
+   ZERO urls out of barchart-sites.txt, bushel-candidates.txt,
+   discover-candidates.txt and dtn-sites.txt, and 169 of 194 out of
+   everything-unasked-20260829.txt. A sweep pointed at any of the first four
+   would have reported "0 site(s)" and exited green, which is exactly the
+   failure scripts/agricharts-probe.mjs already hit once and already fixed --
+   so the fix is to use ITS reader, not a second copy of one.
+
+   The one file both readers agreed on, national-2026-08-26.txt, went 477 to
+   475. Both differences are the same two lines listed twice; nothing is lost.
+   ──────────────────────────────────────────────────────────────────────── */
+import { urlsFrom } from "../scripts/agricharts-probe.mjs";
+
+test("a hosts file may annotate its lines", () => {
+  const list = [
+    "# AGRICHARTS OPERATORS WE DO NOT READ",
+    "#",
+    "https://heartlandcoop.com/          # 48 — Heartland Coop",
+    "https://agtegra.com/                # 21 — Agtegra",
+    "",
+    "   https://farmerswin.com/   ",
+  ].join("\n");
+  assert.deepEqual(urlsFrom(list), [
+    "https://heartlandcoop.com/", "https://agtegra.com/", "https://farmerswin.com/",
+  ]);
+});
+
+test("a commented-out site is not asked", () => {
+  assert.deepEqual(urlsFrom("# https://retired.example.com/\nhttps://live.example.com/"),
+                   ["https://live.example.com/"]);
+});
+
+test("the same site twice is asked once", () => {
+  assert.deepEqual(urlsFrom("https://a.example.com/\nhttps://a.example.com/"),
+                   ["https://a.example.com/"]);
+});
+
+test("the shipped list resolves to the sites its own header claims", () => {
+  /* THE HEADER IS PROSE AND PROSE GOES STALE. This is the check that the
+     number written at the top is the number the sweep will actually ask. */
+  const text = readFileSync(join(ROOT, "probe-lists/agricharts-uncovered-2026-09-03.txt"), "utf8");
+  const claimed = Number(text.match(/^#\s*(\d+) sites,/m)[1]);
+  assert.equal(urlsFrom(text).length, claimed);
+});
+
+test("every line of the shipped list is a site the sweep can build candidates for", () => {
+  for (const u of urlsFrom(readFileSync(join(ROOT, "probe-lists/agricharts-uncovered-2026-09-03.txt"), "utf8"))) {
+    assert.ok(mobileCandidates(u).length > 0, `no candidate for ${u}`);
+  }
+});
+
+/* WHAT WILL THE SWEEP ACTUALLY ASK? Testing urlsFrom() on its own passes
+   whether or not the sweep calls it -- the reader was never the broken part,
+   the wiring was. hostsFor() is the seam, and these go through it. */
+test("hostsFor reads an annotated file, comments and all", () => {
+  const files = { "list.txt": "# a note\nhttps://a.example.com/   # 48 — A Co\nhttps://b.example.com/\n" };
+  assert.deepEqual(
+    hostsFor({ hosts: "list.txt", only: null, start: 0, limit: Infinity }, {}, (f) => files[f]),
+    ["https://a.example.com/", "https://b.example.com/"]);
+});
+
+test("hostsFor falls back to platforms.json when no file is named", () => {
+  const platforms = { sites: { "https://x.example.com": { platform: "agricharts" },
+                               "https://y.example.com": { platform: "bushel" } } };
+  assert.deepEqual(
+    hostsFor({ hosts: null, only: null, start: 0, limit: Infinity }, platforms, () => { throw new Error("must not read"); }),
+    ["https://x.example.com"]);
+});
+
+test("hostsFor still honours --only and --start/--limit on a file", () => {
+  const files = { "l.txt": ["https://a.example.com/", "https://b.example.com/", "https://c.example.com/"].join("\n") };
+  const read = (f) => files[f];
+  assert.deepEqual(hostsFor({ hosts: "l.txt", only: ["b."], start: 0, limit: Infinity }, {}, read),
+                   ["https://b.example.com/"]);
+  assert.deepEqual(hostsFor({ hosts: "l.txt", only: null, start: 1, limit: 1 }, {}, read),
+                   ["https://b.example.com/"]);
+});
+
+test("the sweep asks every site in the shipped list", () => {
+  /* End to end through the real parseArgs, the real file, the real seam. */
+  const cfg = parseArgs(["--hosts", "probe-lists/agricharts-uncovered-2026-09-03.txt"]);
+  const got = hostsFor(cfg, {}, (f) => readFileSync(join(ROOT, f), "utf8"));
+  const claimed = Number(read("probe-lists/agricharts-uncovered-2026-09-03.txt").match(/^#\s*(\d+) sites,/m)[1]);
+  assert.equal(got.length, claimed);
+  assert.ok(got.includes("https://heartlandcoop.com/"));
+});
+
+test("main asks the file it was given, not data/platforms.json", async () => {
+  /* THE MUTATION THIS EXISTS FOR: main() reverting to agrichartsHosts() and
+     ignoring --hosts altogether. Every hostsFor test still passes, the run
+     goes green, and 211 sites nobody asked for get asked. main() prints its
+     tally BEFORE it fetches a single quote page, so a fetcher that answers
+     nothing is enough to read it. */
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  let code;
+  try {
+    code = await main(["--hosts", "list.txt"], {
+      readText: (f) => (f === "list.txt"
+        ? "# note\nhttps://one.example.com/   # 3 — One\nhttps://two.example.com/\n"
+        : readFileSync(join(ROOT, f), "utf8")),
+      get: async () => ({ ok: false, error: "no network in a test" }),
+    });
+  } finally { console.log = log; }
+  assert.match(said[0], /AGRICHARTS SWEEP — 2 site\(s\)/);
+  assert.equal(code, 1, "no quotes means no manifests, and that is a failure");
 });
