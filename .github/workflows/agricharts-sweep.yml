@@ -46,6 +46,19 @@ on:
         description: "Comma-separated substrings — ask only sites whose URL contains one. For trying a single co-op."
         required: false
         default: ""
+      capture:
+        # RUN 91611899805 ANSWERED THE QUESTION AND POSED THE NEXT ONE.
+        #   47  served prices in a table we cannot parse yet
+        #   10  answered 500
+        #    2  answered 403
+        # Forty-seven live boards in a shape lib/adapters/agricharts.mjs does
+        # not know. A parser gets written against bytes somebody received, so
+        # this run's job is to bring them back. It never overwrites a capture
+        # already on file: a fixture is frozen evidence and a diff that means
+        # "the specimen moved" must not be buried in noise.
+        description: "Save the HTML of every board we could not parse into fixtures/, and commit it"
+        type: boolean
+        default: false
       hosts:
         # A FILE PATH, NOT A LIST OF URLS. A workflow_dispatch string input
         # arrives as ONE LINE however it is pasted -- that cost a whole probe
@@ -87,6 +100,7 @@ jobs:
           START: ${{ inputs.start }}
           ONLY: ${{ inputs.only }}
           HOSTS: ${{ inputs.hosts }}
+          CAPTURE: ${{ inputs.capture }}
         run: |
           set -o pipefail
           ARGS=""
@@ -103,6 +117,7 @@ jobs:
           # prints what probe-lists/ actually holds. A path that cannot be
           # resolved stops the run: it must never fall through to
           # data/platforms.json and sweep 211 sites nobody asked for.
+          if [ "$CAPTURE" = "true" ]; then ARGS="$ARGS --capture fixtures"; fi
           if [ -n "$HOSTS" ]; then
             node scripts/agricharts-sweep.mjs $ARGS --hosts "$HOSTS"
           else
@@ -115,6 +130,22 @@ jobs:
       - name: Every manifest still loads
         if: ${{ inputs.write }}
         run: node --test test/sources.test.mjs test/manifest.test.mjs
+
+      # THE CAPTURES COMMIT EVEN THOUGH write IS OFF, and that is deliberate.
+      # `write` guards SOURCE MANIFESTS -- files that put an elevator on the
+      # map and a price in front of a farmer. A fixture is evidence: it changes
+      # nothing anybody reads and it is the entire point of asking for it. A
+      # capture run that threw the bytes away at the end would be a run for
+      # nothing.
+      - name: Commit the captures
+        if: ${{ always() && inputs.capture }}
+        run: |
+          git add -A fixtures/ || true
+          if git diff --cached --quiet; then
+            echo "no new captures; nothing to commit"
+          else
+            bash scripts/commit-and-push.sh "agricharts: boards captured by the sweep"
+          fi
 
       - name: Commit what it wrote
         if: ${{ always() && inputs.write }}
