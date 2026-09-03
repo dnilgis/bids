@@ -47,7 +47,11 @@ on:
         type: boolean
         default: false
       urls:
-        description: "Board sweep only. Board URLs, one per line. Blank uses probe-lists/agricharts-mobile.txt."
+        # ONE LINE OR MANY — GitHub gives this box to the job as a single line
+        # whatever you paste, so the parser splits on any whitespace. Run
+        # 91355280009 died with "nothing to ask" over sixteen good URLs for
+        # exactly that reason.
+        description: "Board sweep only. Board URLs separated by spaces or newlines. Blank uses probe-lists/agricharts-mobile.txt."
         required: false
         default: ""
       profiles:
