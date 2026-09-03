@@ -230,59 +230,34 @@ def near_its_town(lat, lon, s, towns):
     return True, "town not in the ZIP table, no distance check possible"
 
 
-def locate(s, towns, zips, use_census=False, census_fn=None):
-    """Where this source is, how sure we are, and what said so.
+# TWO COORDINATES ARE THE SAME COORDINATE AT 50 METRES.
+# Not a tolerance anybody chose for elegance: it is a tenth of the distance
+# between the two closest DISTINCT centroids in the ZIP table, so nothing can
+# equal a centroid by coincidence, and it is well inside the 15-137 m spread
+# that geocodes/README.md measured between real facility pins and their own
+# published street addresses. A yard is never 50 m from the middle of its ZIP.
+SAME_POINT_KM = 0.05
 
-    (lat, lon, precision, via, note), or (None, None, None, None, None).
 
-    PULLED OUT OF THE LOOP SO IT CAN BE TESTED. Two rules live in here that are
-    easy to state and were both wrong until 2026-09-03 -- a manifest's own
-    precision, and the ZIP fallback -- and testing them by running the whole
-    build against the whole repository is not a test, it is a rehearsal.
+def derived_centroid(s, towns, zips):
+    """The centroid this build WOULD derive for this source, or None.
+
+    (lat, lon, precision, via, note). Pulled out because it now has two
+    callers and they must not drift: locate() uses it to place a source that
+    carries no coordinate, and locate() ALSO uses it to ask whether a
+    coordinate a manifest does carry is really one of these wearing a better
+    label. Deriving the same centroid twice from two pieces of code is how the
+    two answers stop matching.
     """
     st = (s.get("state") or "").upper()
-    lat = lon = prec = via = note = None
 
-    # 1. A coordinate the source file already carries beats anything derived.
-    #
-    # AND IT CARRIES ITS OWN PRECISION. This said "street" for every
-    # manifest coordinate, whatever the manifest said about it. Measured
-    # 2026-09-03: 93 manifests declare latPrecision "town" -- most of them
-    # written by geocode-fill.mjs itself, from THIS file's own town
-    # centroids -- and 92 of them came back out of here as "street". The
-    # round trip promoted a town centroid to a rooftop, and
-    # data/directory.json then showed 571 street-precise pins of which at
-    # least 92 are the middle of a ZIP.
-    #
-    # geocodes/README.md is unambiguous about why that matters: "'street'
-    # is where the elevator is; 'town' is the centroid of its town's ZIPs
-    # and can be miles off. The map must say which." A pin that says street
-    # is a pin somebody drives to.
-    #
-    # A manifest that says nothing still defaults to street, because a
-    # hand-placed pin is somebody who looked at the yard.
-    if s.get("lat") and s.get("lon"):
-        lat, lon, via = float(s["lat"]), float(s["lon"]), "source-file"
-        prec = s.get("latPrecision") or "street"
-
-    # 2. The street address, if a geocoder is reachable.
-    if lat is None and use_census and (s.get("address") or "").strip():
-        hit = (census_fn or census)(s["address"] if st.lower() in s["address"].lower()
-                     else "%s, %s" % (s["address"], st))
-        time.sleep(0.2)          # their service, our manners
+    # The town centroid, which always works and always says so.
+    for v in town_variants(s.get("location")):
+        hit = towns.get((slug(v), st))
         if hit:
-            lat, lon, prec, via = hit[0], hit[1], "street", "census"
-            note = hit[2]
+            return hit[0], hit[1], "town", "zip-centroid", v
 
-    # 3. The town centroid, which always works and always says so.
-    if lat is None:
-        for v in town_variants(s.get("location")):
-            hit = towns.get((slug(v), st))
-            if hit:
-                lat, lon, prec, via, note = hit[0], hit[1], "town", "zip-centroid", v
-                break
-
-    # 3b. THE ZIP, WHEN THE TOWN NAME IS NOT A TOWN.
+    # THE ZIP, WHEN THE TOWN NAME IS NOT A TOWN.
     #
     # `location` is whatever the operator calls the place. On plenty of
     # boards that is a facility name: Kokomo Grain's "Adm Fkt" is in
@@ -291,14 +266,122 @@ def locate(s, towns, zips, use_census=False, census_fn=None):
     # them and it is the same kind of answer the step above gives -- the
     # centroid of a ZIP -- so it is recorded at the same precision and with
     # the ZIP named, not the town, because the ZIP is what resolved it.
-    if lat is None:
-        z5 = re.sub(r"\D", "", str(s.get("zip") or ""))[:5]
-        hit = zips.get(z5) if len(z5) == 5 else None
-        if hit and (not st or hit[3] == st):
-            lat, lon, prec, via = hit[0], hit[1], "town", "zip-code"
-            note = "%s (%s)" % (z5, hit[2]) if hit[2] else z5
+    z5 = re.sub(r"\D", "", str(s.get("zip") or ""))[:5]
+    hit = zips.get(z5) if len(z5) == 5 else None
+    if hit and (not st or hit[3] == st):
+        note = "%s (%s)" % (z5, hit[2]) if hit[2] else z5
+        return hit[0], hit[1], "town", "zip-code", note
+
+    return None
+
+
+def locate(s, towns, zips, use_census=False, census_fn=None):
+    """Where this source is, how sure we are, and what said so.
+
+    (lat, lon, precision, via, note), or (None, None, None, None, None).
+
+    PULLED OUT OF THE LOOP SO IT CAN BE TESTED. Three rules live in here that
+    are easy to state and were each wrong until they were measured -- a
+    manifest's own precision, the ZIP fallback, and the order of the first two
+    steps -- and testing them by running the whole build against the whole
+    repository is not a test, it is a rehearsal.
+    """
+    st = (s.get("state") or "").upper()
+    lat = lon = prec = via = note = None
+    derived = derived_centroid(s, towns, zips)
+
+    # 1. A coordinate the source file already carries beats anything derived.
+    #
+    # AND IT CARRIES ITS OWN PRECISION. This said "street" for every
+    # manifest coordinate, whatever the manifest said about it. Measured
+    # 2026-09-03: 206 manifests declare latPrecision "town" -- most of them
+    # written by geocode-fill.mjs itself, from THIS file's own town
+    # centroids -- and every one came back out of here as "street". The
+    # round trip promoted a town centroid to a rooftop.
+    #
+    # geocodes/README.md is unambiguous about why that matters: "'street'
+    # is where the elevator is; 'town' is the centroid of its town's ZIPs
+    # and can be miles off. The map must say which." A pin that says street
+    # is a pin somebody drives to.
+    #
+    # A LABEL IS A CLAIM; THE COORDINATE IS THE EVIDENCE. An absent
+    # latPrecision used to default to "street" on the reasoning that a
+    # hand-placed pin is somebody who looked at the yard. Measured across the
+    # 82 manifests that carry a coordinate and no precision: 70 of them sit a
+    # median 2.10 km off their own town centroid, which is a yard, and 7 sit
+    # ON it to within 50 m, which is not. All 7 also have no street address.
+    # So the default stands -- it is right 70 times out of 77 -- and the 7 are
+    # caught by the only check that does not need the label at all: a
+    # coordinate identical to the centroid this build would have derived IS
+    # that centroid. The demotion is one-directional on purpose. Calling a
+    # yard a town centroid costs a farmer a hover that undersells a good pin;
+    # calling a town centroid a yard sends him to the wrong side of town.
+    if s.get("lat") and s.get("lon"):
+        lat, lon, via = float(s["lat"]), float(s["lon"]), "source-file"
+        prec = s.get("latPrecision") or "street"
+        if prec != "town" and derived and km(lat, lon, derived[0], derived[1]) < SAME_POINT_KM:
+            prec = "town"
+            note = "no precision on file, and it matches the centroid this build derives from %s (%s)" % (derived[3], derived[4])
+
+    # 1b. A TOWN CENTROID WITH A STREET ADDRESS IS AN UPGRADE WAITING TO HAPPEN.
+    #
+    # Step 1 used to end the search, so a source whose manifest coordinate was
+    # a town centroid could never be improved by the geocoder no matter how
+    # good an address it carried -- it kept the centroid for ever, and every
+    # rebuild wrote the centroid back. Measured 2026-09-03: 58 sources declare
+    # latPrecision "town" AND carry a street address, and step 2 below was
+    # unreachable for all 58.
+    #
+    # The cross-check matters more than the upgrade. A geocoder that matches
+    # the wrong "Main St" would otherwise REPLACE a coordinate we already
+    # believe with one we do not, and a pin that then fails near_its_town()
+    # falls off the map entirely -- a source that places today would stop
+    # placing. So the census answer has to agree with the coordinate already
+    # on file, to the same 50 km this build uses everywhere else for "is this
+    # even the right town". Disagreement keeps the centroid; it does not
+    # discard the source.
+    if prec == "town" and use_census and (s.get("address") or "").strip():
+        hit = _census_hit(s, st, census_fn)
+        if hit:
+            if lat is None or km(lat, lon, hit[0], hit[1]) <= MAX_KM_FROM_TOWN:
+                lat, lon, prec, via = hit[0], hit[1], "street", "census"
+                note = hit[2]
+            else:
+                note = ("kept the centroid: the geocoder answered %.4f,%.4f, "
+                        "%.0f km away" % (hit[0], hit[1], km(lat, lon, hit[0], hit[1])))
+
+    # 2. The street address, if a geocoder is reachable.
+    if lat is None and use_census and (s.get("address") or "").strip():
+        hit = _census_hit(s, st, census_fn)
+        if hit:
+            lat, lon, prec, via = hit[0], hit[1], "street", "census"
+            note = hit[2]
+
+    # 3. The centroid: the town by name, else the ZIP.
+    if lat is None and derived:
+        lat, lon, prec, via, note = derived
 
     return lat, lon, prec, via, note
+
+
+def _census_hit(s, st, census_fn):
+    """One geocoder call for this source's address, with the state appended
+    when the address does not already name it. Never raises.
+
+    THE STATE IS A WORD, NOT A SUBSTRING. This tested `st.lower() in
+    address.lower()`, which finds "IN" inside "Ma-IN- St", "KS" inside
+    "Ric-KS-ecker", "IL" inside "Earlv-IL-le" and "OR" inside "N-OR-th". Four
+    of the 236 addresses on file with a state hit that on 2026-09-03 and were
+    handed to the Census geocoder with no state at all -- a bare "301 N
+    Ricksecker St" is a question about the whole country, and the answer it
+    gets back is not necessarily in Kansas.
+    """
+    named = re.search(r"(?:^|[\s,])%s(?:[\s,]|$)" % re.escape(st), s["address"], re.I)
+    addr = s["address"] if (named or not st) else "%s, %s" % (s["address"], st)
+    hit = (census_fn or census)(addr)
+    if census_fn is None:
+        time.sleep(0.2)      # their service, our manners -- but not the suite's time
+    return hit
 
 
 # A WALL-CLOCK BUDGET, NOT A CALL COUNT.
@@ -361,7 +444,14 @@ def main():
             continue
         srcs.append(s)
 
-    places, stats = {}, {"scraped": 0, "street": 0, "town": 0, "unplaced": 0,
+    # COUNT WHAT THE MAP SAYS, NOT WHERE THE NUMBER CAME FROM.
+    # This used to bucket every manifest coordinate as "scraped" and only
+    # precision-count the derived ones, so a build placing 415 manifest
+    # coordinates reported "scraped 415, street 0, town 71" -- and 206 of those
+    # 415 are town centroids. The line the reader wants is how many pins he can
+    # drive to. `from_manifest` keeps the provenance fact that "scraped" was
+    # carrying, alongside the precision rather than instead of it.
+    places, stats = {}, {"street": 0, "town": 0, "from_manifest": 0, "unplaced": 0,
                          "rejected_out_of_state": 0, "rejected_far_from_town": 0}
     unplaced = []
     for s in srcs:
@@ -416,7 +506,9 @@ def main():
             print("  REJECTED %-28s %s (%s)" % (sid, why, via))
             continue
 
-        stats["scraped" if via == "source-file" else prec] += 1
+        stats[prec] = stats.get(prec, 0) + 1
+        if via == "source-file":
+            stats["from_manifest"] += 1
         places[sid] = {"lat": round(lat, 5), "lon": round(lon, 5),
                        "precision": prec, "via": via}
         if note:
