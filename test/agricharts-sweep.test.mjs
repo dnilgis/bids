@@ -17,7 +17,8 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import {
   mobileCandidates, operatorFrom, websiteFrom, operatorSlug, slug, joinDirectory,
-  phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main,
+  phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main, resolveHostsPath,
+  describeHostsError, IO,
 } from "../scripts/agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { VERIFIED_BY } from "../lib/adapters/agricharts.mjs";
@@ -416,9 +417,98 @@ test("main asks the file it was given, not data/platforms.json", async () => {
       readText: (f) => (f === "list.txt"
         ? "# note\nhttps://one.example.com/   # 3 — One\nhttps://two.example.com/\n"
         : readFileSync(join(ROOT, f), "utf8")),
+      exists: (f) => f === "list.txt",
+      listLists: () => ["list.txt"],
       get: async () => ({ ok: false, error: "no network in a test" }),
     });
   } finally { console.log = log; }
   assert.match(said[0], /AGRICHARTS SWEEP — 2 site\(s\)/);
   assert.equal(code, 1, "no quotes means no manifests, and that is a failure");
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   WHAT SOMEBODY TYPES INTO THE BOX
+
+   Run 91604425422, 2026-09-03. The hosts box got
+
+       hosts = probe-lists/agricharts-uncovered-2026-09-03.txt
+
+   which is character-for-character the line the instructions gave — label and
+   value in one code span, which reads as "type this". The run refused and
+   asked nothing, which is the right failure, but the instruction was mine and
+   so was the failure. The label comes off in resolveHostsPath().
+   ──────────────────────────────────────────────────────────────────────── */
+const LISTS = ["agricharts-mobile.txt", "agricharts-uncovered-2026-09-03.txt"];
+const onDisk = new Set(LISTS.map((f) => `probe-lists/${f}`));
+const rhp = (v) => resolveHostsPath(v, (p) => onDisk.has(p), () => LISTS);
+
+test("the label the instructions printed is not part of the path", () => {
+  assert.equal(rhp("hosts = probe-lists/agricharts-uncovered-2026-09-03.txt").path,
+               "probe-lists/agricharts-uncovered-2026-09-03.txt");
+  assert.equal(rhp("hosts: probe-lists/agricharts-mobile.txt").path,
+               "probe-lists/agricharts-mobile.txt");
+  assert.equal(rhp("  host = probe-lists/agricharts-mobile.txt  ").path,
+               "probe-lists/agricharts-mobile.txt");
+});
+
+test("a plain path still works, and so do quotes round it", () => {
+  assert.equal(rhp("probe-lists/agricharts-mobile.txt").path, "probe-lists/agricharts-mobile.txt");
+  assert.equal(rhp('"probe-lists/agricharts-mobile.txt"').path, "probe-lists/agricharts-mobile.txt");
+  assert.equal(rhp("hosts = 'probe-lists/agricharts-mobile.txt'").path,
+               "probe-lists/agricharts-mobile.txt");
+});
+
+test("the file name on its own is enough, with or without .txt", () => {
+  /* "the list you sent me" is a name, not a path, and probe-lists/ is the only
+     place these live. */
+  assert.equal(rhp("agricharts-uncovered-2026-09-03.txt").path,
+               "probe-lists/agricharts-uncovered-2026-09-03.txt");
+  assert.equal(rhp("agricharts-mobile").path, "probe-lists/agricharts-mobile.txt");
+});
+
+test("a name that resolves to nothing is refused, not guessed at", () => {
+  assert.equal(rhp("probe-lists/nope.txt").path, undefined);
+  assert.equal(rhp("").path, undefined);
+  assert.equal(rhp("   ").path, undefined);
+});
+
+test("the refusal names what would have satisfied it", () => {
+  const { error } = rhp("hosts = probe-lists/typo.txt");
+  const said = describeHostsError(error);
+  assert.match(said, /hosts was "hosts = probe-lists\/typo\.txt"/, "it repeats what it got");
+  assert.match(said, /probe-lists\/typo\.txt/, "it says what it tried");
+  assert.match(said, /agricharts-uncovered-2026-09-03\.txt/, "it lists what is there");
+  assert.match(said, /Nothing was asked/);
+});
+
+test("an empty box is told the difference between blank and wrong", () => {
+  assert.match(describeHostsError(rhp("").error), /Leave it blank to sweep data\/platforms\.json/);
+});
+
+test("a hosts value that resolves to nothing stops the run", async () => {
+  /* THE FAILURE THIS MUST NEVER HAVE: falling through to platforms.json and
+     sweeping 211 sites that were not the ones asked for. */
+  const said = [];
+  const err = console.error, log = console.log;
+  console.error = (...a) => said.push(a.join(" "));
+  console.log = () => {};
+  let code;
+  try {
+    code = await main(["--hosts", "hosts = nope.txt"], {
+      readText: () => { throw new Error("must not read anything"); },
+      exists: () => false,
+      listLists: () => LISTS,
+      get: async () => { throw new Error("must not ask anybody anything"); },
+    });
+  } finally { console.error = err; console.log = log; }
+  assert.equal(code, 1);
+  assert.match(said.join("\n"), /no such hosts file/);
+});
+
+test("the shipped list resolves from its bare name", () => {
+  /* End to end against the real repository: this is the value a person is
+     most likely to type. */
+  const r = resolveHostsPath("agricharts-uncovered-2026-09-03", IO.exists, IO.listLists);
+  assert.equal(r.path, "probe-lists/agricharts-uncovered-2026-09-03.txt");
+  assert.ok(hostsFor({ hosts: r.path, only: null, start: 0, limit: Infinity }, {}, IO.readText).length > 0);
 });

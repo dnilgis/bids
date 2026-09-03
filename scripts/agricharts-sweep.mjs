@@ -300,6 +300,42 @@ export function agrichartsHosts(platforms) {
     .sort();
 }
 
+/** Turn what somebody typed into a workflow box into a path, or say why not.
+ *
+ *  RUN 91604425422, 2026-09-03. The box got
+ *
+ *      hosts = probe-lists/agricharts-uncovered-2026-09-03.txt
+ *
+ *  because that is EXACTLY the line I wrote in the instructions -- one code
+ *  span, label and value together, which reads as "type this". The guard did
+ *  its job: it printed what it got and asked nothing rather than falling
+ *  through to platforms.json and sweeping 211 sites. But a guard that refuses
+ *  a reasonable reading of my own instruction is a guard doing my apologising.
+ *  The label comes off here.
+ *
+ *  It also accepts a bare file name, because "the list you sent me" is a name
+ *  and not a path, and probe-lists/ is the only place these live.
+ *
+ *  Returns { path } or { error: { given, tried, available } }. It does not
+ *  throw and it does not guess: an unresolvable value stops the run.
+ */
+export function resolveHostsPath(raw, exists, list) {
+  const given = String(raw ?? "");
+  let v = given.trim();
+  v = v.replace(/^(['"])([\s\S]*)\1$/, "$2").trim();   // "quoted"
+  v = v.replace(/^hosts?\s*[:=]\s*/i, "").trim();       // hosts = / hosts:
+  v = v.replace(/^(['"])([\s\S]*)\1$/, "$2").trim();   // hosts = "quoted"
+  if (!v) return { error: { given, tried: [], available: list() } };
+
+  const tried = [v];
+  if (!/[\\/]/.test(v)) tried.push(`probe-lists/${v}`);
+  for (const t of [...tried]) if (!/\.[a-z0-9]+$/i.test(t)) tried.push(`${t}.txt`);
+
+  for (const t of tried) if (exists(t)) return { path: t };
+  return { error: { given, tried, available: list() } };
+}
+
+
 /** Which sites THIS RUN asks: the file if one was named, else every AgriCharts
  *  site in data/platforms.json, then --only, then --start/--limit.
  *
@@ -324,13 +360,45 @@ export function hostsFor(cfg, platforms, readText) {
  * asks 211 sites nobody asked for -- and no test of hostsFor() on its own can
  * see it, because the bug is that hostsFor() was not called. With these, one
  * test runs the real main() and reads the count it prints. */
-export const IO = { readText: (f) => readFileSync(f, "utf8"), get };
+export const IO = {
+  readText: (f) => readFileSync(join(ROOT, f), "utf8"),
+  exists: (f) => existsSync(join(ROOT, f)),
+  listLists: () => (existsSync(join(ROOT, "probe-lists"))
+    ? readdirSync(join(ROOT, "probe-lists")).filter((f) => !f.startsWith(".")).sort() : []),
+  get,
+};
+
+/** A REFUSAL MUST NAME WHAT WOULD SATISFY IT. "not in this repository" sent a
+ *  correct instruction back with nothing to do about it. */
+export function describeHostsError({ given, tried, available }) {
+  const head = given.trim()
+    ? `hosts was ${JSON.stringify(given)} and no file of that name is in this repository.`
+    : "hosts was empty. Leave it blank to sweep data/platforms.json, or name a list.";
+  const t = tried.length ? ` Tried: ${tried.join(", ")}.` : "";
+  const a = available.length
+    ? ` probe-lists/ holds: ${available.join(", ")}. The name alone is enough.`
+    : " probe-lists/ is empty.";
+  return head + t + a + " Nothing was asked.";
+}
 
 export async function main(argv = process.argv.slice(2), io = IO) {
   const cfg = parseArgs(argv);
   const runId = process.env.GITHUB_RUN_ID || null;
 
   const platforms = JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8"));
+
+  /* A LIST THAT CANNOT BE FOUND STOPS THE RUN. It must never fall through to
+     platforms.json: that is a different 211 sites and it would look like a
+     clean sweep of the whole platform. */
+  if (cfg.hosts) {
+    const r = resolveHostsPath(cfg.hosts, io.exists, io.listLists);
+    if (r.error) {
+      console.error(`::error title=no such hosts file::${describeHostsError(r.error)}`);
+      return 1;
+    }
+    cfg.hosts = r.path;
+  }
+
   const hosts = hostsFor(cfg, platforms, io.readText);
 
   console.log(`AGRICHARTS SWEEP — ${hosts.length} site(s)${cfg.write ? "" : "  (DRY RUN: --write to write files)"}`);
