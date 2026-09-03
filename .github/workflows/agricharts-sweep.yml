@@ -52,7 +52,7 @@ on:
         # run on 2026-09-02 -- and a list of sixty sites is not something to
         # retype into a box. The list lives in the repository, gets reviewed in
         # a diff, and says in its own header where its numbers came from.
-        description: "Read the sites from this file instead of data/platforms.json, e.g. probe-lists/agricharts-uncovered-2026-09-03.txt"
+        description: "Which list to sweep instead of data/platforms.json. The file name alone is enough: agricharts-uncovered-2026-09-03.txt"
         required: false
         default: ""
 
@@ -94,18 +94,20 @@ jobs:
           if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
           if [ -n "$START" ]; then ARGS="$ARGS --start $START"; fi
           if [ -n "$ONLY" ]; then ARGS="$ARGS --only $ONLY"; fi
-          # A PATH THAT IS NOT THERE IS A TYPO, AND A TYPO MUST NOT LOOK LIKE
-          # A CLEAN SWEEP OF THE WHOLE PLATFORM. Without this, a misspelled
-          # file name falls through to data/platforms.json and asks 211 sites
-          # that were not the ones asked for.
+          # QUOTED, AND NOT CHECKED HERE. Run 91604425422 got
+          #     hosts = probe-lists/agricharts-uncovered-2026-09-03.txt
+          # in the box, because that is what the instruction looked like. That
+          # is one value with spaces in it, so it must not be word-split into
+          # $ARGS -- and deciding what it means belongs in the script, where
+          # resolveHostsPath() strips the label, accepts a bare file name, and
+          # prints what probe-lists/ actually holds. A path that cannot be
+          # resolved stops the run: it must never fall through to
+          # data/platforms.json and sweep 211 sites nobody asked for.
           if [ -n "$HOSTS" ]; then
-            if [ ! -f "$HOSTS" ]; then
-              echo "::error title=no such hosts file::$HOSTS is not in this repository. Nothing was asked."
-              exit 1
-            fi
-            ARGS="$ARGS --hosts $HOSTS"
+            node scripts/agricharts-sweep.mjs $ARGS --hosts "$HOSTS"
+          else
+            node scripts/agricharts-sweep.mjs $ARGS
           fi
-          node scripts/agricharts-sweep.mjs $ARGS
 
       # A manifest that does not load is worse than no manifest: it is dropped
       # silently and the elevator simply is not there. Every source in the
