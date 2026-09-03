@@ -1,0 +1,38 @@
+{
+  "id": "kokomograin-emporia",
+  "operator": "Kokomo Grain Co.",
+  "location": "Emporia",
+  "state": "IN",
+  "platform": "agricharts",
+  "url": "https://kokomograin.mobile.agricharts.com/cash/prices.php",
+  "locationId": "31805",
+  "identityAlternative": "agricharts:board-agrees+quotes-agree",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "BUILT FROM fixtures/agricharts-kokomograin.html, captured from the runner 2026-09-02 (run 91330960375) and committed verbatim. locationId 31805 is the l= parameter on this location's own chart links, which every row of every AgriCharts capture carries; it is NOT the section heading, which is a display name and can be re-typed. This location showed 12 row(s) in Corn, Soybeans, Wheat.\n\nidentityAlternative: this board publishes cash, basis and a futures CHANGE and no futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp from the adapter. The two checks behind the stamp are in lib/adapters/agricharts.mjs: every location on this board must imply the same futures for one commodity and one delivery code, and every row must sit within 5c of a real quoted CBOT contract. futuresPriceCents publishes as null on every row, because there is no quote to republish.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json (Barchart's own directory). Website is the \"Visit Our Main Website\" link on their own mobile board.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "46056",
+  "lat": null,
+  "lon": null,
+  "phone": "17657794404",
+  "email": null,
+  "website": "https://www.kokomograin.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is null: this ZIP is not in geocodes/zip-candidates.json. `sync known` rebuilds geocodes/places.json from the manifests' ZIPs, and `geocode fill` with the write box on then writes the coordinate back here."
+}

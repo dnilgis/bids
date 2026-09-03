@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { buildFile, Refused } from "../lib/board.mjs";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
-import { toConfig } from "../lib/sources.mjs";
+import { toConfig, PLATFORMS } from "../lib/sources.mjs";
 import { VERIFIED_BY, mergeQuotes, quoteUrls } from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
@@ -175,6 +175,18 @@ test("agricharts is registered, and the older adapters are untouched by the thir
   // adapterFor with no context returns the adapter itself, exactly as before.
   assert.equal(adapterFor("bushel"), ADAPTERS.bushel);
   assert.notEqual(adapterFor("agricharts", { contracts: [] }), ADAPTERS.agricharts);
+});
+
+/* A PLATFORM WITH AN ADAPTER AND NO ENTRY IN PLATFORMS IS A SOURCE THAT LOADS
+ * AND NEVER RUNS. validateSource drops a manifest naming an unknown platform,
+ * so the adapter can be perfect, the manifest can be perfect, and 23 sources
+ * simply are not there. This is what caught agricharts missing from that list. */
+test("every adapter is a declared platform, and every declared platform has an adapter", () => {
+  for (const p of PLATFORMS)
+    assert.ok(p in ADAPTERS, `platform "${p}" is declared and has no adapter`);
+  for (const p of Object.keys(ADAPTERS))
+    assert.ok(PLATFORMS.includes(p),
+      `adapter "${p}" exists and is not in PLATFORMS — every manifest naming it is dropped at load`);
 });
 
 test("the shared pages are seven absolute URLs on one host", () => {
