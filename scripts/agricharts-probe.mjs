@@ -245,16 +245,46 @@ async function ask(url, headers, timeoutMs) {
    Monday is the sentence underneath it. */
 export function verdict({ rows, networkControl, platformControl }) {
   const lines = [];
-  if (!networkControl?.ok || (networkControl.status ?? 0) >= 400) {
-    lines.push("INCONCLUSIVE. The network control did not answer either "
-      + `(${networkControl?.error ?? `status ${networkControl?.status}`}), so nothing below is `
-      + "about AgriCharts. Re-run when the runner has egress.");
-    return { call: "inconclusive", lines };
-  }
   const attempted = rows.filter((r) => r.ok || r.error);
   if (!attempted.length) {
     lines.push("INCONCLUSIVE. Nothing was asked.");
     return { call: "inconclusive", lines };
+  }
+
+  /* WHAT THE CONTROL IS FOR, AND WHAT IT IS NOT FOR.
+   *
+   * It exists to stop the run concluding "AgriCharts refuses us" when the truth
+   * is "this runner reached nothing at all". That is the ONLY question it
+   * answers, and it is not the best evidence available for it — a target that
+   * answered 200 proves egress better than any control can.
+   *
+   * The first version made the control a gate on everything. Run 91323682912
+   * showed why that is wrong: raw.githubusercontent.com dropped one connection
+   * with ECONNRESET, and the run then printed
+   *
+   *     INCONCLUSIVE ... so nothing below is about AgriCharts
+   *
+   * over a grid of THIRTY-FIVE 200s, a platform control answering 500 from
+   * nginx, and seven boards captured and committed in the same job. Then it
+   * exited 1 and went red. Every word of that was false and the red tick was
+   * the least of it.
+   *
+   * So egress is proven by ANY HTTP answer from anywhere in the run, and the
+   * control is only decisive when nothing else answered either. */
+  const answered = (r) => Number.isFinite(r?.status);
+  const controlOk = networkControl?.ok && (networkControl.status ?? 0) < 400;
+  const egressProven = controlOk || rows.some(answered) || answered(platformControl);
+  if (!egressProven) {
+    lines.push("INCONCLUSIVE. Nothing answered — not the targets, not the platform control, and "
+      + `not the network control (${networkControl?.error ?? `status ${networkControl?.status}`}). `
+      + "This runner reached nothing at all, so none of it is about AgriCharts. Re-run.");
+    return { call: "inconclusive", lines };
+  }
+  if (!controlOk) {
+    lines.push(`Note: the network control did not answer (${networkControl?.error
+      ?? `status ${networkControl?.status}`}), but ${rows.filter(answered).length} of `
+      + `${rows.length} request(s) below did, so egress is not in question and the rest of this `
+      + "stands. The control flaked; the run did not.");
   }
 
   const opened = rows.filter((r) => r.status === 200);

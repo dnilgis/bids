@@ -130,21 +130,69 @@ const PLAT_500 = { ok: true, status: 500 };
 const row = (profile, status, url = "https://a.mobile.agricharts.com/cash/prices.php") =>
   ({ url, profile, ok: true, status });
 
-test("no egress means no finding, whatever the grid says", () => {
+const dead = (profile, error = "TypeError: fetch failed (ECONNRESET)",
+              url = "https://a.mobile.agricharts.com/cash/prices.php") =>
+  ({ url, profile, ok: false, status: null, error });
+
+test("a runner that reached nothing at all has found nothing", () => {
   const v = verdict({
-    rows: [row("chrome", 403), row("cdp", 403)],
-    networkControl: NET_DOWN, platformControl: PLAT_500,
+    rows: [dead("chrome"), dead("cdp")],
+    networkControl: NET_DOWN, platformControl: { ok: false, error: "ECONNRESET" },
   });
   assert.equal(v.call, "inconclusive");
-  assert.match(v.lines.join(" "), /nothing below is about AgriCharts/);
+  assert.match(v.lines.join(" "), /reached nothing at all/);
 });
 
-test("a network control that answers 403 is also no finding", () => {
+test("a control that answers 403 with nothing else answering is no finding either", () => {
   const v = verdict({
-    rows: [row("chrome", 403)],
-    networkControl: { ok: true, status: 403 }, platformControl: PLAT_500,
+    rows: [dead("chrome")],
+    networkControl: { ok: true, status: 403 }, platformControl: { ok: false, error: "ECONNRESET" },
   });
   assert.equal(v.call, "inconclusive");
+});
+
+/* RUN 91323682912, AND THE REASON THIS TEST EXISTS.
+ *
+ * raw.githubusercontent.com dropped one connection. The run then printed
+ * "INCONCLUSIVE ... nothing below is about AgriCharts" over a grid of
+ * thirty-five 200s, a platform control answering 500 from nginx, and seven
+ * boards captured and committed in the same job — and exited 1. The control is
+ * evidence about egress, and it is the WEAKEST evidence about egress in the
+ * room the moment a target answers. */
+test("a control that flakes does not throw away a run where the targets answered", () => {
+  const v = verdict({
+    rows: PROFILE_ORDER.map((p) => row(p, 200)),
+    networkControl: NET_DOWN, platformControl: PLAT_500,
+  });
+  assert.equal(v.call, "client");
+  const t = v.lines.join(" ");
+  assert.match(t, /A DOOR IS OPEN/);
+  assert.match(t, /control flaked; the run did not/);
+  assert.doesNotMatch(t, /INCONCLUSIVE/);
+});
+
+/* AND THE TARGETS HAVE TO COUNT ON THEIR OWN. Both controls are extra requests
+   to hosts we do not care about; either can drop a connection. Thirty-five 200s
+   from the boards themselves is the strongest evidence of egress in the run and
+   it must not need a control to corroborate it. */
+test("targets answering is enough on its own, with both controls down", () => {
+  const v = verdict({
+    rows: PROFILE_ORDER.map((p) => row(p, 200)),
+    networkControl: NET_DOWN, platformControl: { ok: false, error: "ECONNRESET" },
+  });
+  assert.equal(v.call, "client");
+  assert.doesNotMatch(v.lines.join(" "), /INCONCLUSIVE/);
+});
+
+test("a flaked control does not turn a real refusal into a shrug either", () => {
+  // Every profile refused, control down, but the platform control answered —
+  // so we did reach AgriCharts and the refusal is still the finding.
+  const v = verdict({
+    rows: PROFILE_ORDER.map((p) => row(p, 403)),
+    networkControl: NET_DOWN, platformControl: PLAT_500,
+  });
+  assert.equal(v.call, "network");
+  assert.match(v.lines.join(" "), /client is not the variable/i);
 });
 
 test("every profile refused, control healthy: it is the network, and it says so", () => {
