@@ -26,18 +26,22 @@ name: agricharts probe
 on:
   workflow_dispatch:
     inputs:
+      quotes:
+        # First, because it is the run that is owed. The board sweep is done --
+        # seven boards are captured and the 403 is disproved. What is missing is
+        # the futures price, without which lib/board.mjs refuses every AgriCharts
+        # source, and this is the box that goes and gets it.
+        description: "TICK THIS to capture the CBOT quote pages (the futures price the cash board does not carry). Leave off to re-run the board sweep."
+        type: boolean
+        default: false
       urls:
-        description: "Board URLs, one per line. Blank uses probe-lists/agricharts-mobile.txt."
+        description: "Board sweep only. Board URLs, one per line. Blank uses probe-lists/agricharts-mobile.txt."
         required: false
         default: ""
       profiles:
-        description: "Comma-separated subset of bidreader,cdp,chrome,browser,bare. Blank runs all five."
+        description: "Board sweep only. Comma-separated subset of bidreader,cdp,chrome,browser,bare. Blank runs all five."
         required: false
         default: ""
-      quotes:
-        description: "Instead of the board sweep, capture the CBOT quote pages (the futures price the cash board does not carry)"
-        type: boolean
-        default: false
       commit:
         description: "Commit any captured board under fixtures/"
         type: boolean
