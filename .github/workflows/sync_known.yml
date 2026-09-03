@@ -62,6 +62,10 @@ jobs:
       - name: Place them
         run: |
           pip install --quiet zipcodes
+          # A town centroid must not come back out as a rooftop, and a facility
+          # name with a ZIP must still get placed. Both are one line of this
+          # script and both were wrong until 2026-09-03.
+          python test/geocode-precision.test.py
           python scripts/build_geocodes.py
 
       - name: Rebuild the directory the map reads
