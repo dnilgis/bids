@@ -147,17 +147,28 @@ export function operatorSlug(mobileUrl) {
    heading is the operator's own name for the place, and it matches the
    directory's `branch` on most of them. No match means no manifest — a town
    nobody published is a town this project does not know. */
-export function joinDirectory(known, operator, label) {
+export function joinDirectory(known, operator, label, { soleLocation = false } = {}) {
   const o = slug(operator), l = slug(label);
-  if (!l) return null;
   const sameOperator = (k) => {
     const f = slug(k.facility);
-    return f.includes(o.slice(0, 8)) || o.includes(f.slice(0, 8));
+    return f.length >= 4 && o.length >= 4 && (f.includes(o.slice(0, 8)) || o.includes(f.slice(0, 8)));
   };
   const rows = known.filter(sameOperator);
-  return rows.find((k) => slug(k.branch) === l)
-      ?? rows.find((k) => slug(k.city) === l)
-      ?? null;
+  if (l) {
+    return rows.find((k) => slug(k.branch) === l)
+        ?? rows.find((k) => slug(k.city) === l)
+        ?? null;
+  }
+  /* A SINGLE-LOCATION BOARD OFTEN NAMES NO PLACE AT ALL.
+   *
+   * Aurora Elevator, Keller Grain, Offerle, Horse Heaven Grain and eight more
+   * head their tables with the COMMODITY and carry no location filter, so there
+   * is no place name on the page. The board is the operator, and the directory
+   * knows where the operator is -- but only if it knows of exactly ONE of them.
+   * Two rows for one company and there is nothing here to choose between them,
+   * so it reports rather than picks. Rule 1. */
+  if (soleLocation && rows.length === 1) return rows[0];
+  return null;
 }
 
 export const phoneOf = (p) => {
@@ -244,7 +255,7 @@ export function planBoard({ html, url, site, rows, known, byZip, existingIds, ru
   const write = [], skip = [], unmatched = [];
   const seen = new Set(existingIds);
   for (const loc of byLoc.values()) {
-    const dir = joinDirectory(known, operator, loc.label);
+    const dir = joinDirectory(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
     if (!dir || !dir.state || !dir.branch) {
       unmatched.push({ operator, label: loc.label ?? "(unnamed)", locationId: loc.locationId,
                        rows: loc.rows, url });

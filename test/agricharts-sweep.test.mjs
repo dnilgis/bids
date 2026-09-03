@@ -270,3 +270,39 @@ test("across the four boards, three locations are known and cannot be placed", (
     assert.match(u.url, /^https:\/\//);
   }
 });
+
+/* ── a board that names no place at all ──────────────────────────────────── */
+
+/* THIRTEEN OF THE 23 CAPTURES HAVE ONE LOCATION AND NO NAME FOR IT. Aurora
+ * Elevator, Keller Grain, Offerle, Horse Heaven and the rest head their tables
+ * with the COMMODITY and carry no location filter, so nothing on the page says
+ * where they are. The board IS the operator, and the directory knows where the
+ * operator is — but only when it knows of exactly one of them. */
+test("a single-location board with no name is placed by its operator", () => {
+  const d = joinDirectory(KNOWN, "Aurora Elevator", null, { soleLocation: true });
+  assert.ok(d, "Aurora Elevator Inc. is one row in the directory");
+  assert.equal(d.city, "Aurora");
+  assert.equal(d.state, "IA");
+});
+
+test("and only when the board really has one location", () => {
+  assert.equal(joinDirectory(KNOWN, "Aurora Elevator", null), null,
+    "without soleLocation this must not fire — a 49-location board would take the first row");
+});
+
+/* TWO ROWS FOR ONE COMPANY IS NOT AN ANSWER. There is nothing on the page to
+   choose between them, so it reports rather than picks. Rule 1. */
+test("an operator with several rows is reported, not guessed at", () => {
+  const d = joinDirectory(KNOWN, "Kokomo Grain", null, { soleLocation: true });
+  assert.equal(d, null, "Kokomo Grain has nine branches; none of them is 'the' one");
+});
+
+test("a nameless location on a multi-location board is still reported", () => {
+  const html = read("fixtures/agricharts-farmersco-operative.html");
+  const rows = extract(html, "https://x/", { contracts: CONTRACTS });
+  const plan = planBoard({ html, url: "https://x/", site: "https://x/", rows, known: KNOWN,
+                           byZip: ZIPS, existingIds: new Set() });
+  assert.equal(plan.write.length, 45, "45 of Dorchester's 49 are in the directory");
+  assert.equal(plan.unmatched.length, 4);
+  for (const w of plan.write) assert.deepEqual(validateSource(w.json, new Set()), []);
+});

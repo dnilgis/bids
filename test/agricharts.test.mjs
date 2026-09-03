@@ -19,7 +19,7 @@ import {
   parseBoard, parseQuotes, quoteToCents, parseCash, parseBasisCents, sectionIsCommodity,
   impliedSpread, fitToContracts, boardStamp, describe, AgriChartsRefused,
   COLUMNS, GRAIN_ROOTS, MAX_FIT_CENTS,
-  extract, mergeQuotes, quoteUrls, VERIFIED_BY, rootsFor,
+  extract, mergeQuotes, quoteUrls, VERIFIED_BY, rootsFor, locationNames,
 } from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
@@ -41,8 +41,12 @@ const BOARDS = {
   "agricharts-wheatfieldgrain.html":    { rows: 120, locs: 7, grouped: "location" },
 };
 
-test("the seven captured boards are all still here", () => {
-  assert.deepEqual(boards(), Object.keys(BOARDS).sort());
+test("the seven boards these counts were written from are all still here", () => {
+  /* There are more captures than these now -- the national sweep of 2026-09-03
+     brought back sixteen more -- so this asserts the seven are present rather
+     than that they are all there is. */
+  for (const f of Object.keys(BOARDS)) assert.ok(boards().includes(f), `${f} is gone`);
+  assert.ok(boards().length >= 7);
 });
 
 for (const [f, want] of Object.entries(BOARDS)) {
@@ -85,11 +89,11 @@ for (const [f, want] of Object.entries(BOARDS)) {
   });
 }
 
-test("309 rows over the seven boards, 29 location ids", () => {
+test("309 rows over those seven boards, 29 location ids", () => {
   /* 29, not 24. I wrote 24 in a summary once by adding up the per-board counts
      wrong, and this test is what said so. A tally you computed is checked
      against the thing it is a tally of. */
-  const all = boards().flatMap((f) => parseBoard(read(f), f));
+  const all = Object.keys(BOARDS).flatMap((f) => parseBoard(read(f), f));
   assert.equal(all.length, 309);
   assert.equal(new Set(all.map((r) => `${r.source}␟${r.locationId}`)).size, 29);
   assert.equal(Object.values(BOARDS).reduce((a, b) => a + b.locs, 0), 29);
@@ -196,10 +200,20 @@ test("the synthetic board is read the same way as a real one", () => {
   assert.deepEqual(rows.map((r) => r.location), ["Alpha", "Beta"]);
 });
 
-test("parseBoard REFUSES a board whose locations disagree", () => {
-  assert.throws(() => parseBoard(twoLocationBoard("$5.37"), "x"),
-    (e) => e instanceof AgriChartsRefused && /disagrees with itself/.test(e.message)
-           && /Corn U26/.test(e.message) && /9c/.test(e.message));
+/* THE JUDGE MOVED OUT OF THE PARSER. parseBoard reads; extract() decides. That
+ * separation cost two whole boards on the national sweep before it existed --
+ * Balk Grain has one soybean group 6c wide out of dozens and Lang Farms carries
+ * stale target rows dated 2023, and both were refused entirely by a rule
+ * enforced one level too early and with no notion of a minority. */
+test("parseBoard reads a disagreeing board; it does not judge it", () => {
+  const rows = parseBoard(twoLocationBoard("$5.37"), "x");
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((r) => r.impliedFuturesCents), [543, 552]);
+});
+
+test("extract refuses when MOST groups disagree — that is a moved column", () => {
+  assert.throws(() => extract(twoLocationBoard("$5.37"), "x", { contracts: CONTRACTS }),
+    (e) => e instanceof AgriChartsRefused && /disagrees with itself on 1 of 1/.test(e.message));
 });
 
 test("and lets a cent of rounding through", () => {
@@ -335,13 +349,100 @@ test("87 distinct priced contracts across the eight pages", () => {
   assert.equal(CONTRACTS.filter((c) => c.priced).length, 87);
 });
 
-test("every row of every board sits on a real quoted contract", () => {
-  for (const f of boards()) {
+test("every row of the seven original boards sits on a real quoted contract", () => {
+  for (const f of Object.keys(BOARDS)) {
     const rows = parseBoard(read(f), f);
     const fit = fitToContracts(rows, CONTRACTS);
     assert.ok(fit.ok, `${f}: ${fit.why}`);
     assert.equal(fit.checked, rows.length, `${f} left rows unchecked: ${JSON.stringify(fit.unquoted)}`);
   }
+});
+
+/* AND EVERY BOARD THE NATIONAL SWEEP BROUGHT BACK EITHER READS OR SAYS WHY.
+ * These are 23 real boards from 23 different co-ops, and they are the only
+ * defence against a parser tuned to seven. Two of them refuse, both for the
+ * same honest reason, and that is asserted rather than tolerated. */
+const CASH_ONLY = ["agricharts-butterfieldgrain.html", "agricharts-westco.html"];
+test("every captured board reads, except the two that publish no basis at all", () => {
+  const refused = [];
+  let rows = 0, locations = 0, unreconciled = 0;
+  for (const f of boards()) {
+    try {
+      const r = extract(read(f), f, { contracts: CONTRACTS });
+      rows += r.length;
+      locations += new Set(r.map((x) => x.locationId)).size;
+      unreconciled += r.unreconciled.length;
+    } catch (e) { refused.push([f, e.message]); }
+  }
+  assert.deepEqual(refused.map((x) => x[0]).sort(), CASH_ONLY.sort(),
+    `unexpected refusals: ${refused.map((x) => `${x[0]}: ${x[1].slice(0, 120)}`).join(" | ")}`);
+  for (const [, why] of refused) assert.match(why, /cash-only board/);
+  assert.ok(rows > 1900, `only ${rows} rows across the captures`);
+  assert.ok(locations > 100, `only ${locations} locations across the captures`);
+  /* A handful of refused rows is the doctrine working. Hundreds would mean it
+     had become a way of not noticing. */
+  assert.ok(unreconciled < rows / 100, `${unreconciled} refused rows out of ${rows}`);
+});
+
+/* THE BOARD THAT MADE THE LOCATION SELECTOR NECESSARY. Farmers Cooperative
+ * Dorchester: 1,096 rows over 49 locations, every table headed "CORN", and not
+ * one location named anywhere in the tables. */
+test("Dorchester's 49 locations are all named, from the page's own filter", () => {
+  const html = read("agricharts-farmersco-operative.html");
+  const rows = extract(html, "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 1096);
+  const ids = new Set(rows.map((r) => r.locationId));
+  assert.equal(ids.size, 49);
+  assert.equal(rows.filter((r) => r.location).length, 1096, "every row must carry a place name");
+  const names = locationNames(html);
+  assert.equal(names.get("28468"), "BEATRICE");
+  assert.equal(names.get("4573"), "DORCHESTER");
+  for (const id of ids) assert.ok(names.has(id), `no name for location ${id}`);
+});
+
+/* "ALL LOCATIONS" IS NOT A LOCATION. Some boards give it an empty value and
+   some give it 0; the second would file every unmatched row under a town called
+   "All Locations" and nobody would ever look at it twice. */
+test("an All Locations option numbered zero is still not a place", () => {
+  const n = locationNames(`<select name="location_filter">
+    <option value="0">All Locations</option><option value="12">BEATRICE</option></select>`);
+  assert.equal(n.size, 1);
+  assert.equal(n.get("12"), "BEATRICE");
+  assert.equal(n.get("0"), undefined);
+});
+
+/* AND IF THE TWO SOURCES OF A NAME DISAGREE, NEITHER IS TRUSTED. They agreed at
+   all 47 places both existed across the captures. The day one stops, guessing
+   which is right puts one town's name on another town's price. */
+test("a heading that contradicts the selector refuses the board", () => {
+  const board = twoLocationBoard("$5.28").replace("<body>",
+    `<body><select name="location_filter"><option value="11">Alpha</option>`
+    + `<option value="22">SOMEWHERE ELSE</option></select>`);
+  assert.throws(() => parseBoard(board, "x"),
+    (e) => e instanceof AgriChartsRefused && /disagree about location 22/.test(e.message)
+           && /Beta/.test(e.message) && /SOMEWHERE ELSE/.test(e.message));
+});
+
+/* A ZERO IS NOT A BID. Westco posts $0.00 against Pinto Beans and Great
+   Northern Beans — they are not buying those today, and a farmer reading a
+   published 0.00 reads "we pay nothing". */
+test("a $0.00 row is refused and the rest of the board publishes", () => {
+  const board = twoLocationBoard("$0.00");
+  const rows = extract(board, "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 1, "the priced row survives");
+  assert.equal(rows[0].cash, 5.28);
+  assert.equal(rows.unreconciled.length, 1);
+  assert.match(rows.unreconciled[0].why, /\$0\.00, which is not a bid/);
+});
+
+test("the selector is read past the All Locations option and the images around it", () => {
+  assert.equal(locationNames("<html></html>").size, 0);
+  const sel = `<select name="location_filter"><option value=''>All Locations</option>
+    <option  value="12">BEATRICE</option><option value="13">Blue &amp; Rapids</option></select>`;
+  const n = locationNames(sel);
+  assert.equal(n.size, 2);
+  assert.equal(n.get("12"), "BEATRICE");
+  assert.equal(n.get("13"), "Blue & Rapids");
 });
 
 /* THE NEGATIVE CONTROL, which is the only reason the check above means
@@ -408,8 +509,29 @@ test("extract refuses without quotes rather than publishing unchecked", () => {
 test("a board of nothing but uncheckable commodities publishes nothing", () => {
   const board = twoLocationBoard("$5.28").replace(/>Corn</g, ">Sunflowers<");
   assert.throws(() => extract(board, "u", { contracts: CONTRACTS }),
-    (e) => e instanceof AgriChartsRefused && /no quoted futures contract/.test(e.message)
-           && /Sunflowers/.test(e.message));
+    (e) => e instanceof AgriChartsRefused && /not one of 2 row\(s\) survived/.test(e.message)
+           && /no futures contract is quoted/.test(e.message));
+});
+
+/* A CO-OP THAT NEVER WRITES THE WORD "WHEAT". Horse Heaven Grain's board says
+ * DNS and HRW and nothing else, and that refused all ten of its rows. */
+test("wheat classes are found even when the word wheat is absent", () => {
+  for (const n of ["DNS", "HRW", "HRS 14%", "SRW", "SWW"]) {
+    const got = rootsFor(n);
+    assert.ok(got, `${n} found no contract`);
+    assert.ok(got.includes("ZW") && got.includes("KE") && got.includes("MW"),
+      `${n} was narrowed to ${JSON.stringify(got)} — a co-op hedges where it likes`);
+  }
+});
+
+/* AND WHY THEY ARE NOT NARROWED. Cornerstone Ag posts WHITE WHEAT implying
+ * 834c, and 834-0 is KEZ26 — they price white wheat off KANSAS CITY. Narrowed
+ * to Chicago, that row missed by 33 cents and was refused for being right. */
+test("a class is a hint about the grain, never a claim about the exchange", () => {
+  const rows = extract(read("agricharts-cornerstone-ag.html"), "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 10);
+  assert.equal(rows.unreconciled.length, 0);
+  assert.ok(rows.some((r) => /white wheat/i.test(r.commodity)));
 });
 
 /* ONE BAD LINE MUST NOT COST THE BOARD, and it must not vanish either.
