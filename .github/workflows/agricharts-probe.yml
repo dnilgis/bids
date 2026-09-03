@@ -26,12 +26,24 @@ name: agricharts probe
 on:
   workflow_dispatch:
     inputs:
+      # THE QUOTE PAGES ARE NO LONGER BEHIND A BOX.
+      #
+      # They were, for two runs, and the box did not get ticked either time --
+      # reasonably, because the run in front of somebody is the board sweep and
+      # this was a third field under two board-sweep fields. A run that captures
+      # the boards and not the number they are missing has not finished the job,
+      # so the plain run now fetches any quote page that is absent. This box is
+      # for taking them on their own.
       quotes:
-        # First, because it is the run that is owed. The board sweep is done --
-        # seven boards are captured and the 403 is disproved. What is missing is
-        # the futures price, without which lib/board.mjs refuses every AgriCharts
-        # source, and this is the box that goes and gets it.
-        description: "TICK THIS to capture the CBOT quote pages (the futures price the cash board does not carry). Leave off to re-run the board sweep."
+        description: "Quote pages ONLY, skipping the board sweep. Not needed to get them — a plain run fetches any that are missing."
+        type: boolean
+        default: false
+      refresh:
+        # A fixture is frozen evidence: an adapter's tests are written against
+        # these bytes, and a specimen that moves under the test means the day it
+        # fails nobody can say whether the parser broke or the page did. So
+        # replacing one is something a person asks for.
+        description: "Replace fixtures already captured (boards AND quote pages) instead of keeping them"
         type: boolean
         default: false
       urls:
@@ -75,15 +87,17 @@ jobs:
           URLS: ${{ inputs.urls }}
           PROFILES: ${{ inputs.profiles }}
           QUOTES: ${{ inputs.quotes }}
+          REFRESH: ${{ inputs.refresh }}
         run: |
           set -o pipefail
           ARGS=""
           if [ -n "$PROFILES" ]; then ARGS="--profiles $PROFILES"; fi
+          if [ "$REFRESH" = "true" ]; then ARGS="$ARGS --refresh"; fi
           # The quote capture takes no target list and no profiles -- the
           # question of who we say we are is settled, and these are CBOT's
           # numbers rather than any one co-op's.
           if [ "$QUOTES" = "true" ]; then
-            node scripts/agricharts-probe.mjs --quotes
+            node scripts/agricharts-probe.mjs --quotes $ARGS
           elif [ -n "$URLS" ]; then
             printf '%s\n' "$URLS" > /tmp/agricharts-targets.txt
             node scripts/agricharts-probe.mjs --list /tmp/agricharts-targets.txt $ARGS
@@ -98,7 +112,7 @@ jobs:
         run: |
           git add -A fixtures/ || true
           if git diff --cached --quiet; then
-            echo "no board captured; nothing to commit"
+            echo "nothing new captured; the fixtures already here are unchanged"
           else
             bash scripts/commit-and-push.sh "agricharts: captured board(s) from the runner"
           fi
