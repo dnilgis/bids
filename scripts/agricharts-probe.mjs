@@ -108,7 +108,8 @@ export const QUOTE_PAGES = [
 export function parseArgs(argv) {
   const out = { urls: [], list: null, profiles: null, out: "fixtures", timeoutMs: 20000,
                 control: "https://raw.githubusercontent.com/dnilgis/bids/main/package.json",
-                noFixture: false, quotes: false, quotesHost: QUOTES_HOST_DEFAULT };
+                noFixture: false, quotes: false, quotesHost: QUOTES_HOST_DEFAULT,
+                refresh: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--url") out.urls.push(argv[++i]);
@@ -120,6 +121,7 @@ export function parseArgs(argv) {
     else if (a === "--no-fixture") out.noFixture = true;
     else if (a === "--quotes") out.quotes = true;
     else if (a === "--quotes-host") out.quotesHost = argv[++i];
+    else if (a === "--refresh") out.refresh = true;
     else if (/^https?:\/\//.test(a) && !VALUED.has(argv[i - 1])) out.urls.push(a);
   }
   return out;
@@ -200,6 +202,28 @@ export function looksLikeBoard(body) {
   const t = String(body);
   if (t.length < 400) return false;
   return /cash\s*price/i.test(t) && /<t[dr]\b/i.test(t);
+}
+
+/* A FIXTURE IS FROZEN EVIDENCE, NOT A MIRROR.
+ *
+ * The first three runs of this each rewrote all seven boards -- 721 lines
+ * changed, 721 lines deleted, every time -- because a board captured at 23:11
+ * differs from the same board at 00:37 in its Last Update line and in whatever
+ * moved. That is churn, and it is the smaller half of the problem.
+ *
+ * The larger half: an adapter's tests are written against these bytes. If the
+ * bytes are replaced on every probe run, a guard that passed this morning is
+ * being asked a different question tonight, and the day it fails nobody can
+ * tell whether the parser broke or the specimen moved. A fixture stops being
+ * evidence the moment it can change underneath the test.
+ *
+ * So a captured board is kept. --refresh replaces it deliberately, which is a
+ * thing somebody chooses and can see in a diff.
+ */
+export function fixtureVerdict({ exists, refresh }) {
+  if (!exists) return { write: true, why: "new" };
+  if (refresh) return { write: true, why: "--refresh asked for it" };
+  return { write: false, why: "already captured; keeping the frozen copy (--refresh replaces it)" };
 }
 
 /* A QUOTES PAGE IS NOT A BOARD AND IS NOT A MENU. futures.php with no root and
@@ -360,10 +384,15 @@ const PLATFORM_CONTROL = "https://zzznotarealcoopxyz.mobile.agricharts.com/cash/
    it does not go red for a page that is not there. */
 async function quotesRun(cfg) {
   const base = cfg.quotesHost.replace(/\/+$/, "");
-  console.log(`AGRICHARTS QUOTES CAPTURE — ${QUOTE_PAGES.length} page(s) from ${base}`);
+  console.log(`AGRICHARTS QUOTES CAPTURE — ${cfg.only ? cfg.only.length : QUOTE_PAGES.length} `
+    + `page(s) from ${base}`);
   console.log("These are CBOT's numbers, not the operator's, so one host answers for all 211.\n");
-  const wrote = [], missed = [];
-  for (const [name, path] of QUOTE_PAGES) {
+  const wrote = [], missed = [], kept = [];
+  const wanted = cfg.only ? QUOTE_PAGES.filter(([n]) => cfg.only.includes(n)) : QUOTE_PAGES;
+  for (const [name, path] of wanted) {
+    const file0 = join(cfg.out, `agricharts-quotes-${name}.html`);
+    const fv0 = fixtureVerdict({ exists: existsSync(file0), refresh: cfg.refresh });
+    if (!fv0.write) { kept.push(name); console.log(`   ${name.padEnd(16)} ${fv0.why}`); continue; }
     const url = base + path;
     const r = await ask(url, PROFILES.chrome, cfg.timeoutMs);
     if (!r.ok) { console.log(`   ${name.padEnd(16)} ${r.error}`); missed.push({ name, why: r.error }); continue; }
@@ -373,9 +402,8 @@ async function quotesRun(cfg) {
     if (!quotes) { missed.push({ name, why: `${r.status}, no price table` }); continue; }
     if (cfg.noFixture) continue;
     mkdirSync(cfg.out, { recursive: true });
-    const file = join(cfg.out, `agricharts-quotes-${name}.html`);
-    writeFileSync(file, r.body);
-    wrote.push({ file, url, bytes: r.bytes });
+    writeFileSync(file0, r.body);
+    wrote.push({ file: file0, url, bytes: r.bytes });
   }
   console.log("");
   if (wrote.length) {
@@ -383,6 +411,9 @@ async function quotesRun(cfg) {
     for (const x of wrote) console.log(`   ${x.file}  ${x.bytes}B  from ${x.url}`);
     console.log(`::notice title=${wrote.length} AgriCharts quote page(s) captured::`
       + "the futures side of cash - basis = futures can now be written against bytes.");
+  } else if (kept.length) {
+    console.log(`── NOTHING NEW. ${kept.length} quote page(s) were already captured and are kept `
+      + "as they are; --refresh replaces them.");
   } else {
     console.log("── NOTHING CAPTURED. Every quote page answered without a price table, so the "
       + "futures number the cash board is missing is NOT where it was on 2026-09-02. "
@@ -443,6 +474,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   const rows = [];
   const wrote = [];
+  const kept = [];
   for (const url of targets) {
     console.log(`── ${url}`);
     for (const p of profiles) {
@@ -466,14 +498,18 @@ export async function main(argv = process.argv.slice(2)) {
         } else {
           const slug = slugOf(new URL(r.finalUrl || url).hostname);
           const file = join(cfg.out, `agricharts-${slug}.html`);
-          if (wrote.some((w) => w.file === file)) {
-            console.log(`     board confirmed; fixture already written this run (${file})`);
+          if (wrote.some((w) => w.file === file) || kept.includes(file)) {
+            console.log(`     board confirmed; already settled this run (${file})`);
           } else {
-            mkdirSync(cfg.out, { recursive: true });
-            writeFileSync(file, r.body);
-            wrote.push({ file, url, profile: p, bytes: r.bytes });
-            console.log(`     BOARD. Wrote ${file} (${r.bytes} bytes, verbatim) — the adapter `
-              + "gets written against this and not against a description of it.");
+            const fv = fixtureVerdict({ exists: existsSync(file), refresh: cfg.refresh });
+            if (!fv.write) { kept.push(file); console.log(`     board confirmed; ${fv.why}`); }
+            else {
+              mkdirSync(cfg.out, { recursive: true });
+              writeFileSync(file, r.body);
+              wrote.push({ file, url, profile: p, bytes: r.bytes });
+              console.log(`     BOARD. Wrote ${file} (${r.bytes} bytes, verbatim) — the adapter `
+                + "gets written against this and not against a description of it.");
+            }
           }
         }
       }
@@ -502,9 +538,44 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(`::notice title=${wrote.length} AgriCharts board(s) captured::`
       + `${wrote.map((x) => x.file).join(", ")} — an adapter can now be written against bytes.`);
   } else {
-    console.log(`\n── NO FIXTURE WRITTEN. ${v.call === "network"
-      ? "Nothing got in; that is the finding, not a failure."
-      : "No 200 answered with a board."}`);
+    console.log(`\n── NO FIXTURE WRITTEN. ${kept.length
+      ? `${kept.length} board(s) answered and are already captured; they are kept as they are. `
+        + "--refresh replaces them."
+      : v.call === "network"
+        ? "Nothing got in; that is the finding, not a failure."
+        : "No 200 answered with a board."}`);
+  }
+  if (wrote.length && kept.length) {
+    console.log(`   (and ${kept.length} board(s) already captured, kept as they are)`);
+  }
+
+  /* THE QUOTES ARE NOT AN EXTRA. THEY ARE THE HALF THAT BLOCKS PUBLISHING.
+   *
+   * The cash board carries cash, basis and a futures CHANGE and no futures
+   * price, and lib/board.mjs refuses any source where not one row carries a
+   * quoted future. So the boards above cannot produce a single published price
+   * on their own, and the pages that fix that are eight fetches from one host.
+   *
+   * They were behind a checkbox for two runs and the checkbox did not get
+   * ticked -- twice, reasonably, because the run in front of somebody is the
+   * board sweep and the box was a third field under two board-sweep fields.
+   * A run that captures the boards and not the number they are missing has not
+   * finished the job. So the sweep now tops up whatever quote pages are absent,
+   * and the box remains for asking for them on their own. */
+  const missingQuotes = QUOTE_PAGES.filter(([name]) =>
+    !existsSync(join(cfg.out, `agricharts-quotes-${name}.html`)));
+  /* --refresh means "replace what we hold", and the quote pages are half of
+     what we hold. Refreshing the boards and not them would leave a cash board
+     from tonight beside a futures strip from a week ago, which is the one pair
+     of files that must never drift apart. */
+  const quotesToDo = cfg.refresh ? QUOTE_PAGES : missingQuotes;
+  if (!cfg.noFixture && quotesToDo.length) {
+    console.log(`\n── AND THE FUTURES SIDE, WHICH IS NOT OPTIONAL. ${cfg.refresh
+      ? `--refresh, so all ${QUOTE_PAGES.length} quote page(s) are taken again`
+      : `${missingQuotes.length} of ${QUOTE_PAGES.length} quote page(s) are not captured yet`}`
+      + ", and without a quoted future lib/board.mjs refuses every AgriCharts source. "
+      + "Fetching them.\n");
+    await quotesRun({ ...cfg, only: quotesToDo.map(([n]) => n) });
   }
 
   /* ASKING AND FAILING TO ASK ARE DIFFERENT THINGS, and only the second is red.

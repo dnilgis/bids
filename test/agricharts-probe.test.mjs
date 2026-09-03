@@ -281,7 +281,7 @@ test("--timeout is seconds on the outside and milliseconds inside", () => {
  * not a check. So the quote pages are not a nicety; without them AgriCharts
  * cannot publish at all, and a fixture filed from the wrong page would be
  * built against for a week before anybody noticed. */
-import { looksLikeQuotes, QUOTE_PAGES } from "../scripts/agricharts-probe.mjs";
+import { looksLikeQuotes, QUOTE_PAGES, fixtureVerdict } from "../scripts/agricharts-probe.mjs";
 
 const QUOTES = `<html><body><table>
 <tr><td>Symbol</td><td>Last</td><td>Change</td><td>Time</td></tr>
@@ -362,4 +362,39 @@ test("--quotes-host is a value, not a target", () => {
   const cfg = parseArgs(["--quotes", "--quotes-host", "https://kokomograin.mobile.agricharts.com"]);
   assert.deepEqual(cfg.urls, []);
   assert.equal(cfg.quotesHost, "https://kokomograin.mobile.agricharts.com");
+});
+
+
+/* ── a fixture is frozen evidence ────────────────────────────────────────── */
+
+/* THREE RUNS REWROTE ALL SEVEN BOARDS -- 721 lines changed and 721 deleted,
+ * every time -- because a board captured at 23:11 differs from the same board
+ * at 00:37. The churn is the smaller half. The larger half is that an adapter's
+ * tests are written against these bytes, and a specimen that moves under the
+ * test means the day it fails nobody can say whether the parser broke or the
+ * page did. */
+test("a captured board is kept, not rewritten", () => {
+  assert.equal(fixtureVerdict({ exists: true, refresh: false }).write, false);
+});
+
+test("a board we do not have is always captured", () => {
+  assert.equal(fixtureVerdict({ exists: false, refresh: false }).write, true);
+  assert.equal(fixtureVerdict({ exists: false, refresh: true }).write, true);
+});
+
+test("--refresh replaces it, deliberately and visibly", () => {
+  const v = fixtureVerdict({ exists: true, refresh: true });
+  assert.equal(v.write, true);
+  assert.match(v.why, /--refresh/);
+});
+
+test("the kept case says how to replace it, or nobody will find out how", () => {
+  assert.match(fixtureVerdict({ exists: true, refresh: false }).why, /--refresh/);
+});
+
+test("--refresh is a flag, not a target", () => {
+  const cfg = parseArgs(["--refresh", "https://a.test/x"]);
+  assert.equal(cfg.refresh, true);
+  assert.deepEqual(cfg.urls, ["https://a.test/x"]);
+  assert.equal(parseArgs([]).refresh, false);
 });
