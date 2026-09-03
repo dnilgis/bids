@@ -32,20 +32,27 @@
 # one line covering a dead host, a 403, a wrong path and a board in a shape we
 # cannot parse -- four different next moves, reported identically.
 #
-# WHAT TO EXPECT THIS TIME. Fetching by hand from a sandbox on 2026-09-03,
-# innovativeag.com/markets/cashgrid.php answered 403 and heartlandcoop.com is
-# robots-disallowed to that fetcher. A 403 is not an absence: it is the
-# question agricharts-probe.mjs exists to answer, and the mobile boards
-# answered it once already (run 91312140905: thirty-five 200s, not one 403).
-# So the run may come back "the board is there and will not talk to this
-# user-agent", which is a good answer and a different job.
+# RUN 91611899805 ASKED BOTH SHAPES AND ANSWERED IT:
+#
+#     47  served prices in a table we cannot parse yet
+#     10  answered 500
+#      2  answered 403 -- a header question, not a missing board
+#
+# Not a header problem. Not robots. Not a missing board. FORTY-SEVEN of these
+# 61 operators serve a live 200 with cash prices in it -- 40 of the 84 working
+# URLs are <label>.agricharts.com/markets/cashgrid.php -- in a table shape
+# lib/adapters/agricharts.mjs does not know. That is a parser to write, and a
+# parser is written against bytes somebody received.
 #
 # TO RUN IT: Actions -> agricharts sweep -> Run workflow, and in the box
 # labelled `hosts` put just the file name:
 #
 #     agricharts-uncovered-2026-09-03.txt
 #
-# Then, if cashgrid serves, run it again with `hosts` LEFT BLANK -- that
+# and TICK `capture`. That saves the HTML of every board we could not parse
+# into fixtures/ and commits it. It never overwrites a capture already there.
+#
+# After the parser is written, run it again with `hosts` LEFT BLANK -- that
 # sweeps all 211 agricharts sites in data/platforms.json, which is where the
 # other 193 are, including operators Barchart does not carry at all.
 #

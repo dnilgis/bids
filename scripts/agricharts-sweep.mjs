@@ -41,7 +41,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { join } from "node:path";
+import { join, dirname, isAbsolute } from "node:path";
 import { parseBoard, extract, mergeQuotes, quoteUrls, VERIFIED_BY, cellText }
   from "../lib/adapters/agricharts.mjs";
 import { validateSource } from "../lib/sources.mjs";
@@ -55,7 +55,8 @@ const UA = "agsist-bidreader/1.0 (+https://agsist.com; posted bid)";
 
 export function parseArgs(argv) {
   const out = { write: false, limit: Infinity, start: 0, timeoutMs: 20000,
-                hosts: null, only: null, map: "data/agricharts-mobile.json" };
+                hosts: null, only: null, map: "data/agricharts-mobile.json",
+                capture: null, refresh: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--write") out.write = true;
@@ -65,6 +66,9 @@ export function parseArgs(argv) {
     else if (a === "--hosts") out.hosts = argv[++i];
     else if (a === "--only") out.only = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
     else if (a === "--map") out.map = argv[++i];
+    else if (a === "--capture") out.capture = argv[i + 1] && !argv[i + 1].startsWith("--")
+      ? argv[++i] : "fixtures";
+    else if (a === "--refresh") out.refresh = true;
   }
   return out;
 }
@@ -248,7 +252,32 @@ export function operatorSlug(mobileUrl) {
   return slug(h) || null;
 }
 
-/* ---------- the directory join ---------- */
+/* WHERE THE BYTES GO WHEN A BOARD IS THERE AND WE CANNOT READ IT.
+ *
+ * Run 91611899805 asked 61 operators for both shapes and came back:
+ *
+ *     47  served prices in a table we cannot parse yet
+ *     10  answered 500
+ *      2  answered 403 — a header question, not a missing board
+ *
+ * So it is not a header problem, not robots, not a missing board. Forty-seven
+ * sites serve a 200 with cash prices in it, mostly at
+ * <label>.agricharts.com/markets/cashgrid.php, in a table shape
+ * lib/adapters/agricharts.mjs does not know. That is a parser, and a parser
+ * gets written against bytes somebody actually received -- not against a
+ * description of them, and not against one page that happened to be handy.
+ *
+ * NAMED FOR THE SHAPE, NOT ONLY THE OPERATOR. fixtures/agricharts-<slug>.html
+ * is already taken by that operator's MOBILE board for several of these, and
+ * two different documents under one name is how a parser ends up tested
+ * against the wrong evidence.
+ */
+export function captureName(url) {
+  const s = operatorSlug(url);
+  return s ? `agricharts-cashgrid-${s}.html` : null;
+}
+
+/* ---------- the directory join ---------- *//* ---------- the directory join ---------- */
 
 /* THE ONLY HONEST SOURCE FOR A TOWN. data/known-elevators.json is Barchart's
    own directory: facility, branch, city, state, ZIP, phone. A board's section
@@ -533,7 +562,7 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   const byZip = new Map(zipRows.map((z) => [z.zip, z]));
   const existing = new Set(readdirSync(SOURCES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));
 
-  const found = [], noBoard = [], unreadable = [], wrote = [], skipped = [], unmatched = [];
+  const found = [], noBoard = [], unreadable = [], wrote = [], skipped = [], unmatched = [], captured = [];
   const seenIds = new Set(existing);
 
   for (const [i, site] of hosts.entries()) {
@@ -543,11 +572,29 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     for (const c of cands) {
       const r = await io.get(c, cfg.timeoutMs);
       const v = verdictFor(r);
-      asked.push({ url: c, ...v });
+      /* The body rides along ONLY so --capture can write it; it is stripped
+         from everything the summary prints. */
+      asked.push({ url: c, ...v, body: r?.ok ? r.body : null });
       if (v.board) { hit = { url: c, body: r.body }; break; }
     }
     if (!hit) {
       noBoard.push({ site, asked });
+      for (const a of asked) {
+        if (!cfg.capture || !a.body || !/PRICES BUT NOT THE TABLE/.test(a.why)) continue;
+        const name = captureName(a.url);
+        if (!name) continue;
+        /* AN ABSOLUTE --capture IS ALREADY WHERE IT WANTS TO GO.
+           join(ROOT, "/tmp/x") is "<repo>/tmp/x", which silently writes the
+           captures somewhere nobody looks and reports success. */
+        const file = isAbsolute(cfg.capture) ? join(cfg.capture, name) : join(ROOT, cfg.capture, name);
+        /* A FIXTURE IS FROZEN EVIDENCE. Rewriting it every run turns a diff
+           that means "the specimen moved" into noise, and then nobody reads
+           it. --refresh replaces one deliberately. */
+        if (existsSync(file) && !cfg.refresh) { captured.push({ name, kept: true }); continue; }
+        mkdirSync(dirname(file), { recursive: true });
+        writeFileSync(file, a.body);
+        captured.push({ name, bytes: a.body.length, url: a.url });
+      }
       /* WHAT EACH ONE DID, NOT HOW MANY THERE WERE.
          Run 91606919069 printed "no mobile board (2 tried)" for 59 of 61
          sites, and that one line covers a DNS failure, a 403, a redirect to a
@@ -625,6 +672,12 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   if (unreadable.length) {
     console.log(`\n── BOARDS THAT WOULD NOT READ (${unreadable.length})`);
     for (const u of unreadable.slice(0, 20)) console.log(`   ${u.site}  ${u.why}`);
+  }
+  if (cfg.capture) {
+    const fresh = captured.filter((c) => !c.kept);
+    console.log(`\n── CAPTURED (${fresh.length} new, ${captured.length - fresh.length} already on file)`);
+    for (const c of fresh) console.log(`   ${String(c.bytes).padStart(7)}B  ${cfg.capture}/${c.name}`);
+    if (!captured.length) console.log(`   nothing served a board we could not parse, so there was nothing to capture`);
   }
   if (unmatched.length) {
     console.log(`\n── LOCATIONS ON A BOARD WITH NO TOWN IN data/known-elevators.json (${unmatched.length})`);

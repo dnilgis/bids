@@ -12,13 +12,15 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import {
   mobileCandidates, operatorFrom, websiteFrom, operatorSlug, slug, joinDirectory,
   phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main, resolveHostsPath,
   describeHostsError, IO, cashgridCandidates, boardCandidates, verdictFor, rank, kindOf,
+  captureName,
 } from "../scripts/agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { VERIFIED_BY } from "../lib/adapters/agricharts.mjs";
@@ -673,4 +675,125 @@ test("the site's verdict is the interesting candidate even when a dead one comes
   assert.match(out, /1\s+answered 403 — a header question/, out.slice(-600));
   assert.doesNotMatch(out, /1\s+no host answered at all/,
                       "the dead candidates that came after must not be the site's verdict");
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   CAPTURING THE BOARDS WE CANNOT READ YET
+
+   Run 91611899805, 61 sites, both URL shapes:
+
+       47  served prices in a table we cannot parse yet
+       10  answered 500
+        2  answered 403 — a header question, not a missing board
+
+   Not a header problem, not robots, not a missing board. Forty-seven sites
+   serve a 200 with cash prices in it, mostly at
+   <label>.agricharts.com/markets/cashgrid.php, in a table shape the adapter
+   does not know. A parser gets written against bytes somebody received.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("--capture takes a directory, or defaults to fixtures, and eats no other flag", () => {
+  assert.equal(parseArgs(["--capture"]).capture, "fixtures");
+  assert.equal(parseArgs(["--capture", "debug/boards"]).capture, "debug/boards");
+  const cfg = parseArgs(["--capture", "--hosts", "x.txt"]);
+  assert.equal(cfg.capture, "fixtures");
+  assert.equal(cfg.hosts, "x.txt", "--capture must not swallow the next flag");
+  assert.equal(parseArgs([]).capture, null, "off unless asked for");
+});
+
+test("a capture is named for the shape, not only the operator", () => {
+  /* fixtures/agricharts-auroraelevator.html is already that operator's MOBILE
+     board. Two different documents under one name is how a parser ends up
+     tested against the wrong evidence. */
+  assert.equal(captureName("https://auroraelevator.agricharts.com/markets/cashgrid.php"),
+               "agricharts-cashgrid-auroraelevator.html");
+  assert.equal(captureName("https://www.uniontowncoop.com/markets/cashgrid.php"),
+               "agricharts-cashgrid-uniontowncoop.html");
+  assert.equal(captureName("not a url"), null);
+});
+
+test("the same operator's two spellings capture to one name", () => {
+  /* uniontowncoop answered on BOTH www.uniontowncoop.com and
+     uniontowncoop.agricharts.com in run 91611899805. That is one board. */
+  assert.equal(captureName("https://uniontowncoop.agricharts.com/markets/cashgrid.php"),
+               captureName("https://www.uniontowncoop.com/markets/cashgrid.php"));
+});
+
+test("capture writes only the boards it could not parse, and only when asked", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "sweep-cap-"));
+  const board = `<html><h1>Cash Prices</h1><table class="grid"><tr><td>Corn</td></tr></table>${"x".repeat(900)}</html>`;
+  const io = {
+    readText: (f) => (f === "l.txt" ? "https://example-coop.com/\n" : readFileSync(join(ROOT, f), "utf8")),
+    exists: (f) => f === "l.txt",
+    listLists: () => ["l.txt"],
+    get: async (u) => {
+      if (/example-coop\.agricharts\.com/.test(u))
+        return { ok: true, status: 200, body: board, bytes: board.length };
+      if (/cashgrid\.php|cash\/prices\.php/.test(u)) return { ok: true, status: 404, body: "", bytes: 0 };
+      const f = QUOTE_FIXTURE_FOR(u);
+      return f ? { ok: true, status: 200, body: f, bytes: f.length } : { ok: true, status: 200, body: "", bytes: 0 };
+    },
+  };
+  const quiet = console.log; console.log = () => {};
+  try {
+    await main(["--hosts", "l.txt"], io);
+    assert.equal(existsSync(join(ROOT, "fixtures/agricharts-cashgrid-examplecoop.html")), false,
+                 "no --capture, no writing");
+    await main(["--hosts", "l.txt", "--capture", dir], io);
+  } finally { console.log = quiet; }
+  const written = readdirSync(dir);
+  assert.deepEqual(written, ["agricharts-cashgrid-examplecoop.html"]);
+  assert.equal(readFileSync(join(dir, written[0]), "utf8"), board,
+               "verbatim and unedited — a fixture is the bytes, not a summary of them");
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("a fixture already on file is kept, and --refresh replaces it", async () => {
+  /* A FIXTURE IS FROZEN EVIDENCE. Rewriting it every run turns a diff that
+     means "the specimen moved" into noise nobody reads. */
+  const dir = mkdtempSync(join(tmpdir(), "sweep-cap-"));
+  const file = join(dir, "agricharts-cashgrid-examplecoop.html");
+  writeFileSync(file, "OLD CAPTURE FROM AN EARLIER RUN");
+  const board = `<html>Cash Prices<table class="grid">${"y".repeat(900)}</table></html>`;
+  const io = {
+    readText: (f) => (f === "l.txt" ? "https://example-coop.com/\n" : readFileSync(join(ROOT, f), "utf8")),
+    exists: (f) => f === "l.txt",
+    listLists: () => ["l.txt"],
+    get: async (u) => {
+      if (/example-coop\.agricharts\.com/.test(u))
+        return { ok: true, status: 200, body: board, bytes: board.length };
+      if (/cashgrid\.php|cash\/prices\.php/.test(u)) return { ok: true, status: 404, body: "", bytes: 0 };
+      const f = QUOTE_FIXTURE_FOR(u);
+      return f ? { ok: true, status: 200, body: f, bytes: f.length } : { ok: true, status: 200, body: "", bytes: 0 };
+    },
+  };
+  const quiet = console.log; console.log = () => {};
+  try {
+    await main(["--hosts", "l.txt", "--capture", dir], io);
+    assert.equal(readFileSync(file, "utf8"), "OLD CAPTURE FROM AN EARLIER RUN", "kept");
+    await main(["--hosts", "l.txt", "--capture", dir, "--refresh"], io);
+    assert.equal(readFileSync(file, "utf8"), board, "--refresh replaces it");
+  } finally { console.log = quiet; }
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("a board we CAN parse is never captured — it is not evidence of a gap", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "sweep-cap-"));
+  const good = `<html>cash price<table class="cashprices">${"z".repeat(900)}</table></html>`;
+  const quiet = console.log; console.log = () => {};
+  try {
+    await main(["--hosts", "l.txt", "--capture", dir], {
+      readText: (f) => (f === "l.txt" ? "https://example-coop.com/\n" : readFileSync(join(ROOT, f), "utf8")),
+      exists: (f) => f === "l.txt",
+      listLists: () => ["l.txt"],
+      get: async (u) => {
+        if (/cash\/prices\.php/.test(u)) return { ok: true, status: 200, body: good, bytes: good.length };
+        if (/cashgrid\.php/.test(u)) return { ok: true, status: 404, body: "", bytes: 0 };
+        const f = QUOTE_FIXTURE_FOR(u);
+        return f ? { ok: true, status: 200, body: f, bytes: f.length } : { ok: true, status: 200, body: "", bytes: 0 };
+      },
+    });
+  } finally { console.log = quiet; }
+  assert.deepEqual(readdirSync(dir), [], "it parsed, or refused to parse — either way it is not a capture");
+  rmSync(dir, { recursive: true, force: true });
 });
