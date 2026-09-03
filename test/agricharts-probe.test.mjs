@@ -398,3 +398,34 @@ test("--refresh is a flag, not a target", () => {
   assert.deepEqual(cfg.urls, ["https://a.test/x"]);
   assert.equal(parseArgs([]).refresh, false);
 });
+
+/* ── the shape a workflow_dispatch box actually delivers ─────────────────── */
+
+/* RUN 91355280009. Sixteen URLs were pasted into the workflow's `urls` box,
+ * one per line, and the job received them as ONE line with spaces between —
+ * a workflow_dispatch string input is single-line, and a pasted newline is a
+ * space before the job starts. The parser required a whole line to be a URL,
+ * so sixteen live targets matched nothing and the run died with three words. */
+test("sixteen URLs on one line, the way GitHub delivers them", () => {
+  const asDelivered = "https://a.mobile.agricharts.com/cash/prices.php "
+    + "https://mobile.b.com/cash/prices.php https://c.mobile.agricharts.com/cash/prices.php";
+  assert.deepEqual(urlsFrom(asDelivered), [
+    "https://a.mobile.agricharts.com/cash/prices.php",
+    "https://mobile.b.com/cash/prices.php",
+    "https://c.mobile.agricharts.com/cash/prices.php",
+  ]);
+});
+
+test("and the comment rule still holds, which is why the file form works", () => {
+  assert.deepEqual(urlsFrom(LIST), [
+    "https://legacyfarmers.mobile.agricharts.com/cash/prices.php",
+    "https://mobile.prideag.com/cash/prices.php",
+  ]);
+  assert.deepEqual(urlsFrom("# https://example.test/x https://example.test/y"), []);
+  assert.deepEqual(urlsFrom("   #    https://example.test/x"), []);
+});
+
+test("tabs, blank lines and a trailing space are all just separators", () => {
+  assert.deepEqual(urlsFrom("\n\thttps://a.test/x \n\n  https://b.test/y\t\n "),
+    ["https://a.test/x", "https://b.test/y"]);
+});

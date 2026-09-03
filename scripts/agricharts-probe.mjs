@@ -130,12 +130,23 @@ export function parseArgs(argv) {
 /* ---------- the target list ---------- */
 
 /* probe-lists/agricharts-mobile.txt is nine tenths prose, and the prose is the
-   valuable part of it — it is where the 403 was written down. A URL is a line
-   that starts with a scheme; everything else is somebody's reasoning. */
+   valuable part of it — it is where the 403 was written down. Every line of it
+   that is not a URL begins with `#`, so comments go first and what is left is
+   targets.
+ *
+ * AND THEN SPLIT ON WHITESPACE, NOT ON NEWLINES. Run 91355280009 passed
+ * sixteen URLs into the workflow's `urls` box, one per line, and GitHub
+ * delivered them as ONE line with spaces between — `workflow_dispatch` string
+ * inputs are single-line, and a pasted newline becomes a space before the job
+ * ever starts. The old rule was "the whole line is a URL", so sixteen live
+ * targets matched nothing at all and the run died with "nothing to ask".
+ *
+ * A comment is still a comment; a line of URLs is now a line of URLs. */
 export function urlsFrom(text) {
   return [...new Set(String(text).split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => /^https?:\/\/\S+$/.test(l)))];
+    .filter((l) => !/^\s*#/.test(l))
+    .flatMap((l) => l.trim().split(/\s+/))
+    .filter((w) => /^https?:\/\/\S+$/.test(w)))];
 }
 
 /* ---------- profiles ---------- */
@@ -456,7 +467,19 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(`   (ignoring unknown profile "${p}"; known: ${PROFILE_ORDER.join(", ")})`);
     return false;
   });
-  if (!targets.length || !profiles.length) { console.error("::error::nothing to ask"); return 2; }
+  /* A RUN THAT CANNOT ASK MUST SAY WHAT IT WAS GIVEN. This printed the bare
+     words "nothing to ask" over sixteen perfectly good URLs on 2026-09-03, and
+     the log gave no way to see that they had arrived on one line. */
+  if (!targets.length) {
+    const src = cfg.urls.length ? "the --url arguments" : `the list at ${cfg.list ?? DEFAULT_LIST}`;
+    const raw = cfg.list ? readFileSync(cfg.list, "utf8") : cfg.urls.join(" ");
+    console.error(`::error title=no targets::Nothing in ${src} parsed as a URL. A target is `
+      + `http:// or https:// and may be separated by spaces or newlines; a line beginning with `
+      + `# is a comment. What was there, first 300 characters: `
+      + `${JSON.stringify(String(raw).replace(/\s+/g, " ").slice(0, 300))}`);
+    return 2;
+  }
+  if (!profiles.length) { console.error("::error::no usable profile was named"); return 2; }
 
   console.log(`AGRICHARTS PROBE — ${targets.length} target(s) x ${profiles.length} profile(s)`);
   console.log(`Profiles, in order: ${profiles.join(", ")}\n`);
