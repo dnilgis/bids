@@ -46,6 +46,15 @@ on:
         description: "Comma-separated substrings — ask only sites whose URL contains one. For trying a single co-op."
         required: false
         default: ""
+      hosts:
+        # A FILE PATH, NOT A LIST OF URLS. A workflow_dispatch string input
+        # arrives as ONE LINE however it is pasted -- that cost a whole probe
+        # run on 2026-09-02 -- and a list of sixty sites is not something to
+        # retype into a box. The list lives in the repository, gets reviewed in
+        # a diff, and says in its own header where its numbers came from.
+        description: "Read the sites from this file instead of data/platforms.json, e.g. probe-lists/agricharts-uncovered-2026-09-03.txt"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -77,6 +86,7 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           START: ${{ inputs.start }}
           ONLY: ${{ inputs.only }}
+          HOSTS: ${{ inputs.hosts }}
         run: |
           set -o pipefail
           ARGS=""
@@ -84,6 +94,17 @@ jobs:
           if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
           if [ -n "$START" ]; then ARGS="$ARGS --start $START"; fi
           if [ -n "$ONLY" ]; then ARGS="$ARGS --only $ONLY"; fi
+          # A PATH THAT IS NOT THERE IS A TYPO, AND A TYPO MUST NOT LOOK LIKE
+          # A CLEAN SWEEP OF THE WHOLE PLATFORM. Without this, a misspelled
+          # file name falls through to data/platforms.json and asks 211 sites
+          # that were not the ones asked for.
+          if [ -n "$HOSTS" ]; then
+            if [ ! -f "$HOSTS" ]; then
+              echo "::error title=no such hosts file::$HOSTS is not in this repository. Nothing was asked."
+              exit 1
+            fi
+            ARGS="$ARGS --hosts $HOSTS"
+          fi
           node scripts/agricharts-sweep.mjs $ARGS
 
       # A manifest that does not load is worse than no manifest: it is dropped
