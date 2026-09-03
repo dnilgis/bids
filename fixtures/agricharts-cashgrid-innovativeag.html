@@ -1,0 +1,2021 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+	<head>
+				<title>Innovative Ag Services - Cash Bids</title>
+		<!--[if IE & gte IE 8 ]>
+			<meta http-equiv="x-ua-compatible" content="IE=edge">
+		<![endif]-->
+		<meta name="keywords" content="" />
+        <meta name="description" content="" />
+		<!---->
+		
+		<link rel="stylesheet" type="text/css" href="/css/symbolpicker.css" />
+		<link rel="shortcut icon" href="" />
+					<link rel="stylesheet" href="/css/layout.css" type="text/css" />
+				<link rel="stylesheet" type="text/css" href="/css/ac-timeline.css" />
+
+		
+		<script type="text/javascript" nonce="ac-sites-inline-js">
+			var JSTemplateName = 'arrow side navigation';
+		</script>
+					<script src="https://cdnjs.cloudflare.com/ajax/libs/prototype/1.7.3/prototype.min.js" integrity="sha512-C4LuwXQtQOF1iTRy3zwClYLsLgFLlG8nCV5dCxDjPcWsyFelQXzi3efHRjptsOzbHwwnXC3ZU+sWUh1gmxaTBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/scriptaculous/1.9.0/scriptaculous.min.js" integrity="sha512-74QwpT9VKUg4Ct+SL/ko7CRxUxP6xCGECFJ8tvJeOjv/lIaVuVmHj+0wOdB2nueamUmNT7i/YTrEI/hqPGDqZg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/scriptaculous/1.9.0/effects.min.js" integrity="sha512-X0qkS1666/WH6PX1gp5piXLWt7D9zEjf5dRB8RDjUk22+1svCaQQ8CO9MRUItudZ7Gnc/BaCRrfYjD9xHUJh1w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/scriptaculous/1.9.0/controls.min.js" integrity="sha512-rihXsA3ixGDst2qmEFGnWQNmyaNjEdntOnMk+fjjgUXjW+yD6Q/jsdcNGQvmTTWKY26UrYeUyKPOll8d9YkXcQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/scriptaculous/1.9.0/dragdrop.min.js" integrity="sha512-6yBI4A/TPWV555IYzpAmgIKoX6mrxckNc1ccDtfistI1r/tEerHSiWE9+Trt0VjFEYBWhmMqHrSHNS1Epi+R7w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+			<script type="text/javascript" language="javascript" src="/js/symbolpicker.js"></script>
+			<script type="text/javascript" language="javascript" src="/js/shared.js"></script>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=Array.prototype.includes,default,fetch,Promise,URLSearchParams&flags=gated,always&ua=chrome/50"></script>
+				<script type="text/javascript" language="javascript" src="//www.agricharts.com/marketdata/quotelib.js"></script>						<script type="text/javascript" src="/js/cmdty-news.js"></script>
+        <script type="text/javascript" src="/js/accessibility-fixes.js"></script>		<link rel="stylesheet" href="/sitetemplates/arrows.css" type="text/css" />
+		<link rel="stylesheet" href="/css/sitesettings.php" type="text/css" />
+		<link rel="stylesheet" type="text/css" href="/css/cmdty-news.css" />
+	</head>
+	<body class="template">
+		<div id="header" role="banner">
+			
+			<table width="100%" cellpadding="0" cellspacing="0" border="0" class="header_color">
+				<tr>
+					<td>
+
+																															</td>
+				</tr>
+				<tr>
+					<td id="bar"></td>
+				</tr>
+ 			</table>
+		</div>
+		<div id="menubar" role="navigation">
+							<table cellspacing="0" cellpadding="0" border="0" width="100%">
+					<tr>
+						<td><img src="../images/spacer.gif" width="120" height="1" alt="" /></td>
+					</tr>
+				</table>
+							<table cellspacing="0" cellpadding="0" border="0" width="100%">
+					<tr>
+						<td id="belowheader">&nbsp;</td>
+					</tr>
+				</table>
+		</div>
+					<div id="content" class="content_color" role="main">
+				<center>
+<div class="topad">
+</div>
+</center>
+
+<script type="text/javascript" language="javascript" src="//www.agricharts.com/marketdata/jsquote.php?varname=quotes&symbols=ZCZ26,ZCH27,ZCK27,ZCN27,ZCZ27,ZSX26,ZSF27,ZSK27,ZSX27,ZSH27,ZSN27&fields=name,month,last&user=&pass=&settle=0&exchsyms=&currencyconv=&display_ice=&ice_exchanges=&displayType=bids"></script>
+<script language="javascript" nonce="ac-sites-inline-js">
+
+	display = '64';
+	var quote = null;
+
+	function writeMonthHdr(month, quote, eod) {
+		//if (typeof(quote) == 'undefined')
+			//return;
+
+		var unitvalue = quote.exchange == 'WCE' ? 100 : 1;
+		price = quote.last * unitvalue;
+		document.write('<th');
+		if (quote && (quote.mode == 'r' || quote.mode == 's'))
+			document.write(' class="realtime text-center"');
+		else
+			document.write(' class="text-center"');
+		document.write(' align="center">');
+		document.write('<i>' + month + '</i><br />');
+		if (quote && (['2', '3', '4'].includes(quote.unitcode)  || quote.symbol.substring(0,2) == 'KG'  || quote.symbol.substring(0,2) == 'ZM' || quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR'))
+			document.write('$'+parseFloat(price).toFixed(2));
+		else
+			document.write('$'+(parseFloat(price)/100).toFixed(2));
+		if (!eod) {
+			document.write('<br />');
+			if (quote && (['2', '3', '4'].includes(quote.unitcode)  || quote.symbol.substring(0,2) == 'KG'  || quote.symbol.substring(0,2) == 'ZM' || quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR'))
+				var change = ((parseFloat(quote.change.replace(/^\+/, ''))*unitvalue)).toFixed(2);
+			else
+				var change = ((parseFloat(quote.change.replace(/^\+/, ''))*unitvalue)/100).toFixed(2);
+			if (change == 0)
+				document.write('<span class="change_none"><small>');
+			else {
+				document.write('<span class="change_'+quote.changedir+'"><small>');
+				if (quote.pchange.substring(0,1) != '0')
+					document.write(quote.pchange.substring(0,1));
+			}
+			document.write('$' + change);
+			document.write('</small></span>');
+		}
+		document.write('</th>');
+	}
+
+	function writeBidCell(basis, manual, rounding, incwt, weight, chartsym, currConv, quote) {
+
+		var decimalPlaces = basis.toString().substring(basis.toString().indexOf('.')+1).length;
+		if (decimalPlaces < 2) {
+			decimalPlaces = 2;
+			if (typeof(quote) == 'undefined') {
+				basis =  basis.toFixed(decimalPlaces);
+			}
+		}
+
+		var unitvalue = quote && quote.exchange == 'WCE' ? 100 : 1;
+
+		var basis_decimals = parseInt('2');
+		if (basis_decimals == 0 || basis_decimals == '')
+			basis_decimals = 2;
+		var cashprice_decimals = parseInt('2');
+		if (cashprice_decimals == 0 || cashprice_decimals == '')
+			cashprice_decimals = 2;
+
+		var rounded = (typeof(quote) == "undefined") ? parseInt(basis.toString().replace('.', '')) : basis;
+		if (!weight) weight = 56;
+		var realtime = false;
+		if (!manual && quote.symbol) {
+			var realtime = quote && (quote.mode == 'r' || quote.mode == 's');
+			var price = quote.rawLast * unitvalue;
+			if (quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR') {
+				var rounded = (parseFloat(price) + (basis/100));
+			} else {
+				var rounded = (parseFloat(price) + basis);
+			}
+			if (currConv) {
+				rounded *= quote.exchangeRate;
+			}
+		}
+		document.write('<td align="center" class="gridbox text-center' + (realtime?' realtime_shade':'') + '">');
+					document.write('<a title="View Chart for ' + chartsym + '" aria-label="View Chart for ' + chartsym + '" href="/markets/cashchart.php?' + chartsym + '">');
+			document.write('$');
+			if (incwt)
+				rounded = rounded * (100 / weight);
+			var remainder = rounded - Math.floor(rounded);
+			if (rounding > -1) {
+				if(quote && (['2', '3', '4'].includes(quote.unitcode)  || quote.symbol.substring(0,2) == 'KG' || quote.symbol.substring(0,2) == 'ZM' || quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR'))
+					document.write(rounded.toFixed(cashprice_decimals));
+				else {
+					rounded = remainder >= rounding ? Math.ceil(rounded) : Math.floor(rounded);
+					document.write((rounded/100).toFixed(cashprice_decimals));
+				}
+			} else {
+				if (rounded - Math.floor(rounded) > 0)
+					if(quote && (['2', '3', '4'].includes(quote.unitcode)  || quote.symbol.substring(0,2) == 'KG' || quote.symbol.substring(0,2) == 'ZM' || quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR'))
+						document.write(rounded.toFixed(cashprice_decimals));
+					else
+						document.write((rounded/100).toFixed(cashprice_decimals));
+				else
+					if(quote && (['2', '3', '4'].includes(quote.unitcode)  || quote.symbol.substring(0,2) == 'KG' || quote.symbol.substring(0,2) == 'ZM' || quote.symbol.substring(0,2) == 'MW' || quote.symbol.substring(0,2) == 'ZR'))
+						document.write(rounded.toFixed(cashprice_decimals));
+					else
+						document.write((rounded/100).toFixed(cashprice_decimals));
+			}
+			document.write('</a>');
+										document.write('</td>');
+	}
+
+</script>
+	<!--//Ravish- Added customized_announcement field to the list below, to display the field as part of cashbid configuration for the clients to display a customized announcement on top the cashbids.-->
+			<div style="float:right;">
+		<form action="/markets/cash.php" method="get" style="display: inline;">
+			<label for="locationFilter">Location:</label>
+			<!--<select tabindex="1" id="locationFilter" name="location_filter" onchange="this.form.submit()">-->
+			<select id="locationFilter" name="location_filter" onchange="this.form.submit()">
+				<option value=''>All Locations</option>
+									<option  value="79846">Ackley</option>
+									<option  value="4683">ADM Clint</option>
+									<option  value="22956">ADM CR</option>
+									<option  value="22957">AGP Eagle</option>
+									<option  value="78129">AGP Mason</option>
+									<option  value="4625">Alden</option>
+									<option  value="4641">Alta Vista</option>
+									<option  value="85817">Aplington</option>
+									<option  value="4626">Austinvill</option>
+									<option  value="87438">Bear River</option>
+									<option  value="87656">Bear Rvr M</option>
+									<option  value="86144">Bettendorf</option>
+									<option  value="4685">Big River</option>
+									<option  value="17320">BungeDBQ</option>
+									<option  value="18976">BungePDC</option>
+									<option  value="22958">Cargill CR</option>
+									<option  value="4695">Cargill IF</option>
+									<option  value="4645">Central Cy</option>
+									<option  value="4688">CGB Clay</option>
+									<option  value="4628">Cleves</option>
+									<option  value="4644">Cuba City</option>
+									<option  value="4647">Elkader</option>
+									<option  value="4629">Ellsworth</option>
+									<option  value="4648">Elma</option>
+									<option  value="4649">Farley</option>
+									<option  value="4630">Faulkner</option>
+									<option  value="74559">GardenCity</option>
+									<option  value="78128">Golden Gr</option>
+									<option  value="80191">HazelGreen</option>
+									<option  value="4692">Homeland</option>
+									<option  value="4651">Hopkinton</option>
+									<option  value="4633">Hubbard</option>
+									<option  value="82228">Independen</option>
+									<option  value="4635">Lawn Hill</option>
+									<option  value="4653">Manchester</option>
+									<option  value="78125">Masonville</option>
+									<option  value="4654">Monona</option>
+									<option  value="4655">Monticello</option>
+									<option  value="4656">Oran</option>
+									<option  value="4636">Owasa</option>
+									<option  value="4657">Packard</option>
+									<option  value="4637">Pine Lake</option>
+									<option  value="74558">Poet FBK</option>
+									<option  value="80066">Poet IF</option>
+									<option  value="87784">Poet Jewel</option>
+									<option  value="4690">Poet SR</option>
+									<option  value="27502">SF Ia Fall</option>
+									<option  value="82907">ShRk Soypr</option>
+									<option  value="4639">Union</option>
+									<option  value="4693">Valero</option>
+									<option  value="4686">Viserion</option>
+									<option  value="4658">Waukon</option>
+									<option  value="4640">Williams</option>
+									<option  value="4659">Winthrop</option>
+							</select>
+		</form>
+		<form action="/markets/cashgrid.php" method="get" style="display: inline;">
+			<label for="commodityFilter">Commodity:</label>
+			<!--<select tabindex="2" id="commodityFilter" name="commodity_filter" onchange="this.form.submit()">-->
+			<select id="commodityFilter" name="commodity_filter" onchange="this.form.submit()">
+				<option value=''>All Commodities</option>
+									<option  value="5353">Beans</option>
+									<option  value="5354">Corn</option>
+									<option  value="6261">EnogenCorn</option>
+									<option  value="6262">Y Corn-MI</option>
+							</select>
+		</form>
+	</div>
+	
+	<h1>Cash Bids</h1>
+
+	<div align="center"><i>Cash bids are based on 10-minute delayed futures
+			prices, unless otherwise noted.</i></div><br />
+
+	<div style="float:left; width:200px;"><i>Month headings are delivery dates</i></div>
+	<div style="float:right; width:200px; text-align: right;">
+				<a target="_blank" rel="noreferrer noopener" href="/markets/cashgrid.php?print=true" aria-label="Print this page">Print</a>
+	</div>
+			<br clear="all" />
+	
+						<h2>Corn</h2>
+			<table class="homepage_quoteboard cashbid_grid" cellspacing="0" cellpadding="0" border="0" width="100%">
+				<thead>
+					<tr>
+						<th width="10%">Location</th>
+																				<th align="center" valign="top" width="7%">
+								Sep '26
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Oct '26
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Nov '26
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Dec '26
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Jan '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Feb '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Mar '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Apr '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								May '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Jun '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Jul '27
+															</th>
+																											<th align="center" valign="top" width="7%">
+								Oct '27
+															</th>
+																		</tr>
+				</thead>
+				<tbody>
+											<tr class="highlight">
+							<th valign="top"><i>Futures Price</i></th>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																		writeMonthHdr('ZCZ26', quotes['ZCZ26'], false);
+																																																			writeMonthHdr('ZCZ26', quotes['ZCZ26'], false);
+																																																			writeMonthHdr('ZCZ26', quotes['ZCZ26'], false);
+																																																			writeMonthHdr('ZCZ26', quotes['ZCZ26'], false);
+																																																			writeMonthHdr('ZCH27', quotes['ZCH27'], false);
+																																																			writeMonthHdr('ZCH27', quotes['ZCH27'], false);
+																																																			writeMonthHdr('ZCH27', quotes['ZCH27'], false);
+																																																			writeMonthHdr('ZCK27', quotes['ZCK27'], false);
+																																																			writeMonthHdr('ZCK27', quotes['ZCK27'], false);
+																																																			writeMonthHdr('ZCN27', quotes['ZCN27'], false);
+																																																			writeMonthHdr('ZCN27', quotes['ZCN27'], false);
+																																																			writeMonthHdr('ZCZ27', quotes['ZCZ27'], false);
+																															</script>
+						</tr>
+																<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=22956" aria-label="Get details for ADM CR">ADM CR</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-11, false, 1, false, 56, 'c=5354&l=22956&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-27, false, 1, false, 56, 'c=5354&l=22956&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-21, false, 1, false, 56, 'c=5354&l=22956&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-15, false, 1, false, 56, 'c=5354&l=22956&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-24, false, 1, false, 56, 'c=5354&l=22956&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-20, false, 1, false, 56, 'c=5354&l=22956&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-17, false, 1, false, 56, 'c=5354&l=22956&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-16, false, 1, false, 56, 'c=5354&l=22956&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-14, false, 1, false, 56, 'c=5354&l=22956&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-14, false, 1, false, 56, 'c=5354&l=22956&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=22956&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4683" aria-label="Get details for ADM Clint">ADM Clint</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-16, false, 1, false, 56, 'c=5354&l=4683&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-26, false, 1, false, 56, 'c=5354&l=4683&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-19, false, 1, false, 56, 'c=5354&l=4683&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-13, false, 1, false, 56, 'c=5354&l=4683&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-21, false, 1, false, 56, 'c=5354&l=4683&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-19, false, 1, false, 56, 'c=5354&l=4683&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-16, false, 1, false, 56, 'c=5354&l=4683&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-16, false, 1, false, 56, 'c=5354&l=4683&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-14, false, 1, false, 56, 'c=5354&l=4683&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-14, false, 1, false, 56, 'c=5354&l=4683&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4683&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4625" aria-label="Get details for Alden">Alden</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4625&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4625&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4625&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4625&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4625&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=85817" aria-label="Get details for Aplington">Aplington</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=85817&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=85817&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-37, false, 1, false, 56, 'c=5354&l=85817&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=85817&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=85817&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=87656" aria-label="Get details for Bear Rvr M">Bear Rvr M</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-40, false, 1, false, 56, 'c=5354&l=87656&d=U26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=86144" aria-label="Get details for Bettendorf">Bettendorf</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-66, false, 1, false, 56, 'c=5354&l=86144&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-66, false, 1, false, 56, 'c=5354&l=86144&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-66, false, 1, false, 56, 'c=5354&l=86144&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-26, false, 1, false, 56, 'c=5354&l=86144&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-24, false, 1, false, 56, 'c=5354&l=86144&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-24, false, 1, false, 56, 'c=5354&l=86144&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-41, false, 1, false, 56, 'c=5354&l=86144&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4685" aria-label="Get details for Big River">Big River</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-61, false, 1, false, 56, 'c=5354&l=4685&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4685&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4685&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4685&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-34, false, 1, false, 56, 'c=5354&l=4685&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4685&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-28, false, 1, false, 56, 'c=5354&l=4685&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-32, false, 1, false, 56, 'c=5354&l=4685&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-29, false, 1, false, 56, 'c=5354&l=4685&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4685&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4685&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=17320" aria-label="Get details for BungeDBQ">BungeDBQ</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-63, false, 1, false, 56, 'c=5354&l=17320&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-65, false, 1, false, 56, 'c=5354&l=17320&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=17320&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=17320&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=17320&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=17320&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=17320&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=18976" aria-label="Get details for BungePDC">BungePDC</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-59, false, 1, false, 56, 'c=5354&l=18976&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-66, false, 1, false, 56, 'c=5354&l=18976&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-46, false, 1, false, 56, 'c=5354&l=18976&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=18976&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=18976&d=K27', false, quotes['ZCK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=18976&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4688" aria-label="Get details for CGB Clay">CGB Clay</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-93, false, 1, false, 56, 'c=5354&l=4688&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4688&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-46, false, 1, false, 56, 'c=5354&l=4688&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-36, false, 1, false, 56, 'c=5354&l=4688&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4688&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4688&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4688&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4645" aria-label="Get details for Central Cy">Central Cy</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4645&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4645&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4645&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-44, false, 1, false, 56, 'c=5354&l=4645&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-53, false, 1, false, 56, 'c=5354&l=4645&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4645&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-46, false, 1, false, 56, 'c=5354&l=4645&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4645&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4645&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4645&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4645&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4628" aria-label="Get details for Cleves">Cleves</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4628&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4628&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-37, false, 1, false, 56, 'c=5354&l=4628&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4628&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4628&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4644" aria-label="Get details for Cuba City">Cuba City</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4644&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4644&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4644&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4644&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4644&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4644&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4644&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4644&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4644&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4644&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4644&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4647" aria-label="Get details for Elkader">Elkader</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4647&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4647&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4647&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4647&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-64, false, 1, false, 56, 'c=5354&l=4647&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-62, false, 1, false, 56, 'c=5354&l=4647&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-59, false, 1, false, 56, 'c=5354&l=4647&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-58, false, 1, false, 56, 'c=5354&l=4647&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-53, false, 1, false, 56, 'c=5354&l=4647&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4647&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4647&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4629" aria-label="Get details for Ellsworth">Ellsworth</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4629&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4629&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-38, false, 1, false, 56, 'c=5354&l=4629&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4629&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4629&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4648" aria-label="Get details for Elma">Elma</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4648&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4648&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4648&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4648&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4648&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4648&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4648&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4648&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4648&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4648&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-64, false, 1, false, 56, 'c=5354&l=4648&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4649" aria-label="Get details for Farley">Farley</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 56, 'c=5354&l=4649&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4649&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4649&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4649&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-56, false, 1, false, 56, 'c=5354&l=4649&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-54, false, 1, false, 56, 'c=5354&l=4649&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4649&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4649&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4649&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-53, false, 1, false, 56, 'c=5354&l=4649&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4649&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4630" aria-label="Get details for Faulkner">Faulkner</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4630&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4630&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-37, false, 1, false, 56, 'c=5354&l=4630&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4630&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4630&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=74559" aria-label="Get details for GardenCity">GardenCity</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=74559&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=74559&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=74559&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=74559&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=74559&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=78128" aria-label="Get details for Golden Gr">Golden Gr</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 56, 'c=5354&l=78128&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=78128&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=78128&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=78128&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=78128&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=78128&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=78128&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=78128&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=78128&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=78128&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=78128&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4692" aria-label="Get details for Homeland">Homeland</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-53, false, 1, false, 56, 'c=5354&l=4692&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4692&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-38, false, 1, false, 56, 'c=5354&l=4692&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-27, false, 1, false, 56, 'c=5354&l=4692&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4692&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4692&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4633" aria-label="Get details for Hubbard">Hubbard</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4633&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4633&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4633&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4633&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4633&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=82228" aria-label="Get details for Independen">Independen</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=82228&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=82228&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=82228&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=82228&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4635" aria-label="Get details for Lawn Hill">Lawn Hill</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4635&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4635&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4635&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4635&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4635&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4653" aria-label="Get details for Manchester">Manchester</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4653&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4653&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4653&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4653&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=78125" aria-label="Get details for Masonville">Masonville</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=78125&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=78125&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=78125&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=78125&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=78125&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-53, false, 1, false, 56, 'c=5354&l=78125&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=78125&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=78125&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=78125&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=78125&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=78125&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4654" aria-label="Get details for Monona">Monona</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 56, 'c=5354&l=4654&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-46, false, 1, false, 56, 'c=5354&l=4654&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-46, false, 1, false, 56, 'c=5354&l=4654&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4654&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-68, false, 1, false, 56, 'c=5354&l=4654&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-68, false, 1, false, 56, 'c=5354&l=4654&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-66, false, 1, false, 56, 'c=5354&l=4654&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-61, false, 1, false, 56, 'c=5354&l=4654&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4654&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-52, false, 1, false, 56, 'c=5354&l=4654&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4654&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4655" aria-label="Get details for Monticello">Monticello</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4655&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4655&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4655&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4655&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-56, false, 1, false, 56, 'c=5354&l=4655&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-54, false, 1, false, 56, 'c=5354&l=4655&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-51, false, 1, false, 56, 'c=5354&l=4655&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4655&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4655&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4655&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-48, false, 1, false, 56, 'c=5354&l=4655&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4656" aria-label="Get details for Oran">Oran</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4656&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4656&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4656&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4656&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4656&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4656&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4656&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4656&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4656&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-58, false, 1, false, 56, 'c=5354&l=4656&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-47, false, 1, false, 56, 'c=5354&l=4656&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4636" aria-label="Get details for Owasa">Owasa</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4636&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4636&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4636&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4636&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4636&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4637" aria-label="Get details for Pine Lake">Pine Lake</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4637&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4637&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4637&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-32, false, 1, false, 56, 'c=5354&l=4637&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=M27', false, quotes['ZCN27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4637&d=N27', false, quotes['ZCN27']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4637&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=74558" aria-label="Get details for Poet FBK">Poet FBK</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=74558&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-36, false, 1, false, 56, 'c=5354&l=74558&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-36, false, 1, false, 56, 'c=5354&l=74558&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=74558&d=K27', false, quotes['ZCK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=74558&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=80066" aria-label="Get details for Poet IF">Poet IF</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 56, 'c=5354&l=80066&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=80066&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=80066&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=M27', false, quotes['ZCN27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=80066&d=N27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=87784" aria-label="Get details for Poet Jewel">Poet Jewel</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-30, false, 1, false, 56, 'c=5354&l=87784&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-37, false, 1, false, 56, 'c=5354&l=87784&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-28, false, 1, false, 56, 'c=5354&l=87784&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=87784&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4690" aria-label="Get details for Poet SR">Poet SR</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-46, false, 1, false, 56, 'c=5354&l=4690&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-36, false, 1, false, 56, 'c=5354&l=4690&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-36, false, 1, false, 56, 'c=5354&l=4690&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=J27', false, quotes['ZCK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-31, false, 1, false, 56, 'c=5354&l=4690&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4690&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=27502" aria-label="Get details for SF Ia Fall">SF Ia Fall</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																		document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=27502&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=27502&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-25, false, 1, false, 56, 'c=5354&l=27502&d=Z26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4639" aria-label="Get details for Union">Union</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4639&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4639&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4639&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4639&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4639&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4693" aria-label="Get details for Valero">Valero</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-37, false, 1, false, 56, 'c=5354&l=4693&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-42, false, 1, false, 56, 'c=5354&l=4693&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-35, false, 1, false, 56, 'c=5354&l=4693&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-27, false, 1, false, 56, 'c=5354&l=4693&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-30, false, 1, false, 56, 'c=5354&l=4693&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-38, false, 1, false, 56, 'c=5354&l=4693&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4686" aria-label="Get details for Viserion">Viserion</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-72, false, 1, false, 56, 'c=5354&l=4686&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-57, false, 1, false, 56, 'c=5354&l=4686&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4686&d=X26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-33, false, 1, false, 56, 'c=5354&l=4686&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-29, false, 1, false, 56, 'c=5354&l=4686&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-24, false, 1, false, 56, 'c=5354&l=4686&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-40, false, 1, false, 56, 'c=5354&l=4686&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4658" aria-label="Get details for Waukon">Waukon</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 56, 'c=5354&l=4658&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4658&d=V26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4658&d=X26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4658&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-68, false, 1, false, 56, 'c=5354&l=4658&d=F27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4658&d=G27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4658&d=H27', false, quotes['ZCH27']);
+																																																																							writeBidCell(-64, false, 1, false, 56, 'c=5354&l=4658&d=J27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-60, false, 1, false, 56, 'c=5354&l=4658&d=K27', false, quotes['ZCK27']);
+																																																																							writeBidCell(-55, false, 1, false, 56, 'c=5354&l=4658&d=M27', false, quotes['ZCN27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-50, false, 1, false, 56, 'c=5354&l=4658&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4640" aria-label="Get details for Williams">Williams</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-49, false, 1, false, 56, 'c=5354&l=4640&d=U26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4640&d=V26', false, quotes['ZCZ26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-38, false, 1, false, 56, 'c=5354&l=4640&d=Z26', false, quotes['ZCZ26']);
+																																																																							writeBidCell(-43, false, 1, false, 56, 'c=5354&l=4640&d=F27', false, quotes['ZCH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-45, false, 1, false, 56, 'c=5354&l=4640&d=V27', false, quotes['ZCZ27']);
+																															</script>
+						</tr>
+									</tbody>
+			</table>
+												<div id="lastupdate_ZCZ27" style="text-align: center; font-size:9pt;margin:5px 0 0 0;"></div>
+					<script type="text/javascript" nonce="ac-sites-inline-js">
+						var d = new Date('1788468088' * 1000);
+						var mins = "0" + d.getMinutes();
+						var secs = "0" + d.getSeconds();
+						document.getElementById('lastupdate_ZCZ27').innerHTML = 'Quotes as of ' + (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear() + ' ' + d.getHours() + ':' + mins.substr(mins.length-2) + ':' + secs.substr(secs.length-2);
+									</script>
+						<br />
+					<h2>Beans</h2>
+			<table class="homepage_quoteboard cashbid_grid" cellspacing="0" cellpadding="0" border="0" width="100%">
+				<thead>
+					<tr>
+						<th width="10%">Location</th>
+																				<th align="center" valign="top" width="8%">
+								Sep '26
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Oct '26
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Nov '26
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Dec '26
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Jan '27
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Feb '27
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Mar '27
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Apr '27
+															</th>
+																											<th align="center" valign="top" width="8%">
+								May '27
+															</th>
+																											<th align="center" valign="top" width="8%">
+								Jun '27
+															</th>
+																																								<th align="center" valign="top" width="8%">
+								Oct '27
+															</th>
+																		</tr>
+				</thead>
+				<tbody>
+											<tr class="highlight">
+							<th valign="top"><i>Futures Price</i></th>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																		writeMonthHdr('ZSX26', quotes['ZSX26'], false);
+																																																			writeMonthHdr('ZSX26', quotes['ZSX26'], false);
+																																																			writeMonthHdr('ZSX26', quotes['ZSX26'], false);
+																																																			writeMonthHdr('ZSF27', quotes['ZSF27'], false);
+																																																			writeMonthHdr('ZSF27', quotes['ZSF27'], false);
+																																																			writeMonthHdr('ZSH27', quotes['ZSH27'], false);
+																																																			writeMonthHdr('ZSH27', quotes['ZSH27'], false);
+																																																			writeMonthHdr('ZSK27', quotes['ZSK27'], false);
+																																																			writeMonthHdr('ZSK27', quotes['ZSK27'], false);
+																																																			writeMonthHdr('ZSN27', quotes['ZSN27'], false);
+																																																																		writeMonthHdr('ZSX27', quotes['ZSX27'], false);
+																															</script>
+						</tr>
+																<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4683" aria-label="Get details for ADM Clint">ADM Clint</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-56, false, 1, false, 60, 'c=5353&l=4683&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-56, false, 1, false, 60, 'c=5353&l=4683&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-21, false, 1, false, 60, 'c=5353&l=4683&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-41, false, 1, false, 60, 'c=5353&l=4683&d=Z26', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-26, false, 1, false, 60, 'c=5353&l=4683&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-21, false, 1, false, 60, 'c=5353&l=4683&d=K27', false, quotes['ZSK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-50, false, 1, false, 60, 'c=5353&l=4683&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=22957" aria-label="Get details for AGP Eagle">AGP Eagle</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(10, false, 1, false, 60, 'c=5353&l=22957&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-35, false, 1, false, 60, 'c=5353&l=22957&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-35, false, 1, false, 60, 'c=5353&l=22957&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=22957&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=22957&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=22957&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=22957&d=H27', false, quotes['ZSH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																		document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=78129" aria-label="Get details for AGP Mason">AGP Mason</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-7, false, 1, false, 60, 'c=5353&l=78129&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-42, false, 1, false, 60, 'c=5353&l=78129&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-42, false, 1, false, 60, 'c=5353&l=78129&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-37, false, 1, false, 60, 'c=5353&l=78129&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-37, false, 1, false, 60, 'c=5353&l=78129&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-37, false, 1, false, 60, 'c=5353&l=78129&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-37, false, 1, false, 60, 'c=5353&l=78129&d=H27', false, quotes['ZSH27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=78129&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4625" aria-label="Get details for Alden">Alden</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-30, false, 1, false, 60, 'c=5353&l=4625&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4625&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4625&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4625&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4625&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=85817" aria-label="Get details for Aplington">Aplington</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=85817&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=85817&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-73, false, 1, false, 60, 'c=5353&l=85817&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=85817&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=85817&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=86144" aria-label="Get details for Bettendorf">Bettendorf</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-61, false, 1, false, 60, 'c=5353&l=86144&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-61, false, 1, false, 60, 'c=5353&l=86144&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-33, false, 1, false, 60, 'c=5353&l=86144&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=86144&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=86144&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=86144&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=86144&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-33, false, 1, false, 60, 'c=5353&l=86144&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=86144&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=86144&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-56, false, 1, false, 60, 'c=5353&l=86144&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=17320" aria-label="Get details for BungeDBQ">BungeDBQ</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-66, false, 1, false, 60, 'c=5353&l=17320&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=17320&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-46, false, 1, false, 60, 'c=5353&l=17320&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=17320&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=17320&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=17320&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=17320&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=18976" aria-label="Get details for BungePDC">BungePDC</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-69, false, 1, false, 60, 'c=5353&l=18976&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=18976&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-46, false, 1, false, 60, 'c=5353&l=18976&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=18976&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-36, false, 1, false, 60, 'c=5353&l=18976&d=K27', false, quotes['ZSK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=18976&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4688" aria-label="Get details for CGB Clay">CGB Clay</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4688&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4688&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-37, false, 1, false, 60, 'c=5353&l=4688&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-44, false, 1, false, 60, 'c=5353&l=4688&d=J27', false, quotes['ZSK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-39, false, 1, false, 60, 'c=5353&l=4688&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-67, false, 1, false, 60, 'c=5353&l=4688&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=22958" aria-label="Get details for Cargill CR">Cargill CR</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(30, false, 1, false, 60, 'c=5353&l=22958&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-40, false, 1, false, 60, 'c=5353&l=22958&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=22958&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-50, false, 1, false, 60, 'c=5353&l=22958&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-50, false, 1, false, 60, 'c=5353&l=22958&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-50, false, 1, false, 60, 'c=5353&l=22958&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4695" aria-label="Get details for Cargill IF">Cargill IF</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(25, false, 1, false, 60, 'c=5353&l=4695&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-30, false, 1, false, 60, 'c=5353&l=4695&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-15, false, 1, false, 60, 'c=5353&l=4695&d=J27', false, quotes['ZSK27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-50, false, 1, false, 60, 'c=5353&l=4695&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4645" aria-label="Get details for Central Cy">Central Cy</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4645&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-67, false, 1, false, 60, 'c=5353&l=4645&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-67, false, 1, false, 60, 'c=5353&l=4645&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-54, false, 1, false, 60, 'c=5353&l=4645&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-54, false, 1, false, 60, 'c=5353&l=4645&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-54, false, 1, false, 60, 'c=5353&l=4645&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-54, false, 1, false, 60, 'c=5353&l=4645&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-50, false, 1, false, 60, 'c=5353&l=4645&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-76, false, 1, false, 60, 'c=5353&l=4645&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-78, false, 1, false, 60, 'c=5353&l=4645&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4645&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4628" aria-label="Get details for Cleves">Cleves</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4628&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4628&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4628&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4628&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4628&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4647" aria-label="Get details for Elkader">Elkader</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4647&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=4647&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=4647&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4647&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4647&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4647&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4647&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4647&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4647&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-61, false, 1, false, 60, 'c=5353&l=4647&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4647&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4629" aria-label="Get details for Ellsworth">Ellsworth</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4629&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4629&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4629&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4629&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4629&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4648" aria-label="Get details for Elma">Elma</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4648&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4648&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4648&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-77, false, 1, false, 60, 'c=5353&l=4648&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-73, false, 1, false, 60, 'c=5353&l=4648&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-95, false, 1, false, 60, 'c=5353&l=4648&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4649" aria-label="Get details for Farley">Farley</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4649&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4649&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4649&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4649&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4649&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4649&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4649&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-59, false, 1, false, 60, 'c=5353&l=4649&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4649&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4649&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-72, false, 1, false, 60, 'c=5353&l=4649&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4630" aria-label="Get details for Faulkner">Faulkner</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4630&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4630&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-73, false, 1, false, 60, 'c=5353&l=4630&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4630&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4630&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=74559" aria-label="Get details for GardenCity">GardenCity</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=74559&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=74559&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=74559&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=74559&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=74559&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4633" aria-label="Get details for Hubbard">Hubbard</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4633&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4633&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4633&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4633&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4633&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=82228" aria-label="Get details for Independen">Independen</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=82228&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=82228&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=82228&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-73, false, 1, false, 60, 'c=5353&l=82228&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4635" aria-label="Get details for Lawn Hill">Lawn Hill</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4635&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4635&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4635&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4635&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4635&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4653" aria-label="Get details for Manchester">Manchester</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4653&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=4653&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=4653&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-73, false, 1, false, 60, 'c=5353&l=4653&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=78125" aria-label="Get details for Masonville">Masonville</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=78125&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=78125&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=78125&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=78125&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=78125&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=78125&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-60, false, 1, false, 60, 'c=5353&l=78125&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-55, false, 1, false, 60, 'c=5353&l=78125&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-77, false, 1, false, 60, 'c=5353&l=78125&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-80, false, 1, false, 60, 'c=5353&l=78125&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-73, false, 1, false, 60, 'c=5353&l=78125&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4654" aria-label="Get details for Monona">Monona</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4654&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4654&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4654&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4654&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4654&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4654&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4654&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4654&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4654&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-61, false, 1, false, 60, 'c=5353&l=4654&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4654&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4655" aria-label="Get details for Monticello">Monticello</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4655&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4655&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4655&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-59, false, 1, false, 60, 'c=5353&l=4655&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-59, false, 1, false, 60, 'c=5353&l=4655&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-59, false, 1, false, 60, 'c=5353&l=4655&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-59, false, 1, false, 60, 'c=5353&l=4655&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-54, false, 1, false, 60, 'c=5353&l=4655&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-70, false, 1, false, 60, 'c=5353&l=4655&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-72, false, 1, false, 60, 'c=5353&l=4655&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-72, false, 1, false, 60, 'c=5353&l=4655&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4656" aria-label="Get details for Oran">Oran</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4656&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-69, false, 1, false, 60, 'c=5353&l=4656&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4656&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-82, false, 1, false, 60, 'c=5353&l=4656&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4656&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-72, false, 1, false, 60, 'c=5353&l=4656&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4636" aria-label="Get details for Owasa">Owasa</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4636&d=U26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																		document.write('<td class="gridbox">&nbsp;</td>');
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=82907" aria-label="Get details for ShRk Soypr">ShRk Soypr</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-2, false, 1, false, 60, 'c=5353&l=82907&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-42, false, 1, false, 60, 'c=5353&l=82907&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-42, false, 1, false, 60, 'c=5353&l=82907&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-22, false, 1, false, 60, 'c=5353&l=82907&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-57, false, 1, false, 60, 'c=5353&l=82907&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4639" aria-label="Get details for Union">Union</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4639&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4639&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4639&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4639&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4639&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4686" aria-label="Get details for Viserion">Viserion</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-66, false, 1, false, 60, 'c=5353&l=4686&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-61, false, 1, false, 60, 'c=5353&l=4686&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4686&d=X26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-38, false, 1, false, 60, 'c=5353&l=4686&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4686&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-28, false, 1, false, 60, 'c=5353&l=4686&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-60, false, 1, false, 60, 'c=5353&l=4686&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="odd">
+							<td>
+								<a href="/markets/cash.php?location_filter=4658" aria-label="Get details for Waukon">Waukon</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4658&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-74, false, 1, false, 60, 'c=5353&l=4658&d=V26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-74, false, 1, false, 60, 'c=5353&l=4658&d=X26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-79, false, 1, false, 60, 'c=5353&l=4658&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-79, false, 1, false, 60, 'c=5353&l=4658&d=F27', false, quotes['ZSF27']);
+																																																																							writeBidCell(-79, false, 1, false, 60, 'c=5353&l=4658&d=G27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-79, false, 1, false, 60, 'c=5353&l=4658&d=H27', false, quotes['ZSH27']);
+																																																																							writeBidCell(-74, false, 1, false, 60, 'c=5353&l=4658&d=J27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-71, false, 1, false, 60, 'c=5353&l=4658&d=K27', false, quotes['ZSK27']);
+																																																																							writeBidCell(-64, false, 1, false, 60, 'c=5353&l=4658&d=M27', false, quotes['ZSN27']);
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4658&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+											<tr class="even">
+							<td>
+								<a href="/markets/cash.php?location_filter=4640" aria-label="Get details for Williams">Williams</a>
+															</td>
+							<script language="javascript" nonce="ac-sites-inline-js">
+																																																						writeBidCell(-35, false, 1, false, 60, 'c=5353&l=4640&d=U26', false, quotes['ZSX26']);
+																																																																							writeBidCell(-65, false, 1, false, 60, 'c=5353&l=4640&d=V26', false, quotes['ZSX26']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																							writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4640&d=Z26', false, quotes['ZSF27']);
+																																																																							writeBidCell(-68, false, 1, false, 60, 'c=5353&l=4640&d=F27', false, quotes['ZSF27']);
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																			document.write('<td class="gridbox">&nbsp;</td>');
+																																																																																						writeBidCell(-75, false, 1, false, 60, 'c=5353&l=4640&d=V27', false, quotes['ZSX27']);
+																															</script>
+						</tr>
+									</tbody>
+			</table>
+												<div id="lastupdate_ZSX27" style="text-align: center; font-size:9pt;margin:5px 0 0 0;"></div>
+					<script type="text/javascript" nonce="ac-sites-inline-js">
+						var d = new Date('1788468088' * 1000);
+						var mins = "0" + d.getMinutes();
+						var secs = "0" + d.getSeconds();
+						document.getElementById('lastupdate_ZSX27').innerHTML = 'Quotes as of ' + (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear() + ' ' + d.getHours() + ':' + mins.substr(mins.length-2) + ':' + secs.substr(secs.length-2);
+									</script>
+						<br />
+						<p style="text-align: center"><i>All <a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/cmdty/data/grain-prices">grain prices</a> are subject to change at any time.<br />
+			Click on the Location name for more delivery month bids by location.</i></p>
+	
+				</div>
+			<div align="center" class="bottomad" role="complementary">
+							</div>
+				<footer role="contentinfo">
+			<div id="footer1" class="footer footer_color">
+				<div class="stdfooter">
+					<a class="footer_color" href="/">Home</a> |
+					<a class="footer_color" href="/pages/contact.php">Contact Us</a>
+			</div>
+							</div>
+			<div id="footer2" class="footer" style="background-color:#FFFFFF;">
+				<div class="copyright2" style="text-align:center; padding-top:20px;">&copy; 2026 Barchart.com, Inc.  All <a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/solutions" title="Market data provider site" aria-label="Market data provider site">market data</a> is hosted and powered by <a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/cmdty" title="Hosting provider" aria-label="Hosting provider">Barchart</a>.</div>
+	            <div class="copyright3" style="text-align:center">Information presented is provided 'as-is' and solely for informational purposes, not for trading purposes or advice, and is delayed. No representations are made by Barchart as to its informational accuracy or completeness.</div>
+	            <div class="terms-and-agreements-links">
+	            	<ul class="list-inline">
+	            		<li class="list-item-group">
+	            			<a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/terms" title="Terms of Use" aria-label="Terms of Use">Terms of Use</a>
+	            		</li>
+	            		<li class="list-item-group">
+	            			<a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/terms#privacy-policy" title="Privacy Policy" aria-label="Privacy Policy">Privacy Policy</a>
+	            		</li>
+	            		<li class="list-item-group">
+	            			<a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/terms#do-not-sell" title="Do not sell my personal information" aria-label="Do not sell my personal information">Do Not Sell My Personal Information</a>
+	            		</li>
+	            		<li class="list-item-group">
+	            			<a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/terms#user-agreement" title="Exchange Delays" aria-label="Exchange Delays">Exchange Delays</a>
+	            		</li>
+	            	</ul>
+	            </div>
+			</div>
+		</footer>
+					</body>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer" id="jquery"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
+<script type="text/javascript" language="javascript" nonce="ac-sites-inline-js">
+	/*To enable/disable page refresh when window is not current active window.*/
+	var refresh = parseInt('');
+	
+	if (refresh && typeof(refresh) != 'undefined') {
+		let doRefresh = undefined;
+		(function($){
+			$(window).on('load focus blur', function(e){
+				console.log('Triggered!');
+				let prevType = $(this).data('prevType');
+				let type = e.type;
+				if (prevType != e.type) {
+					switch(e.type) {
+						case 'blur':
+							clearInterval(doRefresh);
+							doRefresh = undefined;
+							break;
+						case 'focus':
+						default:
+							if (doRefresh == undefined) {
+								doRefresh = setInterval(function() {
+									window.location.reload(true);
+								}, refresh * 100);
+							}
+							break;
+					}
+				}
+				$(this).data('prevType', e.type);
+			});
+		})(jQuery);
+	}
+	
+	var scriptObjs = document.getElementsByTagName('script');
+	var i = 0;
+	var sideadCount = topadCount = bottomadCount = custom300Count = custom728Count = 0;
+	var searchString = "";
+	for(i = 0; i <= scriptObjs.length; i++) {
+		if (searchString.length > 0 && scriptObjs[i] && scriptObjs[i].innerHTML.indexOf(searchString) > -1 && scriptObjs[i].innerHTML.indexOf('<a') == -1 && scriptObjs[i].innerHTML.indexOf('<img') == -1) {
+			var parentDivClass = scriptObjs[i].parentNode.getAttribute('class');
+			if (parentDivClass != 'sidead' && parentDivClass != 'topad' && parentDivClass != 'bottomad') {
+				if (scriptObjs[i].innerHTML.indexOf('728x') > -1) {
+					custom728Count += 1;
+				} else {
+					custom300Count += 1;
+				}
+			} else {
+				window[parentDivClass + 'Count'] += 1;
+			}
+		}
+	}
+
+	jQuery.noConflict();
+	jQuery.ajax({
+		type: 'POST',
+		url: '/updateTrackingInfo.php',
+		dataType: 'json',
+		data: {
+			'customer': 1443,
+			'site': 1512,
+			'sideAd': sideadCount,
+			'topAd': topadCount,
+			'bottomAd': bottomadCount,
+			'custom300': custom300Count,
+			'custom728': custom728Count,
+			'view': 1
+		},
+		success: function() {
+		}
+	});
+
+	
+		(function(window, undefined) {
+			'use strict';
+
+			const document = window.document;
+
+			function BarchartCookieConsent() {
+				if (!(this instanceof BarchartCookieConsent)) {
+					return new BarchartCookieConsent();
+				}
+
+				this.initialize.call(this);
+
+				return this;
+			}
+
+			BarchartCookieConsent.prototype = {
+				initialize: function() {
+					if (!this.checkCookie('barchartCookieConsent')) {
+						this.displayNotification();
+					}
+				},
+
+				checkCookie: function(cookieName) {
+					if (document.cookie.split(';').filter(function(item) {
+						return item.trim().indexOf(cookieName+'=') == 0
+					}).length) {
+						return true;
+					} else {
+						return false;
+					}
+
+				},
+
+				setCookie: function(cookieName, value, duration) {
+					let expiration;
+					if (duration) {
+						let d = new Date();
+						d.setTime(d.getTime() + duration);
+						expiration = '; expires=' + d.toGMTString();
+					} else {
+						expiration = '';
+					}
+					let bcCookie = cookieName+'='+value+expiration+';';
+					let url = new URL(document.location);
+					if (url.hostname && url.hostname.includes('agricharts.com') == true) {
+						bcCookie += ' domain=.agricharts.com;';
+					}
+					bcCookie += ' path=/; SameSite=None; Secure';
+					document.cookie = bcCookie;
+				},
+
+				displayNotification: function() {
+					this.setStyling();
+
+					let html = '<div class="bc-cookie-consent-container">';
+					html += '<p class="bc-float-left">By using this site, you agree to the storage of cookies on your devices for enhanced navigation, site analysis, and Barchart\'s marketing. Data sharing with social media platforms might occur based on the privacy choices you make on those platforms. For specifics, see our our <a target="_blank" rel="noreferrer noopener" href="https://www.barchart.com/terms#privacy-policy">Privacy Policy</a>.</p>';
+					html += '<div class="bc-float-right"><button type="button" id="bc-cookie-consent-accept">Accept</button></div>';
+					html += '<div class="bc-clear-float"></div>'
+					html += '</div>';
+					let tmpElem = document.createElement('div');
+					tmpElem.id = 'bc-cookie-consent-notification';
+					tmpElem.innerHTML = html;
+					document.body.appendChild(tmpElem);
+
+					this.bindAction();
+
+				},
+
+				setStyling: function() {
+					let css;
+					css += '#bc-cookie-consent-notification button:focus, #bc-cookie-consent-notification [input="button"]:focus, #bc-cookie-consent-notification a:focus { outline: unset; outline: none; text-decoration: none; }';
+					css += '#bc-cookie-consent-notification button, #bc-cookie-consent-notification [input="button"] { position: relative; display: inline-block; height: 30px; padding: 0 15px; border: 0; background: #4285f4; font-size: 16px; line-height: 28px; color: #fff; text-decoration: none; vertical-align: middle; cursor: pointer; border-radius: 0; -webkit-appearance: none; -webkit-border-radius: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; -moz-osx-font-smoothing: grayscale; }';
+					css += '#bc-cookie-consent-notification button:hover, #bc-cookie-consent-notification [input="button"]:hover, #bc-cookie-consent-notification a { text-decoration: none; }';
+					css += '#bc-cookie-consent-notification button:after, #bc-cookie-consent-notification [input="button"]:after { position: absolute; top: 0; right: 52%; bottom: 0; left: 52%; z-index: -1; border-bottom: 4px solid #14428d; background: rgba(20, 66, 141, .3); content: ""; }';
+					css += '#bc-cookie-consent-notification button:hover:after, #bc-cookie-consent-notification [input="button"]:hover:after, #bc-cookie-consent-notification button:focus:after, #bc-cookie-consent-notification [input="button"]:focus:after { right: 0; left: 0; }';
+					css += '#bc-cookie-consent-notification { position: fixed; bottom: 0; left: 0; z-index: 9999; overflow-x: hidden; overflow-y: auto; width: 100%; max-height: 100%; padding: 30px 0; background: #404040; opacity: 0.93; text-align: left; }';
+					css += '#bc-cookie-consent-notification * { padding: 0; margin: 0; outline: 0; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container { width: 90%; margin: 0 auto; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container > p { font-size: 16px; line-height: 1.4; color: #fff; font-weight: 400; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container > div { margin: 8px 0 0 0; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container > p > a { color: #6ca0f7 !important; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container .bc-float-left { float: left; width: 92%; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container .bc-float-right { float: right; width: 7%; text-align: right; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container .bc-clear-float { clear: both; }';
+					css += '@media only screen and (max-width: 767px) {';
+					css += '#bc-cookie-consent-notification { padding: 15px 0; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container { width: 96%; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container > p { font-size: 16px; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container .bc-float-left { float: none; width: auto; }';
+					css += '#bc-cookie-consent-notification .bc-cookie-consent-container .bc-float-right { float: none; width: auto; }';
+					css += '}';
+
+					let styleElem = document.createElement('style');
+					styleElem.type = 'text/css';
+					if (styleElem.styleSheet) {
+						styleElem.styleSheet.cssText = css;
+					} else {
+						styleElem.appendChild(document.createTextNode(css));
+					}
+					document.getElementsByTagName('head')[0].appendChild(styleElem);
+				},
+
+				bindAction: function() {
+					let self = this;
+					const btnElem = document.getElementById('bc-cookie-consent-accept');
+					if (typeof(btnElem) === 'object') {
+						this.createEvent(btnElem, 'click', function(e) {
+							if (e.preventDefault) {
+								e.preventDefault();
+							}
+							self.setCookie('barchartCookieConsent', 'YES', (365 * 24 * 60 * 60 * 1000));
+							document.getElementById('bc-cookie-consent-notification').remove();
+							return false;
+						});
+					}
+				},
+
+				createEvent: function(elem, action, fn) {
+					if (elem.addEventListener) {
+						elem.addEventListener(action, fn, false);
+					} else if (elem.attachEvent) {
+						elem['e' + action + fn] = fn;
+						elem[action + fn] = function() { elem['e' + action + fn](window.event); };
+						elem.attachEvent('on' + action, elem[action + fn]);
+					} else {
+						elem['on' + action] = elem['e' + action + fn];
+					}
+				}
+			};
+			window.BarchartCookieConsent = BarchartCookieConsent;
+		})(window);
+
+		window.onload = function() {
+			let enablePrompt = parseInt("1");
+			//if (enablePrompt === 1) {
+				BarchartCookieConsent = BarchartCookieConsent();
+			//}
+		}
+	
+	
+</script>
