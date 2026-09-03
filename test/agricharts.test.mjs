@@ -24,7 +24,18 @@ import {
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
 const read = (f) => readFileSync(join(DIR, f), "utf8");
-const boards = () => readdirSync(DIR).filter((f) => /^agricharts-(?!quotes)/.test(f)).sort();
+/* NOT THE CASHGRID CAPTURES. fixtures/agricharts-cashgrid-*.html are 47 boards
+   of a DIFFERENT SHAPE, captured 2026-09-03 by run 91617768662, and they are
+   lib/adapters/agricharts-cashgrid.mjs's evidence, not this adapter's. They
+   were named `agricharts-cashgrid-<slug>` so they could not collide with a
+   mobile fixture's FILE NAME -- and that walked straight into this GLOB, which
+   turned main red the moment the sweep committed them. The suite is the thing
+   that noticed; the sweep's own guard step ran before the files existed.
+
+   Excluded by name and asserted below, so this can never quietly become a way
+   of not testing a board. */
+const boards = () => readdirSync(DIR)
+  .filter((f) => /^agricharts-(?!quotes|cashgrid)/.test(f)).sort();
 const quotePages = () => readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).sort();
 
 /* ── the boards ──────────────────────────────────────────────────────────── */
@@ -363,6 +374,15 @@ test("every row of the seven original boards sits on a real quoted contract", ()
  * defence against a parser tuned to seven. Two of them refuse, both for the
  * same honest reason, and that is asserted rather than tolerated. */
 const CASH_ONLY = ["agricharts-butterfieldgrain.html", "agricharts-westco.html"];
+test("the cashgrid captures are excluded here because they are read elsewhere", () => {
+  /* An exception must be declared, asserted, and total. If the other adapter
+     stops reading them, THAT suite goes red -- not this one silently. */
+  const cg = readdirSync(DIR).filter((f) => /^agricharts-cashgrid-/.test(f));
+  assert.ok(cg.length >= 47, `only ${cg.length} cashgrid captures`);
+  for (const f of cg) assert.ok(!boards().includes(f), `${f} is in both suites`);
+  for (const f of boards()) assert.ok(!/cashgrid/.test(f), `${f} slipped through`);
+});
+
 test("every captured board reads, except the two that publish no basis at all", () => {
   const refused = [];
   let rows = 0, locations = 0, unreconciled = 0;
