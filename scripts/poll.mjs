@@ -47,7 +47,7 @@ import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
 import { capture } from "../lib/cdp.mjs";
 import { Breaker, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
-import { adapterFor } from "../lib/adapters/index.mjs";
+import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -331,6 +331,55 @@ async function getPage(s) {
   return p;
 }
 
+/* ---------- a page that is the same for every source on a platform ----------
+ *
+ * AgriCharts' cash board carries no futures price; the quote is on a sibling
+ * page, and it is CBOT's number rather than any one co-op's, so seven pages
+ * answer for all 211 sites. Per source that would be 1,477 requests a pass to
+ * say the same thing. Once per platform per pass it is seven.
+ *
+ * FETCHED LAZILY, so a pass that never reaches an AgriCharts source never asks
+ * for them, and FETCHED ONCE even if it reaches two hundred.
+ *
+ * NOTHING IS DEFAULTED WHEN IT FAILS. Whatever came back is handed over as it
+ * is; an adapter that needs a page it did not receive refuses that source, and
+ * a withheld price is the right outcome of a failed fetch. The alternative --
+ * publishing rows nothing checked -- is the one this whole file exists to
+ * avoid. */
+const sharedCtx = new Map();
+async function sharedFor(platform) {
+  const spec = SHARED_PAGES[platform];
+  if (!spec) return undefined;
+  if (sharedCtx.has(platform)) return sharedCtx.get(platform);
+
+  const bodies = [], problems = [];
+  for (const u of spec.urls) {
+    try {
+      const res = await fetch(u, { headers: { "User-Agent": UA, Accept: "text/html" }, redirect: "follow" });
+      if (!res.ok) { problems.push(`${u} -> HTTP ${res.status}`); continue; }
+      const body = await res.text();
+      if (!body.length) { problems.push(`${u} -> empty response`); continue; }
+      bodies.push(body);
+    } catch (e) { problems.push(`${u} -> ${e.message}`); }
+  }
+  let ctx = null;
+  if (bodies.length) {
+    try { ctx = spec.build(bodies); }
+    catch (e) { problems.push(`the ${bodies.length} page(s) that answered would not parse: ${e.message}`); }
+  }
+  if (problems.length)
+    console.error(`::warning title=${platform} shared page(s)::${problems.length} of `
+      + `${spec.urls.length} failed — ${spec.why}. ${problems.slice(0, 4).join("; ")}`
+      + `${ctx ? " The rest were read and the platform continues on those."
+              : " Nothing was read, so every " + platform + " source will refuse this pass rather "
+                + "than publish unchecked."}`);
+  else
+    console.log(`   ${platform}: read ${spec.urls.length} shared page(s) once for the whole pass `
+      + `(${spec.why})`);
+  sharedCtx.set(platform, ctx);
+  return ctx;
+}
+
 /* ---------- read each source ---------- */
 const now = new Date().toISOString();
 const results = [];
@@ -389,7 +438,9 @@ for (const s of todo) {
   }
   try {
     const { html, url } = await getPage(s);
-    const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s), extract: adapterFor(s.platform) });
+    const shared = await sharedFor(s.platform);
+    const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s),
+                                    extract: adapterFor(s.platform, shared) });
     /* A withheld commodity is something the elevator IS buying that we are not
        publishing. It must never be a silent omission -- it goes in the index,
        onto the status board, and into the Actions annotations. */

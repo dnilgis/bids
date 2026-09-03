@@ -19,6 +19,7 @@ import {
   parseBoard, parseQuotes, quoteToCents, parseCash, parseBasisCents, sectionIsCommodity,
   impliedSpread, fitToContracts, boardStamp, describe, AgriChartsRefused,
   COLUMNS, GRAIN_ROOTS, MAX_FIT_CENTS,
+  extract, mergeQuotes, quoteUrls, VERIFIED_BY,
 } from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
@@ -328,8 +329,7 @@ test("a quote table with no column we read is refused", () => {
 
 /* ── the two pages, checked against each other ───────────────────────────── */
 
-const CONTRACTS = quotePages().flatMap((f) => parseQuotes(read(f)))
-  .filter((c, i, a) => a.findIndex((x) => x.symbol === c.symbol) === i);
+const CONTRACTS = mergeQuotes(quotePages().map(read));
 
 test("87 distinct priced contracts across the eight pages", () => {
   assert.equal(CONTRACTS.filter((c) => c.priced).length, 87);
@@ -372,6 +372,52 @@ test("with no contracts to check against, the check reports that rather than pas
   const fit = fitToContracts(rows, []);
   assert.equal(fit.ok, false);
   assert.match(fit.why, /no priced contract/);
+});
+
+/* ── extract(), which is the only thing that stamps a row ────────────────── */
+
+/* THE STAMP IS THE WHOLE PERMISSION SLIP. lib/board.mjs lets an AgriCharts
+ * source publish because every row carries `verifiedBy`, and extract() is the
+ * one place that applies it — after BOTH checks have passed on the whole board.
+ * Testing the checks as functions does not test that extract runs them: taking
+ * fitToContracts out of extract left every other test in this file green. */
+test("extract stamps every row once the two checks have passed", () => {
+  const rows = extract(read("agricharts-kokomograin.html"), "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 74);
+  assert.ok(rows.every((r) => r.verifiedBy === VERIFIED_BY));
+});
+
+test("extract refuses, and stamps nothing, when the rows do not fit the quotes", () => {
+  // Every contract fifty cents from where it really is: the same shape a
+  // misread column produces, and nothing may carry a stamp through it.
+  const wrong = CONTRACTS.map((c) => (c.priced ? { ...c, lastCents: c.lastCents + 50 } : c));
+  assert.throws(() => extract(read("agricharts-kokomograin.html"), "u", { contracts: wrong }),
+    (e) => e instanceof AgriChartsRefused && /nearest quoted/.test(e.message));
+});
+
+test("extract refuses without quotes rather than publishing unchecked", () => {
+  assert.throws(() => extract(read("agricharts-kokomograin.html"), "u", null),
+    (e) => e instanceof AgriChartsRefused && /no futures quotes were supplied/.test(e.message));
+  assert.throws(() => extract(read("agricharts-kokomograin.html"), "u", { contracts: [] }),
+    (e) => e instanceof AgriChartsRefused && /no futures quotes were supplied/.test(e.message));
+});
+
+/* A COMMODITY WITH NO QUOTED BOARD IS NOT A ROW TO DROP QUIETLY. It is a row
+ * whose columns nothing proved, sitting in a file beside rows that were
+ * checked — which is the exact hole the whole design closes. */
+test("a commodity with no contract to check against refuses the board and names it", () => {
+  const board = twoLocationBoard("$5.28").replace(/>Corn</g, ">Sunflowers<");
+  assert.throws(() => extract(board, "u", { contracts: CONTRACTS }),
+    (e) => e instanceof AgriChartsRefused && /no quoted\s+contract/.test(e.message)
+           && /Sunflowers/.test(e.message));
+});
+
+test("the quote pages are named once, beside the parser that reads them", () => {
+  assert.equal(quoteUrls().length, 7);
+  assert.equal(new Set(quoteUrls().map((u) => new URL(u).host)).size, 1);
+  assert.equal(mergeQuotes([read("agricharts-quotes-corn.html"),
+                            read("agricharts-quotes-corn.html")]).length, 14,
+    "the same page twice is still fourteen contracts");
 });
 
 test("describe says enough to diagnose without a second run", () => {
