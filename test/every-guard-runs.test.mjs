@@ -153,9 +153,17 @@ test("every python guard's third-party imports are installed by the workflow tha
   };
 
   const ROOTDIR = new URL("..", import.meta.url).pathname;
-  const need = new Set();
+  /* PER GUARD, NOT POOLED — the same argument the per-workflow note below
+     makes, one level down. The first cut collected every python guard's
+     imports into one set and demanded every workflow install all of them, so
+     adding test/geocode-precision.test.py to sync_known.yml required that job
+     to `pip install pypdf` — a dependency of a registry guard it does not run.
+     A requirement that is not true is one somebody satisfies with a line that
+     does nothing, and the next real gap hides behind it. */
+  const needOf = new Map();
   for (const t of pyTests) {
     const src = readFileSync(join(ROOTDIR, "test", t), "utf8");
+    const need = new Set();
     for (const n of importsOf(src)) if (!STDLIB.has(n)) need.add(n);
     /* Follow the repo scripts the guard loads — that is where the heavy
        dependencies live, and where all three failures came from. */
@@ -164,14 +172,18 @@ test("every python guard's third-party imports are installed by the workflow tha
       if (!existsSync(p)) continue;
       for (const n of importsOf(readFileSync(p, "utf8"))) if (!STDLIB.has(n)) need.add(n);
     }
+    needOf.set(t, need);
   }
+
   /* A MODULE THAT IS A FILE IN THIS REPOSITORY IS NOT A PACKAGE TO INSTALL.
      scripts/fetch_registries.py is imported by name inside a guard that has
      already put scripts/ on sys.path. Listing such names by hand would go stale
      the first time somebody adds a script, so it is asked of the filesystem. */
-  for (const n of [...need]) {
-    if (existsSync(join(ROOTDIR, "scripts", `${n}.py`)) || existsSync(join(ROOTDIR, "lib", `${n}.py`))) {
-      need.delete(n);
+  for (const ns of needOf.values()) {
+    for (const n of [...ns]) {
+      if (existsSync(join(ROOTDIR, "scripts", `${n}.py`)) || existsSync(join(ROOTDIR, "lib", `${n}.py`))) {
+        ns.delete(n);
+      }
     }
   }
 
@@ -188,8 +200,13 @@ test("every python guard's third-party imports are installed by the workflow tha
 
   const gaps = [];
   for (const w of runners) {
-    for (const n of need) {
-      if (!new RegExp(`pip install[^\\n]*\\b${n}\\b`).test(w.text)) gaps.push(`${w.name} does not install ${n}`);
+    for (const [t, ns] of needOf) {
+      /* Only the guards this workflow actually names. */
+      if (!w.text.includes(t)) continue;
+      for (const n of ns) {
+        if (!new RegExp(`pip install[^\\n]*\\b${n}\\b`).test(w.text))
+          gaps.push(`${w.name} runs ${t} and does not install ${n}`);
+      }
     }
   }
   assert.deepEqual(gaps, [],

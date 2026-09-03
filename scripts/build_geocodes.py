@@ -128,9 +128,17 @@ def usable(lat, lon):
 
 
 def build_tables():
-    """(town, state) -> centroid, state -> bounding box, and (county, state) ->
-    centroid, all from one dataset."""
-    by_town, pts, by_county = {}, {}, {}
+    """(town, state) -> centroid, state -> bounding box, (county, state) ->
+    centroid, and ZIP -> centroid, all from one dataset.
+
+    THE ZIP TABLE IS NOT A DUPLICATE OF THE TOWN TABLE.
+    A source's `location` is whatever the operator calls the place, and on a
+    good number of boards that is a facility name rather than a town: Kokomo
+    Grain's "Adm Fkt" is in Frankfort, Wheatfield Grain's "Belstra Milling" is
+    in DeMotte, Legacy Farmers' "West Findlay" is in Findlay. None of those
+    three is a town in any ZIP table and all three of them have a ZIP on file.
+    Seven of the 45 unplaced on 2026-09-03 were exactly this."""
+    by_town, pts, by_county, by_zip = {}, {}, {}, {}
     for z in zipcodes.list_all():
         lat, lon, st = z.get("lat"), z.get("long"), z.get("state")
         if lat is None or lon is None or not st:
@@ -141,6 +149,9 @@ def build_tables():
         p = pts.setdefault(st, [[], []])
         p[0].append(lat)
         p[1].append(lon)
+        z5 = str(z.get("zip_code") or "")[:5]
+        if z5 and z5 not in by_zip:
+            by_zip[z5] = (lat, lon, z.get("city") or "", st)
         names = [z.get("city")] + list(z.get("acceptable_cities") or [])
         for nm in names:
             k = (slug(nm), st)
@@ -168,7 +179,7 @@ def build_tables():
 
     mid = lambda v: (sum(a for a, _ in v) / len(v), sum(b for _, b in v) / len(v))
     return ({k: mid(v) for k, v in by_town.items()}, boxes,
-            {k: mid(v) for k, v in by_county.items()})
+            {k: mid(v) for k, v in by_county.items()}, by_zip)
 
 
 def in_state(lat, lon, st, boxes, pad=0.35):
@@ -219,6 +230,77 @@ def near_its_town(lat, lon, s, towns):
     return True, "town not in the ZIP table, no distance check possible"
 
 
+def locate(s, towns, zips, use_census=False, census_fn=None):
+    """Where this source is, how sure we are, and what said so.
+
+    (lat, lon, precision, via, note), or (None, None, None, None, None).
+
+    PULLED OUT OF THE LOOP SO IT CAN BE TESTED. Two rules live in here that are
+    easy to state and were both wrong until 2026-09-03 -- a manifest's own
+    precision, and the ZIP fallback -- and testing them by running the whole
+    build against the whole repository is not a test, it is a rehearsal.
+    """
+    st = (s.get("state") or "").upper()
+    lat = lon = prec = via = note = None
+
+    # 1. A coordinate the source file already carries beats anything derived.
+    #
+    # AND IT CARRIES ITS OWN PRECISION. This said "street" for every
+    # manifest coordinate, whatever the manifest said about it. Measured
+    # 2026-09-03: 93 manifests declare latPrecision "town" -- most of them
+    # written by geocode-fill.mjs itself, from THIS file's own town
+    # centroids -- and 92 of them came back out of here as "street". The
+    # round trip promoted a town centroid to a rooftop, and
+    # data/directory.json then showed 571 street-precise pins of which at
+    # least 92 are the middle of a ZIP.
+    #
+    # geocodes/README.md is unambiguous about why that matters: "'street'
+    # is where the elevator is; 'town' is the centroid of its town's ZIPs
+    # and can be miles off. The map must say which." A pin that says street
+    # is a pin somebody drives to.
+    #
+    # A manifest that says nothing still defaults to street, because a
+    # hand-placed pin is somebody who looked at the yard.
+    if s.get("lat") and s.get("lon"):
+        lat, lon, via = float(s["lat"]), float(s["lon"]), "source-file"
+        prec = s.get("latPrecision") or "street"
+
+    # 2. The street address, if a geocoder is reachable.
+    if lat is None and use_census and (s.get("address") or "").strip():
+        hit = (census_fn or census)(s["address"] if st.lower() in s["address"].lower()
+                     else "%s, %s" % (s["address"], st))
+        time.sleep(0.2)          # their service, our manners
+        if hit:
+            lat, lon, prec, via = hit[0], hit[1], "street", "census"
+            note = hit[2]
+
+    # 3. The town centroid, which always works and always says so.
+    if lat is None:
+        for v in town_variants(s.get("location")):
+            hit = towns.get((slug(v), st))
+            if hit:
+                lat, lon, prec, via, note = hit[0], hit[1], "town", "zip-centroid", v
+                break
+
+    # 3b. THE ZIP, WHEN THE TOWN NAME IS NOT A TOWN.
+    #
+    # `location` is whatever the operator calls the place. On plenty of
+    # boards that is a facility name: Kokomo Grain's "Adm Fkt" is in
+    # Frankfort, Wheatfield Grain's "Belstra Milling" is in DeMotte, Legacy
+    # Farmers' "West Findlay" is in Findlay. The ZIP is on file for all of
+    # them and it is the same kind of answer the step above gives -- the
+    # centroid of a ZIP -- so it is recorded at the same precision and with
+    # the ZIP named, not the town, because the ZIP is what resolved it.
+    if lat is None:
+        z5 = re.sub(r"\D", "", str(s.get("zip") or ""))[:5]
+        hit = zips.get(z5) if len(z5) == 5 else None
+        if hit and (not st or hit[3] == st):
+            lat, lon, prec, via = hit[0], hit[1], "town", "zip-code"
+            note = "%s (%s)" % (z5, hit[2]) if hit[2] else z5
+
+    return lat, lon, prec, via, note
+
+
 # A WALL-CLOCK BUDGET, NOT A CALL COUNT.
 # Missouri publishes a street address for all 288 of its licensees, and every
 # one of them is a Census lookup at up to twenty seconds. A slow morning at
@@ -264,7 +346,7 @@ def _census(address, timeout=20):
 
 def main():
     use_census = os.environ.get("NO_CENSUS", "") != "1"
-    towns, boxes, counties = build_tables()
+    towns, boxes, counties, zips = build_tables()
     print("ZIP table: %d town keys, %d state boxes, %d counties"
           % (len(towns), len(boxes), len(counties)))
 
@@ -286,26 +368,7 @@ def main():
         sid, st = s["id"], (s.get("state") or "").upper()
         lat, lon, prec, via, note = None, None, None, None, None
 
-        # 1. A coordinate the source file already carries beats anything derived.
-        if s.get("lat") and s.get("lon"):
-            lat, lon, prec, via = float(s["lat"]), float(s["lon"]), "street", "source-file"
-
-        # 2. The street address, if a geocoder is reachable.
-        if lat is None and use_census and (s.get("address") or "").strip():
-            hit = census(s["address"] if st.lower() in s["address"].lower()
-                         else "%s, %s" % (s["address"], st))
-            time.sleep(0.2)          # their service, our manners
-            if hit:
-                lat, lon, prec, via = hit[0], hit[1], "street", "census"
-                note = hit[2]
-
-        # 3. The town centroid, which always works and always says so.
-        if lat is None:
-            for v in town_variants(s.get("location")):
-                hit = towns.get((slug(v), st))
-                if hit:
-                    lat, lon, prec, via, note = hit[0], hit[1], "town", "zip-centroid", v
-                    break
+        lat, lon, prec, via, note = locate(s, towns, zips, use_census, census)
 
         if lat is None:
             # THE REASON IS THE DELIVERABLE. Sig asked for a list of the ones we
@@ -315,7 +378,9 @@ def main():
             # perfectly good street address and were unplaced only because this
             # build ran with no route to the geocoder.
             if not (s.get("address") or "").strip():
-                why = "no street address on file, and the town is not in the ZIP table"
+                why = ("no street address on file, the town is not in the ZIP table, and "
+                       + ("its ZIP is not either" if str(s.get("zip") or "").strip()
+                          else "it has no ZIP on file"))
             elif not use_census:
                 why = "has a street address; no geocoder was reachable when this table was built"
             else:

@@ -19,7 +19,7 @@ import {
   parseBoard, parseQuotes, quoteToCents, parseCash, parseBasisCents, sectionIsCommodity,
   impliedSpread, fitToContracts, boardStamp, describe, AgriChartsRefused,
   COLUMNS, GRAIN_ROOTS, MAX_FIT_CENTS,
-  extract, mergeQuotes, quoteUrls, VERIFIED_BY,
+  extract, mergeQuotes, quoteUrls, VERIFIED_BY, rootsFor,
 } from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
@@ -405,11 +405,63 @@ test("extract refuses without quotes rather than publishing unchecked", () => {
 /* A COMMODITY WITH NO QUOTED BOARD IS NOT A ROW TO DROP QUIETLY. It is a row
  * whose columns nothing proved, sitting in a file beside rows that were
  * checked — which is the exact hole the whole design closes. */
-test("a commodity with no contract to check against refuses the board and names it", () => {
+test("a board of nothing but uncheckable commodities publishes nothing", () => {
   const board = twoLocationBoard("$5.28").replace(/>Corn</g, ">Sunflowers<");
   assert.throws(() => extract(board, "u", { contracts: CONTRACTS }),
-    (e) => e instanceof AgriChartsRefused && /no quoted\s+contract/.test(e.message)
+    (e) => e instanceof AgriChartsRefused && /no quoted futures contract/.test(e.message)
            && /Sunflowers/.test(e.message));
+});
+
+/* ONE BAD LINE MUST NOT COST THE BOARD, and it must not vanish either.
+ * dtn-cs learned this on 2026-08-20: "one bad Oats line cannot cost ten towns
+ * of corn." The row is refused, not published, and travels out on
+ * `unreconciled` where poll.mjs prints it every pass. */
+test("an uncheckable row is refused; the rest of the board still publishes", () => {
+  const mixed = twoLocationBoard("$5.28").replace(/>Corn</, ">Sunflowers<");
+  const rows = extract(mixed, "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 1, "the corn row survives");
+  assert.equal(rows[0].commodity, "Corn");
+  assert.equal(rows[0].verifiedBy, VERIFIED_BY);
+  assert.equal(rows.unreconciled.length, 1);
+  assert.match(rows.unreconciled[0].commodity, /Sunflowers/);
+  assert.match(rows.unreconciled[0].why, /no futures contract is quoted/);
+  assert.equal(Object.keys(rows).length, 1, "unreconciled must not enumerate as a bid");
+});
+
+/* THE STRINGS THAT COST THREE BOARDS ON THE NATIONAL SWEEP. Every one of these
+ * is a co-op's own name for a grain whose futures we already fetch, and an
+ * exact-match lookup on the whole cell called all of them unquoted. */
+test("a co-op's own name for a grain still finds its contract", () => {
+  for (const [name, root] of [
+    ["CORN - CASH", "ZC"], ["Corn - Off Farm", "ZC"], ["BEANS - Elevator", "ZS"],
+    ["Beans - Off Farm", "ZS"], ["Hard Red Winter Wheat", "ZW"], ["Spring Wheat", "ZW"],
+    ["WHITE WHEAT", "ZW"], ["NGMO Waxy", "ZC"], ["Grain Sorghum", "ZC"],
+  ]) {
+    const got = rootsFor(name);
+    assert.ok(got, `${name} found no contract`);
+    assert.ok(got.includes(root), `${name} -> ${JSON.stringify(got)}, expected to include ${root}`);
+  }
+  assert.equal(rootsFor("Sunflowers"), null);
+  assert.equal(rootsFor(""), null);
+});
+
+/* A TABLE WITH NO SECTION ROW IS NOT A TABLE WITH NO COLUMNS. Six boards on the
+ * national sweep refused with `found []` because the header was located by
+ * counting from a section row that was not there. */
+test("a board with no section heading is read, not refused", () => {
+  const flat = twoLocationBoard("$5.28").replace(/<tr class="section">[\s\S]*?<\/tr>/g, "");
+  const rows = extract(flat, "u", { contracts: CONTRACTS });
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((r) => r.locationId), ["11", "22"]);
+  assert.deepEqual(rows.map((r) => r.location), [null, null], "no heading means no location name");
+});
+
+test("a board whose columns really have moved still refuses, showing what it saw", () => {
+  const moved = twoLocationBoard("$5.28").replace(/<td align="center">Basis<\/td>/g,
+                                                  '<td align="center">Basis (cents)</td>');
+  assert.throws(() => extract(moved, "u", { contracts: CONTRACTS }),
+    (e) => e instanceof AgriChartsRefused && /does not carry the columns/.test(e.message)
+           && /Basis \(cents\)/.test(e.message));
 });
 
 test("the quote pages are named once, beside the parser that reads them", () => {
