@@ -70,11 +70,45 @@ import { join } from "node:path";
 /* ---------- flags ---------- */
 
 const args = process.argv.slice(2);
-const VALUED = new Set(["--list", "--url", "--profiles", "--out", "--timeout", "--control"]);
+const VALUED = new Set(["--list", "--url", "--profiles", "--out", "--timeout", "--control",
+                        "--quotes-host"]);
+
+/* WHERE THE FUTURES COME FROM, AND WHY ONE HOST IS ENOUGH.
+ *
+ * The cash board carries cash, basis and a futures CHANGE -- no futures price.
+ * That matters more than it sounds: lib/board.mjs refuses any source where not
+ * one row carries a quoted future, because a structural check whose absence
+ * looks identical to its success is not a check. So AgriCharts cannot publish
+ * at all until a real quote is in hand.
+ *
+ * Every AgriCharts mobile site carries the same CBOT quote pages, because they
+ * are CBOT's numbers and not the operator's. One host answers for all 211, so
+ * this captures from one and the fixtures are named for the page, not the
+ * co-op. Measured 2026-09-02 on Legacy Farmers: Corn Dec 26 quoted 543-4s, and
+ * cash minus basis across ten of their locations implied 543 or 544 -- 543.5,
+ * rounded each way. Two pages, two independent numbers, agreeing to half a
+ * cent. That is the check AgriCharts is missing and this is where it lives. */
+const QUOTES_HOST_DEFAULT = "https://legacyfarmers.mobile.agricharts.com";
+
+/* The overview lists two contracts per commodity; a root lists the whole strip,
+   and a cash board quotes deliveries out past two contracts (Legacy Farmers
+   priced a 01/01/2027 corn delivery off a 558 board, which is Mar 27 and is not
+   on the overview). Both shapes are captured because the adapter has to know
+   which one it can rely on. */
+export const QUOTE_PAGES = [
+  ["grains-overview", "/markets/futures.php?category=Grains&overview=1"],
+  ["corn",            "/markets/futures.php?category=Grains&root=ZC"],
+  ["soybeans",        "/markets/futures.php?category=Grains&root=ZS"],
+  ["wheat-chicago",   "/markets/futures.php?category=Grains&root=ZW"],
+  ["wheat-kc",        "/markets/futures.php?category=Grains&root=KE"],
+  ["wheat-mpls",      "/markets/futures.php?category=Grains&root=MW"],
+  ["oats",            "/markets/futures.php?category=Grains&root=ZO"],
+  ["rice",            "/markets/futures.php?category=Grains&root=ZR"],
+];
 export function parseArgs(argv) {
   const out = { urls: [], list: null, profiles: null, out: "fixtures", timeoutMs: 20000,
                 control: "https://raw.githubusercontent.com/dnilgis/bids/main/package.json",
-                noFixture: false };
+                noFixture: false, quotes: false, quotesHost: QUOTES_HOST_DEFAULT };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--url") out.urls.push(argv[++i]);
@@ -84,6 +118,8 @@ export function parseArgs(argv) {
     else if (a === "--timeout") out.timeoutMs = Number(argv[++i]) * 1000;
     else if (a === "--control") out.control = argv[++i];
     else if (a === "--no-fixture") out.noFixture = true;
+    else if (a === "--quotes") out.quotes = true;
+    else if (a === "--quotes-host") out.quotesHost = argv[++i];
     else if (/^https?:\/\//.test(a) && !VALUED.has(argv[i - 1])) out.urls.push(a);
   }
   return out;
@@ -164,6 +200,19 @@ export function looksLikeBoard(body) {
   const t = String(body);
   if (t.length < 400) return false;
   return /cash\s*price/i.test(t) && /<t[dr]\b/i.test(t);
+}
+
+/* A QUOTES PAGE IS NOT A BOARD AND IS NOT A MENU. futures.php with no root and
+   no overview answers 200 with a category menu and no prices at all, which is
+   exactly the shape that would get filed as a fixture and built against. */
+export function looksLikeQuotes(body) {
+  const t = String(body);
+  if (t.length < 400) return false;
+  if (!/<t[dr]\b/i.test(t)) return false;
+  if (!/\bLast\b/.test(t) || !/\bChange\b/.test(t)) return false;
+  /* A price in eighths (543-4s), or a decimal quote (7.5975s). Menus have
+     neither, and this is the cell the adapter will have to read. */
+  return /\d{2,4}-\d\d?[sb]?\b/.test(t) || /\d+\.\d{2,4}s\b/.test(t);
 }
 
 /* ---------- one request ---------- */
@@ -275,8 +324,66 @@ export function verdict({ rows, networkControl, platformControl }) {
 const DEFAULT_LIST = "probe-lists/agricharts-mobile.txt";
 const PLATFORM_CONTROL = "https://zzznotarealcoopxyz.mobile.agricharts.com/cash/prices.php";
 
+/* THE QUOTE CAPTURE. A separate run because it asks a different question:
+   not "will they let us in" -- that is settled -- but "is the number the cash
+   board is missing on a page we can read". Same rules: it writes fixtures and
+   it does not go red for a page that is not there. */
+async function quotesRun(cfg) {
+  const base = cfg.quotesHost.replace(/\/+$/, "");
+  console.log(`AGRICHARTS QUOTES CAPTURE — ${QUOTE_PAGES.length} page(s) from ${base}`);
+  console.log("These are CBOT's numbers, not the operator's, so one host answers for all 211.\n");
+  const wrote = [], missed = [];
+  for (const [name, path] of QUOTE_PAGES) {
+    const url = base + path;
+    const r = await ask(url, PROFILES.chrome, cfg.timeoutMs);
+    if (!r.ok) { console.log(`   ${name.padEnd(16)} ${r.error}`); missed.push({ name, why: r.error }); continue; }
+    const quotes = r.status === 200 && looksLikeQuotes(r.body);
+    console.log(`   ${name.padEnd(16)} ${String(r.status).padEnd(4)} ${String(r.bytes).padStart(7)}B `
+      + `${String(r.ms).padStart(5)}ms  ${quotes ? "QUOTES" : "no price table"}  ${url}`);
+    if (!quotes) { missed.push({ name, why: `${r.status}, no price table` }); continue; }
+    if (cfg.noFixture) continue;
+    mkdirSync(cfg.out, { recursive: true });
+    const file = join(cfg.out, `agricharts-quotes-${name}.html`);
+    writeFileSync(file, r.body);
+    wrote.push({ file, url, bytes: r.bytes });
+  }
+  console.log("");
+  if (wrote.length) {
+    console.log(`── FIXTURES WRITTEN (${wrote.length})`);
+    for (const x of wrote) console.log(`   ${x.file}  ${x.bytes}B  from ${x.url}`);
+    console.log(`::notice title=${wrote.length} AgriCharts quote page(s) captured::`
+      + "the futures side of cash - basis = futures can now be written against bytes.");
+  } else {
+    console.log("── NOTHING CAPTURED. Every quote page answered without a price table, so the "
+      + "futures number the cash board is missing is NOT where it was on 2026-09-02. "
+      + "That is a finding about the platform, not a failure of this run.");
+  }
+  if (missed.length) {
+    console.log(`\n── PAGES WITH NO PRICE TABLE (${missed.length})`);
+    for (const m of missed) console.log(`   ${m.name.padEnd(16)} ${m.why}`);
+    console.log("   A commodity with no strip here is one this platform cannot be published for, "
+      + "because its rows would carry no quoted future and lib/board.mjs refuses that.");
+  }
+  return 0;
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const cfg = parseArgs(argv);
+
+  /* The quote capture asks a different question and takes no target list, so it
+     branches before one is resolved -- a missing probe list must not stop it. */
+  if (cfg.quotes) {
+    console.log(`── NETWORK CONTROL  ${cfg.control}`);
+    const nc = await ask(cfg.control, PROFILES.chrome, cfg.timeoutMs);
+    console.log(`   ${nc.ok ? `${nc.status} ${nc.bytes}B in ${nc.ms}ms` : nc.error}\n`);
+    if (!nc.ok || nc.status >= 400) {
+      console.log("INCONCLUSIVE. The runner could not reach the control host, so nothing below "
+        + "would be about AgriCharts.");
+      return 1;
+    }
+    return await quotesRun(cfg);
+  }
+
   let targets = cfg.urls.slice();
   if (!targets.length) {
     const path = cfg.list ?? DEFAULT_LIST;

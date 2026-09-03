@@ -223,3 +223,95 @@ test("URLs given bare and with --url both land as targets", () => {
 test("--timeout is seconds on the outside and milliseconds inside", () => {
   assert.equal(parseArgs(["--timeout", "30"]).timeoutMs, 30000);
 });
+
+/* ── the quote pages ─────────────────────────────────────────────────────── */
+
+/* THE CASH BOARD IS MISSING THE ONE NUMBER lib/board.mjs INSISTS ON.
+ * It carries cash, basis and a futures CHANGE, and no futures price -- and
+ * board.mjs refuses any source where not one row carries a quoted future,
+ * because a structural check whose absence looks identical to its success is
+ * not a check. So the quote pages are not a nicety; without them AgriCharts
+ * cannot publish at all, and a fixture filed from the wrong page would be
+ * built against for a week before anybody noticed. */
+import { looksLikeQuotes, QUOTE_PAGES } from "../scripts/agricharts-probe.mjs";
+
+const QUOTES = `<html><body><table>
+<tr><td>Symbol</td><td>Last</td><td>Change</td><td>Time</td></tr>
+<tr><td>Corn (E) Dec 26</td><td>543-4s</td><td>-2-4</td><td>09/02/26</td></tr>
+<tr><td>Soybeans (E) Nov 26</td><td>1310-2s</td><td>-7-4</td><td>09/02/26</td></tr>
+</table>${"<!-- pad -->".repeat(40)}</body></html>`;
+
+/* MG Wheat and Rice quote in decimals, not eighths, on the same page family. */
+const DECIMAL_QUOTES = QUOTES.replace("543-4s", "7.5975s").replace("1310-2s", "7.8200s")
+  .replace("-2-4", "+0.0425").replace("-7-4", "+0.0525");
+
+test("a real quote table is recognised, in eighths and in decimals", () => {
+  assert.equal(looksLikeQuotes(QUOTES), true);
+  assert.equal(looksLikeQuotes(DECIMAL_QUOTES), true);
+});
+
+test("the category menu that answers 200 with no prices is not a fixture", () => {
+  // futures.php with no root and no overview really does answer 200 with a
+  // menu of Currencies / Energies / Grains / Livestock and nothing else.
+  const menu = `<html><body><table><tr><td><a href="?category=Grains">Grains</a></td></tr>
+    <tr><td><a href="?category=Livestock">Livestock</a></td></tr></table>
+    Last Update: 23:15:27 CST ${"<!-- pad -->".repeat(40)}</body></html>`;
+  assert.equal(looksLikeQuotes(menu), false);
+});
+
+test("a cash board is not a quote page either", () => {
+  assert.equal(looksLikeQuotes(BOARD), false);
+});
+
+/* A REAL CASH BOARD CARRIES EIGHTHS TOO. The Futures Chg column reads "-24-2"
+   on Keller Grain's wheat row, which is the same shape as a quote. So the
+   headings are what separate the two pages, and the test has to use a board
+   that actually contains one -- the tidy one above is rejected by the price
+   rule and proves nothing about the heading rule. */
+test("a cash board that quotes eighths is still not a quote page", () => {
+  const realish = `<html><body><h1>Cash Prices</h1><table class="cashprices">
+    <tr><td>Commodity</td><td>Delivery</td><td>Basis</td><td>Cash Price</td><td>Futures Chg</td></tr>
+    <tr><td>Wheat</td><td>08/01/2026</td><td>-45</td><td>$5.94</td><td>-24-2</td></tr>
+    </table>Last Update: 23:09:45 CST ${"<!-- pad -->".repeat(40)}</body></html>`;
+  assert.match(realish, /\d{2,4}-\d\d?/, "the fixture must contain an eighths-shaped number");
+  // and every AgriCharts page carries "Last Update", so "Last" alone cannot be
+  // what separates a board from a strip -- the Change heading is load-bearing.
+  assert.match(realish, /\bLast\b/);
+  assert.equal(looksLikeQuotes(realish), false);
+});
+
+/* AND A STRIP WITH THE RIGHT HEADINGS AND NO PRICES IS THE ONE THAT WOULD GET
+   FILED. A root with no contracts trading answers 200 with the full table
+   furniture and empty cells; filed as a fixture, it would be built against as
+   though that commodity simply had no quotes. */
+test("the right headings with no prices under them is not a fixture", () => {
+  const empty = `<html><body><table>
+    <tr><td>Symbol</td><td>Last</td><td>Change</td><td>Time</td></tr>
+    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    </table>Last Update: 23:15:27 CST ${"<!-- pad -->".repeat(40)}</body></html>`;
+  assert.equal(looksLikeQuotes(empty), false);
+});
+
+test("every grain this system publishes has a strip to capture", () => {
+  const names = QUOTE_PAGES.map(([n]) => n);
+  for (const want of ["corn", "soybeans", "wheat-chicago", "wheat-kc"])
+    assert.ok(names.includes(want), `no quote page for ${want}`);
+  // the overview carries only two contracts per commodity, so it can never be
+  // the only page captured -- Legacy Farmers priced a 01/01/2027 corn delivery
+  // off a 558 board, which is Mar 27 and is not on the overview.
+  assert.ok(names.length > 1, "the overview alone cannot cover a cash board's far deliveries");
+  for (const [, path] of QUOTE_PAGES) assert.match(path, /^\/markets\/futures\.php\?/);
+});
+
+test("--quotes takes no target list and has a default host", () => {
+  const cfg = parseArgs(["--quotes"]);
+  assert.equal(cfg.quotes, true);
+  assert.match(cfg.quotesHost, /^https:\/\/[a-z.]+agricharts\.com$/);
+  assert.deepEqual(cfg.urls, []);
+});
+
+test("--quotes-host is a value, not a target", () => {
+  const cfg = parseArgs(["--quotes", "--quotes-host", "https://kokomograin.mobile.agricharts.com"]);
+  assert.deepEqual(cfg.urls, []);
+  assert.equal(cfg.quotesHost, "https://kokomograin.mobile.agricharts.com");
+});

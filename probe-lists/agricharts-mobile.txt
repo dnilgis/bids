@@ -1,3 +1,56 @@
+# AGRICHARTS MOBILE -- CORRECTED AGAIN 2026-09-02. THE 403 IS GONE.
+#
+# Run 91312140905, from the runner, with the probe described further down:
+# EIGHT boards asked, FIVE header profiles each, forty requests. Thirty-five
+# 200s and five 500s, and the five 500s are all one host. Not one 403.
+#
+#     legacyfarmers      200  53,862B      thefarmerselevator 200   8,548B
+#     kokomograin        200  48,493B      auroraelevator     200  10,192B
+#     kellergrain        200  11,028B      offerle            200   9,345B
+#     wheatfieldgrain    200  68,902B      mobile.prideag     500  (all five)
+#
+# EVERY profile got in, INCLUDING the poller's own user-agent -- the one that
+# says "agsist-bidreader" in plain text. So the refusal was never about who we
+# said we were, and it is not about the runner's address range either. It is
+# simply not happening today. The network control passed and the platform
+# control (a subdomain with nothing behind it) answered 500 from nginx, so we
+# were talking to AgriCharts and they were answering.
+#
+# mobile.prideag's 500 is this file's own documented signal for "no mobile site
+# provisioned" -- Pride Ag had 27 locations on 2026-08-26 and does not have a
+# mobile board now. That one is a loss, not a block.
+#
+# Seven boards are captured verbatim in fixtures/agricharts-*.html. The adapter
+# is not written yet and must be written against those, not against this file.
+#
+# AND ONE THING THIS FILE SAID IS WRONG. See "d is the month" in the SHAPE
+# section below: it is NOT the futures month, it is the DELIVERY month, and the
+# fixtures prove it in one line. Corn on these boards carries d=X26, F27, G27,
+# J27 and M27 -- November, January, February, April and June -- and CBOT corn
+# has no contract in any of those months. Read across the captures instead:
+# cash*100 minus basis lands on the same integer for every location of an
+# operator quoting one commodity and one d, 85 of 87 groups exactly and the
+# other two one cent apart, and Legacy Farmers' d=U26 corn implies 543/544 while
+# their own quote page has Sep 26 corn at 518-6 and Dec 26 at 543-4. Their
+# September DELIVERY is priced off the December board.
+#
+# WHICH LEAVES THE ONE THING THAT ACTUALLY BLOCKS PUBLISHING. The cash board
+# carries cash, basis and a futures CHANGE, and no futures price -- and
+# lib/board.mjs refuses any source where not one row carries a quoted future,
+# on the grounds that a structural check whose absence looks identical to its
+# success is not a check. That guard is right and is not being touched. The
+# quote it wants is on the same host at
+#     /markets/futures.php?category=Grains&overview=1   (two contracts each)
+#     /markets/futures.php?category=Grains&root=ZC      (the whole strip)
+# in eighths with an s for settled, and it agrees with the cash board to half a
+# cent. `agricharts probe` with the quotes box ticked captures those.
+#
+# The 2026-08-26 note below is kept exactly as it was written, because it was
+# honest about what it had measured and the conclusion it reached was the right
+# one to reach from it. What changed is the platform, not the reasoning.
+#
+# ---------------------------------------------------------------------------
+#
 # AGRICHARTS MOBILE -- CORRECTED 2026-08-26 AFTER A RUN ON THE RUNNER
 #
 # I WAS WRONG ABOUT THIS AND IT IS WORTH SAYING PLAINLY AT THE TOP.
@@ -86,6 +139,9 @@
 #   THE LAST COLUMN IS A PRICE CHANGE, NOT A CONTRACT MONTH -- "5-4", "-24-2".
 #   The futures month is recoverable only from a link href:
 #     /cash/chart.php?c=<commodity>&l=<location>&d=Q26   <- d is the month
+#     [WRONG -- see the correction at the top of this file. d is the DELIVERY
+#      month. l IS the location id, and that half is right and is what the
+#      adapter keys on: it is on every row of every one of the seven captures.]
 #   Two shapes: multi-location boards group rows under a LOCATION heading;
 #   single-site boards group under a COMMODITY heading with no location named
 #   anywhere (Keller Grain does this). A location-keyed parser breaks on the
