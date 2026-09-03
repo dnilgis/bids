@@ -18,7 +18,7 @@ import { join } from "node:path";
 import {
   mobileCandidates, operatorFrom, websiteFrom, operatorSlug, slug, joinDirectory,
   phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main, resolveHostsPath,
-  describeHostsError, IO,
+  describeHostsError, IO, cashgridCandidates, boardCandidates, verdictFor, rank, kindOf,
 } from "../scripts/agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { VERIFIED_BY } from "../lib/adapters/agricharts.mjs";
@@ -511,4 +511,166 @@ test("the shipped list resolves from its bare name", () => {
   const r = resolveHostsPath("agricharts-uncovered-2026-09-03", IO.exists, IO.listLists);
   assert.equal(r.path, "probe-lists/agricharts-uncovered-2026-09-03.txt");
   assert.ok(hostsFor({ hosts: r.path, only: null, start: 0, limit: Infinity }, {}, IO.readText).length > 0);
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   THE THIRD URL SHAPE, AND SAYING WHAT HAPPENED
+
+   Run 91606919069 asked 61 AgriCharts operators for a mobile board and found
+   two. Measured afterwards: of the 211 sites data/platforms.json calls
+   agricharts, our 84 sources come from SIXTEEN distinct mobile boards and only
+   18 of the 211 have one we read. The mobile subdomain converts about 8.5% of
+   the platform — 2 of 61 is that base rate, not a broken list.
+
+   The other shape is /markets/cashgrid.php, and it is not a guess: it is the
+   canonical AgriCharts URL in test/discover.test.mjs and there are twenty more
+   in probe-lists/.
+
+   And every one of those 59 sites printed the same line — "no mobile board
+   (2 tried)" — which covers a dead host, a 403, a wrong path and a board in a
+   shape we cannot parse. Four different next moves, reported identically.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("cashgridCandidates asks the operator's own domain, with and without www", () => {
+  assert.deepEqual(cashgridCandidates("https://heartlandcoop.com/"), [
+    "https://heartlandcoop.com/markets/cashgrid.php",
+    "https://www.heartlandcoop.com/markets/cashgrid.php",
+    "https://heartlandcoop.agricharts.com/markets/cashgrid.php",
+  ]);
+});
+
+test("an agricharts host is already the answer and is not guessed at twice", () => {
+  assert.deepEqual(cashgridCandidates("https://pce-coops.agricharts.com/anything"),
+                   ["https://pce-coops.agricharts.com/markets/cashgrid.php"]);
+});
+
+test("a hyphenated label is tried flat too, as the mobile candidates are", () => {
+  const c = cashgridCandidates("https://www.farmersco-operative.com/grain/grain-cash-bids");
+  assert.ok(c.includes("https://farmersco-operative.agricharts.com/markets/cashgrid.php"),
+            "the spelling probe-lists/everything-unasked-20260829.txt line 114 already carries");
+  assert.ok(c.includes("https://farmerscooperative.agricharts.com/markets/cashgrid.php"));
+});
+
+test("a URL that will not parse yields no candidates rather than throwing", () => {
+  assert.deepEqual(cashgridCandidates("not a url"), []);
+  assert.deepEqual(cashgridCandidates(null), []);
+});
+
+test("boardCandidates puts the proven shape first", () => {
+  const c = boardCandidates("https://heartlandcoop.com/");
+  assert.equal(c[0], "https://mobile.heartlandcoop.com/cash/prices.php",
+               "a mobile board is the shape already known to parse; ask for it first");
+  assert.ok(c.includes("https://www.heartlandcoop.com/markets/cashgrid.php"));
+  assert.equal(new Set(c).size, c.length, "no URL is asked twice");
+});
+
+test("verdictFor tells four kinds of nothing apart", () => {
+  const v = (r) => verdictFor(r).why;
+  assert.match(v({ ok: false, error: "TypeError: fetch failed" }), /^unreachable/);
+  assert.equal(v({ ok: true, status: 403, body: "", bytes: 0 }), "HTTP 403");
+  assert.equal(v({ ok: true, status: 404, body: "x", bytes: 1 }), "HTTP 404");
+  assert.match(v({ ok: true, status: 200, bytes: 9000, body: "welcome to our co-op" }),
+               /200 but no cash prices/);
+  assert.match(v({ ok: true, status: 200, bytes: 9000, body: "<h1>Cash Prices</h1><table class='grid'>" }),
+               /PRICES BUT NOT THE TABLE WE KNOW/);
+});
+
+test("only the shape the adapter parses counts as a board", () => {
+  /* Accepting a page that merely mentions prices would hand parseBoard() a
+     document it must refuse, turning a fetch problem into a parse problem and
+     losing the fact that the fetch worked. */
+  assert.equal(verdictFor({ ok: true, status: 200, bytes: 9000,
+                            body: '<table class="cashprices"> cash price' }).board, true);
+  assert.equal(verdictFor({ ok: true, status: 200, bytes: 9000,
+                            body: "<h1>Cash Prices</h1>" }).board, false);
+  assert.equal(verdictFor({ ok: true, status: 200, bytes: 200,
+                            body: '<table class="cashprices">' }).board, false, "too small to be a board");
+});
+
+test("a site's one line is its most interesting candidate, not its last", () => {
+  /* Four dead spellings and one 403 is a 403: that is the one with something
+     behind it, and it is a different piece of work from a dead host. */
+  const dead = "unreachable: getaddrinfo ENOTFOUND";
+  assert.ok(rank("HTTP 403") > rank(dead));
+  assert.ok(rank("200, PRICES BUT NOT THE TABLE WE KNOW") > rank("HTTP 403"));
+  assert.ok(rank("HTTP 404") > rank("200 but no cash prices (900B)") === false
+            || rank("HTTP 404") > rank(dead), "a live site outranks a dead one");
+});
+
+test("kindOf does not claim a board is a no-board verdict", () => {
+  assert.match(kindOf("200, cashprices table"), /served the board/);
+});
+
+/* The seven quote pages, by root, read off the same fixtures the parser tests
+   use. Without priced contracts main() refuses before it asks for a board, and
+   the refusal is correct — so a test about boards has to satisfy it. */
+const QUOTE_FIXTURE_FOR = (u) => {
+  const root = /[?&]root=([A-Z]+)/.exec(u)?.[1];
+  const byRoot = { ZC: "corn", ZS: "soybeans", ZW: "wheat-chicago", KE: "wheat-kc",
+                   MW: "wheat-mpls", ZO: "oats", ZR: "rice" };
+  const name = byRoot[root];
+  return name ? readFileSync(join(ROOT, `fixtures/agricharts-quotes-${name}.html`), "utf8") : null;
+};
+
+test("main asks the cashgrid shape and says what each candidate did", async () => {
+  /* END TO END. The fake network reproduces 91606919069's shape: no mobile
+     board anywhere, and a cashgrid page that answers 403 — the case the old
+     log could not distinguish from "there is nothing there". */
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  const asked = [];
+  try {
+    await main(["--hosts", "l.txt"], {
+      readText: (f) => (f === "l.txt" ? "https://heartlandcoop.com/\n" : readFileSync(join(ROOT, f), "utf8")),
+      exists: (f) => f === "l.txt",
+      listLists: () => ["l.txt"],
+      get: async (u) => {
+        asked.push(u);
+        if (/cash\/prices\.php/.test(u)) return { ok: false, error: "getaddrinfo ENOTFOUND" };
+        if (/cashgrid\.php/.test(u)) return { ok: true, status: 403, body: "", bytes: 0 };
+        /* The real quote pages, so the run gets past its own "no CBOT quotes"
+           refusal and reaches the boards this test is about. */
+        const f = QUOTE_FIXTURE_FOR(u);
+        return f ? { ok: true, status: 200, body: f, bytes: f.length }
+                 : { ok: true, status: 200, body: "", bytes: 0 };
+      },
+    });
+  } finally { console.log = log; }
+  const out = said.join("\n");
+  assert.ok(asked.some((u) => /markets\/cashgrid\.php/.test(u)), "it asked the cashgrid shape");
+  assert.match(out, /HTTP 403/, "the log says 403, not 'no board (2 tried)'");
+  assert.match(out, /heartlandcoop\.com\/markets\/cashgrid\.php/, "and names the URL that said it");
+  assert.match(out, /answered 403 — a header question/, "and tallies it as work, not as absence");
+});
+
+test("the site's verdict is the interesting candidate even when a dead one comes after it", async () => {
+  /* THE MUTATION THIS EXISTS FOR: taking the LAST candidate's verdict. Sites
+     are asked in a fixed order and the informative answer is rarely last —
+     heartlandcoop.com asks the bare domain before www, so a 403 on the first
+     would be buried under an ENOTFOUND on the second and the run would tally
+     it as "no host answered at all". That is the difference between a header
+     problem worth an afternoon and a dead end. */
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  try {
+    await main(["--hosts", "l.txt"], {
+      readText: (f) => (f === "l.txt" ? "https://example-coop.com/\n" : readFileSync(join(ROOT, f), "utf8")),
+      exists: (f) => f === "l.txt",
+      listLists: () => ["l.txt"],
+      get: async (u) => {
+        if (/^https:\/\/example-coop\.com\/markets\/cashgrid\.php$/.test(u))
+          return { ok: true, status: 403, body: "", bytes: 0 };       // first cashgrid: interesting
+        if (/cashgrid\.php|cash\/prices\.php/.test(u))
+          return { ok: false, error: "getaddrinfo ENOTFOUND" };        // everything after: dead
+        const f = QUOTE_FIXTURE_FOR(u);
+        return f ? { ok: true, status: 200, body: f, bytes: f.length } : { ok: true, status: 200, body: "", bytes: 0 };
+      },
+    });
+  } finally { console.log = log; }
+  const out = said.join("\n");
+  assert.match(out, /1\s+answered 403 — a header question/, out.slice(-600));
+  assert.doesNotMatch(out, /1\s+no host answered at all/,
+                      "the dead candidates that came after must not be the site's verdict");
 });

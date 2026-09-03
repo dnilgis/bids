@@ -1,47 +1,58 @@
 # AGRICHARTS OPERATORS BARCHART CARRIES AND WE DO NOT — 2026-09-03
 #
 # 61 sites, 70 operators, 394 Barchart facilities.
-# 60 of those sites have never been asked: 360 facilities.
 #
-# WHERE THE LIST CAME FROM. The Barchart coverage gap measured 2026-09-03:
-# 1,801 facilities Barchart carries, 258 of them read by this repository. Of
-# the 1,543 uncovered, 494 sit behind a platform this repo ALREADY HAS AN
-# ADAPTER FOR, and 394 of those 494 are AgriCharts. That is the largest block
-# of elevators in the country reachable with no new parsing code at all — the
-# adapter, the quote pages and the identity check exist and already read 84
-# boards.
+# RUN 91606919069 ASKED THESE 61 FOR A MOBILE BOARD AND FOUND TWO.
+# One of the two is the master board we already read. Net new manifests: zero.
+# I predicted 360 facilities. Here is the number I should have computed first:
 #
-# WHY THE SWEEP HAS NOT ALREADY ASKED THEM. agricharts-sweep.mjs takes its
-# sites from data/platforms.json, which holds what the discover runs happened
-# to visit. None of the eight largest operators here are in it, and of the 124
-# mobile candidates these 61 sites generate, exactly ONE is on
-# probe-lists/agricharts-mobile.txt. The sweep has not asked them because
-# nothing ever put them in front of it.
+#     sites data/platforms.json calls agricharts ............... 211
+#     distinct mobile boards behind our 84 agricharts sources ... 16
+#     of the 211, sites whose mobile board we read ............... 18
+#     never converted .......................................... 193
 #
-# ONE LINE IS NOT LIKE THE OTHERS. www.farmersco-operative.com is a master
-# board serving 10 co-operatives with 34 facilities between them, and
-# farmersco-operative.mobile.agricharts.com IS ALREADY READ — it is one of the
-# 84. Those 34 facilities are not a sweep problem: they are locations on a
-# board we read whose manifests were never written, which means the directory
-# join could not give them a town. Asking again is harmless (the sweep never
-# overwrites and never invents a town) and the run will say so in its unmatched
-# list, which is where that queue belongs. Discount it from what a sweep can
-# win: 360, not 394.
+# The mobile subdomain converts about 8.5% of the platform. 2 of 61 is 3.3% --
+# the base rate, not a broken list. It felt like a big win because those 16
+# boards carry 84 locations between them, five-plus each.
 #
-# THE FACILITY COUNTS ARE BARCHART'S, NOT OURS. The number after each site is
-# how many facilities Barchart carries for that operator that we do not read.
-# The sweep finds its own locations from the board and refuses any it cannot
-# give a town to. Treat these as a ceiling.
+# WHAT THE OTHER 193 RUN. AgriCharts is Barchart's white-label product, and
+# discover.mjs fingerprints it two ways:
+#
+#     /agricharts\.com$/.test(host(u))            <- the mobile board
+#  || /\/markets\/cashgrid\.php/i.test(path(u))    <- the embedded board
+#
+# The second is the common one, and its URL was never a mystery:
+# test/discover.test.mjs line 25 has used
+# https://www.heartlandcoop.com/markets/cashgrid.php as THE canonical
+# AgriCharts example since it was written, and Heartland Co-op is the largest
+# operator on this list. probe-lists/ carries twenty more cashgrid URLs.
+#
+# The sweep now asks for both shapes, mobile first, and REPORTS WHAT EACH
+# CANDIDATE SAID. The last run printed "no mobile board (2 tried)" 59 times,
+# one line covering a dead host, a 403, a wrong path and a board in a shape we
+# cannot parse -- four different next moves, reported identically.
+#
+# WHAT TO EXPECT THIS TIME. Fetching by hand from a sandbox on 2026-09-03,
+# innovativeag.com/markets/cashgrid.php answered 403 and heartlandcoop.com is
+# robots-disallowed to that fetcher. A 403 is not an absence: it is the
+# question agricharts-probe.mjs exists to answer, and the mobile boards
+# answered it once already (run 91312140905: thirty-five 200s, not one 403).
+# So the run may come back "the board is there and will not talk to this
+# user-agent", which is a good answer and a different job.
 #
 # TO RUN IT: Actions -> agricharts sweep -> Run workflow, and in the box
 # labelled `hosts` put just the file name:
 #
 #     agricharts-uncovered-2026-09-03.txt
 #
-# (A full path works too, and so does the name with the label glued on the
-# front -- run 91604425422 pasted `hosts = probe-lists/...` because that is
-# what the instruction looked like, and the run refused. The box is more
-# forgiving now; the instruction is clearer.)
+# Then, if cashgrid serves, run it again with `hosts` LEFT BLANK -- that
+# sweeps all 211 agricharts sites in data/platforms.json, which is where the
+# other 193 are, including operators Barchart does not carry at all.
+#
+# THE FACILITY COUNTS ARE BARCHART'S, NOT OURS, and they are a ceiling. The
+# sweep finds its own locations from the board and refuses any it cannot give
+# a town to. www.farmersco-operative.com is a master board for ten co-ops that
+# we ALREADY READ; its 34 are a directory-join queue, not a sweep target.
 #
 # DRY RUN FIRST. `write` stays off until the report reads right.
 #

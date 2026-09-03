@@ -110,7 +110,114 @@ export function mobileCandidates(siteUrl) {
   return out;
 }
 
+/* THE THIRD SHAPE, AND THE COMMON ONE.
+ *
+ *     https://<domain>/markets/cashgrid.php
+ *     https://<sub>.agricharts.com/markets/cashgrid.php
+ *
+ * Measured 2026-09-03 after run 91606919069 asked 61 AgriCharts operators for
+ * a mobile board and two had one. The mobile subdomain is not how most of them
+ * are served: of the 211 sites data/platforms.json calls agricharts, our 84
+ * sources come from SIXTEEN distinct mobile boards, and only 18 of the 211
+ * have one we read. The route converts about 8.5% of the platform.
+ *
+ * What the other 193 run is this: AgriCharts is Barchart's white-label
+ * product, discover.mjs fingerprints it on `agricharts.com` as a HOST **or**
+ * `/markets/cashgrid.php` as a PATH, and the second clause is the embedded
+ * board on the operator's own site. The URL is not a guess -- it is in this
+ * repository already. test/discover.test.mjs line 25 has used
+ * `https://www.heartlandcoop.com/markets/cashgrid.php` as its canonical
+ * AgriCharts example since the file was written, and Heartland Co-op is the
+ * single largest operator on the uncovered list. probe-lists/ carries twenty
+ * more of them.
+ *
+ * WWW MATTERS HERE AND DOES NOT ON THE MOBILE HOST. Every cashgrid URL in
+ * probe-lists/ that names a co-op's own domain has the www on it
+ * (www.heartlandcoop.com, www.farmerswin.com, www.centralohfarm.com) while
+ * three do not (decaturcoop.net, fsgrain.com, shawneefeed.com). Both spellings
+ * are one request.
+ */
+export function cashgridCandidates(siteUrl) {
+  let host;
+  try { host = new URL(siteUrl).hostname.toLowerCase().replace(/^www\./, ""); }
+  catch { return []; }
+  const out = [];
+  const push = (h) => { const u = `https://${h}/markets/cashgrid.php`; if (!out.includes(u)) out.push(u); };
+
+  const ac = host.match(/^([a-z0-9-]+)\.agricharts\.com$/);
+  if (ac) { push(host); return out; }
+
+  push(host);
+  push(`www.${host}`);
+  const label = host.split(".")[0];
+  if (label) {
+    push(`${label}.agricharts.com`);
+    const flat = label.replace(/-/g, "");
+    if (flat !== label) push(`${flat}.agricharts.com`);
+  }
+  return out;
+}
+
+/** Every URL worth asking for this operator's board, mobile first because a
+ *  mobile board is the one shape already proven to parse. */
+export function boardCandidates(siteUrl) {
+  return [...mobileCandidates(siteUrl), ...cashgridCandidates(siteUrl)];
+}
+
+/** What one candidate URL did, in words a person can act on.
+ *
+ *  { board: boolean, why: string }. `board` is true only for the shape the
+ *  adapter is known to parse -- a cashprices table -- because accepting
+ *  anything else here would hand parseBoard() a page it will refuse and turn a
+ *  fetch problem into a parse problem. Everything else is reported, and the
+ *  wording distinguishes the cases that need different work:
+ *
+ *    "no such host"            nothing is served there; try another spelling
+ *    "HTTP 403"                it exists and refused us; a header problem,
+ *                              which is what agricharts-probe.mjs is for
+ *    "HTTP 404"                wrong path on a live site
+ *    "200 but no cash prices"  a page, not a board -- usually a redirect home
+ *    "200, PRICES BUT NOT THE  the interesting one: a board we cannot parse
+ *     TABLE WE KNOW"           yet, and the bytes are worth capturing
+ */
+export function verdictFor(r) {
+  if (!r || !r.ok) return { board: false, why: `unreachable: ${String(r?.error ?? "no answer").slice(0, 28)}` };
+  if (r.status !== 200) return { board: false, why: `HTTP ${r.status}` };
+  if ((r.bytes ?? 0) < 400) return { board: false, why: `200 but only ${r.bytes}B` };
+  const prices = /cash\s*price/i.test(r.body);
+  const table = /<table class="cashprices"/.test(r.body);
+  if (table && prices) return { board: true, why: `200, cashprices table` };
+  if (table) return { board: true, why: `200, cashprices table (no "cash price" text)` };
+  if (prices) return { board: false, why: `200, PRICES BUT NOT THE TABLE WE KNOW` };
+  return { board: false, why: `200 but no cash prices (${r.bytes}B)` };
+}
+
+/* Which verdicts are worth a person's attention, most first. Used only to
+   pick ONE line to represent a site that had several candidates. */
+export function rank(why) {
+  return kindOf(why) === "served prices in a table we cannot parse yet" ? 4
+    : /^HTTP 40[13]/.test(why) ? 3
+    : /^HTTP /.test(why) ? 2
+    : /^200/.test(why) ? 1
+    : 0;
+}
+
+export function kindOf(why) {
+  /* Only ever called on sites with NO board, but a function that answers
+     confidently out of context is a trap for whoever calls it next. */
+  if (/cashprices table/.test(why)) return "served the board (this is not a no-board verdict)";
+  if (/PRICES BUT NOT THE TABLE/.test(why)) return "served prices in a table we cannot parse yet";
+  if (/^HTTP 403/.test(why)) return "answered 403 — a header question, not a missing board";
+  if (/^HTTP 404/.test(why)) return "answered 404 — live site, wrong path";
+  if (/^HTTP /.test(why)) return `answered ${why.slice(5)}`;
+  if (/^200/.test(why)) return "answered 200 with no cash prices on it";
+  return "no host answered at all";
+}
+
+
+
 /* ---------- naming what we found ---------- */
+
 
 /** "Cash Prices - Legacy Farmers Cooperative mobile site" -> the operator. */
 export function operatorFrom(html) {
@@ -430,17 +537,27 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   const seenIds = new Set(existing);
 
   for (const [i, site] of hosts.entries()) {
-    const cands = mobileCandidates(site);
+    const cands = boardCandidates(site);
     let hit = null;
+    const asked = [];
     for (const c of cands) {
       const r = await io.get(c, cfg.timeoutMs);
-      if (!r.ok) { continue; }
-      if (r.status !== 200 || r.bytes < 400) continue;
-      if (!/cash\s*price/i.test(r.body) || !/<table class="cashprices"/.test(r.body)) continue;
-      hit = { url: c, body: r.body };
-      break;
+      const v = verdictFor(r);
+      asked.push({ url: c, ...v });
+      if (v.board) { hit = { url: c, body: r.body }; break; }
     }
-    if (!hit) { noBoard.push(site); console.log(`── [${i + 1}/${hosts.length}] ${site}  no mobile board (${cands.length} tried)`); continue; }
+    if (!hit) {
+      noBoard.push({ site, asked });
+      /* WHAT EACH ONE DID, NOT HOW MANY THERE WERE.
+         Run 91606919069 printed "no mobile board (2 tried)" for 59 of 61
+         sites, and that one line covers a DNS failure, a 403, a redirect to a
+         home page and a board in a shape we do not know -- four different
+         next moves, reported identically. It cost a whole run to learn
+         nothing. A count is not a diagnosis. */
+      console.log(`── [${i + 1}/${hosts.length}] ${site}  no board`);
+      for (const a of asked) console.log(`     ${a.why.padEnd(34)} ${a.url}`);
+      continue;
+    }
 
     /* THE BOARD HAS TO PASS EXACTLY WHAT A POLL WOULD PUT IT THROUGH. A board
        that cannot be read today produces no sources today. */
@@ -479,7 +596,30 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   }
 
   console.log(`\n── SWEEP  ${hosts.length} site(s) asked`);
-  console.log(`   ${found.length} board(s) found  ·  ${noBoard.length} with no mobile board  ·  ${unreadable.length} refused`);
+  console.log(`   ${found.length} board(s) found  ·  ${noBoard.length} with no board  ·  ${unreadable.length} refused`);
+
+  /* THE TALLY THAT DECIDES THE NEXT PIECE OF WORK.
+     59 sites saying "no board" is one number and four different problems. A
+     403 is a header question for agricharts-probe.mjs; a 200 carrying prices
+     in a table we do not know is a parser to write and bytes to capture; a
+     dead host is a spelling to fix; a 200 with no prices on it is the wrong
+     page. Counting them apart is the difference between a run that costs an
+     hour and one that says what to do next. */
+  if (noBoard.length) {
+    const tally = new Map();
+    for (const n of noBoard) {
+      /* ONE VERDICT PER SITE, and it is the most interesting thing that
+         happened to any of its candidates -- not the last, and not the first.
+         A site where four spellings are dead and the fifth answers 403 is a
+         403, because that is the one with something behind it. */
+      const best = n.asked.slice().sort((a, b) => rank(b.why) - rank(a.why))[0];
+      const k = best ? kindOf(best.why) : "nothing asked";
+      tally.set(k, (tally.get(k) ?? 0) + 1);
+    }
+    console.log(`\n── WHAT THE ${noBoard.length} SITES WITH NO BOARD ACTUALLY SAID`);
+    for (const [k, v] of [...tally].sort((a, b) => b[1] - a[1]))
+      console.log(`   ${String(v).padStart(4)}  ${k}`);
+  }
   console.log(`   ${wrote.length} manifest(s) ${cfg.write ? "WRITTEN" : "would be written"}  ·  `
     + `${skipped.length} skipped  ·  ${unmatched.length} location(s) with no town`);
   if (unreadable.length) {
