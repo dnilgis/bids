@@ -34,6 +34,10 @@ on:
         description: "Comma-separated subset of bidreader,cdp,chrome,browser,bare. Blank runs all five."
         required: false
         default: ""
+      quotes:
+        description: "Instead of the board sweep, capture the CBOT quote pages (the futures price the cash board does not carry)"
+        type: boolean
+        default: false
       commit:
         description: "Commit any captured board under fixtures/"
         type: boolean
@@ -66,11 +70,17 @@ jobs:
         env:
           URLS: ${{ inputs.urls }}
           PROFILES: ${{ inputs.profiles }}
+          QUOTES: ${{ inputs.quotes }}
         run: |
           set -o pipefail
           ARGS=""
           if [ -n "$PROFILES" ]; then ARGS="--profiles $PROFILES"; fi
-          if [ -n "$URLS" ]; then
+          # The quote capture takes no target list and no profiles -- the
+          # question of who we say we are is settled, and these are CBOT's
+          # numbers rather than any one co-op's.
+          if [ "$QUOTES" = "true" ]; then
+            node scripts/agricharts-probe.mjs --quotes
+          elif [ -n "$URLS" ]; then
             printf '%s\n' "$URLS" > /tmp/agricharts-targets.txt
             node scripts/agricharts-probe.mjs --list /tmp/agricharts-targets.txt $ARGS
           else
