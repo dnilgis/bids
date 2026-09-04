@@ -533,11 +533,11 @@ test("the shipped list resolves from its bare name", () => {
    shape we cannot parse. Four different next moves, reported identically.
    ──────────────────────────────────────────────────────────────────────── */
 
-test("cashgridCandidates asks the operator's own domain, with and without www", () => {
+test("cashgridCandidates asks the platform host first, then the operator's own domain", () => {
   assert.deepEqual(cashgridCandidates("https://heartlandcoop.com/"), [
+    "https://heartlandcoop.agricharts.com/markets/cashgrid.php",
     "https://heartlandcoop.com/markets/cashgrid.php",
     "https://www.heartlandcoop.com/markets/cashgrid.php",
-    "https://heartlandcoop.agricharts.com/markets/cashgrid.php",
   ]);
 });
 
@@ -806,7 +806,10 @@ test("a board we CAN parse is never captured — it is not evidence of a gap", a
    as mobile, 45 as cashgrid. The 45 carry 506 locations — more elevators than
    this repository currently reads at all.
    ──────────────────────────────────────────────────────────────────────── */
-import { VERIFIED_BY as CASHGRID_STAMP } from "../lib/adapters/agricharts-cashgrid.mjs";
+import { VERIFIED_BY as CASHGRID_STAMP, extract as extractCashgrid }
+  from "../lib/adapters/agricharts-cashgrid.mjs";
+import { buildFile, CASH_ROUNDING } from "../lib/board.mjs";
+import { toConfig } from "../lib/sources.mjs";
 
 const QUOTES = CONTRACTS;
 const fix = (f) => readFileSync(join(ROOT, "fixtures", f), "utf8");
@@ -990,4 +993,104 @@ test("no two boards plan the same id", () => {
     for (const w of plan.write) { ids.push(w.id); seen.add(w.id); }
   }
   assert.equal(new Set(ids).size, ids.length, "duplicate ids across boards");
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   THEIR CASH CELL IS ROUNDED, SO THE IDENTITY CAN ONLY HOLD TO THE CENT
+
+   Run 91680376078 polled the 233 new sources and refused 176. Every message
+   said the same thing, and the guard diagnosed its own tolerance:
+
+     "Every gap is a whole number of eighths of a cent, the grid their futures
+      column is quoted on."
+
+   Measured across all 6,228 testable rows on the 45 captured boards,
+   checkIdentity's signedCents took four values and no others:
+
+       -0.5   660      -0.25   329      +0.25  3286      +0.5     6
+
+   None outside +/-0.5. That is basis + a named contract, added up by the
+   browser and rounded to the penny.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("a cashgrid manifest declares round-cent; a mobile one declares nothing", () => {
+  const loc = { locationId: "7", label: "X", rows: 2, commodities: new Set(["Corn"]) };
+  const dir = { branch: "X", city: "X", state: "IA", zip: "50001", phone: null };
+  const mk = (kind) => manifestFor({ id: "a-x", operator: "O", website: "w", url: "u",
+                                     loc, dir, zipCoord: null, kind });
+  assert.equal(mk("cashgrid").cashRounding, "round-cent");
+  assert.equal(mk("mobile").cashRounding, undefined,
+    "the mobile board publishes no futures price and reaches board.mjs by another door");
+  assert.match(mk("cashgrid")._pending, /round-cent, measured across/);
+  assert.match(mk("mobile")._pending, /NOT set and must not be guessed/);
+});
+
+test("every cashgrid source on disk carries it", () => {
+  const missing = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
+    .map((f) => [f, JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"))])
+    .filter(([, s]) => s.platform === "agricharts-cashgrid" && s.cashRounding !== "round-cent")
+    .map(([f]) => f);
+  assert.deepEqual(missing, [], `${missing.length} cashgrid sources would refuse on rounding`);
+});
+
+test("round-cent is the rule the residuals fit, not a tolerance picked to pass", () => {
+  const rule = CASH_ROUNDING["round-cent"];
+  /* The four values actually observed, and the counts that make them evidence. */
+  for (const r of [-0.5, -0.25, 0, 0.25]) assert.equal(rule(r), true, `${r} should be explained`);
+  /* +0.5 is NOT explained, and must not be. It is six rows in 6,228 — CoMark's
+     WHEAT HRW at Chisholm Trail and Smoky Hill, 8.16 against 841.5 - 25 =
+     816.5, a half-cent TRUNCATED where every other row on that board rounds to
+     nearest. A rule widened to swallow its own outlier stops being evidence. */
+  assert.equal(rule(0.5), false, "+0.5 must stay a failure");
+  /* And nothing near a moved column is explained. */
+  for (const r of [-1, 1, 12, -25]) assert.equal(rule(r), false);
+});
+
+test("the captured boards publish through the real guard, and refuse without the declaration",
+  { concurrency: false }, () => {
+  /* END TO END, THROUGH buildFile. Not "does the rule accept these residuals"
+     but "does this source publish", which is the question the poll asks. */
+  const fixFor = {};
+  for (const f of readdirSync(join(ROOT, "fixtures")).filter((x) => /^agricharts-cashgrid-/.test(x)))
+    fixFor[f.slice("agricharts-cashgrid-".length, -".html".length)] = f;
+  const slugOf = (url) => new URL(url).hostname
+    .replace(/\.agricharts\.com$/, "").replace(/^www\./, "")
+    .replace(/\.(com|net|org|coop)$/, "").replace(/-/g, "");
+
+  let withRule = 0, withoutRule = 0, tried = 0;
+  for (const f of readdirSync(join(ROOT, "sources")).filter((x) => x.endsWith(".json"))) {
+    const s = JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"));
+    if (s.platform !== "agricharts-cashgrid") continue;
+    const ff = fixFor[slugOf(s.url)];
+    if (!ff) continue;
+    tried++;
+    const html = readFileSync(join(ROOT, "fixtures", ff), "utf8");
+    const opts = (cfg) => ({ now: new Date(), sourceUrl: s.url, source: cfg,
+                             extract: (h, u) => extractCashgrid(h, u, { contracts: CONTRACTS }) });
+    try { buildFile(html, opts(toConfig(s))); withRule++; } catch { /* counted below */ }
+    try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined }))); withoutRule++; } catch { /* ditto */ }
+  }
+  assert.ok(tried > 200, `only ${tried} sources had a capture to replay against`);
+  assert.equal(withRule, tried, `${tried - withRule} still refuse WITH round-cent`);
+  assert.ok(withoutRule < tried / 4,
+    `${withoutRule} of ${tried} published WITHOUT the declaration — then it is not doing the work`);
+});
+
+test("the platform's own host is preferred over the operator's marketing domain", () => {
+  /* 46 CoMark sources were written against ceagrain.com; six hours later the
+     poll could not reach it at all — "fetch failed", not an HTTP answer, with
+     the user-agent that had worked. ceagrain.agricharts.com served the
+     identical board. */
+  const c = cashgridCandidates("https://www.ceagrain.com/anthonyfarmers");
+  assert.equal(c[0], "https://ceagrain.agricharts.com/markets/cashgrid.php");
+  assert.ok(c.indexOf("https://ceagrain.com/markets/cashgrid.php") > 0,
+    "the vanity domain is still asked, just second");
+});
+
+test("no source still points at the host that stopped answering", () => {
+  const stale = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
+    .map((f) => [f, JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"))])
+    .filter(([, s]) => /^https:\/\/(www\.)?ceagrain\.com\//.test(s.url || ""))
+    .map(([f]) => f);
+  assert.deepEqual(stale, []);
 });

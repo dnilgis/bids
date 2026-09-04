@@ -153,14 +153,25 @@ export function cashgridCandidates(siteUrl) {
   const ac = host.match(/^([a-z0-9-]+)\.agricharts\.com$/);
   if (ac) { push(host); return out; }
 
-  push(host);
-  push(`www.${host}`);
+  /* THE PLATFORM'S OWN HOST FIRST, AND THE OPERATOR'S MARKETING DOMAIN AFTER.
+     Both serve the same board where both answer — CoMark's ceagrain.com and
+     ceagrain.agricharts.com each returned the identical 138 locations and
+     2,135 rows in run 91611899805. But a vanity domain is a marketing site
+     with a WAF in front of it, and 46 CoMark sources were written against
+     ceagrain.com; six hours later run 91680376078 could not reach it at all —
+     "fetch failed" on both ceagrain.com and www.ceagrain.com, with the same
+     user-agent that had worked, which is a TLS or edge refusal and not an HTTP
+     answer. <label>.agricharts.com is the platform serving its own customer
+     and is the more durable address. Ordering the candidates puts it in the
+     manifest whenever it answers. */
   const label = host.split(".")[0];
   if (label) {
     push(`${label}.agricharts.com`);
     const flat = label.replace(/-/g, "");
     if (flat !== label) push(`${flat}.agricharts.com`);
   }
+  push(host);
+  push(`www.${host}`);
   return out;
 }
 
@@ -392,6 +403,32 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
     identityAlternative: kind === "cashgrid" ? CASHGRID_VERIFIED_BY : VERIFIED_BY,
     bands,
     cadence: "grain-day", provenance: "scraped", enabled: true,
+    /* THEIR CASH CELL IS ROUNDED TO THE CENT, SO THE IDENTITY CAN ONLY EVER
+       HOLD TO THE CENT. Measured 2026-09-04 across 6,228 testable rows on all
+       45 captured cashgrid boards: checkIdentity's signedCents took exactly
+       four values and no others —
+
+           -0.5   660      -0.25   329      +0.25  3286      +0.5     6
+
+       — none outside +/-0.5. That is a board publishing basis and a named
+       contract and letting the browser add them up and round the sum to the
+       penny; the residual is the rounding and carries no information about
+       column integrity. Run 91680376078 refused 158 of these sources on it,
+       every message reading "Every gap is a whole number of eighths of a cent,
+       the grid their futures column is quoted on" — the guard diagnosing its
+       own tolerance.
+
+       `round-cent` is the mode Premier Cooperative already needed and is not
+       widened for this: -0.5 <= r < 0.5, closed at the bottom, open at the
+       top. It explains 4,275 of the 4,281 failures. The six it does not are
+       one commodity on one board — CoMark's WHEAT HRW at Chisholm Trail and
+       Smoky Hill, 8.16 against 841.5 - 25 = 816.5, a half-cent TRUNCATED where
+       every other row on that board rounds to nearest. Six rows in 6,228 stay
+       visible and stay failures, which is the point of a bounded rule.
+
+       NOT set on the mobile boards: those publish no futures price at all and
+       reach lib/board.mjs by a different door. */
+    ...(kind === "cashgrid" ? { cashRounding: "round-cent" } : {}),
     note: `WRITTEN BY scripts/agricharts-sweep.mjs${runId ? ` (run ${runId})` : ""} from their own `
       + `${kind === "cashgrid" ? "cashgrid" : "mobile"} board at ${url}. locationId `
       + `${loc.locationId} is the l= parameter on this `
@@ -430,8 +467,11 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
     email: null,
     website,
     inMerge: true,
-    _pending: "cashRounding is NOT set and must not be guessed; it is measured from a real board "
-      + "against real futures. "
+    _pending: (kind === "cashgrid"
+      ? "cashRounding is round-cent, measured across 6,228 rows on 45 captured boards "
+        + "(residuals only -0.5, -0.25, +0.25, +0.5). "
+      : "cashRounding is NOT set and must not be guessed; it is measured from a real board "
+        + "against real futures. ")
       + (zipCoord
         ? "lat/lon is the CENTROID OF THE TOWN's ZIP and can be miles from the yard; a street fix "
           + "needs a street address, which data/known-elevators.json does not carry."
