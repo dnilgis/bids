@@ -98,8 +98,13 @@ jobs:
       #
       # test/every-guard-runs.test.mjs now checks this, so the fourth time is
       # caught here rather than on the runner.
+      # xlrd IS ON THIS LINE BECAUSE WITHOUT IT THE TICK MEANS NOTHING.
+      # test/xls-route.test.py skips its Texas and Wisconsin checks when xlrd
+      # is missing and still exits 0 — so this workflow was reporting green
+      # over the two states whose readers it was added to protect. The skip is
+      # right for a laptop; on the runner the package is one word.
       - name: python dependencies
-        run: pip install --quiet zipcodes pypdf
+        run: pip install --quiet zipcodes pypdf xlrd
 
       - name: python
         run: |
