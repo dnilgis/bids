@@ -125,25 +125,67 @@ WF = (ROOT / ".github" / "workflows" / "registries.yml").read_text()
 check(_re.search(r"run:\s*pip install[^\n]*\bxlrd\b", WF),
       "the workflow's pip line does not install xlrd, so the Texas route cannot run there")
 
+# AND EVERY WORKFLOW THAT RUNS THIS FILE, NOT JUST THE ONE I WAS THINKING OF.
+#
+# This guard checked registries.yml and stopped. test.yml runs the whole
+# python glob — including this file — and installed only zipcodes and pypdf,
+# so on the backstop that exists to make sure no guard goes unrun, the Texas
+# and Wisconsin checks skipped themselves and the tick went green anyway.
+# A skip that reports success is the same defect as a guard that never runs.
+_WFDIR = ROOT / ".github" / "workflows"
+for _wf in sorted(_WFDIR.glob("*.yml")):
+    _t = _wf.read_text()
+    # does it run test/*.test.py as a glob, or name this file?
+    _runs_me = ("test/*.test.py" in _t) or ("xls-route.test.py" in _t)
+    if not _runs_me:
+        continue
+    check(_re.search(r"run:\s*pip install[^\n]*\bxlrd\b", _t),
+          "%s runs this guard and does not install xlrd — the Texas and "
+          "Wisconsin checks will skip themselves and the run will be green"
+          % _wf.name)
+
 # ── the wiring, not the rule ──────────────────────────────────────────────
 #
-# read_xls() being correct says nothing about whether fetch_file() calls it.
-# Three times this repository has shipped a correct, tested function that
-# nothing invoked. Both fetchers dispatch on route, so both are read.
+# read_xls() being correct says nothing about whether anything calls it. FOUR
+# times this repository has shipped a correct, tested function that nothing
+# invoked, and Texas was the fourth: 63,998 bytes fetched at status 200 and
+# handed to the HTML reader. tables: 0. rowsSeen: 0. firstRowRaw a wall of
+# U+FFFD. read_xls() was perfect and unreachable.
+#
+# There were THREE places the word "xls" had to appear and I had written two.
 SRC = (ROOT / "scripts" / "fetch_registries.py").read_text()
-check(SRC.count('src["route"] == "xls"') >= 2,
-      "the xls route is dispatched in %d place(s); there are two fetchers"
+
+# ONE FETCHER. fetch_file() was in this file twice, byte for byte, the second
+# copy shadowing the first — and the guard that stood here asked for TWO of
+# each string, which meant it REQUIRED the duplication rather than catching
+# it. Every edit to the first copy was dead on arrival.
+check(SRC.count("def fetch_file(") == 1,
+      "fetch_file() is defined %d times; the later definition wins and the "
+      "earlier one is dead code that still reads correctly to a grep"
+      % SRC.count("def fetch_file("))
+
+check(SRC.count('src["route"] == "xls"') == 1,
+      "the xls branch is in %d place(s) in the one fetcher"
       % SRC.count('src["route"] == "xls"'))
-# BOTH FETCHERS, NOT ONE. fetch_file() and its sibling are near-identical
-# copies in this file, so a check that only asks "does this string appear"
-# passes with one of the two broken — which is a source that reads correctly
-# on one path and silently differently on the other.
-check(SRC.count('(".csv" if src["route"] in ("csv", "xls")') == 2,
-      "%d of the two fetchers write an xls run's kept text as .csv"
-      % SRC.count('(".csv" if src["route"] in ("csv", "xls")'))
-check(SRC.count('read_xls(raw, diag, src.get("columns"))') == 2,
-      "%d of the two fetchers pass the source's stated columns through"
-      % SRC.count('read_xls(raw, diag, src.get("columns"))'))
+check(SRC.count('(".csv" if src["route"] in ("csv", "xls")') == 1,
+      "the fetcher does not write an xls run's kept text as .csv")
+check(SRC.count('read_xls(raw, diag, src.get("columns"))') == 1,
+      "the fetcher does not pass the source's stated columns through")
+
+# AND THE ROUTER. The branch inside the fetcher is worth nothing if the line
+# that chooses the fetcher does not name the route. Read the tuple off the
+# code and require every non-html route ROUTES declares.
+_router = _re.search(r'src\.get\("route"\)\s+in\s+\(([^)]*)\)', SRC)
+check(_router is not None,
+      'the router line `src.get("route") in (...)` is gone from fetch_registries')
+_dispatched = set(_re.findall(r'"([a-z]+)"', _router.group(1)) if _router else [])
+for _r in fr.ROUTES:
+    if _r == "html":
+        continue
+    check(_r in _dispatched,
+          'ROUTES declares "%s" and the router sends only %s to the file '
+          "fetcher — a %s source would be fetched and then read as HTML"
+          % (_r, ", ".join(sorted(_dispatched)) or "nothing", _r))
 check("sheet_by_index(0)" in SRC,
       "read_xls no longer takes the FIRST sheet — a workbook's later sheets are "
       "whatever the author left there")
@@ -237,6 +279,107 @@ if WI.exists():
               "did not come back with its town: %s" % adell)
 else:
     print("no Wisconsin fixture at %s; those checks are skipped" % WI)
+
+# ── A SLOW HOST IS ASKED TWICE, AND THAT IS TESTED BY BEING SLOW ──────────
+#
+# Wisconsin's 210 licensees were lost to "URLError: <urlopen error timed out>"
+# — a 3 MB workbook that took longer than 45 seconds. The document was fine,
+# read_xls() was fine, and we kept nothing because the machine gave up.
+#
+# The first version of this check was TEXTUAL: it asserted the retry loop's
+# source line was present. A mutation that cut the loop back to a single
+# attempt passed it, because I had quoted the loop in a comment two lines
+# above. So this one starts a server that is genuinely slow on its first
+# answer and counts the requests it receives.
+def slow_host_is_retried():
+    import http.server, socketserver, threading, time, csv, io
+
+    state = {"n": 0}
+    body = b"name,city,st,zip\nSLOW GRAIN CO,Chetek,WI,54728\n"
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            state["n"] += 1
+            if state["n"] == 1:
+                time.sleep(4)          # longer than the 1s first attempt
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
+    srv = Server(("127.0.0.1", 0), Handler)
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        diag = {}
+        recs = fr.fetch_file(
+            {"state": "ZZ", "route": "csv",
+             "url": "http://127.0.0.1:%d/slow.csv" % port},
+            1, diag, None)
+    finally:
+        srv.shutdown()
+
+    check(state["n"] == 2,
+          "the slow host was asked %d time(s); a first attempt that times out "
+          "must be followed by exactly one slower ask" % state["n"])
+    check(len(recs) == 1,
+          "the second attempt answered and %d record(s) came back" % len(recs))
+    check("slowRetry" in diag,
+          "nothing in the diagnostics says the answer came late: %s"
+          % sorted(diag))
+    check(not diag.get("errors"),
+          "a run that succeeded on the retry still filed errors: %s"
+          % diag.get("errors"))
+
+
+# AND A REAL FAILURE IS STILL ONE REQUEST. Retrying a 404 would double every
+# dead source's cost for nothing.
+def a_refusal_is_not_retried():
+    import http.server, socketserver, threading
+
+    state = {"n": 0}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            state["n"] += 1
+            self.send_error(404)
+
+        def log_message(self, *a):
+            pass
+
+    class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
+    srv = Server(("127.0.0.1", 0), Handler)
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        diag = {}
+        recs = fr.fetch_file(
+            {"state": "ZZ", "route": "csv",
+             "url": "http://127.0.0.1:%d/gone.csv" % port},
+            2, diag, None)
+    finally:
+        srv.shutdown()
+
+    check(state["n"] == 1,
+          "a 404 was asked %d times; only silence earns a second ask"
+          % state["n"])
+    check(recs == [] and diag.get("errors"),
+          "the 404 was not recorded as an error: %s" % diag)
+
+
+slow_host_is_retried()
+a_refusal_is_not_retried()
 
 if fails:
     for f in fails:

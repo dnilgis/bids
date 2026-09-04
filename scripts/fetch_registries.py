@@ -961,13 +961,27 @@ def fetch_file(src, timeout, diag, dump):
         url = discover_pdf(url, src["discover"], timeout, diag) or ""
         if not url:
             return []
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw, status = r.read(), r.status
-    except Exception as ex:
-        diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
-        return []
+    # ONE SLOWER SECOND ASK, AND ONLY FOR A TIMEOUT. Wisconsin publishes its
+    # 210 licensees as a 3 MB .xls and answered in more than 45 seconds:
+    # "URLError: <urlopen error timed out>", kept 0. The document was fine and
+    # the reader was fine; the machine gave up. A 403 or a 404 is an answer and
+    # is not retried — only silence is, once, at three times the patience.
+    raw = status = None
+    for attempt, mult in ((1, 1), (2, 3)):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout * mult) as r:
+                raw, status = r.read(), r.status
+            if attempt > 1:
+                diag["slowRetry"] = "answered on the second attempt, at %ds" % (timeout * mult)
+            break
+        except Exception as ex:
+            msg = "%s: %s" % (type(ex).__name__, str(ex)[:120])
+            timed_out = "timed out" in msg or "timeout" in msg.lower()
+            if attempt == 1 and timed_out:
+                continue
+            diag.setdefault("errors", []).append(msg)
+            return []
     diag["pages"] = [{"url": url, "status": status, "bytes": len(raw)}]
 
     if src["route"] == "csv":
@@ -1000,56 +1014,13 @@ def fetch_file(src, timeout, diag, dump):
     return recs
 
 
-def fetch_file(src, timeout, diag, dump):
-    """A CSV or a PDF: one request, no pagination, and the RAW TEXT IS KEPT.
-
-    Ten of the twenty-two states checked publish a PDF and one publishes a CSV.
-    Neither can be parsed well from a guess about its layout, and none of these
-    hosts is reachable from the machine this parser is written on — the same
-    trap that cost four blind runs on Iowa. So the extracted text is committed
-    next to the run and the field mapping is written against the document."""
-    url = src["url"]
-    if src.get("discover"):
-        url = discover_pdf(url, src["discover"], timeout, diag) or ""
-        if not url:
-            return []
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw, status = r.read(), r.status
-    except Exception as ex:
-        diag.setdefault("errors", []).append("%s: %s" % (type(ex).__name__, str(ex)[:120]))
-        return []
-    diag["pages"] = [{"url": url, "status": status, "bytes": len(raw)}]
-
-    if src["route"] == "csv":
-        text = raw.decode("utf-8-sig", "replace")
-        recs = read_csv(text, diag, src.get("columns"))
-    elif src["route"] == "xls":
-        recs, text = read_xls(raw, diag, src.get("columns"))
-        if not text:
-            return []
-    else:
-        text = pdf_text(raw, diag)
-        if text is None:
-            return []
-        recs = pdf_records(text, diag, src.get("pattern"),
-                           src.get("continuation"), src.get("cityStrip"))
-        told = stated_total(text)
-        if told and told[1]:
-            diag["statedTotal"] = {"total": told[1]}
-            if len(recs) < told[1]:
-                diag["INCOMPLETE"] = ("the document says %d and this parse found %d"
-                                      % (told[1], len(recs)))
-
-    if dump is not None:
-        try:
-            dump.mkdir(parents=True, exist_ok=True)
-            (dump / (slug(url) + (".csv" if src["route"] in ("csv", "xls") else ".txt"))
-             ).write_text(text[:DUMP_CAP], "utf-8")
-        except Exception as ex:
-            diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
-    return recs
+# fetch_file() WAS DEFINED HERE A SECOND TIME, BYTE FOR BYTE.
+#
+# The second copy shadowed the first, so every edit to the first was dead code
+# the moment it was written. That is how "xls" came to be handled in a function
+# nobody called. It survived because test/registries.test.mjs asserted that
+# each route had TWO branches — a guard that required the duplication instead
+# of catching it. One fetcher now; test/xls-route.test.py counts the defs.
 
 
 def slug(url):
@@ -1512,7 +1483,14 @@ def scrape(src, pages, timeout, verbose, dump=None):
     diag = {"url": src["url"], "kind": src["kind"], "note": src["note"],
             "route": src.get("route", "html")}
 
-    if src.get("route") in ("csv", "pdf"):
+    # EVERY NON-HTML ROUTE MUST BE NAMED HERE. Texas fetched its .xls
+    # perfectly — status 200, 63,998 bytes — and was read as HTML, because
+    # "xls" had to be written in three places and this was the one I missed:
+    # the fetcher had the branch, the dump had the extension, and the line
+    # that CHOOSES the fetcher did not. tables: 0, rowsSeen: 0, and a
+    # firstRowRaw that was a wall of U+FFFD. The guard in
+    # test/registries.test.mjs now derives this tuple from ROUTES.
+    if src.get("route") in ("csv", "pdf", "xls"):
         recs = fetch_file(src, timeout, diag, dump)
         for r in recs:
             r["kind"] = src["kind"]

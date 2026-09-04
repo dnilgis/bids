@@ -251,11 +251,34 @@ test("Missouri parses as one table and says nothing about paging", { skip: !exis
   assert.ok(n > 280 && n <= 304, `${n} records from a 304-row table`);
 });
 
-for (const [file, total] of [[IOWA_DEALERS, 251], [IOWA_WHOUSE, 102]]) {
-  test(`the Iowa list page publishes its own total of ${total}`, { skip: !existsSync(fixture(file)) }, () => {
+/* THE NUMBER IS IOWA'S, NOT OURS, AND IOWA CHANGES IT.
+ *
+ * This asked for "25 out of 251" and "25 out of 102" by name. Iowa licensed a
+ * dealer out of existence and the page began saying 250; the guard went red
+ * over a state's paperwork, in a test whose whole subject is whether OUR
+ * parser reads the line. A number the Department of Agriculture controls is
+ * not a fact about this repository.
+ *
+ * So the fixture is asked what it says, and the parser is required to agree
+ * with it. That is strictly stronger than the equality it replaces: it would
+ * catch a parser that reads the wrong number, which "== 251" could not — 251
+ * was hardcoded on both sides of the comparison in every sense that mattered.
+ */
+for (const [file, label] of [[IOWA_DEALERS, "dealers"], [IOWA_WHOUSE, "warehouses"]]) {
+  test(`the Iowa ${label} page publishes its own total and we read it`, { skip: !existsSync(fixture(file)) }, () => {
+    const raw = readFileSync(fixture(file), "utf8");
+    const said = /(\d+)\s+out\s+of\s+(\d+)/.exec(raw);
+    assert.ok(said,
+      "the committed Iowa page no longer contains an 'N out of M' line at " +
+      "all — either Iowa stopped printing its total, or the wrong page was " +
+      "captured, and the completeness check has nothing to stand on");
+    const total = Number(said[2]);
+    assert.ok(total > 50,
+      `Iowa's page states a total of ${total}, which is not a licensee list`);
     const out = parse(file);
-    assert.match(out, new RegExp(`the page says: 25 out of ${total}`),
-      "the completeness check reads this line; without it 25 of 251 looks like success");
+    assert.match(out, new RegExp(`the page says: \\d+ out of ${total}`),
+      `the page itself says ${total} and the parser did not report that ` +
+      `number — without this line, 25 of ${total} reads as a success:\n${out}`);
   });
 }
 
@@ -429,19 +452,47 @@ print(",".join(m.ROUTES))
      fetchers do not handle is the same defect one level up: "pdf" is the
      fallback and has no equality test, so it is checked by name. */
   const src = readFileSync(join(ROOT, "scripts/fetch_registries.py"), "utf8");
-  /* BOTH FETCHERS, AND THE EQUALITY TEST ITSELF. A first cut accepted the
-     substring `"docx")` as evidence of a branch — which the ROUTES tuple
-     itself contains, so adding a route with no code passed. And counting one
-     pdf_text call passed with the OTHER fetcher's fallback deleted. */
+  /* THE EQUALITY TEST ITSELF, ONCE. A first cut accepted the substring
+     `"docx")` as evidence of a branch — which the ROUTES tuple itself
+     contains, so adding a route with no code passed.
+
+     This then asked for TWO branches, because fetch_file() had been pasted
+     into the file twice, byte for byte, and the second copy shadowed the
+     first. The guard did not catch the duplication; it REQUIRED it, and so
+     every edit to the dead first copy read as covered. Deleting the dead copy
+     turned this red, which is the right way round. One fetcher, one branch —
+     and a 2 here now means it has been duplicated again. */
   for (const r of implemented) {
     if (r === "html" || r === "pdf") continue;
     const branches = src.split(`src["route"] == "${r}"`).length - 1;
-    assert.equal(branches, 2,
-      `ROUTES names "${r}" and ${branches} of the two fetchers branch on it`);
+    assert.equal(branches, 1,
+      `ROUTES names "${r}" and ${branches} fetcher branches read it ` +
+      `(0 = no code at all; 2 = fetch_file has been duplicated again)`);
   }
   const pdfFallback = src.split("text = pdf_text(raw, diag)").length - 1;
-  assert.equal(pdfFallback, 2,
-    `the pdf fallback is in ${pdfFallback} of the two fetchers`);
+  assert.equal(pdfFallback, 1,
+    `the pdf fallback appears ${pdfFallback} times and there is one fetcher`);
+
+  /* AND THE ROUTER MUST SEND THEM THERE. A branch inside fetch_file() is
+     worth nothing if the line that CHOOSES fetch_file() does not name the
+     route. Texas fetched its .xls perfectly — status 200, 63,998 bytes — and
+     was handed to the HTML reader, because `route in ("csv", "pdf")` was the
+     third place the word "xls" had to be written and the only one missed.
+     tables: 0, rowsSeen: 0, firstRowRaw a wall of U+FFFD.
+
+     Read the tuple off the code; require every non-html route in ROUTES. */
+  const router = src.match(/src\.get\("route"\)\s+in\s+\(([^)]*)\)/);
+  assert.ok(router,
+    'the router line `src.get("route") in (...)` is gone from the script');
+  const dispatched = new Set(
+    [...router[1].matchAll(/"([a-z]+)"/g)].map((m) => m[1]));
+  for (const r of implemented) {
+    if (r === "html") continue;
+    assert.ok(dispatched.has(r),
+      `ROUTES declares "${r}" but the router sends only ` +
+      `${[...dispatched].sort().join(", ") || "nothing"} to the file ` +
+      `fetcher — a "${r}" source would be fetched and then read as HTML`);
+  }
   const out = py(`${LOAD}
 routes = sorted({s.get("route", "html") for s in m.SOURCES})
 print(",".join(routes))
@@ -482,12 +533,37 @@ const ARK = "https-agriculture-arkansas-gov-crops-industry-quality-control-and-c
 
 const pyOn = (code) => py(`${LOAD}\n${code}`).trim();
 
-for (const [file, label, want] of [[NDAK, "North Dakota", 285], [ARK, "Arkansas", 32]]) {
-  test(`${label} publishes no phone column and is still read`, { skip: !existsSync(fixture(file)) }, () => {
+/* EVERY ROW THE DOCUMENT HAS, COUNTED FROM THE DOCUMENT.
+ *
+ * These asked for 285 and 32 by name, and North Dakota licensed three more
+ * elevators. The guard exists because `if ("phone" not in idx): continue`
+ * silently threw away five whole states — a failure that shows up as ZERO
+ * records, or a fraction of them, never as three extra. Pinning the exact
+ * number caught nothing that the row count does not catch, and broke on a
+ * state doing its job.
+ *
+ * The table's own <tr> count, less its header, is what the parse must equal.
+ * A dropped column, a dropped state, a rejoin eating rows: all still red.
+ */
+for (const [file, label, floor] of [[NDAK, "North Dakota", 285], [ARK, "Arkansas", 32]]) {
+  test(`${label} publishes no phone column and every row is still read`, { skip: !existsSync(fixture(file)) }, () => {
+    const raw = readFileSync(fixture(file), "utf8");
+    const rows = (raw.match(/<tr\b/gi) || []).length;
     const n = Number(pyOn(`
 b = open(r"${fixture(file)}", encoding="utf-8", errors="replace").read()
 print(len(m.extract(b, {})))`));
-    assert.equal(n, want, `${n} records — a state without phones is being dropped again`);
+    assert.ok(rows > 1,
+      `the committed ${label} page has ${rows} table row(s) — the wrong page ` +
+      "was captured and this guard is measuring nothing");
+    assert.equal(n, rows - 1,
+      `${n} records from a table of ${rows - 1} data rows — a state without ` +
+      "phones is being dropped again");
+    /* AND THE LIST DOES NOT SHRINK. A licence register grows through a
+       licensing year; a fall below what was last measured is our bug or the
+       state's, and either way somebody should look. */
+    assert.ok(n >= floor,
+      `${n} records, down from the ${floor} last measured — this list has ` +
+      "only ever grown");
   });
 }
 
@@ -513,7 +589,19 @@ print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
    The call below passes the source's FULL config — pattern, continuation and
    cityStrip — because a test that exercises less than the run does is a test of
    something nobody runs. */
-for (const [st, file, want] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 354], ["NE", PDFS.NE, 114]]) {
+/* A FLOOR, NOT AN EQUALITY, AND THE REASON IS IN THE PARAGRAPH ABOVE.
+ *
+ * Every regression this guard was written to catch made the number go DOWN:
+ * 265 when wrapped lines were left broken, 293 when the rejoin was eating
+ * records. Not one of them made it go up. South Dakota licensed one more
+ * elevator, the count went 354 -> 355, and an equality turned red over a
+ * document that had got MORE complete.
+ *
+ * The floor keeps every historical failure red — 265 and 293 are both below
+ * 354 — and lets the register grow. It is not a softened threshold: it is the
+ * same number, with the direction the bug actually travels.
+ */
+for (const [st, file, floor] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 354], ["NE", PDFS.NE, 114]]) {
   test(`the ${st} bid sheet's own line shape is read`, { skip: !existsSync(fixture(file)) }, () => {
     const out = pyOn(`
 src = [s for s in m.SOURCES if s["state"] == "${st}" and s.get("pattern")][0]
@@ -521,7 +609,16 @@ t = open(r"${fixture(file)}", encoding="utf-8", errors="replace").read()
 d = {}
 r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
 print(len(r), r[0]["name"], r[0].get("city", ""), sep="|")`).split("|");
-    assert.equal(Number(out[0]), want, `${out[0]} of an expected ${want} lines matched`);
+    const n = Number(out[0]);
+    assert.ok(n >= floor,
+      `${n} lines matched, below the ${floor} last measured — the rejoin is ` +
+      "eating records again (it read 265, then 293, before it read " +
+      floor + ")");
+    /* AND NOT WILDLY MORE, WHICH WOULD MEAN THE PATTERN HAS GONE LOOSE AND IS
+       matching the document's headers, footers and page numbers as licensees. */
+    assert.ok(n <= floor * 1.25,
+      `${n} lines matched against ${floor} last measured — a jump that size ` +
+      "is a pattern matching things that are not records");
     /* The name must be GREEDY. Non-greedy read South Dakota's "ADVANCED
        SUNFLOWER LLC BHURON" as a company called "ADVANCED" whose permit letter
        was the S of SUNFLOWER, and split "Berne Hi-Way Hatchery, Inc." into a
