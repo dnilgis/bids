@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T18:54:33Z",
+ "generated": "2026-09-04T19:31:30Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -20,51 +20,27 @@
   },
   {
    "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
-   "status": 200,
-   "contentType": "text/html",
-   "bytes": 12063,
+   "status": 0,
    "ua": "ours",
-   "rows": 26,
-   "headerCells": [
-    "Name",
-    "City",
-    "County",
-    "Phone"
-   ],
-   "dataLinks": [],
-   "shape": "html table",
+   "error": "URLError: <urlopen error timed out>",
    "state": "IA",
    "expected": "licensing list, dealers",
-   "confidence": "confirmed, 251 rows, paginated",
-   "kept": "debug/registries/survey/ia-licensing-list-dealers.html",
-   "keptBytes": 10674
+   "confidence": "confirmed, 251 rows, paginated"
   },
   {
    "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
-   "status": 200,
-   "contentType": "text/html",
-   "bytes": 10878,
+   "status": 0,
    "ua": "ours",
-   "rows": 26,
-   "headerCells": [
-    "Name",
-    "City",
-    "County",
-    "Phone"
-   ],
-   "dataLinks": [],
-   "shape": "html table",
+   "error": "URLError: <urlopen error timed out>",
    "state": "IA",
    "expected": "licensing list, warehouses",
-   "confidence": "confirmed, 102 rows, paginated",
-   "kept": "debug/registries/survey/ia-licensing-list-warehouses.html",
-   "keptBytes": 9489
+   "confidence": "confirmed, 102 rows, paginated"
   },
   {
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 280166,
+   "bytes": 280164,
    "ua": "ours",
    "rows": 304,
    "headerCells": [
@@ -203,11 +179,11 @@
    "headerCells": [],
    "dataLinks": [
     "https://www.mda.state.mn.us/sites/default/files/docs/2023-03/AG00884%20Rates%20for%20Storing%20and%20Handling%20Grain.pdf",
-    "https://www.mda.state.mn.us/sites/default/files/docs/2023-05/AG00402%20Grain%20Proof%20of%20Claim.pdf",
     "https://www.mda.state.mn.us/sites/default/files/docs/2025-03/AG03226%20Grain%20Bond%202025.pdf",
+    "https://www.mda.state.mn.us/sites/default/files/docs/2026-03/AG00960_Application_for_Grain_Buyer_License_7_web.pdf",
+    "https://www.mda.state.mn.us/sites/default/files/docs/2023-05/AG00402%20Grain%20Proof%20of%20Claim.pdf",
     "https://www.mda.state.mn.us/sites/default/files/docs/2025-04/AG04019%20Grain%20Licensing%20Financial%20Statement%20C_anonymous_0.pdf",
-    "https://www.mda.state.mn.us/sites/default/files/docs/2026-03/AG00883_Application_for_Buy_and_Store_Grain_7_web.pdf",
-    "https://www.mda.state.mn.us/sites/default/files/docs/2026-03/AG00960_Application_for_Grain_Buyer_License_7_web.pdf"
+    "https://www.mda.state.mn.us/sites/default/files/docs/2026-03/AG00883_Application_for_Buy_and_Store_Grain_7_web.pdf"
    ],
    "shape": "page offering a data file",
    "state": "MN",
@@ -234,23 +210,21 @@
   },
   {
    "url": "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse",
-   "status": 200,
-   "contentType": "text/html",
-   "bytes": 65193,
+   "status": 0,
    "ua": "ours",
-   "rows": 36,
-   "headerCells": [
-    "Record type",
-    "Maintained",
-    "Maintenance Start Date"
-   ],
-   "dataLinks": [],
-   "shape": "html table",
+   "error": "URLError: <urlopen error timed out>",
    "state": "TX",
    "expected": "grain warehouse programme",
-   "confidence": "search 2026-09-04, unopened",
-   "kept": "debug/registries/survey/tx-grain-warehouse-programme.html",
-   "keptBytes": 53521
+   "confidence": "READ 2026-09-04: a programme page. Its 36 <tr> are FORMS, not warehouses \u2014 the survey's own row count called it a table and was wrong. The list is one link down"
+  },
+  {
+   "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
+   "status": 0,
+   "ua": "ours",
+   "error": "URLError: <urlopen error timed out>",
+   "state": "TX",
+   "expected": "THE LICENSEE LIST, xls",
+   "confidence": "found in the page kept on 2026-09-04; never fetched"
   },
   {
    "url": "https://cms.agr.wa.gov/WSDAKentico/Documents/GWA-License-Book-21-22.pdf",
@@ -312,21 +286,56 @@
     "Renewal License Fee"
    ],
    "dataLinks": [
-    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Bond-FILLABLE.pdf",
-    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-License-Application-FILLABLE.pdf",
     "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
-    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Seed-Buyer-Bond-Form-FILLABLE.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Seed-Buyer-Licensees.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Warehouse-Licensees-2-2-1-2.pdf",
     "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/ID-WA-Cooperative-Licensees.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Bond-FILLABLE.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Seed-Buyer-Bond-Form-FILLABLE.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Warehouse-Seed-Buyer-Bond-Form-FILLABLE.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-License-Application-FILLABLE.pdf",
     "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Seed-Buyer-Application-FILLABLE.pdf",
     "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Seed-Buyer-Bond-Form-FILLABLE.pdf",
-    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Seed-Buyer-Licensees.pdf"
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Warehouse-Bond-Form-FILLABLE.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Warehouse-License-Application-FILLABLE.pdf"
+   ],
+   "looksLikeARoster": [
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Seed-Buyer-Licensees.pdf",
+    "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Warehouse-Licensees-2-2-1-2.pdf"
    ],
    "shape": "page offering a data file",
    "state": "ID",
    "expected": "warehouse programme",
-   "confidence": "search 2026-09-04, unopened",
+   "confidence": "READ 2026-09-04: twelve data links, five of them fillable bond and application forms",
    "kept": "debug/registries/survey/id-warehouse-programme.html",
    "keptBytes": 60423
+  },
+  {
+   "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
+   "status": 200,
+   "contentType": "application/pdf",
+   "bytes": 90085,
+   "ua": "ours",
+   "shape": "pdf",
+   "state": "ID",
+   "expected": "commodity dealer licensees",
+   "confidence": "found in the page kept on 2026-09-04; never fetched",
+   "kept": "debug/registries/survey/id-commodity-dealer-licensees.pdf",
+   "keptBytes": 90085
+  },
+  {
+   "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/ID-WA-Cooperative-Licensees.pdf",
+   "status": 200,
+   "contentType": "application/pdf",
+   "bytes": 28711,
+   "ua": "ours",
+   "shape": "pdf",
+   "state": "ID",
+   "expected": "Idaho AND Washington co-op licensees",
+   "confidence": "found in the page kept on 2026-09-04; never fetched",
+   "kept": "debug/registries/survey/id-idaho-and-washington-co-op-licensees.pdf",
+   "keptBytes": 28711
   },
   {
    "url": "https://prod-agr.mt.gov/Topics/A-D/Commodity-Pages/Commodity-Warehouse-License",
@@ -339,10 +348,10 @@
    "dataLinks": [
     "../../../Home/Montana-Dept-Agriculture-Annual-Plan.pdf",
     "../../../_docs/Legislative-docs/Org-Chart.pdf",
-    "../../../_docs/commodities-docs/CommodityLic_BondingForm.pdf",
     "../../../_docs/commodities-docs/CommodityLic_CDForm.pdf",
     "../../../_docs/commodities-docs/CommodityLic_LetterCreditForm.pdf",
-    "https://agr.mt.gov/_docs/weeds-docs/Fall-2025-EDRR-Webinar-Invite.pdf"
+    "https://agr.mt.gov/_docs/weeds-docs/Fall-2025-EDRR-Webinar-Invite.pdf",
+    "../../../_docs/commodities-docs/CommodityLic_BondingForm.pdf"
    ],
    "shape": "page offering a data file",
    "state": "MT",
@@ -360,14 +369,18 @@
    "rows": 0,
    "headerCells": [],
    "dataLinks": [
-    "http://pested.okstate.edu/pdf/Pesticide%20Manual%20ORDER%20FORM%20May%202020.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2026/01/SensitiveCropRegistry_guide_10_29_2025.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2026/03/Oklahoma-RUP-Dealer-Lic-ver-2.pdf",
     "https://ag.ok.gov/wp-content/uploads/2020/11/2021-Pesticide-Product-Registration-Printable.pdf",
-    "https://ag.ok.gov/wp-content/uploads/2020/11/Certificate-of-Insurance-for-Pesticide-Applicators.pdf",
     "https://ag.ok.gov/wp-content/uploads/2020/11/Change-of-Address.pdf",
-    "https://ag.ok.gov/wp-content/uploads/2020/11/Phytosanitary-Certificate-Application-for-Federal-or-State.pdf",
-    "https://ag.ok.gov/wp-content/uploads/2020/11/Printable-Application-for-Inspection-Weed-Free-Forage-Certification.pdf",
     "https://ag.ok.gov/wp-content/uploads/2020/11/Test-Session.pdf",
-    "https://ag.ok.gov/wp-content/uploads/2020/11/\u00a7-2-Article-10-G.-Eggs.pdf"
+    "https://ag.ok.gov/wp-content/uploads/2020/11/\u00a7-2-Article-10-G.-Eggs.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/01/AEMS043_2022.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/01/rcf.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/02/Attestation_Farm_Incorporation.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/03/2020-Hemp-Variety-Results.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/03/Important-Links-for-Hemp-Growers-Processors-and-Handlers.pdf",
+    "https://ag.ok.gov/wp-content/uploads/2021/10/4-14-23-Special-Sheep-Goat-Sale-Permit.pdf"
    ],
    "shape": "page offering a data file",
    "state": "OK",
