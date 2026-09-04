@@ -3,16 +3,17 @@
  * Measured 2026-09-04 from data/platforms.json, which discover has been
  * filling for three weeks:
  *
- *     platform          sites   read
- *     aghost               38      1
- *     cashbidssingle       34      1
- *     bushel               40     24
- *     dtn-cs               34     20
- *     graindesk            32     27
+ *     platform          sites   UNREAD
+ *     aghost               38      38
+ *     cashbidssingle       34      32
+ *     bushel               40      16   (not swept here — see NOT_SWEEPABLE)
+ *     dtn-cs               34       2
+ *     graindesk            32       1
  *
- * aghost and cashbidssingle have a working adapter, a board URL recorded for
- * every site, and ONE SOURCE READ BETWEEN THEM. Nothing was missing but a
- * script that walks the list. 172 sites are unread across the five.
+ * THE FIRST RUN (91840487549) ASKED 172 AND WROTE NOTHING, and every one of
+ * the three faults is tested below: a dedupe that missed 78 boards we already
+ * hold, an HTML page handed to a JSON adapter, and 83 locations whose own page
+ * would not give up its name.
  *
  * WHAT IS AT STAKE. This writes source manifests — files that put an elevator
  * on a map and a price in front of a farmer — from pages nobody has looked at.
@@ -24,9 +25,12 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE }
+import { operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
+         NOT_SWEEPABLE, boardCandidates, linkedBoards, navEvidence, readHostsOf, readKeysOf,
+         siteKeyOf, WANTS_JSON }
   from "../scripts/board-sweep.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
+import { locationNames } from "../lib/parse.mjs";
 import { validateSource } from "../lib/sources.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -92,6 +96,13 @@ test("only platforms with an adapter, and never agricharts", () => {
 test("a site with no board page on file is not guessed at", () => {
   const plat = { sites: { "https://a.example/": { platform: "aghost" } } };
   assert.deepEqual(sitesFor(plat, [], { platform: null, only: null, start: 0, limit: Infinity }), []);
+  /* THE ONE THING THAT EXCUSES IT is a site key, because then the endpoint is
+     built and the page is not needed. Four graindesk sites are in exactly that
+     state: a slug on file, no boardPage discover ever captured. */
+  const keyed = { sites: { "https://fcalindsay.com/markets/":
+    { platform: "graindesk", ids: [{ slug: "fcalindsay" }] } } };
+  assert.deepEqual(sitesFor(keyed, [], { platform: null, only: null, start: 0, limit: Infinity })
+    .map((s) => s.site), ["https://fcalindsay.com/markets/"]);
 });
 
 test("a board we already read is not asked again", () => {
@@ -115,10 +126,182 @@ test("a board we already read is not asked again", () => {
     .map((s) => s.site), ["https://b.example/"]);
 });
 
+test("a source whose url is a shared API is still matched by the site it names", () => {
+  /* THE FAULT THAT COST 78 REQUESTS, run 91840487549. A bushel manifest's
+     `url` is api.bushelpowered.com — the operator's own site is in
+     `browserPage` and `website`. Deduping on `url` alone therefore reported
+     every CHS region this repository has polled since August as unread, and
+     the sweep went and asked all of them. */
+  const plat = { sites: {
+    "https://chs-texoma.com/": { platform: "aghost", boardPage: "https://chs-texoma.com/grain/cash-bids/" },
+    "https://elsewhere.example/": { platform: "aghost", boardPage: "https://elsewhere.example/bids" },
+  } };
+  const viaBrowserPage = [{ url: "https://api.bushelpowered.com/api/x",
+                            browserPage: "https://www.chs-texoma.com/grain/cash-bids/" }];
+  assert.deepEqual(sitesFor(plat, viaBrowserPage, { platform: null, only: null, start: 0, limit: Infinity })
+    .map((s) => s.site), ["https://elsewhere.example/"]);
+  const viaWebsite = [{ url: "https://api.bushelpowered.com/api/x",
+                        website: "https://chs-texoma.com/" }];
+  assert.deepEqual(sitesFor(plat, viaWebsite, { platform: null, only: null, start: 0, limit: Infinity })
+    .map((s) => s.site), ["https://elsewhere.example/"]);
+  assert.ok(readHostsOf(viaBrowserPage).has("chs-texoma.com"));
+  assert.ok(readHostsOf(viaWebsite).has("chs-texoma.com"));
+});
+
+test("on a platform that shares one API host the KEY decides, not the host", () => {
+  /* Every dtn-cs source reads api.dtn.com and every graindesk source reads
+     marketplace.graindiscovery.com. A host test on the endpoint would skip all
+     of them or none of them; what identifies a board is the site key. */
+  const plat = { sites: {
+    "https://one.example/": { platform: "dtn-cs", boardPage: "https://one.example/cash-bids/",
+                              ids: [{ siteId: "E0221901" }] },
+    "https://two.example/": { platform: "dtn-cs", boardPage: "https://two.example/cash-bids/",
+                              ids: [{ siteId: "E0079501" }] },
+    "https://three.example/": { platform: "graindesk", boardPage: "https://three.example/",
+                                ids: [{ slug: "abbyvillecoop" }] },
+  } };
+  const read = [{ url: "https://api.dtn.com/markets/sites/e0221901/cash-bids?units=us" },
+                { url: "https://marketplace.graindiscovery.com/api/public-sites/abbyvillecoop/cash-bids" }];
+  assert.deepEqual(sitesFor(plat, read, { platform: null, only: null, start: 0, limit: Infinity })
+    .map((s) => s.site), ["https://two.example/"]);
+  /* Case is not identity: DTN writes e0030901 in a URL and E0221901 in an id. */
+  assert.ok(readKeysOf(read).has("dtn:E0221901"));
+  assert.equal(siteKeyOf({ ids: [{ siteId: "e0221901" }] }, "dtn-cs"), "dtn:E0221901");
+  /* A siteId declared as its own field, not only inside the URL. */
+  assert.ok(readKeysOf([{ url: "https://api.dtn.com/x", siteId: "E0386101" }]).has("dtn:E0386101"));
+  /* GRAIN DESK SLUGS ARE MIXED CASE — sources/ carries "addisGrain" — and a
+     slug that came back capitalised differently would look like a second
+     elevator and get a second manifest. Identity folds; the URL does not.
+     Nothing here changes the case of a slug we FETCH: boardCandidates copies
+     it through verbatim, because their server does care. */
+  assert.equal(siteKeyOf({ ids: [{ slug: "addisGrain" }] }, "graindesk"), "gd:addisgrain");
+  assert.ok(readKeysOf([{ url: "https://marketplace.graindiscovery.com/api/public-sites/addisGrain/cash-bids" }])
+    .has("gd:addisgrain"));
+  assert.equal(boardCandidates("https://x/", { ids: [{ slug: "addisGrain" }] }, "graindesk")[0].url,
+    "https://marketplace.graindiscovery.com/api/public-sites/addisGrain/cash-bids");
+});
+
+test("bushel is named as not-swept, with the reason, rather than silently dropped", () => {
+  /* Its 40 classified sites record no per-site key: their `ids` carry endpoint
+     names like "modernizr2.0.6-custom.js". The board is a keyed runtime call,
+     which is what scripts/bushel-probe.mjs drives a browser to watch. A
+     platform missing from a sweep with no reason recorded reads as an
+     oversight, and a second half-writer on one platform is how this repository
+     got two manifests for one elevator. */
+  assert.ok(!SWEEPABLE.includes("bushel"));
+  assert.match(NOT_SWEEPABLE.bushel, /bushel-probe/);
+  for (const p of ["bushel", "barchart", "agricharts", "stonehedge"]) {
+    assert.ok(!SWEEPABLE.includes(p));
+    assert.ok((NOT_SWEEPABLE[p] || "").length > 20, `${p} is excluded with no reason on file`);
+  }
+});
+
+/* ── which URL actually serves the board ──────────────────────────────── */
+
+test("a JSON platform's endpoint is built from the key, not taken from the board page", () => {
+  /* 130 of 172 refused with "the response is not JSON" in run 91840487549 and
+     every one of them was right: they had been handed the operator's HTML.
+     Both shapes below are copied from manifests that have been polling for
+     weeks — sources/aglandfs-admcc.json and sources/abbyvillecoop-abbyville.json. */
+  const dtn = boardCandidates("https://buckleybrosinc.com/",
+    { boardPage: "https://buckleybrosinc.com/cash-bids/", ids: [{ siteId: "E0221901" }] }, "dtn-cs");
+  assert.equal(dtn[0].url, "https://api.dtn.com/markets/sites/E0221901/cash-bids?units=us");
+  const gd = boardCandidates("https://fcalindsay.com/markets/",
+    { boardPage: undefined, ids: [{ slug: "fcalindsay" }] }, "graindesk");
+  assert.equal(gd[0].url, "https://marketplace.graindiscovery.com/api/public-sites/fcalindsay/cash-bids");
+  /* And a JSON board is asked for JSON. */
+  assert.ok(WANTS_JSON.has("dtn-cs") && WANTS_JSON.has("graindesk"));
+  assert.ok(!WANTS_JSON.has("aghost") && !WANTS_JSON.has("cashbidssingle"));
+});
+
+test("with no key on file the board page is still tried, and says so", () => {
+  const c = boardCandidates("https://x.example/", { boardPage: "https://x.example/bids", ids: [] }, "dtn-cs");
+  assert.equal(c.length, 1);
+  assert.equal(c[0].url, "https://x.example/bids");
+  assert.match(c[0].why, /no siteId/);
+});
+
+test("a cashbidssingle prefix with the id cut off is not offered as a URL", () => {
+  /* discover recorded 28 of these as ".../cashbidssingle-" with no number.
+     A prefix is not a location page; the site root serves the same board on
+     this vendor and is tried instead. */
+  const c = boardCandidates("https://adellcoop.com/",
+    { boardPage: "https://adellcoop.com/cashbidssingle-" }, "cashbidssingle");
+  assert.ok(!c.some((x) => x.url.endsWith("cashbidssingle-")));
+  assert.deepEqual(c.map((x) => x.url), ["https://adellcoop.com/"]);
+  /* When the id IS there it is the first thing asked. */
+  const d = boardCandidates("https://npacoop.com/",
+    { boardPage: "https://npacoop.com/cashbidssingle-1595" }, "cashbidssingle");
+  assert.equal(d[0].url, "https://npacoop.com/cashbidssingle-1595");
+});
+
+test("an aghost site offers its own host's cash-bids view, and its AgHost host", () => {
+  const c = boardCandidates("https://al-corn.com/",
+    { boardPage: "https://al-corn.com/cash-bids/", hosts: ["al-corn.com", "x.aghost.net", "www.google-analytics.com"] },
+    "aghost");
+  const urls = c.map((x) => x.url);
+  assert.equal(urls[0], "https://al-corn.com/cash-bids/");
+  assert.ok(urls.includes("https://x.aghost.net/index.cfm?show=11&mid=3"));
+  assert.ok(urls.includes("https://al-corn.com/index.cfm?show=11&mid=3"));
+  /* No duplicates: the shape is the one sources/flashgrain-granton.json reads. */
+  assert.equal(new Set(urls).size, urls.length);
+  /* Every candidate carries the reason it is being tried, so a site that fails
+     them all prints four diagnoses and not "no board (4 tried)". */
+  for (const x of c) assert.ok(x.why && x.why.length > 8);
+});
+
+test("the grid one click away is followed from the page's own links, not guessed", () => {
+  const html = `<nav><a href="/index.cfm?show=11&amp;mid=7">Cash Bids</a>
+    <a href="index.cfm?show=11&mid=9">Grain</a>
+    <a href="/index.cfm?show=4">About</a></nav>`;
+  const got = linkedBoards(html, "https://al-corn.com/cash-bids/", "aghost");
+  /* Resolved against the PAGE, which is what a browser does: the root-relative
+     href lands at the root and the bare one lands beside the page it was
+     written on. Getting that backwards would ask for a URL nobody serves. */
+  assert.deepEqual(got, ["https://al-corn.com/index.cfm?show=11&mid=7",
+                         "https://al-corn.com/cash-bids/index.cfm?show=11&mid=9"]);
+  /* &amp; in an href is an ampersand, not three characters of query string. */
+  assert.ok(!got.some((u) => u.includes("amp;")));
+  const cbs = linkedBoards(`<a href='/cashbidssingle-2451'>x</a><a href="/cashbidssingle-2452">y</a>`,
+    "https://adellcoop.com/", "cashbidssingle");
+  assert.deepEqual(cbs, ["https://adellcoop.com/cashbidssingle-2451",
+                         "https://adellcoop.com/cashbidssingle-2452"]);
+  /* A platform with no link shape to follow returns nothing rather than junk. */
+  assert.deepEqual(linkedBoards(html, "https://x.example/", "dtn-cs"), []);
+});
+
+/* ── an unnamed location is a parser fault, not a directory miss ───────── */
+
+test("the markup around an unnamed location is printed, not summarised", () => {
+  /* 83 locations came back as "location 2451". lib/parse.mjs names them from
+     the page's own nav and that regex matched nothing on 32 sites. Recording
+     them as unplaceable elevators would send somebody to the wrong file, so
+     the bytes go in the log and the regex gets fixed from the page. */
+  const html = `<li><a class="tab" href="/cashbidssingle-2451" title="Adell">`
+    + `<span class="t">Adell</span></a></li>`;
+  const ev = navEvidence(html);
+  assert.equal(ev.length, 1);
+  assert.match(ev[0], /cashbidssingle-2451/);
+  assert.match(ev[0], /Adell/);
+  /* This is exactly the case lib/parse.mjs's regex misses: the anchor text is
+     inside a <span>, so `>\s*([^<]{1,60})<` sees nothing. */
+  assert.deepEqual([...locationNames(html).values()], []);
+  /* A page with no reference at all is a different answer and reads as one. */
+  assert.deepEqual(navEvidence("<html>nothing here</html>"), []);
+});
+
 test("the repository's own platforms.json yields the sites it claims", () => {
   const plat = JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8"));
   const got = sitesFor(plat, SOURCES, { platform: null, only: null, start: 0, limit: Infinity });
-  assert.ok(got.length > 100, `only ${got.length} unread sweepable sites`);
+  /* MEASURED, NOT ASPIRATIONAL. This asserted >100 and passed on 172, and 78
+     of that 172 were boards this repository already polls — the number was
+     the fault, not the evidence for it. The floor is now a real one: the
+     38 aghost sites alone have never been read. */
+  assert.ok(got.length >= 38, `only ${got.length} unread sweepable sites`);
+  const byPlatform = {};
+  for (const s of got) byPlatform[s.platform] = (byPlatform[s.platform] || 0) + 1;
+  assert.equal(byPlatform.aghost, 38, "every aghost site is unread and must stay in the queue");
+  assert.ok(!("bushel" in byPlatform), "bushel is bushel-probe's, not this sweep's");
   for (const s of got) {
     assert.ok(SWEEPABLE.includes(s.platform));
     assert.ok(/^https?:\/\//.test(s.board), `${s.site} has no board URL`);

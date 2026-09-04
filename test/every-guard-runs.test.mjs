@@ -31,9 +31,21 @@ const testFiles = readdirSync(join(ROOT, "test"))
 /* What `npm test` covers, read from package.json rather than assumed — the glob
    is the thing that changes, and assuming it is how this gap opened. */
 const npmTest = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).scripts.test;
+/* A FILE IS COVERED BY A GLOB THAT ACTUALLY RUNS IT — AND THERE ARE TWO.
+ *
+ * npm test globs test/*.test.mjs; .github/workflows/test.yml globs
+ * test/*.test.py in a loop that fails when it matches nothing. This only
+ * counted the first, so test/zip-shards.test.py — which that loop runs on
+ * every push — was reported as never run. A guard that cries orphan over a
+ * file a workflow does run teaches people to ignore it, which is the one thing
+ * this file cannot afford.
+ *
+ * Neither glob is taken on trust: the two tests below require a workflow to
+ * actually invoke each of them. */
 const globbed = (f) => {
   const m = npmTest.match(/test\/\*\.test\.(\w+)/);
-  return !!m && f.endsWith(`.test.${m[1]}`);
+  if (m && f.endsWith(`.test.${m[1]}`)) return true;
+  return f.endsWith(".test.py") && /test\/\*\.test\.py/.test(workflowText);
 };
 
 /* COMMENTS ARE NOT COVERAGE.

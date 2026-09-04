@@ -48,28 +48,46 @@ const miles = (a, b) => {
   return Math.hypot(dx, dy);
 };
 
-const index = rd("data/index.json");
 const places = rd("geocodes/places.json");
+
+/* THE MANIFESTS, NOT THE PUBLISHED INDEX.
+ *
+ * This read data/index.json — the index the POLLER writes, listing sources
+ * that have actually produced a board. On 2026-09-04 that was 216 files while
+ * sources/ held 731, and four manifests carrying state:null were invisible to
+ * this script for no better reason than that their boards had not answered
+ * yet: auroracooperative-superioreast, auroracooperative-futuresmarkets,
+ * chsbigsky-havre, chsprimeland-chsprimeland. test/fill-states.test.mjs named
+ * all four and went red when the index shrank, which is what a guard is for.
+ *
+ * A source with no state is exactly the source least likely to be polling, so
+ * keying the work off what polled selects against the cases that need it. The
+ * manifest is what carries `state` and the manifest is what this writes; read
+ * the manifests. */
+const SOURCES = join(ROOT, "sources");
+const manifests = readdirSync(SOURCES).filter((f) => f.endsWith(".json"))
+  .map((f) => ({ id: f.slice(0, -5), ...JSON.parse(readFileSync(join(SOURCES, f), "utf8")) }))
+  .sort((a, b) => a.id.localeCompare(b.id));
 
 /* ---- the labelled reference set ---------------------------------------- */
 const ref = [];
 const push = (lat, lon, st) => {
   if (typeof lat === "number" && typeof lon === "number" && st) ref.push({ lat, lon, st });
 };
-for (const s of index.sources) push(s.lat, s.lon, s.usState);
+for (const s of manifests) push(s.lat, s.lon, s.state);
 for (const v of Object.values(places.registry ?? {})) push(v.lat, v.lon, v.state);
 for (const v of Object.values(places.known ?? {})) push(v.lat, v.lon, v.state);
 
 /* ---- operator siblings -------------------------------------------------- */
 const sibStates = new Map();
-for (const s of index.sources) {
+for (const s of manifests) {
   const op = s.id.split("-")[0];
   if (!sibStates.has(op)) sibStates.set(op, new Set());
-  if (s.usState) sibStates.get(op).add(s.usState);
+  if (s.state) sibStates.get(op).add(s.state);
 }
 
 const rows = [];
-for (const s of index.sources.filter((x) => !x.usState)) {
+for (const s of manifests.filter((x) => !x.state)) {
   let state = null, why = null;
 
   if (typeof s.lat === "number" && typeof s.lon === "number") {
