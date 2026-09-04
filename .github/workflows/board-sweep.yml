@@ -1,0 +1,111 @@
+# EVERY PLATFORM WE CAN ALREADY READ, POINTED AT EVERY SITE WE ALREADY KNOW.
+#
+# Measured 2026-09-04 from data/platforms.json, which discover has been filling
+# for three weeks:
+#
+#     platform          sites   read     unread
+#     aghost               38      1         38
+#     cashbidssingle       34      1         32
+#     bushel               40     24         40
+#     dtn-cs               34     20         34
+#     graindesk            32     27         28
+#
+# aghost and cashbidssingle have a working adapter, a board URL recorded for
+# every site, and ONE SOURCE READ BETWEEN THEM. Nothing was missing but a
+# script that walks the list. 172 sites are unread across the five.
+#
+# NOT AGRICHARTS. It has its own sweep, which knows about mobile boards,
+# cashgrid boards and the seven quote pages they need. Two writers on one
+# artefact has bitten this repository three times.
+#
+# DRY RUN IS THE DEFAULT. It prints every site it asked, every board it read,
+# every manifest it would write and every location it had to skip for want of a
+# town, and writes nothing until the box is ticked.
+#
+# IT NEVER OVERWRITES A MANIFEST, and it never writes a SECOND file for an
+# elevator already read under another name — Big River's board is
+# bigriverbids.com, so this would call its Boyceville location
+# `bigriverbids-boyceville` while the manifest that has read that elevator
+# since day one is called `boyceville`. The identity is the elevator, not the
+# file name.
+
+name: board sweep
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Actually write the manifests and commit. Leave OFF for a dry run that only prints the plan."
+        type: boolean
+        default: false
+      platform:
+        description: "One platform only: aghost, cashbidssingle, bushel, dtn-cs or graindesk. Blank asks all five."
+        required: false
+        default: ""
+      limit:
+        description: "How many sites to ask this run. Blank asks all of them."
+        required: false
+        default: ""
+      start:
+        description: "Skip this many sites first, for running the list in batches"
+        required: false
+        default: ""
+      only:
+        description: "Comma-separated substrings — ask only sites whose URL contains one. For trying a single co-op."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: board-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # It writes source manifests; it does not get to run untested.
+      - name: Test the guards
+        run: node --test test/board-sweep.test.mjs test/sources.test.mjs
+
+      - name: Sweep
+        # Inputs go through env, never into the command line — a co-op's URL
+        # typed by a human is not a shell fragment.
+        env:
+          WRITE: ${{ inputs.write }}
+          PLATFORM: ${{ inputs.platform }}
+          LIMIT: ${{ inputs.limit }}
+          START: ${{ inputs.start }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ "$WRITE" = "true" ]; then ARGS="$ARGS --write"; fi
+          if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
+          if [ -n "$START" ]; then ARGS="$ARGS --start $START"; fi
+          if [ -n "$PLATFORM" ]; then ARGS="$ARGS --platform $PLATFORM"; fi
+          if [ -n "$ONLY" ]; then node scripts/board-sweep.mjs $ARGS --only "$ONLY";
+          else node scripts/board-sweep.mjs $ARGS; fi
+
+      # A manifest that does not load is worse than no manifest: it is dropped
+      # silently and the elevator simply is not there.
+      - name: Every manifest still loads
+        if: ${{ inputs.write }}
+        run: node --test test/sources.test.mjs test/manifest.test.mjs
+
+      - name: Commit what it wrote
+        if: ${{ always() && inputs.write }}
+        run: |
+          git add -A sources/ data/gaps/ || true
+          if git diff --cached --quiet; then
+            echo "no new manifests; nothing to commit"
+          else
+            bash scripts/commit-and-push.sh "bids: sources written by the board sweep"
+          fi
