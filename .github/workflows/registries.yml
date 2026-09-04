@@ -97,8 +97,12 @@ jobs:
       # is a pure-python wheel; if it were missing the run would degrade to
       # "this source needs pypdf" rather than losing the state, but there is no
       # reason to make it degrade.
-      - name: Install the PDF reader
-        run: pip install --quiet pypdf
+      # TEXAS PUBLISHES A LEGACY .xls, which openpyxl cannot open and xlrd
+      # can. Both are pure-python wheels. A reader that is missing degrades to
+      # "this source needs xlrd" and loses the state, so it is installed rather
+      # than hoped for — the same reasoning that put pypdf here.
+      - name: Install the PDF and spreadsheet readers
+        run: pip install --quiet pypdf xlrd
 
       # ══════════════════════════════════════════════════════════════════
       #  THE GUARDS RUN BEFORE THE FETCH, NOT AFTER
