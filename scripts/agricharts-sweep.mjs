@@ -44,6 +44,8 @@ import { fileURLToPath } from "node:url";
 import { join, dirname, isAbsolute } from "node:path";
 import { parseBoard, extract, mergeQuotes, quoteUrls, VERIFIED_BY, cellText }
   from "../lib/adapters/agricharts.mjs";
+import { extract as extractCashgrid } from "../lib/adapters/agricharts-cashgrid.mjs";
+import { VERIFIED_BY as CASHGRID_VERIFIED_BY } from "../lib/adapters/agricharts-cashgrid.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { urlsFrom } from "./agricharts-probe.mjs";
 
@@ -190,8 +192,17 @@ export function verdictFor(r) {
   if ((r.bytes ?? 0) < 400) return { board: false, why: `200 but only ${r.bytes}B` };
   const prices = /cash\s*price/i.test(r.body);
   const table = /<table class="cashprices"/.test(r.body);
+  /* THE CASHGRID BOARD IS A BOARD. It writes its prices from JavaScript rather
+     than printing them, so it has no cashprices table and used to fall through
+     to "PRICES BUT NOT THE TABLE WE KNOW" -- which is what got 47 of them
+     captured. They are read now; a page that calls writeBidCell is one of
+     them. The count is checked because the FUNCTION DEFINITION also contains
+     the string, so a page with the machinery and no bids matches once. */
+  const cells = (r.body.match(/writeBidCell\(/g) || []).length;
   if (table && prices) return { board: true, why: `200, cashprices table` };
   if (table) return { board: true, why: `200, cashprices table (no "cash price" text)` };
+  if (cells > 1) return { board: true, why: `200, cashgrid (${cells - 1} price cell(s))` };
+  if (cells === 1) return { board: false, why: `200, cashgrid machinery but NO PRICE CELLS` };
   if (prices) return { board: false, why: `200, PRICES BUT NOT THE TABLE WE KNOW` };
   return { board: false, why: `200 but no cash prices (${r.bytes}B)` };
 }
@@ -209,7 +220,9 @@ export function rank(why) {
 export function kindOf(why) {
   /* Only ever called on sites with NO board, but a function that answers
      confidently out of context is a trap for whoever calls it next. */
-  if (/cashprices table/.test(why)) return "served the board (this is not a no-board verdict)";
+  if (/cashprices table|cashgrid \(/.test(why)) return "served the board (this is not a no-board verdict)";
+  if (/cashgrid machinery but NO PRICE CELLS/.test(why))
+    return "served the cashgrid page with no bids on it";
   if (/PRICES BUT NOT THE TABLE/.test(why)) return "served prices in a table we cannot parse yet";
   if (/^HTTP 403/.test(why)) return "answered 403 — a header question, not a missing board";
   if (/^HTTP 404/.test(why)) return "answered 404 — live site, wrong path";
@@ -229,6 +242,23 @@ export function operatorFrom(html) {
   if (!t) return null;
   let s = cellText(t).replace(/^cash\s*prices\s*[-–—:]\s*/i, "");
   s = s.replace(/\s*[-–—]\s*mobile(\s*site)?$/i, "").replace(/\s+mobile\s*site$/i, "");
+  /* THE CASHGRID BOARDS TITLE THEMSELVES THE OTHER WAY ROUND. The mobile
+     board is "Cash Prices - Legacy Farmers Cooperative mobile site"; the
+     cashgrid is "AgMark LLC. - Cash Bids". Left alone, the operator name
+     handed to joinDirectory() was "AgMark LLC. - Cash Bids", which matches
+     nothing in Barchart's directory and would have sent all 47 boards to the
+     unmatched list looking like a directory problem. */
+  /* Stripped REPEATEDLY, because two of the 47 stack it: Farmward's title is
+     "Farmward Cooperative Cash Bid JSI - Cash Bids" and Leiters' is
+     "Leiters Grain Cash Bid JSI site - Cash Bids" -- an internal template name
+     leaked into the <title>. One pass leaves "Farmward Cooperative Cash Bid
+     JSI", which matches nothing in the directory. The list is boilerplate only;
+     nothing here is an operator's actual name. */
+  for (let i = 0; i < 4; i++) {
+    const before = s;
+    s = s.replace(/\s*[-–—:]?\s*(?:cash\s*bids?|jsi|site|mobile)\s*$/i, "").trim();
+    if (s === before) break;
+  }
   s = s.trim();
   return s && !/^cash\s*prices$/i.test(s) ? s : null;
 }
@@ -252,7 +282,38 @@ export function operatorSlug(mobileUrl) {
   return slug(h) || null;
 }
 
-/* WHERE THE BYTES GO WHEN A BOARD IS THERE AND WE CANNOT READ IT.
+/* ONE PLATFORM, TWO DOCUMENTS, AND THE SWEEP MUST NOT CARE WHICH.
+ *
+ * AgriCharts serves a MOBILE board at <sub>.mobile.agricharts.com and a
+ * CASHGRID at /markets/cashgrid.php. They are different documents with
+ * different parsers, and measured 2026-09-03 the second is the common one: of
+ * 61 uncovered operators, 2 had a mobile board and 47 had a cashgrid.
+ *
+ * The kind is decided by WHICH ADAPTER READS IT, not by the URL. Two of the 47
+ * cashgrid captures are not cashgrid boards at all -- faasfeed serves the
+ * MOBILE table at its cashgrid address -- so a URL-shaped guess would have
+ * handed that page to the wrong parser and called the refusal a broken board.
+ *
+ * Mobile is tried first because it is the shape with 84 sources behind it.
+ */
+export const BOARD_KINDS = [
+  { kind: "mobile", platform: "agricharts", read: extract, stamp: VERIFIED_BY },
+  { kind: "cashgrid", platform: "agricharts-cashgrid", read: extractCashgrid,
+    stamp: CASHGRID_VERIFIED_BY },
+];
+
+export function readBoard(html, url, contracts) {
+  const tried = [];
+  for (const k of BOARD_KINDS) {
+    try {
+      const rows = k.read(html, url, { contracts });
+      if (rows.length) return { ...k, rows, tried };
+    } catch (e) { tried.push(`${k.kind}: ${String(e.message).slice(0, 160)}`); }
+  }
+  return { kind: null, tried };
+}
+
+/* WHERE THE BYTES GO WHEN A BOARD IS THERE AND WE CANNOT READ IT./* WHERE THE BYTES GO WHEN A BOARD IS THERE AND WE CANNOT READ IT.
  *
  * Run 91611899805 asked 61 operators for both shapes and came back:
  *
@@ -320,30 +381,45 @@ export const PUBLIC_NOTE = "Their publicly posted cash board, read from the mobi
   + "futures price at all, so none is republished; the futures quote is used only to check that "
   + "the two columns were read correctly.";
 
-export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, runId }) {
+export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, runId,
+                              kind = "mobile" }) {
   const bands = { corn: [2.0, 12.0], soybean: [6.0, 32.0], wheat: [3.0, 20.0] };
   if ([...loc.commodities].some((c) => /waxy/i.test(c))) bands.waxy = [2.0, 12.0];
   const m = {
     id, operator, location: dir.branch, state: dir.state,
-    platform: "agricharts", url, locationId: loc.locationId,
-    identityAlternative: VERIFIED_BY,
+    platform: kind === "cashgrid" ? "agricharts-cashgrid" : "agricharts",
+    url, locationId: loc.locationId,
+    identityAlternative: kind === "cashgrid" ? CASHGRID_VERIFIED_BY : VERIFIED_BY,
     bands,
     cadence: "grain-day", provenance: "scraped", enabled: true,
     note: `WRITTEN BY scripts/agricharts-sweep.mjs${runId ? ` (run ${runId})` : ""} from their own `
-      + `mobile board at ${url}. locationId ${loc.locationId} is the l= parameter on this `
+      + `${kind === "cashgrid" ? "cashgrid" : "mobile"} board at ${url}. locationId `
+      + `${loc.locationId} is the l= parameter on this `
       + `location's own chart links, which every row of every AgriCharts board carries; it is NOT `
       + `the section heading, which is a display name and can be re-typed. At the time of writing `
       + `this location showed ${loc.rows} row(s) in ${[...loc.commodities].join(", ")}.\n\n`
-      + `identityAlternative: this board publishes cash, basis and a futures CHANGE and no futures `
-      + `price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source `
-      + `unless it names what it publishes on instead AND every row carries that stamp from the `
-      + `adapter. The board was read and both of the adapter's checks passed before this file was `
-      + `written: every location on it implies the same futures for one commodity and one delivery `
-      + `code, and every row sits within 5c of a real quoted CBOT contract. futuresPriceCents `
-      + `publishes as null, because there is no quote to republish.\n\n`
-      + `Company, branch, town, state, ZIP and phone are copied verbatim from `
-      + `data/known-elevators.json. Website is the "Visit Our Main Website" link on their own `
-      + `mobile board.`,
+      + (kind === "cashgrid"
+        ? `identityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it `
+          + `is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. `
+          + `We do the same arithmetic from the same quote pages, which means cash - basis = `
+          + `futures is true by construction here and would be checking our own subtraction `
+          + `against itself. lib/board.mjs refuses such a source unless it names what it publishes `
+          + `on instead AND every row carries that stamp. The checks that CAN fail all passed `
+          + `before this file was written: the named contract is one our quote pages price, its `
+          + `root agrees with the board's own commodity heading, and every delivery code appears `
+          + `in its own table's column headers.`
+        : `identityAlternative: this board publishes cash, basis and a futures CHANGE and no `
+          + `futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses `
+          + `such a source unless it names what it publishes on instead AND every row carries that `
+          + `stamp from the adapter. The board was read and both of the adapter's checks passed `
+          + `before this file was written: every location on it implies the same futures for one `
+          + `commodity and one delivery code, and every row sits within 5c of a real quoted CBOT `
+          + `contract. futuresPriceCents publishes as null, because there is no quote to `
+          + `republish.`)
+      + `\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from `
+      + `data/known-elevators.json. Website is `
+      + (kind === "cashgrid" ? `the site the sweep was pointed at.` 
+                             : `the "Visit Our Main Website" link on their own mobile board.`),
     publicNote: PUBLIC_NOTE,
     address: null,
     zip: dir.zip ?? null,
@@ -373,7 +449,8 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
  * hundred diffs. Given a board's bytes it returns exactly what would be
  * written, what would be left alone, and what could not be given a town.
  */
-export function planBoard({ html, url, site, rows, known, byZip, existingIds, runId = null }) {
+export function planBoard({ html, url, site, rows, known, byZip, existingIds, runId = null,
+                            kind = "mobile" }) {
   const operator = operatorFrom(html);
   const website = websiteFrom(html, site);
   const op = operatorSlug(url);
@@ -403,7 +480,8 @@ export function planBoard({ html, url, site, rows, known, byZip, existingIds, ru
        of this and reviewed, or edited by somebody who looked at the yard. A
        sweep must not walk over either, and "already there" is not a failure. */
     if (seen.has(id)) { skip.push({ id, why: "a manifest already exists" }); continue; }
-    const m = manifestFor({ id, operator, website, url, loc, dir, zipCoord: byZip.get(dir.zip), runId });
+    const m = manifestFor({ id, operator, website, url, loc, dir,
+                           zipCoord: byZip.get(dir.zip), runId, kind });
     const bad = validateSource(m, new Set());
     if (bad.length) { skip.push({ id, why: bad.join("; ") }); continue; }
     seen.add(id);
@@ -607,20 +685,25 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     }
 
     /* THE BOARD HAS TO PASS EXACTLY WHAT A POLL WOULD PUT IT THROUGH. A board
-       that cannot be read today produces no sources today. */
-    let rows;
-    try { rows = extract(hit.body, hit.url, { contracts }); }
-    catch (e) {
-      unreadable.push({ site: hit.url, why: `${e.constructor.name}: ${String(e.message).slice(0, 160)}` });
-      console.log(`── [${i + 1}/${hosts.length}] ${site}  BOARD REFUSED: ${String(e.message).slice(0, 120)}`);
+       that cannot be read today produces no sources today.
+       WHICH parser is decided by which one reads it, never by the URL: two of
+       the 47 cashgrid captures serve the MOBILE table at a cashgrid address. */
+    const board = readBoard(hit.body, hit.url, contracts);
+    if (!board.kind) {
+      const why = board.tried.join(" | ") || "no adapter recognised this page";
+      unreadable.push({ site: hit.url, why: why.slice(0, 220) });
+      console.log(`── [${i + 1}/${hosts.length}] ${site}  BOARD REFUSED`);
+      for (const t of board.tried) console.log(`     ${t}`);
       continue;
     }
+    const rows = board.rows;
 
     const plan = planBoard({ html: hit.body, url: hit.url, site, rows, known, byZip,
-                             existingIds: seenIds, runId });
+                             existingIds: seenIds, runId, kind: board.kind });
     if (!plan.ok) { unreadable.push({ site: hit.url, why: plan.why }); continue; }
-    found.push({ site, url: hit.url, operator: plan.operator, locations: plan.locations, rows: rows.length });
-    console.log(`── [${i + 1}/${hosts.length}] ${site}\n   ${plan.operator} — ${hit.url} — `
+    found.push({ site, url: hit.url, operator: plan.operator, locations: plan.locations,
+                 rows: rows.length, kind: board.kind });
+    console.log(`── [${i + 1}/${hosts.length}] ${site}\n   [${board.kind}] ${plan.operator} — ${hit.url} — `
       + `${plan.locations} location(s), ${rows.length} row(s)`);
 
     for (const u of plan.unmatched) {
@@ -643,7 +726,11 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   }
 
   console.log(`\n── SWEEP  ${hosts.length} site(s) asked`);
-  console.log(`   ${found.length} board(s) found  ·  ${noBoard.length} with no board  ·  ${unreadable.length} refused`);
+  const byKind = {};
+  for (const f of found) byKind[f.kind] = (byKind[f.kind] ?? 0) + 1;
+  const kinds = Object.entries(byKind).map(([k, v]) => `${v} ${k}`).join(", ");
+  console.log(`   ${found.length} board(s) found${kinds ? ` (${kinds})` : ""}  ·  `
+    + `${noBoard.length} with no board  ·  ${unreadable.length} refused`);
 
   /* THE TALLY THAT DECIDES THE NEXT PIECE OF WORK.
      59 sites saying "no board" is one number and four different problems. A

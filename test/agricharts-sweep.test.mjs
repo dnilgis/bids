@@ -20,7 +20,7 @@ import {
   mobileCandidates, operatorFrom, websiteFrom, operatorSlug, slug, joinDirectory,
   phoneOf, manifestFor, agrichartsHosts, parseArgs, hostsFor, main, resolveHostsPath,
   describeHostsError, IO, cashgridCandidates, boardCandidates, verdictFor, rank, kindOf,
-  captureName,
+  captureName, readBoard, BOARD_KINDS,
 } from "../scripts/agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { VERIFIED_BY } from "../lib/adapters/agricharts.mjs";
@@ -796,4 +796,193 @@ test("a board we CAN parse is never captured — it is not evidence of a gap", a
   } finally { console.log = quiet; }
   assert.deepEqual(readdirSync(dir), [], "it parsed, or refused to parse — either way it is not a capture");
   rmSync(dir, { recursive: true, force: true });
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   ONE PLATFORM, TWO DOCUMENTS
+
+   AgriCharts serves a MOBILE board and a CASHGRID, and the sweep only ever
+   knew the first. Measured 2026-09-03 across the repo's own fixtures: 21 read
+   as mobile, 45 as cashgrid. The 45 carry 506 locations — more elevators than
+   this repository currently reads at all.
+   ──────────────────────────────────────────────────────────────────────── */
+import { VERIFIED_BY as CASHGRID_STAMP } from "../lib/adapters/agricharts-cashgrid.mjs";
+
+const QUOTES = CONTRACTS;
+const fix = (f) => readFileSync(join(ROOT, "fixtures", f), "utf8");
+const cashgrids = () => readdirSync(join(ROOT, "fixtures"))
+  .filter((f) => /^agricharts-cashgrid-/.test(f)).sort();
+
+test("the operator's name is not '- Cash Bids'", () => {
+  /* The mobile board titles itself "Cash Prices - X mobile site"; the cashgrid
+     titles itself "X - Cash Bids". Left alone, the name handed to
+     joinDirectory() was "AgMark LLC. - Cash Bids", which matches nothing in
+     Barchart's directory — all 47 boards would have gone to the unmatched list
+     looking like a directory problem. */
+  assert.equal(operatorFrom("<title>AgMark LLC.  - Cash Bids</title>"), "AgMark LLC.");
+  assert.equal(operatorFrom("<title>Agtegra - Cash Bids</title>"), "Agtegra");
+  /* Two of the 47 stack it — an internal template name in the <title>. */
+  assert.equal(operatorFrom("<title>Farmward Cooperative Cash Bid JSI - Cash Bids</title>"),
+               "Farmward Cooperative");
+  assert.equal(operatorFrom("<title>Leiters Grain Cash Bid JSI site - Cash Bids</title>"),
+               "Leiters Grain");
+});
+
+test("the mobile titles are untouched by that", () => {
+  assert.equal(operatorFrom(fix("agricharts-legacyfarmers.html")), "Legacy Farmers Cooperative");
+  assert.equal(operatorFrom(fix("agricharts-agplusinc.html")), "Ag Plus, Inc");
+  assert.equal(operatorFrom(fix("agricharts-balkgrain.html")), "Balk Grain and Trucking, Inc.");
+});
+
+test("every cashgrid capture yields a usable operator name", () => {
+  const bad = cashgrids().filter((f) => {
+    const o = operatorFrom(fix(f));
+    return o && /cash\s*bid|jsi\b/i.test(o);
+  });
+  assert.deepEqual(bad, [], `these still carry boilerplate: ${bad.join(", ")}`);
+});
+
+test("which parser reads a board is decided by the board, never by the URL", () => {
+  /* faasfeed serves the MOBILE cashprices table at its /markets/cashgrid.php
+     address. A URL-shaped guess hands that page to the wrong parser and calls
+     the refusal a broken board. */
+  const faas = readBoard(fix("agricharts-cashgrid-faasfeed.html"),
+                         "https://faasfeed.agricharts.com/markets/cashgrid.php", QUOTES);
+  assert.equal(faas.kind, "mobile", "read by its shape, not its address");
+  const hull = readBoard(fix("agricharts-cashgrid-hullfeed.html"), "https://x/", QUOTES);
+  assert.equal(hull.kind, "cashgrid");
+  assert.ok(hull.rows.length > 0);
+});
+
+test("readBoard says what each parser said when neither reads it", () => {
+  const r = readBoard("<html>nothing here at all</html>", "https://x/", QUOTES);
+  assert.equal(r.kind, null);
+  assert.equal(r.tried.length, 2, "both were tried and both said why");
+  assert.ok(r.tried.some((t) => /^mobile:/.test(t)));
+  assert.ok(r.tried.some((t) => /^cashgrid:/.test(t)));
+});
+
+test("every fixture in the repository is read by one of the two, or refused by both", () => {
+  const by = { mobile: 0, cashgrid: 0, refused: [] };
+  for (const f of readdirSync(join(ROOT, "fixtures")).filter((x) => /^agricharts-(?!quotes)/.test(x))) {
+    const r = readBoard(fix(f), "https://x/", QUOTES);
+    if (r.kind) by[r.kind]++; else by.refused.push(f);
+  }
+  assert.ok(by.cashgrid >= 45, `only ${by.cashgrid} cashgrid boards`);
+  assert.ok(by.mobile >= 21, `only ${by.mobile} mobile boards`);
+  /* The refusals are named, not counted. Butterfield and Westco publish no
+     basis at all; Heartland's cashgrid page has no board on it. */
+  assert.deepEqual(by.refused.sort(), [
+    "agricharts-butterfieldgrain.html",
+    "agricharts-cashgrid-heartlandcoop.html",
+    "agricharts-westco.html",
+  ].sort());
+});
+
+test("verdictFor knows a cashgrid board is a board", () => {
+  const page = (n) => ({ ok: true, status: 200, bytes: 9000,
+    body: "function writeBidCell(basis){}" + "writeBidCell(-1,false,0,false,56,'c=1&l=2&d=U26',false);".repeat(n) });
+  assert.equal(verdictFor(page(3)).board, true);
+  assert.match(verdictFor(page(3)).why, /cashgrid \(3 price cell/);
+  /* THE DEFINITION CONTAINS THE STRING TOO. A page carrying the machinery and
+     no bids matches once and is not a board. */
+  assert.equal(verdictFor(page(0)).board, false);
+  assert.match(verdictFor(page(0)).why, /machinery but NO PRICE CELLS/);
+  assert.match(kindOf(verdictFor(page(0)).why), /no bids on it/);
+  assert.match(kindOf(verdictFor(page(3)).why), /served the board/);
+});
+
+test("a cashgrid manifest says cashgrid, and carries the cashgrid stamp", () => {
+  const loc = { locationId: "77", label: "Somewhere", rows: 4, commodities: new Set(["Corn"]) };
+  const dir = { branch: "SOMEWHERE", city: "Somewhere", state: "IA", zip: "50001", phone: null };
+  const m = manifestFor({ id: "x-somewhere", operator: "X Co", website: "https://x.com/",
+                          url: "https://x.agricharts.com/markets/cashgrid.php",
+                          loc, dir, zipCoord: null, kind: "cashgrid" });
+  assert.equal(m.platform, "agricharts-cashgrid");
+  assert.equal(m.identityAlternative, CASHGRID_STAMP);
+  assert.match(m.note, /cashgrid board at/);
+  assert.match(m.note, /true by construction/);
+  assert.doesNotMatch(m.note, /futures CHANGE and no futures/, "that is the mobile board's story");
+  assert.doesNotMatch(m.note, /Visit Our Main Website/, "the cashgrid has no such link");
+});
+
+test("a mobile manifest is exactly what it was", () => {
+  const loc = { locationId: "77", label: "Somewhere", rows: 4, commodities: new Set(["Corn"]) };
+  const dir = { branch: "SOMEWHERE", city: "Somewhere", state: "IA", zip: "50001", phone: null };
+  const m = manifestFor({ id: "x-somewhere", operator: "X Co", website: "https://x.com/",
+                          url: "https://x.mobile.agricharts.com/cash/prices.php",
+                          loc, dir, zipCoord: null });
+  assert.equal(m.platform, "agricharts", "the default is still mobile");
+  assert.match(m.note, /mobile board at/);
+  assert.match(m.note, /futures CHANGE and no futures/);
+  assert.match(m.note, /Visit Our Main Website/);
+});
+
+test("the manifests a cashgrid board plans all validate", () => {
+  const known = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
+  const byZip = new Map(JSON.parse(readFileSync(join(ROOT, "geocodes/zip-candidates.json"), "utf8"))
+    .zips.map((z) => [z.zip, z]));
+  const url = "https://farmerswin.agricharts.com/markets/cashgrid.php";
+  const html = fix("agricharts-cashgrid-farmerswin.html");
+  const board = readBoard(html, url, QUOTES);
+  assert.equal(board.kind, "cashgrid");
+  const plan = planBoard({ html, url, site: "https://farmerswin.com/", rows: board.rows,
+                           known, byZip, existingIds: new Set(), kind: "cashgrid" });
+  assert.ok(plan.ok, plan.why);
+  assert.equal(plan.operator, "Farmers Win Cooperative");
+  assert.ok(plan.write.length >= 19, `only ${plan.write.length} manifests planned`);
+  for (const w of plan.write) {
+    assert.equal(w.json.platform, "agricharts-cashgrid");
+    assert.equal(validateSource(w.json, new Set()).length, 0,
+                 `${w.id}: ${validateSource(w.json, new Set()).join("; ")}`);
+    assert.ok(w.json.location && w.json.state && w.json.zip, `${w.id} has no town`);
+  }
+});
+
+test("the whole capture set plans 253 manifests, and the count is checked not eyeballed", () => {
+  /* THE NUMBER THIS WORK IS FOR. Recomputed here rather than remembered: if a
+     capture, the directory or the join changes, this says so instead of the
+     README quietly going stale. */
+  const known = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
+  const byZip = new Map(JSON.parse(readFileSync(join(ROOT, "geocodes/zip-candidates.json"), "utf8"))
+    .zips.map((z) => [z.zip, z]));
+  const seen = new Set(readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
+    .map((f) => f.slice(0, -5)));
+  let write = 0, unmatched = 0;
+  for (const f of cashgrids()) {
+    const slugName = f.slice("agricharts-cashgrid-".length, -".html".length);
+    const url = `https://${slugName}.agricharts.com/markets/cashgrid.php`;
+    const html = fix(f);
+    const board = readBoard(html, url, QUOTES);
+    if (!board.kind) continue;
+    const plan = planBoard({ html, url, site: `https://${slugName}.com/`, rows: board.rows,
+                             known, byZip, existingIds: seen, kind: board.kind });
+    if (!plan.ok) continue;
+    for (const w of plan.write) seen.add(w.id);
+    write += plan.write.length; unmatched += plan.unmatched.length;
+  }
+  assert.ok(write >= 250, `only ${write} manifests would be written`);
+  /* The unmatched are a QUEUE, not a rounding error: real elevators posting
+     real prices that data/known-elevators.json cannot give a town to. */
+  assert.ok(unmatched > 0, "every location matching would be surprising, not good news");
+});
+
+test("no two boards plan the same id", () => {
+  /* A generated id is an identity. Two boards deriving the same one silently
+     overwrite each other's elevator. */
+  const known = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
+  const byZip = new Map();
+  const seen = new Set();
+  const ids = [];
+  for (const f of cashgrids()) {
+    const slugName = f.slice("agricharts-cashgrid-".length, -".html".length);
+    const url = `https://${slugName}.agricharts.com/markets/cashgrid.php`;
+    const board = readBoard(fix(f), url, QUOTES);
+    if (!board.kind) continue;
+    const plan = planBoard({ html: fix(f), url, site: `https://${slugName}.com/`, rows: board.rows,
+                             known, byZip, existingIds: seen, kind: board.kind });
+    if (!plan.ok) continue;
+    for (const w of plan.write) { ids.push(w.id); seen.add(w.id); }
+  }
+  assert.equal(new Set(ids).size, ids.length, "duplicate ids across boards");
 });

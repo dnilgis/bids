@@ -620,3 +620,74 @@ test("describe says enough to diagnose without a second run", () => {
   assert.match(describe(""), /^0 bytes$/);
   assert.equal(COLUMNS.length, 5);
 });
+
+/* ────────────────────────────────────────────────────────────────────────
+   THREE MARKUP ASSUMPTIONS, ALL OF THEM TOO NARROW BY ONE BOARD
+
+   FAAS Feed & Grain publishes a plain cashprices table with its prices in the
+   HTML, and this adapter refused it three times over:
+
+     1. class="cashprices table table-striped table-condensed" — the table
+        regex anchored on the closing quote, so the class LIST did not match.
+        268 tables in fixtures/ are class="cashprices"; 2 are the list form.
+     2. <th> header cells — the cell regex matched only <td>, so the header
+        row could not be found and the board was refused for "does not carry
+        the columns this adapter reads" while printing those exact columns
+        back in its own error message.
+     3. unclassed price rows — BODY_ROW wants class="odd"/"even", which 69 of
+        the 70 captured boards use.
+
+   Each widening was measured against every mobile fixture before and after:
+   no board changed by a single row.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("the class attribute is a list, and cashprices is a word in it", () => {
+  const t = (cls) => `<table class="${cls}"><tr class="section"><td>Yard</td></tr>`
+    + `<tr><th>Commodity</th><th>Delivery</th><th>Basis</th><th>Cash Price</th><th>Futures Chg</th></tr>`
+    + `<tr class="odd"><td><a href="chart.php?c=1&l=9&d=U26">Corn</a></td><td>09/01/2026</td>`
+    + `<td>-68</td><td>$4.73</td><td>-2-6</td></tr></table>`;
+  for (const cls of ["cashprices", "cashprices table table-striped table-condensed",
+                     "table cashprices"]) {
+    const rows = parseBoard(t(cls), "u");
+    assert.equal(rows.length, 1, `class="${cls}" was not recognised`);
+  }
+  /* ...and a word that merely contains it is not it. */
+  assert.throws(() => parseBoard(t("notcashpricesatall"), "u"));
+});
+
+test("a header row of <th> is still a header row", () => {
+  const html = read("agricharts-cashgrid-faasfeed.html");
+  const rows = parseBoard(html, "u");
+  assert.equal(rows.length, 8);
+  assert.deepEqual([...new Set(rows.map((r) => r.location))].sort(),
+                   ["North English", "Webster/Keswick"]);
+});
+
+test("an unclassed price row is admitted only when it fits the header exactly", () => {
+  /* THE ASYMMETRY IS DELIBERATE. A classed row with the wrong cell count still
+     refuses the board — it announced itself as a price row and is malformed.
+     An unclassed row announced nothing, and a spacer or an announcement banner
+     must not refuse a board that is otherwise fine. */
+  const head = `<tr><th>Commodity</th><th>Delivery</th><th>Basis</th><th>Cash Price</th><th>Futures Chg</th></tr>`;
+  const price = `<tr><td><a href="chart.php?c=1&l=9&d=U26">Corn</a></td><td>09/01/2026</td>`
+    + `<td>-68</td><td>$4.73</td><td>-2-6</td></tr>`;
+  const banner = `<tr><td colspan="5">Office closed Monday</td></tr>`;
+  const rows = parseBoard(`<table class="cashprices">${head}${banner}${price}</table>`, "u");
+  assert.equal(rows.length, 1, "the banner is skipped, the price is read");
+
+  /* A CLASSED row with four cells still throws. */
+  assert.throws(() => parseBoard(
+    `<table class="cashprices">${head}<tr class="odd"><td>Corn</td><td>x</td><td>y</td><td>z</td></tr></table>`, "u"),
+    /has 4 cell\(s\), not/);
+});
+
+test("the classed rows win when a board has both", () => {
+  /* Every board that classes its rows keeps exactly the rows it had; the loose
+     path is a fallback and never an addition. */
+  const head = `<tr><th>Commodity</th><th>Delivery</th><th>Basis</th><th>Cash Price</th><th>Futures Chg</th></tr>`;
+  const classed = `<tr class="odd"><td><a href="chart.php?c=1&l=9&d=U26">Corn</a></td><td>09/01/2026</td><td>-68</td><td>$4.73</td><td>-2-6</td></tr>`;
+  const loose = `<tr><td><a href="chart.php?c=1&l=8&d=U26">Corn</a></td><td>09/01/2026</td><td>-70</td><td>$4.71</td><td>-2-6</td></tr>`;
+  const rows = parseBoard(`<table class="cashprices">${head}${classed}${loose}</table>`, "u");
+  assert.equal(rows.length, 1, "the unclassed row must not be added to a classed board");
+  assert.equal(rows[0].locationId, "9");
+});
