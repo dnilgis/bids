@@ -67,6 +67,7 @@ import { join, dirname } from "node:path";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
+import { normaliseLabel } from "../lib/place.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DATA = join(ROOT, "data");
@@ -343,8 +344,16 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
       + `this repository already reads elsewhere; nothing about the parsing is new here. At the `
       + `time of writing this location showed ${loc.rows} row(s) in `
       + `${[...loc.commodities].join(", ")}.\n\n`
-      + `Operator, branch, town, state, ZIP and phone are copied verbatim from `
-      + `data/known-elevators.json. The operator name was read from the board's own title.`,
+      + `THE OPERATOR NAME was read from the board's own title.\n\n`
+      + `HOW THIS PLACE WAS PLACED: ${dir.placedBy || "a directory row for this operator"}.`
+      + (dir.clean && dir.clean.town && dir.clean.town !== loc.label
+          ? ` The board writes this location as "${loc.label}"; the operator's own name, the `
+            + `cash-bid boilerplate and the state code were peeled off it by `
+            + `normaliseLabel() in lib/place.mjs, leaving "${dir.clean.town}"`
+            + `${dir.clean.state ? ` in ${dir.clean.state}` : ""}. Nothing was added to it.`
+          : "")
+      + `\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published `
+      + `address before anything depends on the distance.`,
     publicNote: "Their publicly posted cash board.",
     address: null,
     zip: dir.zip ?? null,
@@ -414,6 +423,65 @@ export function wideDirectory(directory) {
   return out;
 }
 
+/* A TOWN AND A STATE, BOTH READ OFF THE BOARD.
+ *
+ * joinDirectory leans on the operator name, and that cannot help a merchant:
+ * Scoular's 36 yards are in twelve states and every directory files them under
+ * the local name, not "ScoularView". Run 91852779678 read all 36 and placed
+ * none.
+ *
+ * What their board DOES give is "Big Springs, NE" — a town and a state, both
+ * written by the operator. That is not a guess and it is not a lookup; it is
+ * the same class of evidence as the price in the next column. So the directory
+ * stops being the gate and becomes the enrichment:
+ *
+ *   1. the directory row for this operator at this label   (branch names win)
+ *   2. the directory row for this operator at the peeled town
+ *   3. ANY directory row for that town in that state — for the ZIP and the
+ *      coordinate, not to identify the elevator, because the elevator is
+ *      Scoular's and no directory has it. Eleven rows for Fremont, Nebraska
+ *      are eleven neighbours of the same yard; they agree about where Fremont
+ *      is, which is all that is being asked. The ZIP is taken only when they
+ *      all agree, and left null when they do not.
+ *   4. the board's own town and state, with no directory row at all. ZIP null,
+ *      coordinate null — build_geocodes.py places it from the ZIP table by
+ *      town and state later, and records that it did.
+ *
+ * A STATE IS REQUIRED AND IS NEVER INFERRED. There are Bridgeports in half the
+ * states in the union. Where the board writes no state, this refuses; the
+ * label goes on the worklist with the town it peeled to, so a person can
+ * finish it in one look instead of starting from a location id. Rule 1. */
+export function townInState(known, town, state) {
+  if (!town || !state) return null;
+  const t = slug(town), st = String(state).toUpperCase();
+  const hits = known.filter((k) => String(k.state || "").toUpperCase() === st
+    && (slug(k.city) === t || slug(k.branch) === t));
+  if (!hits.length) return null;
+  const zips = [...new Set(hits.map((h) => h.zip).filter(Boolean))];
+  return { facility: hits[0].facility, branch: hits[0].city || town, city: hits[0].city || town,
+           state: st, zip: zips.length === 1 ? zips[0] : null, phone: null,
+           placedBy: `${hits.length} directory row(s) for ${hits[0].city || town}, ${st}`
+             + (zips.length === 1 ? ` agreeing on ZIP ${zips[0]}` : "; they disagree on the ZIP, so none is taken") };
+}
+
+export function placeFromBoard(known, operator, label, { soleLocation = false } = {}) {
+  const clean = normaliseLabel(label, operator);
+  const direct = joinDirectory(known, operator, label, { soleLocation });
+  if (direct) return { ...direct, placedBy: "the directory row for this operator at this label", clean };
+  if (clean.town) {
+    const byTown = joinDirectory(known, operator, clean.town, { soleLocation });
+    if (byTown) return { ...byTown, placedBy: `the directory row for this operator at "${clean.town}"`, clean };
+    const inState = townInState(known, clean.town, clean.state);
+    if (inState) return { ...inState, clean };
+    if (clean.state)
+      return { facility: operator, branch: clean.town, city: clean.town, state: clean.state,
+               zip: null, phone: null, clean,
+               placedBy: `the board's own label — it writes "${clean.town}, ${clean.state}" and no `
+                 + `directory carries this operator there. No ZIP and no coordinate are taken from anywhere.` };
+  }
+  return null;
+}
+
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
                            have = new Set(), runId = null }) {
   const operator = operatorNameFrom(html);
@@ -433,10 +501,27 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
   const write = [], skip = [], unmatched = [];
   const seen = new Set(existingIds);
   for (const loc of byLoc.values()) {
-    const dir = joinDirectory(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
+    /* THE LABEL IS NOT THE TOWN, AND ON A MERCHANT'S BOARD IT NEVER IS.
+     *
+     * Run 91852779678 read 36 Scoular locations across twelve states — "Big
+     * Springs, NE", "Scoular Goodland", "Grainton Cash Bids" — and placed
+     * none, because joinDirectory was handed the label verbatim and no
+     * directory has a town called "Scoular Goodland". normaliseLabel() peels
+     * the operator's name, the boilerplate and the state code off, and refuses
+     * with a reason when what is left is an initialism, another buyer's name,
+     * or nothing but the company again.
+     *
+     * THE LABEL IS STILL TRIED FIRST. "AVG Barnesville" is not a town, and it
+     * IS the branch name Barchart records for that elevator — a directory hit
+     * on the raw label is better evidence than a peeled guess, so the peel is
+     * the fallback, not the replacement. */
+    const dir = placeFromBoard(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
+    const clean = dir?.clean ?? normaliseLabel(loc.label, operator);
     if (!dir || !dir.state || !dir.branch) {
       unmatched.push({ operator, label: loc.label ?? "(unnamed)", locationId: loc.locationId,
                        rows: loc.rows, url, platform,
+                       town: clean.town ?? "", state: clean.state ?? "",
+                       why: clean.why ?? "no directory row for this operator at this town",
                        commodities: [...loc.commodities].join(" ") });
       continue;
     }
@@ -448,7 +533,7 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
       continue;
     }
     const m = manifestFor({ id, platform, operator, website: site, url, loc, dir,
-                            zipCoord: byZip.get(dir.zip), runId });
+                            zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId });
     const bad = validateSource(m, new Set());
     if (bad.length) { skip.push({ id, why: bad.join("; ") }); continue; }
     seen.add(id);
@@ -639,13 +724,16 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   if (unmatched.length) {
     mkdirSync(join(DATA, "gaps"), { recursive: true });
     const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = ["operator,label,locationId,rows,commodities,platform,board"]
-      .concat(unmatched.map((u) => [u.operator, u.label, u.locationId, u.rows, u.commodities, u.platform, u.url].map(esc).join(",")))
+    const csv = ["operator,label,town,state,why,locationId,rows,commodities,platform,board"]
+      .concat(unmatched.map((u) => [u.operator, u.label, u.town, u.state, u.why, u.locationId,
+                                    u.rows, u.commodities, u.platform, u.url].map(esc).join(",")))
       .join("\n") + "\n";
     if (cfg.write) writeFileSync(join(DATA, "gaps", "board-sweep-unplaced.csv"), csv);
     console.log(`\n── ${unmatched.length} LOCATION(S) POSTING REAL PRICES WITH NO TOWN WE CAN NAME`);
     for (const u of unmatched.slice(0, 25))
-      console.log(`   ${String(u.operator).padEnd(30)} ${String(u.label).padEnd(22)} ${u.rows} row(s)  ${u.platform}`);
+      console.log(`   ${String(u.operator).slice(0, 28).padEnd(30)} ${String(u.label).slice(0, 22).padEnd(24)}`
+        + `${String(u.rows).padStart(3)} row(s)  ${u.town ? `${u.town}${u.state ? ", " + u.state : ""} — ` : ""}`
+        + `${String(u.why || "").slice(0, 70)}`);
     if (unmatched.length > 25) console.log(`   … and ${unmatched.length - 25} more`);
     console.log(`   ${cfg.write ? "written to" : "would be written to"} data/gaps/board-sweep-unplaced.csv`);
   }

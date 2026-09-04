@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
          NOT_SWEEPABLE, boardCandidates, linkedBoards, navEvidence, readHostsOf, readKeysOf,
-         siteKeyOf, WANTS_JSON, wideDirectory }
+         siteKeyOf, WANTS_JSON, wideDirectory, townInState, placeFromBoard }
   from "../scripts/board-sweep.mjs";
 import { joinDirectory } from "../scripts/agricharts-sweep.mjs";
 import { extractListBids, locationHeading } from "../lib/parse.mjs";
@@ -545,4 +545,155 @@ test("main() actually asks BOTH directories — the wiring, not the rule", () =>
   /* A directory.json that will not parse must not take the sweep down with
      it: the Barchart set alone is still a directory. */
   assert.match(body, /catch \{ wide = \[\]; \}/);
+});
+
+/* ── a town and a state, both read off the board ───────────────────────── */
+
+test("a merchant's label peels to a town, and the operator's own name comes off first", async () => {
+  /* Run 91852779678 read 36 Scoular locations across twelve states — real
+     prices, 194 rows — and placed NONE, because joinDirectory was handed the
+     label verbatim and no directory has a town called "Scoular Goodland".
+     Every case below is a label that run actually returned. */
+  const { normaliseLabel } = await import("../lib/place.mjs");
+  const S = "ScoularView";
+  const cases = [
+    ["Big Springs, NE", "Big Springs", "NE"],
+    ["Scoular Goodland", "Goodland", null],
+    ["Scoular-Downs", "Downs", null],
+    ["Scoular - Butte, MT", "Butte", "MT"],
+    ["Grainton Cash Bids", "Grainton", null],
+    ["Scoular Julesburg Cash Bids", "Julesburg", null],
+    ["Minneapolis, KS", "Minneapolis", "KS"],
+  ];
+  for (const [raw, town, st] of cases) {
+    const got = normaliseLabel(raw, S);
+    assert.equal(got.town, town, raw);
+    assert.equal(got.state, st, raw);
+  }
+  /* TWO LETTERS AFTER A COMMA ARE NOT AUTOMATICALLY A STATE. Dropping the
+     US_STATES check changes none of the cases above, which is exactly how a
+     wrong state gets published: "Wilson, Jr" would file a bid in New Jersey
+     and "Grain Co, Ll" in nowhere. The list is what makes the comma safe. */
+  for (const raw of ["Wilson, Jr", "Hartley, Sr", "Grain Co, Ll", "Elevator, Xx"]) {
+    assert.equal(normaliseLabel(raw, S).state, null, raw);
+  }
+  assert.equal(normaliseLabel("Springfield, Il", S).state, "IL", "case is not identity");
+  assert.equal(normaliseLabel("Dover, de", S).state, "DE");
+});
+
+test("THE ORDER IS THE POINT: strip the operator, then ask if it is a destination", async () => {
+  /* destinationReason() flags "Scoular Goodland" as a destination, and on
+     anybody else's board it would be right. On Scoular's board it is Scoular's
+     yard at Goodland. Ask about the REMAINDER, not the label — otherwise a
+     merchant can never publish its own elevators. And AGP and Bunge are still
+     refused, because they are not Scoular. */
+  const { normaliseLabel, destinationReason } = await import("../lib/place.mjs");
+  assert.ok(destinationReason("Scoular Goodland"), "the raw label does read as a destination");
+  assert.equal(normaliseLabel("Scoular Goodland", "ScoularView").town, "Goodland");
+  for (const raw of ["AGP - Manning", "Bunge - Council Bluffs"]) {
+    const got = normaliseLabel(raw, "ScoularView");
+    assert.equal(got.town, null, raw);
+    assert.match(got.why, /destination, not a town/);
+  }
+});
+
+test("a co-op named after its town keeps its town", async () => {
+  /* The operator-remainder check refuses "One Earth Energy Cash Bids" on One
+     Earth Energy's board — a company with its first word peeled off, dressed
+     up as a town. It must NOT refuse "Berthold" on Berthold Farmers' board:
+     that is the town of Berthold, North Dakota, and the manifest written for
+     it on run 91852779678 is correct. A label the board wrote whole stands;
+     only a fragment this function manufactured has to prove itself. */
+  const { normaliseLabel } = await import("../lib/place.mjs");
+  assert.equal(normaliseLabel("Berthold", "Berthold Farmers").town, "Berthold");
+  assert.equal(normaliseLabel("Eldridge", "Country Grain Cooperative").town, "Eldridge");
+  assert.equal(normaliseLabel("Voltaire", "Dakota Midland Grain").town, "Voltaire");
+  const one = normaliseLabel("One Earth Energy Cash Bids", "One Earth Energy");
+  assert.equal(one.town, null);
+  assert.match(one.why, /the operator's own name/);
+});
+
+test("our own placeholder never round-trips into a town", async () => {
+  /* extractListBids() writes "location 2451" when a board names nothing. If
+     that reached a directory it would put a place called Location 2451 on a
+     map, sourced from nothing but our own fallback string. */
+  const { normaliseLabel } = await import("../lib/place.mjs");
+  for (const raw of ["location 2451", "location unknown", "Location 3559"]) {
+    const got = normaliseLabel(raw, "Adell Cooperative");
+    assert.equal(got.town, null, raw);
+    assert.match(got.why, /this repository's own placeholder/);
+  }
+});
+
+test("an initialism is not a town", async () => {
+  const { normaliseLabel } = await import("../lib/place.mjs");
+  for (const [raw, op] of [["NWGG", "Northwest Grain Growers"], ["PGG", "Pomeroy Grain"],
+                           ["FGC Cash Bids", "Farmers Grain Company of Roseville"]]) {
+    const got = normaliseLabel(raw, op);
+    assert.equal(got.town, null, raw);
+    assert.match(got.why, /initialism/);
+  }
+});
+
+test("a town in a state places from any neighbour, but a state is never inferred", () => {
+  const known = [
+    { facility: "Aaa Coop", branch: "Fremont", city: "Fremont", state: "NE", zip: "68025" },
+    { facility: "Bbb Grain", branch: "Fremont East", city: "Fremont", state: "NE", zip: "68025" },
+    { facility: "Ccc Ag", branch: "Fremont", city: "Fremont", state: "OH", zip: "43420" },
+  ];
+  /* ELEVEN ROWS FOR FREMONT, NEBRASKA ARE ELEVEN NEIGHBOURS OF THE SAME YARD.
+     They are not being asked which elevator this is — Scoular's is in none of
+     them — they are being asked where Fremont is, and they agree. */
+  const hit = townInState(known, "Fremont", "NE");
+  assert.equal(hit.city, "Fremont");
+  assert.equal(hit.state, "NE");
+  assert.equal(hit.zip, "68025", "both Nebraska rows agree, so the ZIP is taken");
+  /* A DISAGREEMENT TAKES NO ZIP rather than the first one. */
+  const split = townInState([...known,
+    { facility: "Ddd", branch: "Fremont", city: "Fremont", state: "NE", zip: "68026" }],
+    "Fremont", "NE");
+  assert.equal(split.zip, null);
+  /* AND THE STATE IS LOAD-BEARING. There are Fremonts in a dozen states. */
+  assert.equal(townInState(known, "Fremont", null), null);
+  assert.equal(townInState(known, "Fremont", "IA"), null);
+  assert.equal(townInState(known, "Fremont", "OH").zip, "43420");
+});
+
+test("the board's own town and state place a yard no directory carries", () => {
+  /* Scoular is in no directory this repository holds under any name the
+     operator join would find, and "Big Springs, NE" is nonetheless a town and
+     a state, written by the operator, on the same page as the price. The
+     directory is enrichment here, not a gate. */
+  const empty = [];
+  const p = placeFromBoard(empty, "ScoularView", "Big Springs, NE");
+  assert.equal(p.city, "Big Springs");
+  assert.equal(p.state, "NE");
+  assert.equal(p.zip, null, "no ZIP is taken from anywhere");
+  assert.match(p.placedBy, /the board's own label/);
+  /* NO STATE, NO PLACE. A town alone repeats across a dozen states, so a
+     label that peels to a bare town and nothing else is refused and goes on
+     the worklist with the town it peeled to. */
+  assert.equal(placeFromBoard(empty, "ScoularView", "Scoular Goodland"), null);
+  assert.equal(placeFromBoard(empty, "Adell Cooperative", "location 2451"), null);
+  /* A DIRECTORY ROW STILL WINS, and the branch name wins over the peel:
+     "AVG Barnesville" is not a town and IS what Barchart calls that elevator. */
+  const withBranch = [{ facility: "Agassiz Valley Grain", branch: "AVG Barnesville",
+                        city: "Barnesville", state: "MN", zip: "56514" }];
+  const b = placeFromBoard(withBranch, "Agassiz Valley Grain", "AVG Barnesville");
+  assert.equal(b.city, "Barnesville");
+  assert.match(b.placedBy, /at this label/);
+});
+
+test("every manifest records HOW its town was placed", () => {
+  /* A town that appears with no provenance is indistinguishable from one
+     somebody typed in — the same rule fill_states.mjs follows for states. */
+  const src = readFileSync(join(ROOT, "scripts/board-sweep.mjs"), "utf8");
+  const body = src.slice(src.indexOf("export function manifestFor"));
+  assert.match(body, /HOW THIS PLACE WAS PLACED/);
+  assert.match(body, /dir\.placedBy/);
+  assert.match(body, /normaliseLabel\(\) in lib\/place\.mjs/);
+  /* And the sweep must actually call it — the rule, then the wiring. */
+  const main = src.slice(src.indexOf("export async function main"));
+  assert.match(src, /placeFromBoard\(known, operator, loc\.label/);
+  assert.match(src, /import \{ normaliseLabel \} from "\.\.\/lib\/place\.mjs"/);
 });
