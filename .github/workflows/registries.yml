@@ -81,9 +81,17 @@ jobs:
       # So "nineteen more scrapers like Iowa's" is wrong before it starts. This
       # classifies every candidate — table, form, PDF, Tableau, a page offering
       # a CSV — so the next nineteen are designed against evidence.
+      #
+      # --keep BRINGS THE PAGES BACK. The 2026-09-04 survey said Texas serves
+      # an html table of 36 rows with no <th> at all, and Washington two PDFs
+      # of 713 KB and 383 KB. None of that is enough to write a reader — a
+      # reader needs the column order, the row shape, and the three rows that
+      # will break it. Four parser fixes that day were written from bytes the
+      # runner kept, and every one had first been guessed wrong from a summary.
+      # This is the only step that reaches these hosts; it is the one chance.
       - name: Survey what the other states publish
         continue-on-error: true
-        run: python scripts/survey_registries.py
+        run: python scripts/survey_registries.py --keep
 
       # Ten of the twenty-two states checked publish their list as a PDF. pypdf
       # is a pure-python wheel; if it were missing the run would degrade to
@@ -217,6 +225,7 @@ jobs:
           git add data/gaps 2>/dev/null || true
           git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
+          [ -d debug/registries/survey ] && git add -f debug/registries/survey || true
           git add geocodes/places.json data/directory.json 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
           bash scripts/commit-and-push.sh "registries: $n businesses, plus the state survey [skip ci]"
