@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+<title>Iowa Dept of Agriculture Licensing List</title>
+
+<!-- Required meta tags -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+
+<!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->
+<!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->
+<!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->
+
+<link rel="stylesheet" href="/css/idals.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/idals_theme.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/sticky_footer.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/licensing_lists/css/remove_num_arrows.css" crossorigin="anonymous">
+
+<!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->  
+
+</head>
+<body>
+
+<div class="header" style="width:100%;">
+
+	<nav class="d-flex d-inline justify-content-between navbar navbar-expand-lg navbar-light bg-light">
+		<a href="https://iowaagriculture.gov/" class="p-2 navbar-brand flex-fill logo-anchor"><img class="img-responsive logo" src="/images/logo_70px.png" alt="Iowa Department of Agriculture and Land Stewardship home"></a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="p-4 collapse navbar-collapse" id="navbarNavAltMarkup">
+			<div class="navbar-nav">
+				<a class="ml-auto nav-item nav-link text-dark" href="https://iowaagriculture.gov/administrative/licensed-businesses-ag-directories">Licensing List Home</a>
+			</div>
+		</div>
+
+	</nav>
+
+</div>
+
+
+<div class="container">
+	<!--<h4>Licensed Grain Dealers</h4>-->
+	<h1>Licensed Grain Dealers</h1>
+
+	<form method="post" id="filterForm" action="/licensing_lists/graindealers/";>
+		<div class="row">
+			<div class="col-md-4">
+				<label for="name" class="form-label">Name</label>
+				<input type="text" name="name" class="form-control" id="name">
+			</div>
+			<div class="col-md-4">
+				<label for="location" class="form-label">City</label>
+				<input type="text" name="location" class="form-control" id="location" value="">
+			</div>
+			<div class="col-md-4">
+
+				<label for="county" class="form-label">County</label>
+				<select id="county" name="county" class="form-control">
+					<option value="All">- Any -</option>
+										<option >Adams</option>
+										<option >Allamakee</option>
+										<option >Benton</option>
+										<option >Black Hawk</option>
+										<option >Bremer</option>
+										<option >Buchanan</option>
+										<option >Buena Vista</option>
+										<option >Butler</option>
+										<option >Calhoun</option>
+										<option >Carroll</option>
+										<option >Cass</option>
+										<option >Cedar</option>
+										<option >Cerro Gordo</option>
+										<option >Cherokee</option>
+										<option >Chickasaw</option>
+										<option >Clay</option>
+										<option >Clayton</option>
+										<option >Clinton</option>
+										<option >Crawford</option>
+										<option >Davis</option>
+										<option >Decatur</option>
+										<option >Delaware</option>
+										<option >Deleware</option>
+										<option >Des Moines</option>
+										<option >Dickinson</option>
+										<option >Douglas</option>
+										<option >Dubuque</option>
+										<option >Emmet</option>
+										<option >Fayette</option>
+										<option >Floyd</option>
+										<option >Fremont</option>
+										<option >Greene</option>
+										<option >Grundy</option>
+										<option >Hamilton</option>
+										<option >Hardin</option>
+										<option >Harrison</option>
+										<option >Henry</option>
+										<option >Howard</option>
+										<option >Humboldt</option>
+										<option >Ida</option>
+										<option >Iowa</option>
+										<option >Jackson</option>
+										<option >Jasper</option>
+										<option >Johnson</option>
+										<option >Jones</option>
+										<option >Keokuk</option>
+										<option >Kossuth</option>
+										<option >Lee</option>
+										<option >Linn</option>
+										<option >Louisa</option>
+										<option >Lyon</option>
+										<option >Mahaska</option>
+										<option >Marion</option>
+										<option >Marshall</option>
+										<option >Mitchell</option>
+										<option >Montgomery</option>
+										<option >Muscatine</option>
+										<option >O'Brien</option>
+										<option >out-of-state</option>
+										<option >Palo Alto</option>
+										<option >Plymouth</option>
+										<option >Pocahontas</option>
+										<option >Polk</option>
+										<option >Pottawattamie</option>
+										<option >Powshiek</option>
+										<option >Ringgold</option>
+										<option >Rock</option>
+										<option >Scott</option>
+										<option >Shelby</option>
+										<option >Sioux</option>
+										<option >Story</option>
+										<option >Tama</option>
+										<option >Union</option>
+										<option >Van Buren</option>
+										<option >Wapello</option>
+										<option >Washington</option>
+										<option >Wayne</option>
+										<option >Webster</option>
+										<option >Winnebago</option>
+										<option >Woodbury</option>
+										<option >Worth</option>
+										<option >Wright</option>
+									</select>
+				<input type="hidden" name="offset" id="offset">
+
+			</div>
+		</div>
+
+		<div class="row" style="margin: 8px;">
+			<div class="col-md-2">
+				<button id="filterBtn" type="submit" class="btn btn-outline-secondary" name="submit" value="filter">Filter</button>
+			</div>
+			<div class="col-md-2">
+				<a id="resetFilter" class="btn btn-outline-secondary d-none" href="/licensing_lists/graindealers/">Reset filter</a>
+			</div>
+			<div class="col-md-8">
+			</div>
+		</div>
+	</form>
+
+	<div class="table-responsive">
+		<table class="table">
+			<tr>
+				<th style="padding: 4px;">Name</th>
+				<th style="padding: 4px;">City</th>
+				<th style="padding: 4px;">County</th>
+				<th style="padding: 4px;">Phone</th>
+			</tr>
+					<tr>
+				<td>218 Grain, LLC</td>
+				<td>Crawfordsville</td>
+				<td>Washington</td>
+				<td>319-400-8384</td>
+			</tr>
+						<tr>
+				<td>21st Century Cooperative</td>
+				<td>Cumberland</td>
+				<td>Cass</td>
+				<td>712-774-5412</td>
+			</tr>
+						<tr>
+				<td>ADM Corn Processing</td>
+				<td>Cedar Rapids</td>
+				<td>Linn</td>
+				<td>217-972-2313</td>
+			</tr>
+						<tr>
+				<td>ADM Grain Company</td>
+				<td>Clinton</td>
+				<td>Clinton</td>
+				<td>563-242-5251</td>
+			</tr>
+						<tr>
+				<td>ADM Grain Company</td>
+				<td>Burlington</td>
+				<td>Des Moines</td>
+				<td>319-753-2858</td>
+			</tr>
+						<tr>
+				<td>ADM Processing</td>
+				<td>Des Moines</td>
+				<td>Polk</td>
+				<td>515-263-3280</td>
+			</tr>
+						<tr>
+				<td>Agri-Center of Henry County, Inc.</td>
+				<td>Mount Pleasant</td>
+				<td>Henry</td>
+				<td>319-385-2548</td>
+			</tr>
+						<tr>
+				<td>Agri-Way Partners, L.L.C.</td>
+				<td>Wayland</td>
+				<td>Henry</td>
+				<td>319-256-6000</td>
+			</tr>
+						<tr>
+				<td>Agriland FS, Inc.</td>
+				<td>Oskaloosa</td>
+				<td>Mahaska</td>
+				<td>712-542-2146</td>
+			</tr>
+						<tr>
+				<td>AgState</td>
+				<td>Albert City</td>
+				<td>Buena Vista</td>
+				<td>712-225-5400</td>
+			</tr>
+						<tr>
+				<td>All Star Trading Inc.</td>
+				<td>Schaumburg</td>
+				<td>out-of-state</td>
+				<td>847-375-8675</td>
+			</tr>
+						<tr>
+				<td>Amana Farms, Inc.</td>
+				<td>Homestead</td>
+				<td>Iowa</td>
+				<td>319-622-3791</td>
+			</tr>
+						<tr>
+				<td>Andover Grain & Fertilizer, Inc.</td>
+				<td>Andover</td>
+				<td>Clinton</td>
+				<td>563-682-7599</td>
+			</tr>
+						<tr>
+				<td>Archer Cooperative Grain Company</td>
+				<td>Archer</td>
+				<td>O'Brien</td>
+				<td>712-723-5233</td>
+			</tr>
+						<tr>
+				<td>Art's Milling Service, Inc.</td>
+				<td>Protivin</td>
+				<td>Howard</td>
+				<td>563-569-8386</td>
+			</tr>
+						<tr>
+				<td>Aspinwall Cooperative Co.</td>
+				<td>Aspinwall</td>
+				<td>Crawford</td>
+				<td>712-653-3441</td>
+			</tr>
+						<tr>
+				<td>Aurora Elevator, Inc.</td>
+				<td>Aurora</td>
+				<td>Buchanan</td>
+				<td>319-634-3330</td>
+			</tr>
+						<tr>
+				<td>Bartlett Grain Company, LLC</td>
+				<td>Hamburg</td>
+				<td>Fremont</td>
+				<td>712-382-1238</td>
+			</tr>
+						<tr>
+				<td>Bartlett Grain Company, LLC</td>
+				<td>Council Bluffs</td>
+				<td>Pottawattamie</td>
+				<td>712-322-3444</td>
+			</tr>
+						<tr>
+				<td>Bear River Milling, LLC</td>
+				<td>Hopkinton</td>
+				<td>Deleware</td>
+				<td>507-215-5582</td>
+			</tr>
+						<tr>
+				<td>Benton Grain Company, L.L.C.</td>
+				<td>Keystone</td>
+				<td>Benton</td>
+				<td>319-442-3231</td>
+			</tr>
+						<tr>
+				<td>Big River Resources West Burlington</td>
+				<td>West Burlington</td>
+				<td>Des Moines</td>
+				<td>319-753-1100</td>
+			</tr>
+						<tr>
+				<td>Big River United Energy, LLC</td>
+				<td>Dyersville</td>
+				<td>Delaware</td>
+				<td>319-753-1100</td>
+			</tr>
+						<tr>
+				<td>Bill Murray Grain Service Incorporated</td>
+				<td>Hopkinton</td>
+				<td>Delaware</td>
+				<td>563-926-2240</td>
+			</tr>
+						<tr>
+				<td>Breda Feed & Grain, Inc.</td>
+				<td>Breda</td>
+				<td>Carroll</td>
+				<td>712-673-2398</td>
+			</tr>
+					</table>
+	</div>
+
+	<p>
+						25 out of 250					<button id="next" class="btn btn-sm btn-outline-primary">Next ></button>
+				</p>
+</div>
+</body>
+
+<!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->
+
+</html>
