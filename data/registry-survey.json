@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T21:02:15Z",
+ "generated": "2026-09-04T21:25:19Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -64,7 +64,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 280164,
+   "bytes": 279741,
    "ua": "ours",
    "rows": 304,
    "headerCells": [
@@ -90,7 +90,7 @@
    "expected": "dealer/warehouse database",
    "confidence": "confirmed, 304 rows",
    "kept": "debug/registries/survey/mo-dealer-warehouse-database.html",
-   "keptBytes": 270527
+   "keptBytes": 270404
   },
   {
    "url": "https://psc.nebraska.gov/sites/default/files/doc/administration/RR-212/Mailing%20List%20GDGW,%20Interested%20Parties,%20&%20Insurance%20Carriers.pdf",
@@ -236,7 +236,7 @@
    "url": "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 65089,
+   "bytes": 65193,
    "ua": "ours",
    "rows": 36,
    "headerCells": [
@@ -267,7 +267,7 @@
    "expected": "grain warehouse programme",
    "confidence": "READ 2026-09-04: a programme page. Its 36 <tr> are FORMS, not warehouses \u2014 the survey's own row count called it a table and was wrong. The list is one link down",
    "kept": "debug/registries/survey/tx-grain-warehouse-programme.html",
-   "keptBytes": 53417
+   "keptBytes": 53521
   },
   {
    "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
@@ -338,7 +338,7 @@
    "url": "https://agri.idaho.gov/ag-inspections/warehouse-program/",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 129519,
+   "bytes": 129191,
    "ua": "ours",
    "rows": 7,
    "headerCells": [
@@ -369,7 +369,7 @@
    "expected": "warehouse programme",
    "confidence": "READ 2026-09-04: twelve data links, five of them fillable bond and application forms",
    "kept": "debug/registries/survey/id-warehouse-programme.html",
-   "keptBytes": 60751
+   "keptBytes": 60423
   },
   {
    "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
@@ -448,6 +448,177 @@
    "confidence": "search 2026-09-04, unopened",
    "kept": "debug/registries/survey/ok-licensing-and-permits.html",
    "keptBytes": 88856
+  },
+  {
+   "url": "http://wapp.kda.ks.gov/grain-warehouse/gw_public.pdf",
+   "status": 0,
+   "ua": "ours",
+   "error": "URLError: <urlopen error timed out>",
+   "state": "KS",
+   "expected": "KDA licensed warehouses, PDF",
+   "confidence": "from grainjournal.com 2026-09-04; a DIFFERENT HOST from the four that 403"
+  },
+  {
+   "url": "https://www.michigan.gov/documents/mdard/Licensed_Grain_Dealers_by_Facility_640332_7.pdf",
+   "status": 0,
+   "ua": "browser",
+   "error": "HTTPError: HTTP Error 403: Forbidden",
+   "state": "MI",
+   "expected": "licensed grain dealers by facility, PDF",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "http://www2.mda.state.mn.us/webapp/lis/default.jsp",
+   "status": 0,
+   "ua": "ours",
+   "error": "URLError: <urlopen error timed out>",
+   "state": "MN",
+   "expected": "MDA licence search",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "http://agr.georgia.gov/warehouse.aspx",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 114273,
+   "ua": "ours",
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "GA",
+   "expected": "state licensed warehouses",
+   "confidence": "from grainjournal.com 2026-09-04; unopened",
+   "kept": "debug/registries/survey/ga-state-licensed-warehouses.html",
+   "keptBytes": 109016
+  },
+  {
+   "url": "http://mda.maryland.gov/foodfeedquality/Pages/grain.aspx",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 51132,
+   "ua": "ours",
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [
+    "/foodfeedquality/Documents/grainletterofcredit.pdf",
+    "/Documents/grainbrochure2023.pdf",
+    "/Documents/2024%20GL%20APP.pdf",
+    "/foodfeedquality/Documents/financialreviewcert.pdf"
+   ],
+   "shape": "page offering a data file",
+   "state": "MD",
+   "expected": "grain licensing",
+   "confidence": "from grainjournal.com 2026-09-04; unopened",
+   "kept": "debug/registries/survey/md-grain-licensing.html",
+   "keptBytes": 37521
+  },
+  {
+   "url": "https://www.mdac.ms.gov/bureaus-departments/regulatory-services/grain-dealers-warehouses/",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "MS",
+   "expected": "grain dealers and warehouses",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "http://www.ldaf.state.la.us/consumers/commodities-commission/",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "LA",
+   "expected": "commodities commission",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "https://ag.colorado.gov/inspection-consumer-services/commodity-handler",
+   "status": 0,
+   "ua": "browser",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "CO",
+   "expected": "commodity handler programme",
+   "confidence": "from grainjournal.com 2026-09-04 (colorado.gov/pacific redirects); unopened"
+  },
+  {
+   "url": "https://mtplants.mt.gov/Licenses/External/ExternalLicenseSearch.aspx",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.\nThe last 30x error message was:\nFou",
+   "state": "MT",
+   "expected": "licence search",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "http://oda.state.or.us/dbs/licenses/search.lasso?&division=cid",
+   "status": 0,
+   "ua": "ours",
+   "error": "URLError: <urlopen error timed out>",
+   "state": "OR",
+   "expected": "ODA licence search",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "http://apps.ncagr.gov/LicenseSearch/Home/Search/015",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 502: Bad Gateway",
+   "state": "NC",
+   "expected": "licence search, grain dealers",
+   "confidence": "from grainjournal.com 2026-09-04; unopened"
+  },
+  {
+   "url": "https://agri.idaho.gov/main/about/about-isda/ag-inspections/warehouse-control-program/warehouses/",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "ID",
+   "expected": "warehouse control programme",
+   "confidence": "from grainjournal.com 2026-09-04; a different page from the one already surveyed"
+  },
+  {
+   "url": "https://agr.wa.gov/FP/Pubs/docs/gwaLicenseBook.pdf",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "WA",
+   "expected": "GWA licence book, canonical URL",
+   "confidence": "from grainjournal.com 2026-09-04; the cms.agr.wa.gov copy already fetched at 713 KB"
+  },
+  {
+   "url": "https://www2.illinois.gov/sites/agr/Consumers/GrainWarehouses/Pages/Licensed-Grain-Dealer-Warehouse-Look-up.aspx",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 116604,
+   "ua": "ours",
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "unclear",
+   "state": "IL",
+   "expected": "licensed dealer and warehouse look-up",
+   "confidence": "from grainjournal.com 2026-09-04; the older sharepoint spelling",
+   "kept": "debug/registries/survey/il-licensed-dealer-and-warehouse-look-up.html",
+   "keptBytes": 110737,
+   "redacted": 1
+  },
+  {
+   "url": "https://secure.in.gov/isda/2399.htm",
+   "status": 0,
+   "ua": "ours",
+   "error": "HTTPError: HTTP Error 404: Not Found",
+   "state": "IN",
+   "expected": "ISDA licensed warehouses",
+   "confidence": "from grainjournal.com 2026-09-04; Indiana is already scraped from a PDF"
+  },
+  {
+   "url": "http://www.grainscanada.gc.ca/licensee-licence/licensed-agreees-eng.htm",
+   "status": 0,
+   "ua": "ours",
+   "error": "URLError: <urlopen error timed out>",
+   "state": "CN",
+   "expected": "Canadian Grain Commission licensees",
+   "confidence": "from grainjournal.com 2026-09-04; out of scope for now, recorded so nobody re-finds it"
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
