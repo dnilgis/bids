@@ -136,6 +136,57 @@ check(re.search(r"run:\s*python scripts/survey_registries\.py[^\n]*--keep", WF),
 check("git add -f debug/registries/survey" in WF,
       "captured pages are added without -f and may be silently ignored")
 
+# ── a page we could not keep must never cost us the harvest ───────────────
+#
+# Run 91883116181 kept nineteen pages and GitHub refused the push: the Illinois
+# Department of Agriculture ships a Mapbox secret token in the markup of two of
+# its PUBLIC pages. Push protection cannot tell whose key it is, and it does not
+# have to. What was not acceptable is what went with those two files -- ONE
+# blocked path took down the whole commit, so that run's registry fetch, its
+# rebuilt directory and its survey JSON were lost too, under a log line reading
+# only "repository rule violations".
+steps = re.findall(r"^      - name: (.+)$", WF, re.M)
+try:
+    i_commit = next(i for i, n in enumerate(steps) if n.strip() == "Commit")
+    i_keep = next(i for i, n in enumerate(steps) if "survey's pages" in n)
+    check(i_keep > i_commit, "the captures are committed BEFORE the harvest is safe")
+except StopIteration:
+    fails.append("the two commit steps are no longer both present")
+
+keep_step = WF[WF.rfind("- name: Keep the survey's pages"):] if "Keep the survey's pages" in WF else ""
+check("continue-on-error: true" in keep_step,
+      "the capture commit can fail the job, which is how a blocked page loses a harvest")
+data_commit = WF[WF.find("- name: Commit"):WF.rfind("- name: Keep the survey's pages")]
+check("git reset -q -- debug/registries/survey" in data_commit,
+      "the data commit still stages the captures, so one blocked page takes it down")
+
+# ── script is not the document ────────────────────────────────────────────
+import importlib.util as _iu
+_s = _iu.spec_from_file_location("_srv2", ROOT / "scripts" / "survey_registries.py")
+_srv = _iu.module_from_spec(_s); _s.loader.exec_module(_srv)
+
+PAGE = (b'<html><head><script>var t="sk.eyJ1IjoiaWxsaW5vaXMiLCJhIjoiY2xhYmNkZWZnaGlqayJ9.AbCdEf";'
+        b'</script><style>.x{color:red}</style></head><body>'
+        b'<table><tr><th>Company</th><th>City</th></tr><tr><td>Acme</td><td>Peoria</td></tr></table>'
+        b'<a href="/list.pdf">Licensed warehouses</a>'
+        b'<div data-key="AIzaSyABCDEFGHIJKLMNOPQRSTUVWXYZ012345">map</div></body></html>')
+kept, redactions = _srv.scrub(PAGE, "text/html")
+text = kept.decode()
+check("sk.eyJ1" not in text, "a Mapbox token survived the scrub — this is the exact blocked case")
+check("AIzaSy" not in text, "a key written into a data- attribute survived the scrub")
+check(redactions >= 1, "the scrub did not record that it redacted anything")
+# THE DOCUMENT ITSELF IS UNTOUCHED. Everything this survey and the next parser
+# need is markup; everything that carries a credential is script.
+check("<th>Company</th>" in text and "Peoria" in text, "the scrub ate the table")
+check("/list.pdf" in text, "the scrub ate the data-file link the survey exists to find")
+check("script removed by survey_registries" in text,
+      "script was dropped with no note saying so — an empty capture would look like an empty page")
+# A PDF is not a script host and must come back byte-identical, or a licence
+# book stops being the document it was.
+pdf = b"%PDF-1.4 stream sk.eyJ1IjoiZXhhbXBsZSJ9.xxxxxxxxxxxxxxxxxxxxxxxxxx endstream"
+back, n = _srv.scrub(pdf, "application/pdf")
+check(back == pdf and n == 0, "a PDF was rewritten; a licence book must come back as itself")
+
 
 def measured():
     """Run the survey against a local server: does it keep the page, find a
@@ -145,7 +196,13 @@ def measured():
     that matter here are all things the source can look correct about and
     still not do."""
     import http.server, socketserver, threading, subprocess, tempfile, shutil, os, json
-    PAGE = (b'<html><body><table><tr><th>Company</th></tr><tr><td>A</td></tr></table>'
+    # THE PAGE THE SERVER SERVES CARRIES A KEY, because scrub() being correct
+    # says nothing about whether the capture path calls it. Bypassing it broke
+    # no test until this page did — the third time this repository has been
+    # bitten by testing a rule instead of the wiring.
+    PAGE = (b'<html><head><script>var t="sk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGFiY2RlZmdoIn0.QqWwEe";'
+            b'</script></head><body>'
+            b'<table><tr><th>Company</th></tr><tr><td>A</td></tr></table>'
             b'<a href="/lists/warehouses.pdf">Licensed warehouses</a></body></html>')
 
     class H(http.server.BaseHTTPRequestHandler):
@@ -181,8 +238,14 @@ def measured():
         check("ZZ" in got and "ZY" in got, "the survey did not reach the local server")
         if "ZZ" in got:
             check(got["ZZ"].get("kept"), "the page that answered was not kept")
-            check((ROOT / str(got["ZZ"].get("kept") or "x")).exists(),
-                  "the survey recorded a kept path that does not exist")
+            kept_path = ROOT / str(got["ZZ"].get("kept") or "x")
+            check(kept_path.exists(), "the survey recorded a kept path that does not exist")
+            if kept_path.exists():
+                body = kept_path.read_text(errors="replace")
+                check("sk.eyJ1" not in body,
+                      "THE CAPTURE PATH DID NOT SCRUB. A key on the page reached the file "
+                      "that gets committed — this is exactly what blocked run 91883116181.")
+                check("<th>Company</th>" in body, "the kept page lost the table it was kept for")
             check(any(l.endswith(".pdf") for l in got["ZZ"].get("dataLinks") or []),
                   "the PDF link on the page was not found")
         if "ZY" in got:

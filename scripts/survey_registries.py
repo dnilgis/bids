@@ -165,6 +165,55 @@ BROWSER_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like G
               "Chrome/124.0 Safari/537.36 agsist-bidreader (+https://agsist.com)")
 
 
+# OTHER PEOPLE'S SECRETS ARRIVE IN OTHER PEOPLE'S PAGES.
+#
+# Run 91883116181 kept 19 pages and GitHub refused the push: the Illinois
+# Department of Agriculture ships a MAPBOX SECRET ACCESS TOKEN in the markup of
+# two of its public pages. Push protection cannot tell whose key it is, and it
+# does not have to -- the key does not belong in this repository either way.
+#
+# The damage was not the two files. One blocked path took down the WHOLE
+# commit, so the registry fetch, the rebuilt directory and the survey JSON of
+# that run were all lost with them.
+#
+# Rule 3 has always said secrets never live in files. It turns out to apply to
+# secrets we did not create and did not want.
+#
+# SCRIPT IS NOT THE DOCUMENT. Everything this survey looks for -- tables, rows,
+# header cells, links to a data file -- is markup. Everything that carries a
+# credential is script, style or an inline event handler. So the capture keeps
+# the page and drops the code, which removes the whole class of problem rather
+# than pattern-matching for the keys we happen to have seen. A licence list has
+# never been rendered by the JavaScript we are throwing away; if one ever is,
+# it will show up as an empty capture and say so.
+SCRIPTY = re.compile(
+    r"<script\b[^>]*>[\s\S]*?</script\s*>|<style\b[^>]*>[\s\S]*?</style\s*>"
+    r"|<link\b[^>]*rel=[\"']preload[\"'][^>]*>",
+    re.I)
+# A last look for anything credential-shaped that survived, so a page that
+# writes a key into a data- attribute is caught too. Redacted, not dropped:
+# the next person needs to see that something was there.
+KEYISH = re.compile(
+    r"(sk\.[A-Za-z0-9._-]{20,}"                    # mapbox secret
+    r"|pk\.[A-Za-z0-9._-]{40,}"                    # mapbox public, long form
+    r"|AIza[0-9A-Za-z_-]{30,}"                     # google
+    r"|gh[pousr]_[A-Za-z0-9]{30,}"                 # github
+    r"|xox[baprs]-[A-Za-z0-9-]{20,}"               # slack
+    r"|AKIA[0-9A-Z]{16})")                         # aws key id
+
+
+def scrub(raw, ctype):
+    """Return the bytes to keep, and how many redactions were made."""
+    if "html" not in (ctype or "") and not raw[:200].lstrip().lower().startswith(b"<"):
+        return raw, 0                      # a PDF or a CSV is not a script host
+    text = raw.decode("utf-8", "replace")
+    text = SCRIPTY.sub("<!-- script removed by survey_registries.py: a licence "
+                       "list is markup, and script is where other people's API "
+                       "keys live -->", text)
+    text, n = KEYISH.subn("REDACTED-BY-SURVEY", text)
+    return text.encode("utf-8"), n
+
+
 def fetch(url, timeout, ua):
     req = urllib.request.Request(url, headers={"User-Agent": ua})
     with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -250,8 +299,12 @@ def main():
             name = "%s-%s%s" % (st.lower(),
                                 re.sub(r"[^a-z0-9]+", "-", what.lower()).strip("-")[:40], ext)
             try:
-                (PAGES / name).write_bytes(d.pop("_raw"))
+                body, redacted = scrub(d.pop("_raw"), d.get("contentType"))
+                (PAGES / name).write_bytes(body)
                 d["kept"] = "debug/registries/survey/%s" % name
+                d["keptBytes"] = len(body)
+                if redacted:
+                    d["redacted"] = redacted
             except Exception as ex:
                 d["keptError"] = str(ex)[:80]
         d.pop("_raw", None)
