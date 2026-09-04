@@ -135,8 +135,28 @@ SOURCES = [
     # by POST — turned out to be the EXCEPTION, not the rule. What states
     # actually publish, counted: ten PDFs, five one-page HTML tables, five
     # search forms with nothing to page through, two client-side dashboards
-    # that leak no data, one CSV. Kansas and Oklahoma publish no list at all,
-    # which was confirmed by looking rather than assumed from a 403.
+    # that leak no data, one CSV. Oklahoma publishes no list at all, which was
+    # confirmed by looking rather than assumed from a 403.
+    #
+    # KANSAS WAS RECORDED HERE AS PUBLISHING NOTHING, AND THAT IS WRONG.
+    #
+    # Four agriculture.ks.gov URLs have returned 403 to the runner on three
+    # separate days, with our own user-agent and with a browser string, and I
+    # took the 2026-08-28 note at its word and stopped looking.
+    #
+    # Then K-State's Arthur Capper Cooperative Center, in "Mapping Grain
+    # Locations in Kansas" (agmanager.info, read 2026-09-04), names its sources:
+    #
+    #     Kansas Department of Agriculture — "Grain Elevator Licenses" report
+    #     USDA — "United States Warehouse Act Licensed Warehouses" report
+    #
+    # Somebody is reading a KDA licence report. The same paper counts OVER 550
+    # co-operative grain locations in Kansas plus more than 250 non-co-op ones
+    # — against the 361 rows this repository holds for Kansas, all of them
+    # Barchart's. Kansas is the largest single hole on the map and it is not a
+    # dead end; it is a door we cannot open from this network.
+    #
+    # It needs a person with a browser, which is why it is not a row here yet.
     #
     # So the work was never "nineteen more scrapers like Iowa's". It is three
     # routes — table, csv, pdf — and a row per state.

@@ -47,34 +47,51 @@ assert cand, "CANDIDATES is not defined"
 CAND_STATES = sorted({s for s in re.findall(r"\(\"([A-Z]{2})\",", cand.group(1))} - {"US"})
 
 # ── the three buckets are disjoint ────────────────────────────────────────
+ALREADY_SCRAPED_BUT_STILL_PROBED = {"IA", "MO", "NE", "IL", "IN", "WA", "ID"}
 check(not (set(HARVESTED) & set(NEEDS)),
       "a state is both harvested and needing a URL: %s" % (set(HARVESTED) & set(NEEDS)))
 check(not (set(NEEDS) & set(CAND_STATES)),
       "a state has a candidate URL and is also listed as needing one: %s"
       % (set(NEEDS) & set(CAND_STATES)))
-check(not (set(HARVESTED) & set(CAND_STATES) - {"IA", "MO", "NE", "IL"}),
+check(not ((set(HARVESTED) & set(CAND_STATES)) - ALREADY_SCRAPED_BUT_STILL_PROBED),
       "a harvested state reappears as an unharvested candidate: %s"
-      % (set(HARVESTED) & set(CAND_STATES)))
+      % ((set(HARVESTED) & set(CAND_STATES)) - ALREADY_SCRAPED_BUT_STILL_PROBED))
 
-# ── and together they are the thirty ──────────────────────────────────────
-REGULATED = set(HARVESTED) | set(NEEDS) | set(CAND_STATES)
-check(len(REGULATED) == 30,
-      "the three buckets cover %d states, not the 30 that regulate grain "
-      "warehouses: %s" % (len(REGULATED), " ".join(sorted(REGULATED))))
-
-# ── the twenty that do not regulate must not appear as work ───────────────
-# Michigan, California, New York and Pennsylvania have real elevators and no
-# licence roll. Putting one of them on a registry worklist sends somebody to
-# look for a document that does not exist.
-UNREGULATED = set("AK AZ CA CT FL HI ME MD MA MI NV NH NJ NY NC PA RI UT VT VA".split())
-check(not (REGULATED & UNREGULATED),
-      "a state that does not regulate grain warehouses is on the worklist: %s"
-      % (REGULATED & UNREGULATED))
-check(len(UNREGULATED) == 20, "the unregulated list is %d, not 20" % len(UNREGULATED))
+# ── REGULATING AND PUBLISHING ARE DIFFERENT QUESTIONS ─────────────────────
+#
+# This asserted that the three buckets were EXACTLY the thirty states the
+# National Agricultural Law Center says regulate grain warehouses, and that no
+# state outside those thirty could appear. Then Grain Journal's index turned up
+# licence lists for MICHIGAN ("Licensed Grain Dealers by Facility", a PDF),
+# MARYLAND and NORTH CAROLINA — all three on the Law Center's "does not
+# regulate" side.
+#
+# Both things are true. That compilation answers whether a state has a grain
+# warehouse STATUTE; it says nothing about whether an agency publishes a list
+# of licensees, and several publish one anyway. I had been using one list as
+# the answer to both questions.
+#
+# So: the thirty regulated states must all still be accounted for, and any
+# state beyond them has to be there because somebody found a URL — never
+# because a name drifted into a list.
+REGULATED = set(
+    "AL AR CO DE GA ID IL IN IA KS KY LA MN MS MO MT NE NM ND OH OK OR SC SD "
+    "TN TX WA WV WI WY".split())
+check(len(REGULATED) == 30, "the regulated list is %d, not 30" % len(REGULATED))
+covered = set(HARVESTED) | set(NEEDS) | set(CAND_STATES)
+missing = REGULATED - covered
+check(not missing,
+      "%d regulated state(s) are in no bucket at all: %s" % (len(missing), " ".join(sorted(missing))))
 
 # ── every candidate carries a URL and how far it has been believed ────────
 rows = re.findall(r'\(\"([A-Z]{2})\",\s*\"([^\"]+)\",\s*\"([^\"]+)\",\s*\"([^\"]+)\"\)',
                   cand.group(1))
+extra = (covered - REGULATED) - {"US", "CN"}
+for st in sorted(extra):
+    urls = [u for s2, _, u, _ in rows if s2 == st]
+    check(urls, "%s is on the worklist, does not regulate grain warehouses, and has no URL — "
+                "a name has drifted into a list" % st)
+
 check(len(rows) >= 20, "only %d candidates parsed" % len(rows))
 for st, what, url, conf in rows:
     check(url.startswith("http"), "%s: %r is not a URL" % (st, url))
@@ -248,6 +265,27 @@ check("Commodity-Dealer-Licensees" in cand_urls,
       "Idaho's licensee list was found and then not written down as a candidate")
 check("ID-WA-Cooperative-Licensees" in cand_urls,
       "the Idaho/Washington co-operative list was found and then not written down")
+
+# ── the fourteen states Grain Journal's index handed over ──────────────────
+#
+# grainjournal.com/web-directory/facility-listings keeps a curated list of
+# "<State> State Licensed Warehouses" links, and it answered in one page most
+# of what a week of one-state-at-a-time searching had not. These are the ones
+# worth losing sleep over if they go missing.
+#
+# KANSAS ABOVE ALL. Four agriculture.ks.gov URLs 403 on three separate days
+# with both user-agents, and this repository wrote Kansas off as publishing
+# nothing. The list is a plain PDF on wapp.kda.ks.gov — a host nobody had
+# tried. K-State's own factsheet counts 550+ co-operative grain locations in
+# Kansas plus 250+ others, against the 361 Barchart rows we hold.
+check("wapp.kda.ks.gov" in cand_urls,
+      "the Kansas PDF is gone — it is the largest single hole on the map and it "
+      "took a month to find the host")
+check("Licensed_Grain_Dealers_by_Facility" in cand_urls,
+      "Michigan's by-facility list is gone")
+for host in ("agr.georgia.gov", "mda.maryland.gov", "mdac.ms.gov", "ldaf.state.la.us",
+             "mtplants.mt.gov", "apps.ncagr.gov", "mda.state.mn.us"):
+    check(host in cand_urls, "the candidate for %s is gone" % host)
 
 # ── a csv is the answer, not an "unclear" ─────────────────────────────────
 #

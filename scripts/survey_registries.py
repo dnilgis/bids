@@ -117,6 +117,52 @@ CANDIDATES = [
 
     ("OK", "licensing and permits", "https://ag.ok.gov/licensing-permits/", "search 2026-09-04, unopened"),
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  FOURTEEN STATES FROM ONE PAGE — grainjournal.com/web-directory/
+    #  facility-listings, sent by Sig on 2026-09-04.
+    # ══════════════════════════════════════════════════════════════════════
+    #
+    # Grain Journal keeps a curated index of "<State> State Licensed
+    # Warehouses" links. Every URL below is copied verbatim off that page. It
+    # answers, in one go, most of what a week of searching one state at a time
+    # did not — and it corrects two things this repository had written down as
+    # settled.
+    #
+    # KANSAS IS NOT A DEAD END, AND WE HAD THE WRONG HOST.
+    # Four agriculture.ks.gov URLs returned 403 on three separate days, with
+    # both user-agents, and the source table has said since 2026-08-28 that
+    # Kansas publishes nothing. Grain Journal points at a PLAIN PDF on a host
+    # nobody here had tried: wapp.kda.ks.gov. K-State's own "Mapping Grain
+    # Locations in Kansas" (agmanager.info, read 2026-09-04) cites the same
+    # thing — a KDA "Grain Elevator Licenses" report — and counts OVER 550
+    # co-operative grain locations plus more than 250 non-co-op ones, against
+    # the 361 Barchart rows this repository holds. Kansas is the largest single
+    # hole on the map.
+    #
+    # MICHIGAN PUBLISHES A LIST AND IS ON OUR "DOES NOT REGULATE" SIDE.
+    # The National Agricultural Law Center's compilation put Michigan among the
+    # twenty states that do not regulate grain warehouses. Michigan publishes
+    # "Licensed Grain Dealers BY FACILITY" as a PDF. Regulating and publishing
+    # are not the same question, and I had been treating one list as the answer
+    # to both.
+    ("KS", "KDA licensed warehouses, PDF", "http://wapp.kda.ks.gov/grain-warehouse/gw_public.pdf", "from grainjournal.com 2026-09-04; a DIFFERENT HOST from the four that 403"),
+    ("MI", "licensed grain dealers by facility, PDF", "https://www.michigan.gov/documents/mdard/Licensed_Grain_Dealers_by_Facility_640332_7.pdf", "from grainjournal.com 2026-09-04; unopened"),
+    ("MN", "MDA licence search", "http://www2.mda.state.mn.us/webapp/lis/default.jsp", "from grainjournal.com 2026-09-04; unopened"),
+    ("GA", "state licensed warehouses", "http://agr.georgia.gov/warehouse.aspx", "from grainjournal.com 2026-09-04; unopened"),
+    ("MD", "grain licensing", "http://mda.maryland.gov/foodfeedquality/Pages/grain.aspx", "from grainjournal.com 2026-09-04; unopened"),
+    ("MS", "grain dealers and warehouses", "https://www.mdac.ms.gov/bureaus-departments/regulatory-services/grain-dealers-warehouses/", "from grainjournal.com 2026-09-04; unopened"),
+    ("LA", "commodities commission", "http://www.ldaf.state.la.us/consumers/commodities-commission/", "from grainjournal.com 2026-09-04; unopened"),
+    ("CO", "commodity handler programme", "https://ag.colorado.gov/inspection-consumer-services/commodity-handler", "from grainjournal.com 2026-09-04 (colorado.gov/pacific redirects); unopened"),
+    ("MT", "licence search", "https://mtplants.mt.gov/Licenses/External/ExternalLicenseSearch.aspx", "from grainjournal.com 2026-09-04; unopened"),
+    ("OR", "ODA licence search", "http://oda.state.or.us/dbs/licenses/search.lasso?&division=cid", "from grainjournal.com 2026-09-04; unopened"),
+    ("NC", "licence search, grain dealers", "http://apps.ncagr.gov/LicenseSearch/Home/Search/015", "from grainjournal.com 2026-09-04; unopened"),
+    ("ID", "warehouse control programme", "https://agri.idaho.gov/main/about/about-isda/ag-inspections/warehouse-control-program/warehouses/", "from grainjournal.com 2026-09-04; a different page from the one already surveyed"),
+    ("WA", "GWA licence book, canonical URL", "https://agr.wa.gov/FP/Pubs/docs/gwaLicenseBook.pdf", "from grainjournal.com 2026-09-04; the cms.agr.wa.gov copy already fetched at 713 KB"),
+    ("IL", "licensed dealer and warehouse look-up", "https://www2.illinois.gov/sites/agr/Consumers/GrainWarehouses/Pages/Licensed-Grain-Dealer-Warehouse-Look-up.aspx", "from grainjournal.com 2026-09-04; the older sharepoint spelling"),
+    ("IN", "ISDA licensed warehouses", "https://secure.in.gov/isda/2399.htm", "from grainjournal.com 2026-09-04; Indiana is already scraped from a PDF"),
+    # Not a state, and worth knowing it exists: Canada licenses centrally.
+    ("CN", "Canadian Grain Commission licensees", "http://www.grainscanada.gc.ca/licensee-licence/licensed-agreees-eng.htm", "from grainjournal.com 2026-09-04; out of scope for now, recorded so nobody re-finds it"),
+
     # ---- the national list, which is a SUPPLEMENT and not the denominator --
     #
     # USWA licences are FEDERAL. The 2010 snapshot read on 2026-09-04 lists
@@ -160,7 +206,7 @@ CANDIDATES = [
 # located yet. NOT a list of guesses -- a list of searches somebody still owes.
 # Naming them is the point: a state missing from CANDIDATES because no URL was
 # found looks exactly like a state that does not exist.
-NEEDS_A_URL = ["AL", "CO", "DE", "GA", "KY", "LA", "MS", "NM", "SC", "TN", "WV", "WI", "WY"]
+NEEDS_A_URL = ["AL", "DE", "KY", "NM", "SC", "TN", "WV", "WI", "WY"]
 
 # Regulated states already harvested by scripts/fetch_registries.py.
 HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE"]
