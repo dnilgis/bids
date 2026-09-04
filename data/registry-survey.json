@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-03T12:05:01Z",
+ "generated": "2026-09-04T17:38:01Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -52,31 +52,10 @@
    "confidence": "confirmed, 102 rows, paginated"
   },
   {
-   "url": "https://apps.agr.illinois.gov/AEM/warehouselookup.php",
-   "status": 200,
-   "contentType": "text/html",
-   "bytes": 9955,
-   "rows": 7,
-   "headerCells": [],
-   "dataLinks": [],
-   "shape": "search form",
-   "state": "IL",
-   "expected": "lookup form",
-   "confidence": "confirmed a form, not a list"
-  },
-  {
-   "url": "https://agr.state.il.us/sharepoint/warehouselookup.php",
-   "status": 0,
-   "error": "URLError: <urlopen error timed out>",
-   "state": "IL",
-   "expected": "older lookup",
-   "confidence": "search result, robots refused a read"
-  },
-  {
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 279740,
+   "bytes": 279741,
    "rows": 304,
    "headerCells": [
     "Company Name",
@@ -95,23 +74,7 @@
    "shape": "html table",
    "state": "MO",
    "expected": "dealer/warehouse database",
-   "confidence": "search result, unopened"
-  },
-  {
-   "url": "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/licensing",
-   "status": 0,
-   "error": "HTTPError: HTTP Error 403: Forbidden",
-   "state": "KS",
-   "expected": "grain warehouse licensing",
-   "confidence": "search result, unopened"
-  },
-  {
-   "url": "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/resources",
-   "status": 0,
-   "error": "HTTPError: HTTP Error 403: Forbidden",
-   "state": "KS",
-   "expected": "grain warehouse resources",
-   "confidence": "search result, unopened"
+   "confidence": "confirmed, 304 rows"
   },
   {
    "url": "https://psc.nebraska.gov/sites/default/files/doc/administration/RR-212/Mailing%20List%20GDGW,%20Interested%20Parties,%20&%20Insurance%20Carriers.pdf",
@@ -121,7 +84,202 @@
    "shape": "pdf",
    "state": "NE",
    "expected": "PSC mailing list PDF",
-   "confidence": "search result: has ADDRESS columns"
+   "confidence": "confirmed: has ADDRESS columns"
+  },
+  {
+   "url": "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse",
+   "status": 0,
+   "error": "HTTPError: HTTP Error 403: Forbidden",
+   "state": "KS",
+   "expected": "grain warehouse programme",
+   "confidence": "search 2026-09-04; the licensing and resources pages both timed out on the last survey"
+  },
+  {
+   "url": "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/licensing",
+   "status": 0,
+   "error": "HTTPError: HTTP Error 403: Forbidden",
+   "state": "KS",
+   "expected": "grain warehouse licensing",
+   "confidence": "surveyed 2026-09-03, no answer"
+  },
+  {
+   "url": "https://www.agriculture.ks.gov/licenses/grain-warehouse-applications-and-licenses",
+   "status": 0,
+   "error": "HTTPError: HTTP Error 403: Forbidden",
+   "state": "KS",
+   "expected": "applications and licences",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/documents",
+   "status": 0,
+   "error": "HTTPError: HTTP Error 403: Forbidden",
+   "state": "KS",
+   "expected": "documents page",
+   "confidence": "search 2026-09-04, unopened \u2014 may link a list"
+  },
+  {
+   "url": "https://apps.agr.illinois.gov/AEM/warehouselookup.php",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 9955,
+   "rows": 7,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "IL",
+   "expected": "lookup form",
+   "confidence": "confirmed a FORM, not a list"
+  },
+  {
+   "url": "https://agr.illinois.gov/consumers/grainwarehouses/licensed-grain-dealer-warehouse-look-up.html",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 65684,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "unclear",
+   "state": "IL",
+   "expected": "dealer/warehouse look-up page",
+   "confidence": "search 2026-09-04, unopened \u2014 the page around the form"
+  },
+  {
+   "url": "https://agr.illinois.gov/consumers/grainwarehouses.html",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 79148,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "unclear",
+   "state": "IL",
+   "expected": "grain warehouses index",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://www.mda.state.mn.us/grain-licensing-0",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 111035,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "MN",
+   "expected": "grain licensing",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://www.mda.state.mn.us/warehouse-licensing",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 73470,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "MN",
+   "expected": "warehouse licensing",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 65193,
+   "rows": 36,
+   "headerCells": [
+    "Record type",
+    "Maintained",
+    "Maintenance Start Date"
+   ],
+   "dataLinks": [],
+   "shape": "html table",
+   "state": "TX",
+   "expected": "grain warehouse programme",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://cms.agr.wa.gov/WSDAKentico/Documents/GWA-License-Book-21-22.pdf",
+   "status": 200,
+   "contentType": "application/pdf",
+   "bytes": 712781,
+   "shape": "pdf",
+   "state": "WA",
+   "expected": "licence book PDF",
+   "confidence": "search 2026-09-04: titled PUBLIC GRAIN WAREHOUSES/DEALERS LICENSED WITH THE STATE OF WASHINGTON"
+  },
+  {
+   "url": "https://cms.agr.wa.gov/WSDAKentico/Documents/Grain-Warehouse-Audit-Grain-Dealers.pdf",
+   "status": 200,
+   "contentType": "application/pdf",
+   "bytes": 382903,
+   "shape": "pdf",
+   "state": "WA",
+   "expected": "warehouses and dealers PDF",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://apps.oregon.gov/SOS/LicenseDirectory/LicenseDetail/170",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 21522,
+   "rows": 4,
+   "headerCells": [
+    "License Fee",
+    "Description",
+    "Exemptions",
+    "Processing Time",
+    "Description"
+   ],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "OR",
+   "expected": "SOS licence directory, bonded grain warehouse",
+   "confidence": "search 2026-09-04: says 'Last updated 01/05/2026'"
+  },
+  {
+   "url": "https://agri.idaho.gov/ag-inspections/warehouse-program/",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 129191,
+   "rows": 7,
+   "headerCells": [
+    "Original License Fee",
+    "Renewal License Fee"
+   ],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "ID",
+   "expected": "warehouse programme",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://prod-agr.mt.gov/Topics/A-D/Commodity-Pages/Commodity-Warehouse-License",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 194751,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "MT",
+   "expected": "commodity warehouse licence",
+   "confidence": "search 2026-09-04, unopened"
+  },
+  {
+   "url": "https://ag.ok.gov/licensing-permits/",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 121242,
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "search form",
+   "state": "OK",
+   "expected": "licensing and permits",
+   "confidence": "search 2026-09-04, unopened"
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
@@ -134,7 +292,49 @@
    "shape": "tableau dashboard",
    "state": "US",
    "expected": "USDA WCMD dashboard",
-   "confidence": "national, Tableau, export unknown"
+   "confidence": "national, Tableau, export unknown; returned 200 and 0 rows on 2026-09-03"
+  },
+  {
+   "url": "https://catalog.data.gov/dataset/uswa-active-warehouses",
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 113834,
+   "rows": 17,
+   "headerCells": [
+    "@type",
+    "accessLevel",
+    "accrualPeriodicity",
+    "bureauCode",
+    "contactPoint",
+    "description",
+    "distribution",
+    "identifier",
+    "issued",
+    "keyword",
+    "license",
+    "modified"
+   ],
+   "dataLinks": [],
+   "shape": "html table",
+   "state": "US",
+   "expected": "USWA active warehouses, data.gov",
+   "confidence": "read 2026-09-04: its only distribution is a PDF at fsa.usda.gov"
+  },
+  {
+   "url": "http://www.fsa.usda.gov/Internet/FSA_File/whselst2010.pdf",
+   "status": 0,
+   "error": "TimeoutError: timed out",
+   "state": "US",
+   "expected": "USWA licensed and bonded, 2010 snapshot",
+   "confidence": "READ 2026-09-04: 'Licensed and Bonded Warehouses Licensed Under the U.S. Warehouse Act As of December 31, 2010'. Town / warehouse / operator, no street address. SIXTEEN YEARS OLD \u2014 the survey should look for a newer year"
+  },
+  {
+   "url": "http://www.fsa.usda.gov/Internet/FSA_File/whselst2012.pdf",
+   "status": 0,
+   "error": "TimeoutError: timed out",
+   "state": "US",
+   "expected": "USWA snapshot, another year",
+   "confidence": "search 2026-09-04: the file name carries the year, so the newest one is worth finding"
   }
  ]
 }
