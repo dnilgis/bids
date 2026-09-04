@@ -167,8 +167,79 @@ fr.rows_to_records(["FACILITY_NAME", "CLI_LEGAL_NAME"],
 check(d3["columnMap"][0]["map"].get("name") == 1,
       "the guesser won over the stated mapping")
 
+# ── one cell, three fields ────────────────────────────────────────────────
+#
+# Wisconsin's DATCP export heads a column "City, State & Zip Code" and fills it
+# "Independence, WI 54747" — the town, the state and the ZIP that every other
+# source gives separately and that geocoding needs separately.
+sp = fr.split_city_state_zip
+check(sp({"city": "Independence, WI 54747"})
+      == {"city": "Independence", "st": "WI", "zip": "54747"},
+      "the plain case does not split")
+check(sp({"city": "Sioux Falls, SD 57104-1234"})["zip"] == "57104-1234", "ZIP+4 is lost")
+# A REAL ROW WITH THE SPACE MISSING. "La Farge, WI54639" is in the file.
+check(sp({"city": "La Farge, WI54639"}) == {"city": "La Farge", "st": "WI", "zip": "54639"},
+      "a missing space between state and ZIP loses a real Wisconsin town")
+# AND THE TWO LETTERS MUST BE A STATE. With the space optional, "…AB12345"
+# would split as happily as "…WI54639".
+check(sp({"city": "Somewhere, AB12345"}) == {"city": "Somewhere, AB12345"},
+      "two letters that are not a state were forced into one")
+check(sp({"city": "Montreal, Quebec H2Y 2G3"})["city"] == "Montreal, Quebec H2Y 2G3",
+      "a Canadian address was mangled into a US one")
+check(sp({"city": "Saskatoon, SK"})["city"] == "Saskatoon, SK", "SK is not a US state")
+check(sp({"city": "Davenport"})["city"] == "Davenport",
+      "a bare town gained a state it never had")
+# IT FILLS GAPS AND NEVER OVERWRITES. A source with its own state column keeps it.
+check(sp({"city": "Ames, IA 50010", "st": "NE", "zip": "68025"})
+      == {"city": "Ames", "st": "NE", "zip": "68025"},
+      "the combined cell overwrote a state the file stated in its own column")
+check(sp({}) == {} and sp({"city": ""}) == {"city": ""}, "an empty record is not left alone")
+
+# ── Wisconsin, against the file DATCP actually publishes ──────────────────
+WI = ROOT / "fixtures" / "registry-wi-datcp.xls"
+if WI.exists():
+    try:
+        import xlrd  # noqa: F811
+    except ImportError:
+        print("xlrd is not installed; the Wisconsin checks are skipped")
+    else:
+        wsrc = [s for s in fr.SOURCES if s["state"] == "WI"][0]
+        check(wsrc.get("route") == "xls", "Wisconsin is not on the xls route")
+        # STATED, NOT GUESSED — the same accident as Texas. On this file the
+        # guesser happens to land on the right columns, and it does so because
+        # of where they sit. "Legal Name of Entity" is not "name" by any rule;
+        # it wins because nothing else matches better today.
+        for field, col in (("name", "legal name of entity"),
+                           ("address", "mailing address"),
+                           ("city", "city, state & zip code")):
+            check(wsrc.get("columns", {}).get(field) == col,
+                  "Wisconsin no longer states which column is the %s" % field)
+        wd = {}
+        wrecs, _ = fr.read_xls(WI.read_bytes(), wd, wsrc.get("columns"))
+        check(len(wrecs) == 210,
+              "Wisconsin gave %d records, not the 210 in the file dated 4 May 2026" % len(wrecs))
+        # THE BEST-SHAPED SOURCE OF THE LOT: a street address on every row.
+        check(sum(1 for r in wrecs if r.get("address")) == 210,
+              "a street address went missing — every row in this file has one")
+        check(sum(1 for r in wrecs if r.get("st")) == 207,
+              "%d rows carry a state; 207 do, and the three that do not are two "
+              "Canadian addresses and a bare 'Davenport'"
+              % sum(1 for r in wrecs if r.get("st")))
+        # TWO ROWS ARE ELEVATORS THIS REPOSITORY ALREADY READS, which is the
+        # cheapest confirmation available that this is the right population.
+        by = {r["name"]: r for r in wrecs}
+        ace = by.get("Ace Ethanol, LLC")
+        check(ace and ace.get("city") == "Stanley" and ace.get("zip") == "54768",
+              "Ace Ethanol does not match sources/aceethanol-stanley.json: %s" % ace)
+        adell = by.get("Adell Cooperative Union")
+        check(adell and adell.get("city") == "Adell" and adell.get("st") == "WI",
+              "Adell Cooperative — the board the sweep calls 'location 2451' — "
+              "did not come back with its town: %s" % adell)
+else:
+    print("no Wisconsin fixture at %s; those checks are skipped" % WI)
+
 if fails:
     for f in fails:
         print("FAIL: %s" % f)
     sys.exit(1)
-print("xls route: Texas reads 139 records, county precision, and no invented state")
+print("xls route: Texas 139 at county precision; Wisconsin 210 with a street address each")

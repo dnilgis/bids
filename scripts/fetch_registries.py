@@ -175,6 +175,29 @@ SOURCES = [
     {"state": "AR", "kind": "warehouse", "note": "warehouse list",
      "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/"},
 
+    # ── WISCONSIN. Sig's own state, and the best-shaped source of the lot. ──
+    #
+    # He downloaded it and sent the file on 2026-09-04: 213 licensed grain
+    # dealers and warehouse keepers, "as of May 4, 2026", with a STREET ADDRESS
+    # and a combined "City, State & Zip Code". Every other state has given a
+    # county, or a town, or a mailing address for the head office. This gives
+    # the address of the business.
+    #
+    # Two of its rows are elevators this repository already reads, which is the
+    # cheapest confirmation available that the file is the right population:
+    # "Ace Ethanol, LLC, 815 W Maple St., Stanley, WI 54768" is
+    # sources/aceethanol-stanley.json, and "Adell Cooperative Union, 606 Tower
+    # Ave., Adell, WI 53001" is the board the sweep has been calling
+    # "location 2451" because its page names no town.
+    #
+    # THE URL IS INFERRED FROM THE FILE'S OWN NAME and the .pdf sibling that
+    # search confirms exists at the same path. If the .xls 404s, the run says
+    # so and fixtures/registry-wi-datcp.xls still proves the reader.
+    {"state": "WI", "kind": "dealer+warehouse", "note": "DATCP licensees, xls", "route": "xls",
+     "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+     "columns": {"name": "legal name of entity", "address": "mailing address",
+                 "city": "city, state & zip code", "licence": "current license status"}},
+
     # ── TEXAS. Eight rows in the directory; a hundred and thirty-nine here. ──
     #
     # Found 2026-09-04 by keeping the programme page and reading it. That page
@@ -592,9 +615,55 @@ def rows_to_records(header, rows, diag, columns=None):
         # elevator would have been placed in Overland Park, Kansas, and Mennel's
         # Fostoria mill in Decatur, Illinois. Measured before shipping, on the
         # committed file; it never left this machine.
+        # ONE CELL, THREE FIELDS. Wisconsin's DATCP export heads a column
+        # "City, State & Zip Code" and fills it "Independence, WI 54747" — the
+        # town, the state and the ZIP that every other source gives separately,
+        # and that geocoding needs separately. Splitting it here rather than in
+        # a Wisconsin-shaped reader means any state that packs the same three
+        # into one column gets the same treatment.
+        #
+        # ONLY WHERE THE PARTS ARE MISSING. A source that gives a real state
+        # column keeps it: this fills the gaps a combined cell leaves and never
+        # overwrites a field the file stated on its own.
+        rec = split_city_state_zip(rec)
         nm = rec.get("name") or ""
         if len(nm) > 2 and nm.lower() not in CSV_KEYS["name"]:
             out.append(rec)
+    return out
+
+
+# "Independence, WI 54747" / "Adell, WI 53001" / "Sioux Falls, SD 57104-1234"
+# — and "La Farge, WI54639", which is the same thing with the space missing and
+# is a real row in Wisconsin's own export. The ZIP is anchored to the end and
+# the state to the two capitals before it, so a town with a comma in it cannot
+# eat the state, and the space between them is optional.
+CITY_ST_ZIP = re.compile(
+    r"^(?P<city>.+?)[,\s]+(?P<st>[A-Z]{2})\s*(?P<zip>\d{5}(?:-\d{4})?)\s*$")
+
+# THE TWO LETTERS MUST BE A STATE. With the space made optional, "…AB12345"
+# would otherwise split as happily as "…WI54639". Wisconsin's export carries
+# "Montreal, Quebec H2Y 2G3" and "Saskatoon, SK" — neither is a US state, and
+# neither should be forced into one.
+US_STATES = frozenset(
+    ("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN "
+     "MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA "
+     "WV WI WY PR VI GU AS MP").split())
+
+
+def split_city_state_zip(rec):
+    city = (rec.get("city") or "").strip()
+    if not city:
+        return rec
+    m = CITY_ST_ZIP.match(city)
+    if not m or m.group("st") not in US_STATES:
+        return rec
+    out = dict(rec)
+    out["city"] = m.group("city").strip().rstrip(",")
+    # Never overwrite what the file said in a column of its own.
+    if not (rec.get("st") or "").strip():
+        out["st"] = m.group("st")
+    if not (rec.get("zip") or "").strip():
+        out["zip"] = m.group("zip")
     return out
 
 

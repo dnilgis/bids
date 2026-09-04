@@ -146,6 +146,12 @@ CANDIDATES = [
     # are not the same question, and I had been treating one list as the answer
     # to both.
     ("KS", "KDA licensed warehouses, PDF", "http://wapp.kda.ks.gov/grain-warehouse/gw_public.pdf", "from grainjournal.com 2026-09-04; a DIFFERENT HOST from the four that 403"),
+    # WISCONSIN CAME FROM SIG'S OWN BROWSER on 2026-09-04 — he downloaded the
+    # file and sent it. 210 licensees with a STREET ADDRESS each, the
+    # best-shaped source any state has given. The .pdf sibling at the same path
+    # is confirmed by search; the .xls is the name of the file he downloaded.
+    ("WI", "DATCP licensees, xls", "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls", "the file Sig downloaded 2026-09-04 is named this; fixtures/registry-wi-datcp.xls proves the reader either way"),
+    ("WI", "DATCP licensees, pdf sibling", "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.pdf", "confirmed to exist by search 2026-09-04; the fallback if the .xls path is wrong"),
     ("MI", "licensed grain dealers by facility, PDF", "https://www.michigan.gov/documents/mdard/Licensed_Grain_Dealers_by_Facility_640332_7.pdf", "from grainjournal.com 2026-09-04; unopened"),
     ("MN", "MDA licence search", "http://www2.mda.state.mn.us/webapp/lis/default.jsp", "from grainjournal.com 2026-09-04; unopened"),
     ("GA", "state licensed warehouses", "http://agr.georgia.gov/warehouse.aspx", "from grainjournal.com 2026-09-04; unopened"),
@@ -206,7 +212,7 @@ CANDIDATES = [
 # located yet. NOT a list of guesses -- a list of searches somebody still owes.
 # Naming them is the point: a state missing from CANDIDATES because no URL was
 # found looks exactly like a state that does not exist.
-NEEDS_A_URL = ["AL", "DE", "KY", "NM", "SC", "TN", "WV", "WI", "WY"]
+NEEDS_A_URL = ["AL", "DE", "KY", "NM", "SC", "TN", "WV", "WY"]
 
 # Regulated states already harvested by scripts/fetch_registries.py.
 HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE"]
