@@ -98,13 +98,25 @@ jobs:
       #
       # test/every-guard-runs.test.mjs now checks this, so the fourth time is
       # caught here rather than on the runner.
+      #
+      # xlrd IS ON THIS LINE BECAUSE WITHOUT IT THE TICK MEANS NOTHING.
+      # test/xls-route.test.py skips its Texas and Wisconsin checks when xlrd
+      # is missing and still exits 0 — so this workflow was reporting green
+      # over the two states whose readers it was added to protect. A skip that
+      # reports success is the same defect as a guard that never runs.
+      #
+      # pyyaml IS ON IT BECAUSE test/workflow-order.test.py reads registries.yml
+      # as YAML to add its step budgets up. That guard does NOT skip when the
+      # import fails; it raises, which is the right way round, and it is the
+      # fifth time in this repository that a guard needed a package no step
+      # installed. Both of those guards now check this line themselves.
       # xlrd IS ON THIS LINE BECAUSE WITHOUT IT THE TICK MEANS NOTHING.
       # test/xls-route.test.py skips its Texas and Wisconsin checks when xlrd
       # is missing and still exits 0 — so this workflow was reporting green
       # over the two states whose readers it was added to protect. The skip is
       # right for a laptop; on the runner the package is one word.
       - name: python dependencies
-        run: pip install --quiet zipcodes pypdf xlrd
+        run: pip install --quiet zipcodes pypdf xlrd pyyaml
 
       - name: python
         run: |

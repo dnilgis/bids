@@ -54,7 +54,22 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20 MINUTES WAS SIZED WHEN THE SURVEY HAD TEN CANDIDATES.
+    # It has 51. On run 25 it used 19m 15s of the 20 and the fetch was
+    # cancelled 51 seconds in.
+    #
+    # The number is not a guess. Run 25 measured the survey at 19m 15s, so it
+    # is allowed 20; the fetch is allowed 15, which is more than it has ever
+    # needed and enough for a table of 50 sources with Wisconsin's shape; the
+    # placing step measured 1m 26s and is allowed 5. That is 40, and five more
+    # for checkout, the two setups, pip, the guards and the commit — which
+    # together measured under ten seconds on run 25.
+    #
+    # test/workflow-order.test.py adds the step budgets up and fails if they
+    # stop fitting inside this. A ceiling on each step is worth nothing if the
+    # ceilings add up to more than the job: the last step to run would still be
+    # the one that gets cancelled, which is exactly how the harvest was lost.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,25 +89,6 @@ jobs:
       # was written to ask. Three parser fixes have been posted blind into CI and
       # read back out of a log; the page itself is a fixture, so the next one is
       # measured before it ships.
-      # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
-      # Three shapes are already confirmed and no two are alike: Iowa is HTML
-      # lists with no street address, Illinois is a search form with nothing to
-      # page through, and Nebraska is a PDF that DOES carry street addresses.
-      # So "nineteen more scrapers like Iowa's" is wrong before it starts. This
-      # classifies every candidate — table, form, PDF, Tableau, a page offering
-      # a CSV — so the next nineteen are designed against evidence.
-      #
-      # --keep BRINGS THE PAGES BACK. The 2026-09-04 survey said Texas serves
-      # an html table of 36 rows with no <th> at all, and Washington two PDFs
-      # of 713 KB and 383 KB. None of that is enough to write a reader — a
-      # reader needs the column order, the row shape, and the three rows that
-      # will break it. Four parser fixes that day were written from bytes the
-      # runner kept, and every one had first been guessed wrong from a summary.
-      # This is the only step that reaches these hosts; it is the one chance.
-      - name: Survey what the other states publish
-        continue-on-error: true
-        run: python scripts/survey_registries.py --keep
-
       # Ten of the twenty-two states checked publish their list as a PDF. pypdf
       # is a pure-python wheel; if it were missing the run would degrade to
       # "this source needs pypdf" rather than losing the state, but there is no
@@ -138,14 +134,56 @@ jobs:
       # so that a partial run still reports and still commits — which is right,
       # and which is exactly how three skipped fetches read as successes. This
       # records the answer where the later steps can print it.
+      # A BUDGET OF ITS OWN, SO IT CANNOT BE THE THING THAT STARVES THE REST.
+      # Wisconsin's 3 MB workbook can now take 45s and then 135s on the slow
+      # retry; a table of 50 sources with that shape needs a real ceiling
+      # rather than the job's, which it would take down with it.
       - name: Fetch the state registries
         id: fetch
+        timeout-minutes: 15
         continue-on-error: true
         run: |
           python scripts/fetch_registries.py \
             --pages "${{ inputs.pages || '20' }}" \
             --states "${{ inputs.states || '' }}" \
             --dump-dir debug/registries
+
+      # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
+      # Three shapes are already confirmed and no two are alike: Iowa is HTML
+      # lists with no street address, Illinois is a search form with nothing to
+      # page through, and Nebraska is a PDF that DOES carry street addresses.
+      # So "nineteen more scrapers like Iowa's" is wrong before it starts. This
+      # classifies every candidate — table, form, PDF, Tableau, a page offering
+      # a CSV — so the next nineteen are designed against evidence.
+      #
+      # --keep BRINGS THE PAGES BACK. The 2026-09-04 survey said Texas serves
+      # an html table of 36 rows with no <th> at all, and Washington two PDFs
+      # of 713 KB and 383 KB. None of that is enough to write a reader — a
+      # reader needs the column order, the row shape, and the three rows that
+      # will break it. Four parser fixes that day were written from bytes the
+      # runner kept, and every one had first been guessed wrong from a summary.
+      # This is the only step that reaches these hosts; it is the one chance.
+      # ── AND IT MUST NEVER AGAIN EAT THE HARVEST ────────────────────────
+      #
+      # Run 25, 2026-09-04: this step took 19m 15s of a 20-minute job, the
+      # fetch got 45 seconds of what it needed, and the runner killed it —
+      #
+      #     Fetch the state registries   51s
+      #     Error: The operation was canceled.
+      #
+      # Every step above it green. This is the fifth shape of "the fetch did
+      # not run", and the worst, because nothing failed: a discovery step
+      # spent the whole budget and the harvest starved.
+      #
+      # The survey grew from 10 candidates to 51, each with up to three
+      # attempts and a slow retry, and nothing bounded it. It now has a
+      # ceiling it cannot cross, and it runs AFTER the fetch, so the thing
+      # this workflow exists to do is served first and the survey lives on
+      # what is left.
+      - name: Survey what the other states publish
+        timeout-minutes: 20
+        continue-on-error: true
+        run: python scripts/survey_registries.py --keep
 
       # WITHOUT THIS THE MAP DOES NOT MOVE. This workflow committed 442
       # businesses and geocodes/places.json still held no registry section at
@@ -155,6 +193,7 @@ jobs:
       # they get drawn in the same run.
       - name: Place them and rebuild the directory the map reads
         if: always()
+        timeout-minutes: 5
         continue-on-error: true
         run: |
           pip install --quiet zipcodes
