@@ -1,0 +1,39 @@
+{
+  "id": "uniontowncoop-uniontown",
+  "operator": "Uniontown Cooperative",
+  "location": "Uniontown",
+  "state": "WA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://www.uniontowncoop.com/markets/cashgrid.php",
+  "locationId": "31841",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 33825545840) from their own cashgrid board at https://www.uniontowncoop.com/markets/cashgrid.php. locationId 31841 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 15 row(s) in SWW - Portland Price, HRW 11.5% - Portland Price, DNS 14.0% - Portland Price, Barley (Coast), CANOLA FOB UTOWN 09-02-26.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against \u2014 writeBidCell(-34, ..., quotes['ZCZ26']) \u2014 and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. The checks that CAN fail all passed before this file was written: the named contract is one our quote pages price, its root agrees with the board's own commodity heading, and every delivery code appears in its own table's column headers.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the site the sweep was pointed at.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "99179",
+  "lat": null,
+  "lon": null,
+  "phone": "15092293828",
+  "email": null,
+  "website": "https://uniontowncoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: rounded to the nearest cent with the tie-break not established. Measured across 6,228 rows on 45 captured boards, signedCents was -0.5, -0.25, +0.25 and +0.5 and nothing else -- both ends occur, so the interval is closed. lat/lon is null: this ZIP has no coordinate in geocodes/zip-candidates.json. `sync known` rebuilds geocodes/places.json from the manifests' ZIPs and `geocode fill` with the write box on then writes it back here."
+}

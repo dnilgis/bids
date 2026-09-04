@@ -1,0 +1,40 @@
+{
+  "id": "dunkertoncoop-cargillstarchcorn",
+  "operator": "Dunkerton Co-op",
+  "location": "Cargill Starch-Corn",
+  "state": "IA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://dunkertoncoop.agricharts.com/markets/cashgrid.php",
+  "locationId": "82657",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 33825545840) from their own cashgrid board at https://dunkertoncoop.agricharts.com/markets/cashgrid.php. locationId 82657 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 1 row(s) in CORN.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against \u2014 writeBidCell(-34, ..., quotes['ZCZ26']) \u2014 and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. The checks that CAN fail all passed before this file was written: the named contract is one our quote pages price, its root agrees with the board's own commodity heading, and every delivery code appears in its own table's column headers.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the site the sweep was pointed at.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "52401",
+  "lat": 41.9743,
+  "lon": -91.6554,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://dunkertoncoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: rounded to the nearest cent with the tie-break not established. Measured across 6,228 rows on 45 captured boards, signedCents was -0.5, -0.25, +0.25 and +0.5 and nothing else -- both ends occur, so the interval is closed. lat/lon is the CENTROID OF THE TOWN's ZIP and can be miles from the yard; a street fix needs a street address, which data/known-elevators.json does not carry."
+}
