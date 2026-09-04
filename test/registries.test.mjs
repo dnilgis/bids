@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -408,13 +408,49 @@ for t in ("Showing 25 out of 251 results", "TOTAL LICENSED GRAIN DEALERS 116",
 });
 
 test("every source in the table declares a route the code implements", () => {
+  /* THE ROUTES ARE READ OFF THE CODE, NOT LISTED HERE.
+   *
+   * This held a hardcoded ["html","csv","pdf"], so adding Texas — which
+   * publishes a legacy .xls, the only shape that reaches its 139 licensees —
+   * went red in a guard that was meant to catch a TYPO in a route name. A
+   * guard that has to be edited every time the thing it guards grows is a
+   * guard people learn to edit rather than read.
+   *
+   * The dispatch is `src["route"] == "<name>"` in fetch_file() and its
+   * sibling, so that is where the answer is. A route in the table with no
+   * branch is still caught, which is the check that was wanted. */
+  const out2 = py(`${LOAD}
+print(",".join(m.ROUTES))
+`).trim();
+  const implemented = new Set(out2.split(","));
+  assert.ok(implemented.size >= 4,
+    `only ${implemented.size} route(s) declared — ROUTES has shrunk`);
+  /* AND EVERY NAMED ROUTE MUST HAVE A BRANCH. A list that names a shape the
+     fetchers do not handle is the same defect one level up: "pdf" is the
+     fallback and has no equality test, so it is checked by name. */
+  const src = readFileSync(join(ROOT, "scripts/fetch_registries.py"), "utf8");
+  /* BOTH FETCHERS, AND THE EQUALITY TEST ITSELF. A first cut accepted the
+     substring `"docx")` as evidence of a branch — which the ROUTES tuple
+     itself contains, so adding a route with no code passed. And counting one
+     pdf_text call passed with the OTHER fetcher's fallback deleted. */
+  for (const r of implemented) {
+    if (r === "html" || r === "pdf") continue;
+    const branches = src.split(`src["route"] == "${r}"`).length - 1;
+    assert.equal(branches, 2,
+      `ROUTES names "${r}" and ${branches} of the two fetchers branch on it`);
+  }
+  const pdfFallback = src.split("text = pdf_text(raw, diag)").length - 1;
+  assert.equal(pdfFallback, 2,
+    `the pdf fallback is in ${pdfFallback} of the two fetchers`);
   const out = py(`${LOAD}
 routes = sorted({s.get("route", "html") for s in m.SOURCES})
 print(",".join(routes))
 print(len(m.SOURCES), len({s["state"] for s in m.SOURCES}))
 `).trim().split("\n");
   for (const r of out[0].split(",")) {
-    assert.ok(["html", "csv", "pdf"].includes(r), `source declares unknown route "${r}"`);
+    assert.ok(implemented.has(r),
+      `source declares route "${r}" and no fetcher branches on it — ` +
+      `the code implements ${[...implemented].sort().join(", ")}`);
   }
   const [, states] = out[1].split(" ").map(Number);
   assert.ok(states >= 6, `only ${states} states in the table — the country is fifty`);

@@ -98,6 +98,16 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "registries.json"
 UA = "agsist-bidreader (+https://agsist.com; sig@farmers1st.com)"
 
+# THE ROUTES, NAMED. Adding a state is adding a row; adding a SHAPE is adding
+# a branch, and a row that names a shape with no branch has to fail loudly
+# rather than fall through to the PDF reader and report an unreadable PDF.
+#
+# "pdf" is the fallback branch in both fetchers and therefore never appears as
+# an equality test, which is why this list exists rather than being scraped out
+# of the code: test/registries.test.mjs tried that on 2026-09-04 and concluded
+# the repository had stopped implementing PDFs.
+ROUTES = ("html", "csv", "xls", "pdf")
+
 # state, licence kind, url, notes. Adding a state is adding a row.
 # A source with a "post" key pages by POSTing an offset inside a session; one
 # with "paginate" pages by a URL parameter that gets probed. Neither is assumed.
@@ -144,6 +154,61 @@ SOURCES = [
 
     {"state": "AR", "kind": "warehouse", "note": "warehouse list",
      "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/"},
+
+    # ── TEXAS. Eight rows in the directory; a hundred and thirty-nine here. ──
+    #
+    # Found 2026-09-04 by keeping the programme page and reading it. That page
+    # is FORMS -- its 36 <tr> fooled the survey's row counter -- and the list
+    # is one click down, behind "Click here for a list of grain warehouses
+    # licensed by TDA". An .xls, which is the best shape any state publishes.
+    #
+    # The ?ver= token is part of the URL DotNetNuke serves; the survey could
+    # not even see this link until it learned that a query string may follow an
+    # extension. Whether the token is stable is unknown -- if this ever 404s,
+    # re-read the programme page for a fresh one rather than trimming it off.
+    #
+    # COUNTY, NO CITY. Texas gives a county and no town and no street, so every
+    # Texas record lands at county precision and must not claim better.
+    {"state": "TX", "kind": "warehouse", "note": "licensee list, xls", "route": "xls",
+     "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls"
+            "?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
+     # Stated, not inferred. "name" would land on CLI_LEGAL_NAME anyway, and
+     # only because it is the earlier column -- an answer that is right until
+     # somebody reorders the export.
+     "columns": {"name": "cli_legal_name", "county": "county_name"}},
+
+    # ── IDAHO IS NOT TAKEN, AND HERE IS EXACTLY WHY ─────────────────────────
+    #
+    # Two PDFs were found on 2026-09-04 and both were fetched and read:
+    #   Commodity-Dealer-Licensees-1.pdf     40 licensees
+    #   ID-WA-Cooperative-Licensees.pdf      15 licensees, Idaho AND Washington
+    #
+    # A pattern gets the count and the state right and CANNOT SPLIT THE TOWN
+    # FROM THE COMPANY. Measured, not guessed -- this is what came back:
+    #
+    #     name "Ag Solution, Inc. dba"        city "Mountain Malt Idaho Falls"
+    #     name "Amy's Kitchen,"               city "Inc. Pocatello"
+    #     name "Almota Elevato r"             city "Company Colfax"
+    #
+    # The extractor leaves double spaces INSIDE words ("Mountain  Malt",
+    # "Idaho  Falls", "Elevato r"), so whitespace marks nothing, and the line
+    # carries no other separator. A human reads "Idaho Falls" as a town because
+    # they know it is one. A regex cannot, and a town filed wrongly is worse
+    # than a state left unread.
+    #
+    # It could be split against geocodes/zip-candidates.json -- take the
+    # longest trailing phrase that is a real town in that state -- and that is
+    # a new route rather than a pattern.
+    #
+    # AND IT IS NOT WORTH ONE YET. Their own page says "A Licensee is only
+    # listed once but may have multiple business locations", and several are
+    # headquartered out of state: Ardent Mills at Ogden UT, Cereal Byproducts
+    # at Mount Prospect IL, Columbia Grain at Clarkston WA. These are COMPANIES
+    # with a mailing address, not elevators with a location. Fifty-five company
+    # names put nothing on a map.
+    #
+    # The captures are in debug/registries/survey/ for whoever writes that
+    # route.
 
     # ── PDFs. Eight states publish this way; these three are the largest. ────
     # "1 Berne Hi-Way Hatchery, Inc. Berne Adams Active"
@@ -439,7 +504,7 @@ CSV_KEYS = {
 }
 
 
-def rows_to_records(header, rows, diag):
+def rows_to_records(header, rows, diag, columns=None):
     """Map an arbitrary column order onto our fields by header name.
 
     Longest match first, so "Manager Name" cannot win the name column from
@@ -454,11 +519,45 @@ def rows_to_records(header, rows, diag):
             if i in used or not h:
                 continue
             for n in names:
-                if (h == n or h.startswith(n) or n in h) and len(n) > bestlen:
+                # A TWO-LETTER SUBSTRING IS NOT EVIDENCE.
+                #
+                # "st" matched CONTACT_NAME_FIRST on Texas's export and filed
+                # DONNA, KEVIN and VICKI as states — because "first" ends in
+                # st. It would do the same to last, cost, district, status and
+                # street. Measured 2026-09-04 on the sheet itself.
+                #
+                # A short key has to be the whole header or a whole word in it;
+                # a long one may still match loosely, which is what lets
+                # "Physical Address 1" answer for "address".
+                if len(n) <= 3:
+                    hit = (h == n or re.search(r"\b%s\b" % re.escape(n), h) is not None)
+                else:
+                    hit = (h == n or h.startswith(n) or n in h)
+                if hit and len(n) > bestlen:
                     best, bestlen = i, len(n)
         if best is not None:
             idx[field] = best
             used.add(best)
+    # A SOURCE MAY STATE ITS OWN MAPPING, and Texas has to.
+    #
+    # Its headers are UPPER_SNAKE, so "facility name" does not match
+    # FACILITY_NAME and only the bare word "name" does -- which lands on
+    # CLI_LEGAL_NAME purely because it is the earlier column. That is the right
+    # answer (FACILITY_NAME reads "1 APEX GRAIN COMPANY LLC", numbered and
+    # truncated, while CLI_LEGAL_NAME is the clean company name) and it is the
+    # right answer BY ACCIDENT. A mapping that is correct by column order is a
+    # mapping that changes when somebody reorders the export.
+    if columns:
+        lookup = {h: i for i, h in enumerate(lower)}
+        for field, col in columns.items():
+            key = re.sub(r"\s+", " ", str(col).strip().lower())
+            if key in lookup:
+                idx[field] = lookup[key]
+            else:
+                diag.setdefault("errors", []).append(
+                    "this source names a %s column %r and the file has no such header"
+                    % (field, col))
+        diag["columnsStated"] = dict(columns)
     diag["columnMap"] = [{"rows": len(rows), "map": idx}]
     if "name" not in idx:
         diag.setdefault("errors", []).append("no name column in %s" % lower[:12])
@@ -479,7 +578,7 @@ def rows_to_records(header, rows, diag):
     return out
 
 
-def read_csv(body, diag):
+def read_csv(body, diag, columns=None):
     """A state that publishes a CSV has done the hard part. Ohio does."""
     import csv as _csv
     import io
@@ -504,7 +603,61 @@ def read_csv(body, diag):
     diag["headerRow"] = head
     diag["csvColumns"] = rows[head][:14]
     diag["rowsSeen"] = len(rows) - head - 1
-    return rows_to_records(rows[head], rows[head + 1:], diag)
+    return rows_to_records(rows[head], rows[head + 1:], diag, columns)
+
+
+def read_xls(raw, diag, columns=None):
+    """A legacy .xls, which is what Texas publishes, into the same rows the CSV
+    route hands to rows_to_records().
+
+    TEXAS HIDES ITS LIST ONE CLICK DOWN AND THEN SERVES IT AS A SPREADSHEET.
+    The programme page at texasagriculture.gov is a page of FORMS -- the
+    survey's own row count called its 36 <tr> a table and was wrong. The list
+    is behind "Click here for a list of grain warehouses licensed by TDA":
+
+        /Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXX...
+
+    READ 2026-09-04 from the copy the survey kept: ONE sheet, 139 data rows,
+    fourteen columns. Texas carries 8 rows in this repository's directory
+    today.
+
+        ACCT_NUM  EXPIRE_DT  CLI_NUM  CLI_LEGAL_NAME  CLI_DBA
+        CONTACT_NAME_*  ATTN_NAME  FACILITY_NAME  COUNTY_NAME
+
+    NO CITY AND NO STREET ADDRESS. County only, which the directory already
+    models -- 71 rows sit at county precision. A Texas record is an operator,
+    a facility and a county, and it must not pretend to be more than that.
+
+    Nothing is parsed here that the CSV route does not already parse: this
+    turns a sheet into a header and rows and hands them straight over, so the
+    column mapping, the header-row detection and every guard downstream are
+    the same code Ohio goes through."""
+    try:
+        import xlrd
+    except ImportError:
+        diag.setdefault("errors", []).append(
+            "this source needs xlrd (pip install xlrd) to read a legacy .xls")
+        return [], ""
+    try:
+        book = xlrd.open_workbook(file_contents=raw)
+    except Exception as ex:
+        diag.setdefault("errors", []).append("xlrd: %s: %s" % (type(ex).__name__, str(ex)[:110]))
+        return [], ""
+    sheet = book.sheet_by_index(0)
+    diag["sheet"] = {"name": sheet.name, "rows": sheet.nrows, "cols": sheet.ncols,
+                     "of": book.nsheets}
+    if sheet.nrows < 2:
+        diag.setdefault("errors", []).append("the sheet has %d row(s)" % sheet.nrows)
+        return [], ""
+    grid = [[("" if sheet.cell_value(r, c) is None else str(sheet.cell_value(r, c))).strip()
+             for c in range(sheet.ncols)] for r in range(sheet.nrows)]
+    diag["xlsColumns"] = grid[0][:14]
+    diag["rowsSeen"] = len(grid) - 1
+    recs = rows_to_records(grid[0], grid[1:], diag, columns)
+    # The text kept beside the run, so the next person reads the sheet and not
+    # a description of it.
+    text = "\n".join(",".join(('"%s"' % c.replace('"', '""')) for c in row) for row in grid)
+    return recs, text
 
 
 def pdf_text(raw, diag):
@@ -730,7 +883,11 @@ def fetch_file(src, timeout, diag, dump):
 
     if src["route"] == "csv":
         text = raw.decode("utf-8-sig", "replace")
-        recs = read_csv(text, diag)
+        recs = read_csv(text, diag, src.get("columns"))
+    elif src["route"] == "xls":
+        recs, text = read_xls(raw, diag, src.get("columns"))
+        if not text:
+            return []
     else:
         text = pdf_text(raw, diag)
         if text is None:
@@ -747,7 +904,7 @@ def fetch_file(src, timeout, diag, dump):
     if dump is not None:
         try:
             dump.mkdir(parents=True, exist_ok=True)
-            (dump / (slug(url) + (".csv" if src["route"] == "csv" else ".txt"))
+            (dump / (slug(url) + (".csv" if src["route"] in ("csv", "xls") else ".txt"))
              ).write_text(text[:DUMP_CAP], "utf-8")
         except Exception as ex:
             diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
@@ -778,7 +935,11 @@ def fetch_file(src, timeout, diag, dump):
 
     if src["route"] == "csv":
         text = raw.decode("utf-8-sig", "replace")
-        recs = read_csv(text, diag)
+        recs = read_csv(text, diag, src.get("columns"))
+    elif src["route"] == "xls":
+        recs, text = read_xls(raw, diag, src.get("columns"))
+        if not text:
+            return []
     else:
         text = pdf_text(raw, diag)
         if text is None:
@@ -795,7 +956,7 @@ def fetch_file(src, timeout, diag, dump):
     if dump is not None:
         try:
             dump.mkdir(parents=True, exist_ok=True)
-            (dump / (slug(url) + (".csv" if src["route"] == "csv" else ".txt"))
+            (dump / (slug(url) + (".csv" if src["route"] in ("csv", "xls") else ".txt"))
              ).write_text(text[:DUMP_CAP], "utf-8")
         except Exception as ex:
             diag.setdefault("errors", []).append("dump: %s" % type(ex).__name__)
