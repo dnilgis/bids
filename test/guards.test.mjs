@@ -14,10 +14,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildFile, Refused, checkMove, bandFor, validBand, classifyIdentity,
-  scaleFutures, futuresScale, rowKey, DEFAULT_BANDS, KNOWN_UNBANDED,
+  scaleFutures, futuresScale, scaleByContract, rootOf, CONTRACT_SCALE, rowKey, DEFAULT_BANDS, KNOWN_UNBANDED,
   isRefusal, TornRead, CASH_ROUNDING,
 } from "../lib/board.mjs";
-import { basisToCents, filterLocation, normLocationId, parseTicks } from "../lib/parse.mjs";
+import { basisToCents, filterLocation, normLocationId, parseTicks, checkIdentity } from "../lib/parse.mjs";
 
 const NOW = "2026-08-20T04:00:00.000Z";
 const URL_ = "https://example.test/board";
@@ -436,4 +436,98 @@ test("a rounded board publishes with round-cent and refuses without it", () => {
   /* And declaring the WRONG one refuses too, which is what makes the knob safe
      to set: the residuals stop fitting and the board says so. */
   assert.throws(() => build({ cashRounding: "floor-cent" }), Refused);
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   ROUGH RICE IS QUOTED PER HUNDREDWEIGHT AND SOLD PER BUSHEL
+
+   Run 91684188060, eight Riceland boards:
+
+     AUG-OCT ZRX26 cash 5.84 basis -1.2 -> 704c but quoted 1563.5c (+859.5c)
+
+   859.5 cents is the largest identity failure this repository has printed, and
+   it is not an error — it is a unit. CBOT rough rice trades in dollars per
+   hundredweight; a bushel of rough rice is 45 lb, so $/bu = $/cwt x 0.45.
+
+     1563.5 x 0.45 = 703.575   round(703.575) = 704   residual +0.425c
+
+   on all eight boards, inside round-cent. 0.45 is not fitted: it is the same
+   constant lib/adapters/agricharts.mjs already states as
+   ZR: { unit: "hundredweight" }.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("the contract root is read off the symbol, and only off a real one", () => {
+  assert.equal(rootOf("ZRX26"), "ZR");
+  assert.equal(rootOf("ZCZ26"), "ZC");
+  assert.equal(rootOf("KEN27"), "KE");
+  assert.equal(rootOf("zrx26"), "ZR", "case is not evidence");
+  /* Anything that is not a root + month + year is not a symbol we will scale
+     on. Heartland Feeds posts "@C6Z", which is a different notation entirely
+     and must not be guessed at. */
+  for (const s of ["@C6Z", "CORN", "", null, undefined, "ZR", "ZRX"])
+    assert.equal(rootOf(s), null, `${JSON.stringify(s)} should not parse as a contract`);
+});
+
+test("rice is scaled to the bushel and nothing else is touched", () => {
+  const rows = [
+    { futures: "ZRX26", futuresPrice: 1563.5 },
+    { futures: "ZSX26", futuresPrice: 1315.5 },
+    { futures: "ZCZ26", futuresPrice: 541.75 },
+  ];
+  const out = scaleByContract(rows);
+  assert.equal(out[0].futuresPrice, 703.575);
+  assert.equal(out[1].futuresPrice, 1315.5, "soybeans are already per bushel");
+  assert.equal(out[2].futuresPrice, 541.75);
+});
+
+test("the eight Riceland boards balance once rice is in the right unit", () => {
+  /* THE NUMBERS FROM THE RUN, not invented ones. Each row is
+     (cash, basis) as printed, against the ZRX26 quote of the same pass. */
+  const board = [[5.84, -1.20], [5.89, -1.15], [5.98, -1.06], [5.91, -1.13]];
+  for (const [cash, basis] of board) {
+    const rows = scaleByContract([{ cash, basis, futures: "ZRX26", futuresPrice: 1563.5 }]);
+    const off = checkIdentity(rows);
+    assert.equal(off.length, 1, "still off by the rounding, as a cent-rounded board must be");
+    assert.ok(Math.abs(off[0].signedCents) < 0.5,
+      `${cash}/${basis} is ${off[0].signedCents}c out, which rounding does not explain`);
+    assert.ok(off[0].signedCents >= -0.5 && off[0].signedCents < 0.5,
+      "and round-cent explains it");
+  }
+  /* WITHOUT the scale it is 859.5 cents out — three orders of magnitude past
+     anything rounding could account for, which is why the guard refused. */
+  const raw = checkIdentity([{ cash: 5.84, basis: -1.20, futures: "ZRX26", futuresPrice: 1563.5 }]);
+  assert.ok(raw[0].offCents > 800, `unscaled it is only ${raw[0].offCents}c out`);
+});
+
+test("a mixed rice-and-beans board scales only the rice", () => {
+  /* THE REASON THIS IS PER-CONTRACT AND NOT PER-SOURCE. Riceland sells both.
+     futuresUnits on the manifest would multiply the bean rows by 0.45 too —
+     refusing at best, and publishing beans at 45% of their price at worst. */
+  const rows = scaleByContract([
+    { cash: 5.84, basis: -1.20, futures: "ZRX26", futuresPrice: 1563.5 },
+    { cash: 12.90, basis: -0.25, futures: "ZSX26", futuresPrice: 1315.5 },
+  ]);
+  const off = checkIdentity(rows);
+  for (const r of off)
+    assert.ok(Math.abs(r.signedCents) <= 0.5,
+      `${r.commodity ?? r.futures} is ${r.signedCents}c out on a mixed board`);
+});
+
+test("scaleFutures applies the contract scale, because it is what the board calls", () => {
+  /* THE MUTATION THIS EXISTS FOR: scaleByContract correct, tested, and not
+     called. buildFile goes through scaleFutures and nothing else, so a test of
+     scaleByContract on its own passes whether or not rice is ever scaled.
+     Third time this repository has been bitten by testing the rule instead of
+     the wiring. */
+  const [row] = scaleFutures([{ futures: "ZRX26", futuresPrice: 1563.5 }], {});
+  assert.equal(row.futuresPrice, 703.575);
+  /* ...and it composes with futuresUnits rather than replacing it. */
+  const [both] = scaleFutures([{ futures: "ZRX26", futuresPrice: 15.635 }], { futuresUnits: "dollars" });
+  assert.equal(both.futuresPrice, 703.575);
+});
+
+test("scaleFutures still returns the very same array when nothing scales", () => {
+  const rows = [{ futures: "ZCZ26", futuresPrice: 459.25 }];
+  assert.equal(scaleByContract(rows), rows);
+  assert.equal(scaleFutures(rows, {}), rows);
 });
