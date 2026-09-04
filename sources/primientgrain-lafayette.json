@@ -1,0 +1,39 @@
+{
+  "id": "primientgrain-lafayette",
+  "operator": "Primient Grain",
+  "location": "Lafayette",
+  "state": "IN",
+  "platform": "agricharts-cashgrid",
+  "url": "https://primientgrain.agricharts.com/markets/cashgrid.php",
+  "locationId": "22033",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 33825545840) from their own cashgrid board at https://primientgrain.agricharts.com/markets/cashgrid.php. locationId 22033 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 4 row(s) in Corn.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. The checks that CAN fail all passed before this file was written: the named contract is one our quote pages price, its root agrees with the board's own commodity heading, and every delivery code appears in its own table's column headers.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the site the sweep was pointed at.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "47905",
+  "lat": 40.4001,
+  "lon": -86.8602,
+  "latPrecision": "town",
+  "phone": "17654775365",
+  "email": null,
+  "website": "https://primientgrain.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the CENTROID OF THE TOWN's ZIP and can be miles from the yard; a street fix needs a street address, which data/known-elevators.json does not carry."
+}
