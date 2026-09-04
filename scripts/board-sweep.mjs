@@ -67,7 +67,7 @@ import { join, dirname } from "node:path";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
-import { normaliseLabel } from "../lib/place.mjs";
+import { normaliseLabel, US_STATES } from "../lib/place.mjs";
 import { bandFor } from "../lib/board.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -506,8 +506,48 @@ export function unbandable(source, byCommodity) {
   return out;
 }
 
+/* THE OPERATOR'S OWN ADDRESS, IN THEIR OWN FOOTER.
+ *
+ * Hillsdale Elevator Company's board names eighteen locations and puts a state
+ * on none of them; step four of placeFromBoard() therefore refuses every one,
+ * correctly, because a bare town is not a place. Their page's footer says:
+ *
+ *     230 Main St Hillsdale, IL 61257  Phone: 309-658-2218
+ *
+ * THIS IS A HINT AND NOT A PLACEMENT, and Hillsdale is the operator that
+ * proves why. Their board also carries Clinton and CHS Davenport, which are in
+ * IOWA -- so "the company is in Illinois, therefore its yards are" is false
+ * for the very operator that suggested it, and applying it would have filed
+ * two real elevators in the wrong state.
+ *
+ * So it goes on the worklist beside the town, never into a manifest. Eighteen
+ * rows reading `Geneseo · IL?` are eighteen a person finishes in one look;
+ * eighteen reading `location 3559` are eighteen nobody starts. */
+export function operatorAddress(html) {
+  const text = String(html ?? "")
+    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ");
+  const hits = [];
+  for (const m of text.matchAll(/([A-Za-z][A-Za-z.'\- ]{2,40}),\s*([A-Z]{2})\s+(\d{5})(?!\d)/g)) {
+    const st = m[2].toUpperCase();
+    if (!US_STATES.has(st)) continue;
+    /* THE STATE AND THE ZIP, AND NOT THE TOWN. These footers write
+       "230 Main St Hillsdale, IL 61257" with no comma between the street and
+       the town, so anything this called a town would be half a street address.
+       A half-parsed town on a worklist is a trap for whoever reads it next,
+       and the state is the only part this is for. */
+    hits.push({ state: st, zip: m[3] });
+  }
+  if (!hits.length) return null;
+  const states = [...new Set(hits.map((h) => h.state))];
+  /* A page that prints two states does not tell us which one is home. */
+  if (states.length !== 1) return null;
+  return { ...hits[0], seen: hits.length };
+}
+
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
                            have = new Set(), runId = null }) {
+  const homeAddress = operatorAddress(html);
   const operator = operatorNameFrom(html);
   const op = operatorSlug(url) || slug(hostOf(site) || "");
   if (!operator) return { ok: false, why: "the board's title and h1 name no operator", write: [], unmatched: [] };
@@ -551,6 +591,7 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
       unmatched.push({ operator, label: loc.label ?? "(unnamed)", locationId: loc.locationId,
                        rows: loc.rows, url, platform,
                        town: clean.town ?? "", state: clean.state ?? "",
+                       stateHint: clean.state ? "" : (homeAddress?.state ?? ""),
                        why: clean.why ?? "no directory row for this operator at this town",
                        commodities: [...loc.commodities].join(" ") });
       continue;
@@ -624,9 +665,47 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   const byZip = new Map(JSON.parse(io.readText("geocodes/zip-candidates.json")).zips.map((z) => [z.zip, z]));
   const existing = new Set(readdirSync(SOURCES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));
 
+  /* A PLATFORM NAME THAT IS NOT A PLATFORM IS A TYPO, NOT AN EMPTY QUEUE.
+   *
+   * 2026-09-04: I told Sig to run this with `--only hillsdale` and the form has
+   * five boxes; "hillsdale" went into the platform box, which is two above the
+   * one I meant. sitesFor() would have filtered every site out and the run
+   * would have printed "nothing unread on a sweepable platform" -- a sentence
+   * that is false, reads like good news, and sends the next person looking at
+   * the data instead of at the box they typed in.
+   *
+   * "Nothing to do" and "you asked for something that does not exist" are
+   * different answers and must never share a message. This one names what was
+   * asked for, what is accepted, and -- because that is the mistake this
+   * actually was -- which box the value probably belongs in. */
+  if (cfg.platform && !SWEEPABLE.includes(cfg.platform)) {
+    const why = NOT_SWEEPABLE[cfg.platform];
+    console.log(`::error::"${cfg.platform}" is not a platform this sweep asks for.`);
+    if (why) console.log(`::error::It is a platform this repository knows: ${why}`);
+    else console.log(`::error::Did you mean the "only" box? That one takes any substring of a `
+      + `site's URL — "${cfg.platform}" would go there. The platform box takes one of: `
+      + `${SWEEPABLE.join(", ")}.`);
+    return 1;
+  }
+
   const sites = sitesFor(platforms, sources, cfg);
   console.log(`BOARD SWEEP — ${sites.length} site(s)${cfg.write ? "" : "  (DRY RUN: --write to write files)"}`);
-  if (!sites.length) { console.log("   nothing unread on a sweepable platform"); return 0; }
+  if (!sites.length) {
+    /* Same distinction one level down: an `only` filter that matched nothing
+       is a typo too, and it is not the same as having read everything. */
+    const all = sitesFor(platforms, sources, { ...cfg, only: null, start: 0, limit: Infinity });
+    if (cfg.only && all.length) {
+      console.log(`::error::none of the ${all.length} unread site(s) has `
+        + `${cfg.only.map((o) => `"${o}"`).join(" or ")} in its URL.`);
+      const near = all.filter((s) => cfg.only.some((o) => hostOf(s.site)?.includes(o.slice(0, 4))));
+      if (near.length) console.log(`::error::nearest: ${near.slice(0, 5).map((s) => s.site).join(", ")}`);
+      else console.log(`::error::the unread hosts are: `
+        + `${[...new Set(all.map((s) => hostOf(s.site)))].slice(0, 12).join(", ")}…`);
+      return 1;
+    }
+    console.log("   nothing unread on a sweepable platform");
+    return 0;
+  }
 
   /* Shared context per platform, fetched once, exactly as the poller does. */
   const shared = new Map();
@@ -770,15 +849,16 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   if (unmatched.length) {
     mkdirSync(join(DATA, "gaps"), { recursive: true });
     const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = ["operator,label,town,state,why,locationId,rows,commodities,platform,board"]
-      .concat(unmatched.map((u) => [u.operator, u.label, u.town, u.state, u.why, u.locationId,
-                                    u.rows, u.commodities, u.platform, u.url].map(esc).join(",")))
+    const csv = ["operator,label,town,state,stateHint,why,locationId,rows,commodities,platform,board"]
+      .concat(unmatched.map((u) => [u.operator, u.label, u.town, u.state, u.stateHint, u.why,
+                                    u.locationId, u.rows, u.commodities, u.platform, u.url].map(esc).join(",")))
       .join("\n") + "\n";
     if (cfg.write) writeFileSync(join(DATA, "gaps", "board-sweep-unplaced.csv"), csv);
     console.log(`\n── ${unmatched.length} LOCATION(S) POSTING REAL PRICES WITH NO TOWN WE CAN NAME`);
     for (const u of unmatched.slice(0, 25))
       console.log(`   ${String(u.operator).slice(0, 28).padEnd(30)} ${String(u.label).slice(0, 22).padEnd(24)}`
-        + `${String(u.rows).padStart(3)} row(s)  ${u.town ? `${u.town}${u.state ? ", " + u.state : ""} — ` : ""}`
+        + `${String(u.rows).padStart(3)} row(s)  `
+        + `${u.town ? `${u.town}${u.state ? ", " + u.state : (u.stateHint ? ` ${u.stateHint}?` : "")} — ` : ""}`
         + `${String(u.why || "").slice(0, 70)}`);
     if (unmatched.length > 25) console.log(`   … and ${unmatched.length - 25} more`);
     console.log(`   ${cfg.write ? "written to" : "would be written to"} data/gaps/board-sweep-unplaced.csv`);

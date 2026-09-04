@@ -40,6 +40,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { FACILITY, SUFFIX } from "../lib/place.mjs";
 import { fileURLToPath } from "node:url";
 import { join, dirname, isAbsolute } from "node:path";
 import { parseBoard, extract, mergeQuotes, quoteUrls, VERIFIED_BY, cellText }
@@ -356,11 +357,42 @@ export function captureName(url) {
    heading is the operator's own name for the place, and it matches the
    directory's `branch` on most of them. No match means no manifest — a town
    nobody published is a town this project does not know. */
+/* The industry words that describe what a business is, not which one it is,
+   as an eight-character prefix -- the length joinDirectory() compares. Built
+   from lib/place.mjs's own FACILITY and SUFFIX lists rather than typed out
+   again beside them, so the two cannot drift. */
+export const GENERIC_NAME_WORDS = new Set(
+  [...FACILITY, ...SUFFIX, "grain", "agri", "farm", "farms", "farmers", "elevator",
+   "cooperative", "coop", "company", "service", "services", "energy", "ag"]
+    .map((w) => String(w).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8))
+    .filter((w) => w.length >= 2));
+
 export function joinDirectory(known, operator, label, { soleLocation = false } = {}) {
   const o = slug(operator), l = slug(label);
+  /* AN INDUSTRY WORD IS NOT AN IDENTITY.
+   *
+   * This compares eight-character prefixes in both directions, and the second
+   * direction -- does the OPERATOR contain the first eight characters of the
+   * directory name -- fires on any facility whose name begins with a generic
+   * word. Measured 2026-09-04 against Hillsdale Elevator Company: slug
+   * "hillsdaleelevatorcompany" contains "elevator", so it matched a row called
+   * plain "ELEVATOR" in Britton, South Dakota, and another whose facility
+   * field is a run-together list of eleven South Dakota businesses. Neither is
+   * Hillsdale. Only the label test kept a bid at Hillsdale, Illinois out of
+   * Britton -- one check away from a wrong town on a real elevator.
+   *
+   * The words are lib/place.mjs's own FACILITY and SUFFIX lists, which exist
+   * for exactly this: words that describe what a business IS rather than which
+   * business it is. A prefix that is nothing but one of them is not evidence,
+   * and a match resting on it alone is dropped. */
+  const generic = (p) => GENERIC_NAME_WORDS.has(p);
   const sameOperator = (k) => {
     const f = slug(k.facility);
-    return f.length >= 4 && o.length >= 4 && (f.includes(o.slice(0, 8)) || o.includes(f.slice(0, 8)));
+    if (f.length < 4 || o.length < 4) return false;
+    const fp = f.slice(0, 8), op = o.slice(0, 8);
+    if (f.includes(op) && !generic(op)) return true;
+    if (o.includes(fp) && !generic(fp)) return true;
+    return false;
   };
   const rows = known.filter(sameOperator);
   if (l) {

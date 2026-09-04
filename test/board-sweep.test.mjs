@@ -695,7 +695,7 @@ test("every manifest records HOW its town was placed", () => {
   /* And the sweep must actually call it — the rule, then the wiring. */
   const main = src.slice(src.indexOf("export async function main"));
   assert.match(src, /placeFromBoard\(known, operator, loc\.label/);
-  assert.match(src, /import \{ normaliseLabel \} from "\.\.\/lib\/place\.mjs"/);
+  assert.match(src, /import \{ normaliseLabel, US_STATES \} from "\.\.\/lib\/place\.mjs"/);
 });
 
 test("a location whose rows cannot band says so in the manifest it writes", async () => {
@@ -739,4 +739,215 @@ test("the _pending it writes tells the next person what NOT to do", () => {
   assert.match(src, /const nb = unbandable\(m, loc\.byCommodity\);/);
   assert.match(src, /byCommodity: new Map\(\)/);
   assert.match(src, /e\.byCommodity\.get\(r\.commodity\)\.push\(r\)/);
+});
+
+/* ── a typo and an empty queue are different answers ────────────────────── */
+
+test("a platform name that is not a platform is refused, not reported as empty", async () => {
+  /* 2026-09-04: I told Sig to run this with `--only hillsdale`, and the
+     dispatch form has five boxes. "hillsdale" went into the PLATFORM box, two
+     above the one I meant. sitesFor() filters every site out on an unknown
+     platform, so the run would have printed "nothing unread on a sweepable
+     platform" — a sentence that is false, reads like good news, and sends the
+     next person to look at the data instead of at the box they typed in.
+     
+     "Nothing to do" and "you asked for something that does not exist" must
+     never share a message. */
+  const { main } = await import("../scripts/board-sweep.mjs");
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  let code;
+  try { code = await main(["--platform", "hillsdale"]); } finally { console.log = log; }
+  assert.equal(code, 1, "an unusable request must not exit 0");
+  const out = said.join("\n");
+  assert.match(out, /"hillsdale" is not a platform/);
+  /* And it says where the value probably belongs, because that IS the mistake
+     this was — not a lecture about valid values with no way forward. */
+  assert.match(out, /Did you mean the "only" box\?/);
+  assert.match(out, /aghost, cashbidssingle, dtn-cs, graindesk/);
+  assert.ok(!/nothing unread on a sweepable platform/.test(out),
+    "the false reassurance must not also be printed");
+});
+
+test("a platform excluded on purpose says WHY, not that it is unknown", async () => {
+  /* bushel is a real platform this repository reads; it is bushel-probe's.
+     Telling someone it does not exist would be a lie, and would send them to
+     add it. */
+  const { main } = await import("../scripts/board-sweep.mjs");
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  let code;
+  try { code = await main(["--platform", "bushel"]); } finally { console.log = log; }
+  assert.equal(code, 1);
+  const out = said.join("\n");
+  assert.match(out, /It is a platform this repository knows/);
+  assert.match(out, /bushel-probe/);
+  assert.ok(!/Did you mean the "only" box/.test(out), "it is not a typo, so do not guess at one");
+});
+
+test("an --only that matches nothing names the hosts that ARE unread", async () => {
+  /* Same distinction one level down. A filter that matched nothing is a typo;
+     it is not the same as having read everything, and a run that cannot tell
+     the difference teaches people to shrug at a zero. */
+  const { main } = await import("../scripts/board-sweep.mjs");
+  const said = [];
+  const log = console.log;
+  console.log = (...a) => said.push(a.join(" "));
+  let code;
+  try { code = await main(["--only", "zzz-no-such-site"]); } finally { console.log = log; }
+  assert.equal(code, 1);
+  const out = said.join("\n");
+  assert.match(out, /none of the \d+ unread site\(s\) has "zzz-no-such-site" in its URL/);
+  assert.match(out, /the unread hosts are:|nearest:/);
+});
+
+test("--only hillsdale finds the board the worklist names", async () => {
+  /* The instruction that started this: 18 Hillsdale locations posting real
+     prices, all still "location NNNN". This is the filter that reaches them. */
+  const plat = JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8"));
+  const got = sitesFor(plat, SOURCES,
+    { platform: null, only: ["hillsdale"], start: 0, limit: Infinity });
+  assert.equal(got.length, 1);
+  assert.match(got[0].site, /hillsdaleelevator\.com/);
+  assert.equal(got[0].platform, "cashbidssingle");
+});
+
+/* ── the locations are a tab strip, and the tabs are not links ──────────── */
+
+test("18 Hillsdale locations get their towns from the tab strip", async () => {
+  /* Run 91871303720: 18 locations, 126 rows, and not one
+     "cashbidssingle-<id>" reference in 267,641 bytes. The names were on the
+     page the whole time, in a responsive tab widget whose strip and panels are
+     siblings written by one control. */
+  const { extractListBids, tabLocationNames, locationTabNames } = await import("../lib/parse.mjs");
+  const html = fix(join("board-sweep", "cashbidssingle-hillsdaleelevatorcom.html"));
+  const rows = extractListBids(html, "hillsdale");
+  assert.equal(rows.length, 126);
+  const towns = [...new Set(rows.map((r) => r.location))];
+  assert.equal(towns.length, 18);
+  assert.deepEqual(towns.slice(0, 6),
+    ["Hillsdale/Fenton", "Annawan", "Geneseo", "Orion", "Galesburg", "Abingdon"]);
+  assert.ok(towns.includes("Galva"), "Galva is the label the earlier worklist could not name");
+  assert.ok(!towns.some((t) => /^location \d+$/.test(t)), "no id survived as a name");
+});
+
+test("THE CONTAINER ID, NOT THE POSITION OF THE <ul>", async () => {
+  /* That page has TWO `resp-tabs-list` strips and the FIRST is the futures
+     commodity tabs — Corn, Soybeans, Wheat, Live Cattle. Taking "the tab
+     strip" would have named eighteen elevators after cattle contracts. */
+  const { locationTabNames } = await import("../lib/parse.mjs");
+  const html = fix(join("board-sweep", "cashbidssingle-hillsdaleelevatorcom.html"));
+  const { names } = locationTabNames(html);
+  assert.equal(names.length, 18);
+  for (const c of ["Corn", "Soybeans", "Wheat", "Live Cattle"])
+    assert.ok(!names.includes(c), `"${c}" is a futures tab, not a location`);
+  assert.equal(names[0], "Hillsdale/Fenton");
+});
+
+test("POSITIONAL, SO THE COUNTS MUST AGREE", async () => {
+  /* Pairing by position is the weakest join in this repository. It is made
+     only when the strip has exactly as many tabs as the board has distinct
+     ids: a widget rendered in step. Anything else is a page whose shape has
+     changed, and a wrong town on a real elevator is worse than no town. */
+  const { tabLocationNames } = await import("../lib/parse.mjs");
+  const strip = (...n) => `<div id='CashBidsLocationTabs_1'><ul class='resp-tabs-list'>`
+    + n.map((x) => `<li><div><span>${x}</span></div></li>`).join("") + `</ul></div>`;
+  assert.deepEqual([...tabLocationNames(strip("A", "B"), ["1", "2"])], [["1", "A"], ["2", "B"]]);
+  assert.equal(tabLocationNames(strip("A", "B", "C"), ["1", "2"]).size, 0,
+    "three tabs for two panels is a page that changed shape");
+  assert.equal(tabLocationNames(strip("A"), ["1", "2"]).size, 0);
+  /* A board that keys no rows at all, with one tab, still names its one
+     location — Dakota Midland's case, measured. */
+  assert.deepEqual([...tabLocationNames(strip("Voltaire"), [])], [[null, "Voltaire"]]);
+  assert.equal(tabLocationNames(strip("A", "B"), []).size, 0, "two tabs, no ids, no answer");
+  assert.equal(tabLocationNames("<html>nothing</html>", ["1"]).size, 0);
+});
+
+test("the nav still outranks the tab strip, and Big River is untouched", async () => {
+  const { extractListBids } = await import("../lib/parse.mjs");
+  const rows = extractListBids(fix("bigriver-2121.html"), "bigriver");
+  assert.equal(rows.length, 14);
+  assert.deepEqual([...new Set(rows.map((r) => r.location))].sort(),
+                   ["Boyceville", "Dyersville", "Monmouth"]);
+
+  /* THE SEAM, NOT THE RULE. No captured board has BOTH a nav and a tab strip
+     — Hillsdale has tabs and no nav, Big River a nav and no tabs — so
+     swapping the precedence changes no fixture and a mutation of it survives.
+     It still matters: a nav name is keyed on the id the row itself carries,
+     where a tab is paired by POSITION, which is the weakest join here. When
+     both speak, the one that cannot be off by one wins. */
+  const row = (id, cash) => `<ul class='fcControls1'>`
+    + `<li class='c1'><span>Sep</span><img onclick="x('y?CashBidsLocationID=${id}')"></li>`
+    + `<li class='c2'>${cash}</li><li class='c3'>-0.50</li></ul>`;
+  const html = `<a href="/cashbidssingle-11">Alpha</a><a href="/cashbidssingle-22">Beta</a>`
+    + `<div id='CashBidsLocationTabs_1'><ul class='resp-tabs-list'>`
+    + `<li><div><span>Wrong One</span></div></li><li><div><span>Wrong Two</span></div></li></ul></div>`
+    + `<h3 class='fcControls'>Corn</h3>`
+    + `<ul class='fcControlsSubHdr'><li>Delivery</li><li>Bid</li><li>Basis</li></ul>`
+    + row(11, "4.10") + row(22, "4.20");
+  assert.deepEqual(extractListBids(html, "t").map((r) => r.location), ["Alpha", "Beta"]);
+  /* Take the nav away and the strip answers — in order. */
+  const noNav = html.replace(/<a href="\/cashbidssingle-\d+">[^<]*<\/a>/g, "");
+  assert.deepEqual(extractListBids(noNav, "t").map((r) => r.location), ["Wrong One", "Wrong Two"]);
+});
+
+/* ── an industry word is not an identity ────────────────────────────────── */
+
+test("a facility called plain ELEVATOR is not every operator with Elevator in its name", async () => {
+  /* Measured 2026-09-04: slug("Hillsdale Elevator Company") contains
+     "elevator", so joinDirectory matched a directory row called plain
+     "ELEVATOR" in Britton, South Dakota — and another whose facility field is
+     a run-together list of eleven South Dakota businesses. Only the label test
+     kept a bid at Hillsdale, Illinois out of Britton. */
+  const { joinDirectory, GENERIC_NAME_WORDS } = await import("../scripts/agricharts-sweep.mjs");
+  const dir = [
+    { facility: "ELEVATOR", branch: "BRITTON", city: "BRITTON", state: "SD" },
+    { facility: "Hillsdale Elevator", branch: "Clinton", city: "Clinton", state: "IA", zip: "52732" },
+  ];
+  assert.equal(joinDirectory(dir, "Hillsdale Elevator Company", "BRITTON"), null,
+    "a shared industry word is not evidence that these are the same company");
+  /* And the real match still works — the shared prefix there is a name. */
+  const good = joinDirectory(dir, "Hillsdale Elevator Company", "Clinton");
+  assert.equal(good.state, "IA");
+  for (const w of ["elevator", "farmers", "coop", "grain", "company", "cooperat"])
+    assert.ok(GENERIC_NAME_WORDS.has(w.slice(0, 8)), `"${w}" should be a generic word`);
+  assert.ok(!GENERIC_NAME_WORDS.has("hillsdal"));
+  assert.ok(!GENERIC_NAME_WORDS.has("scoular"));
+});
+
+/* ── the operator's own footer address is a hint, never a placement ─────── */
+
+test("the footer state goes on the worklist, and never into a manifest", async () => {
+  const { operatorAddress, placeFromBoard } = await import("../scripts/board-sweep.mjs");
+  const got = operatorAddress(fix(join("board-sweep", "cashbidssingle-hillsdaleelevatorcom.html")));
+  assert.equal(got.state, "IL");
+  assert.equal(got.zip, "61257");
+  assert.ok(!("town" in got), "a footer with no comma before the town yields half a street address");
+
+  /* HILLSDALE IS THE OPERATOR THAT PROVES WHY IT IS ONLY A HINT. Their board
+     also carries Clinton and CHS Davenport, which are in IOWA — so "the
+     company is in Illinois, therefore its yards are" is false for the very
+     operator that suggested it. */
+  assert.equal(placeFromBoard([], "Hillsdale Elevator Company", "Geneseo"), null,
+    "a bare town plus a footer state must not place anything");
+  const src = readFileSync(join(ROOT, "scripts/board-sweep.mjs"), "utf8");
+  assert.match(src, /THIS IS A HINT AND NOT A PLACEMENT/);
+  assert.match(src, /stateHint: clean\.state \? "" : \(homeAddress\?\.state \?\? ""\)/);
+  assert.match(src, /operator,label,town,state,stateHint,why/);
+});
+
+test("two states in a footer name no home state", async () => {
+  const { operatorAddress } = await import("../scripts/board-sweep.mjs");
+  assert.equal(operatorAddress("<p>Ames, IA 50010</p><p>Lincoln, NE 68508</p>"), null);
+  assert.equal(operatorAddress("<p>Ames, IA 50010</p><p>Boone, IA 50036</p>").state, "IA");
+  assert.equal(operatorAddress("<p>nothing here</p>"), null);
+  /* TWO CAPITALS BEFORE A FIVE-DIGIT NUMBER ARE NOT AUTOMATICALLY A STATE.
+     Dropping the US_STATES check changed no test until this line: "Smith, Jr"
+     does not match [A-Z]{2} at all, so the first version of this case proved
+     nothing. */
+  assert.equal(operatorAddress("<p>Acme Supply, XX 60601</p>"), null);
+  assert.equal(operatorAddress("<p>Suite 3, AB 60601</p>"), null);
+  assert.equal(operatorAddress("<p>Peoria, IL 61601</p>").state, "IL");
 });
