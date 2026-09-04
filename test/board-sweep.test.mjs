@@ -697,3 +697,46 @@ test("every manifest records HOW its town was placed", () => {
   assert.match(src, /placeFromBoard\(known, operator, loc\.label/);
   assert.match(src, /import \{ normaliseLabel \} from "\.\.\/lib\/place\.mjs"/);
 });
+
+test("a location whose rows cannot band says so in the manifest it writes", async () => {
+  /* Run 91859042090 wrote 23 manifests and TWENTY carried a commodity name
+     matching no band. Every one of those rows was destined to be withheld at
+     the first poll, and nothing between the write and that poll said so. A
+     sweep that writes a source it can already tell will publish nothing is not
+     writing a source, it is filing a problem for later. */
+  const { unbandable } = await import("../scripts/board-sweep.mjs");
+  const src = { bands: { corn: [2, 12] } };
+  const rowsOf = (f, n = 3) => Array.from({ length: n }, () => ({ futures: f }));
+
+  /* NOTHING TO REPORT when the futures column settles it — which is the whole
+     point of the contract fallback, and this must not double-report it. */
+  assert.deepEqual(unbandable(src, new Map([["Yc", rowsOf("Dec 26 Corn")]])), []);
+  assert.deepEqual(unbandable(src, new Map([["Corn", rowsOf("Dec 26 Corn")]])), []);
+
+  /* AND IT CARRIES THE EVIDENCE. A report that says "Bly has no band" and
+     stops has thrown away the one column a person would look at next. */
+  const bad = unbandable(src, new Map([["Bly", rowsOf("Nov 26 Whatever", 4)]]));
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].commodity, "Bly");
+  assert.equal(bad[0].rows, 4);
+  assert.match(bad[0].futures, /Nov 26 Whatever/);
+
+  /* It uses the SOURCE's own bands, so a manifest that has already been
+     corrected stops reporting. */
+  assert.deepEqual(unbandable({ bands: { bly: [2, 12] } },
+    new Map([["Bly", rowsOf("Nov 26 Whatever")]])), []);
+  assert.deepEqual(unbandable(src, null), [], "no rows collected is not a complaint");
+});
+
+test("the _pending it writes tells the next person what NOT to do", () => {
+  /* The tempting fix for a band refusal is to copy a neighbour's band until
+     the message stops. That publishes a number nothing checked. */
+  const src = readFileSync(join(ROOT, "scripts/board-sweep.mjs"), "utf8");
+  assert.match(src, /WILL NOT PUBLISH AS WRITTEN/);
+  assert.match(src, /Do not copy a neighbour's band to make the refusal stop/);
+  assert.match(src, /A band is a misplaced-decimal guard, not a taxonomy/);
+  /* The rule, and then the wiring: planSite must actually call it. */
+  assert.match(src, /const nb = unbandable\(m, loc\.byCommodity\);/);
+  assert.match(src, /byCommodity: new Map\(\)/);
+  assert.match(src, /e\.byCommodity\.get\(r\.commodity\)\.push\(r\)/);
+});

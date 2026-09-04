@@ -147,3 +147,119 @@ test("the number of rows the guard actually verified is reported, not just failu
   assert.equal(verified, 7);
   assert.equal(verified, file.count, "every published row should have been verifiable");
 });
+
+/* ── the band the board's own futures column states ─────────────────────── */
+
+test("a commodity the board abbreviates is banded from the futures it quotes", async () => {
+  /* Run 91859042090 wrote 23 manifests and TWENTY of them carried a commodity
+     name that matched no band: Scoular's boards write Yc, Ysb, Hww, Sor, Bly.
+     Every one of those rows would have been withheld at the first poll.
+     
+     I know what Yc means. Typing it in is the move this project has decided
+     against — and "Bly" would have been a guess dressed as a fact. The row
+     says instead, in the column next to it, and the identity check already
+     requires that column to reconcile to a fraction of a cent. */
+  const { bandFor, contractBandName } = await import("../lib/board.mjs");
+  const src = { bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] } };
+  const rows = (f, n = 3) => Array.from({ length: n }, () => ({ futures: f }));
+
+  /* A DESCRIPTION — how this platform writes it, measured on the boards
+     captured 2026-09-04: Big River "Sep 26 Corn", Berthold "Dec 26 MIAX
+     Spring Wheat". */
+  assert.equal(bandFor(src, "Yc", rows("Dec 26 Corn")).floor, 2);
+  assert.equal(bandFor(src, "Ysb", rows("Jan 27 Soybeans")).ceiling, 32);
+  assert.equal(bandFor(src, "Hww", rows("Dec 26 MIAX Spring Wheat")).floor, 3);
+  /* A SYMBOL — how DTN and Bushel write it. Both shapes, one rule. */
+  assert.equal(bandFor(src, "Yc", rows("ZCZ26")).floor, 2);
+  assert.equal(bandFor(src, "Ysb", rows("ZSF27")).ceiling, 32);
+  assert.equal(bandFor(src, "Hww", rows("KEH27")).floor, 3);
+  /* And the band it took is NAMED for where it came from, so nobody has to
+     wonder whether somebody typed it. */
+  assert.match(bandFor(src, "Yc", rows("Dec 26 Corn")).named, /from the futures these rows quote/);
+});
+
+test("UNANIMITY. Two contracts under one name band nothing", async () => {
+  /* A board quoting two contracts under one commodity is saying that name
+     covers two things. Banding both by one of them is how a wrong number
+     publishes inside a band that was never meant for it. */
+  const { bandFor, contractBandName } = await import("../lib/board.mjs");
+  const src = { bands: {} };
+  assert.equal(bandFor(src, "Mix", [{ futures: "Dec 26 Corn" }, { futures: "Jan 27 Soybeans" }]), null);
+  assert.equal(contractBandName([{ futures: "ZCZ26" }, { futures: "ZSF27" }]), null);
+  /* A ROW THAT CANNOT BE READ CANNOT VOTE — it refuses the whole commodity
+     rather than letting the readable rows decide for it. */
+  assert.equal(bandFor(src, "Yc", [{ futures: "Dec 26 Corn" }, { futures: null }]), null);
+  assert.equal(bandFor(src, "Yc", [{ futures: "Dec 26 Corn" }, { futures: "Nov 26 Whatever" }]), null);
+  assert.equal(bandFor(src, "Yc", []), null, "no rows is no evidence");
+  assert.equal(bandFor(src, "Yc", null), null);
+});
+
+test("ONLY AN ABBREVIATION. A word the board invented is still refused by name", async () => {
+  /* The first cut of this had no length limit and took down two guards that
+     have stood since August: "an UNKNOWN commodity is withheld and named" and
+     "a board with nothing publishable is refused". A fixture posts ZORBLAX
+     against a corn futures column, and it published it as corn.
+     
+     A band catches a misplaced decimal point — it is not a taxonomy — so that
+     reading is defensible and it is still the wrong trade. Those guards exist
+     so a board carrying something nobody here understands SAYS SO. ZORBLAX is
+     a word. Yc, Ysb, Hww, Sor and Bly are too short to be words, which is
+     exactly what makes them abbreviations and makes the next column the place
+     to look. */
+  const { bandFor } = await import("../lib/board.mjs");
+  const rows = (f) => [{ futures: f }, { futures: f }];
+  for (const abbr of ["Yc", "Ysb", "Hww", "Sor", "Bly", "C", "SBM".slice(0, 3)])
+    assert.ok(bandFor({ bands: {} }, abbr, rows("Dec 26 Corn")),
+      `"${abbr}" is short enough to be an abbreviation`);
+  for (const word of ["Zorblax", "Sungold", "Camelina", "Zephyrgrain"])
+    assert.equal(bandFor({ bands: {} }, word, rows("Dec 26 Corn")), null,
+      `"${word}" is a word — it must be refused by name, not banded by its neighbour`);
+  /* And a real grain that IS in the defaults bands on its own name, without
+     ever reaching the fallback — triticale and buckwheat are both there. */
+  assert.equal(bandFor({ bands: {} }, "Triticale", null).named, "triticale (default)");
+  assert.equal(bandFor({ bands: {} }, "Buckwheat", null).named, "buckwheat (default)");
+});
+
+test("this is the LAST thing tried, and it never overrules what worked before", async () => {
+  const { bandFor } = await import("../lib/board.mjs");
+  const rows = (f) => [{ futures: f }, { futures: f }];
+  /* THE SOURCE'S OWN BANDS WIN. Somebody worked that number out. */
+  const own = { bands: { yc: [1, 9] } };
+  assert.deepEqual([bandFor(own, "Yc", rows("Dec 26 Corn")).floor,
+                    bandFor(own, "Yc", rows("Dec 26 Corn")).ceiling], [1, 9]);
+  /* A DEFAULT THAT MATCHES THE NAME STILL MATCHES IT. */
+  const std = { bands: { corn: [2, 12] } };
+  assert.equal(bandFor(std, "Corn", rows("Dec 26 Corn")).named, "corn");
+  /* PER-TON PRODUCTS STILL WITHHOLD. Soybean meal trades in dollars a ton and
+     must never pick up the bean's per-bushel band — the reason KNOWN_UNBANDED
+     exists, and this fallback must not quietly undo it. */
+  assert.equal(bandFor({ bands: {} }, "Soybean Meal", rows("ZMZ26")), null);
+  assert.equal(bandFor({ bands: {} }, "Soybean Meal", rows("Dec 26 Soybean Meal")), null);
+  /* AND THE ABBREVIATION OF IT, which KNOWN_UNBANDED cannot see. It matches on
+     the words "meal", "hull", "gluten" — "Sbm" contains none of them, so the
+     only thing standing between soybean meal at $340 a TON and the per-bushel
+     bean band is ZM being mapped to nothing on purpose. Mutating that to
+     "soybean" broke no test until this line existed. */
+  assert.equal(bandFor({ bands: {} }, "Sbm", rows("ZMZ26")), null,
+    "soybean meal must never pick up the bean's per-bushel band");
+  assert.equal(bandFor({ bands: {} }, "Bo", rows("ZLZ26")), null,
+    "bean oil trades in cents a pound");
+});
+
+test("the withheld message says what the futures column actually said", async () => {
+  /* An error that reports "no band matches Yc" and stops has thrown away the
+     evidence for its own verdict — the next person cannot tell a board that
+     quotes nothing from one that quotes something unreadable. */
+  const { buildFile } = await import("../lib/board.mjs");
+  const src = { id: "t", operator: "T", location: "T", state: "IA", bands: {},
+                url: "https://x.example/", platform: "cashbidssingle" };
+  let out;
+  try {
+    out = buildFile(src, [{ seq: 0, commodity: "Bly", delivery: "Sep", cash: 4.0,
+                            basis: -0.5, basisCents: -50, futures: "Nov 26 Whatever",
+                            futuresPrice: 450 }]);
+  } catch { out = null; }
+  if (out && out.withheld && out.withheld.length)
+    assert.match(out.withheld[0].why, /Nov 26 Whatever/,
+      "the withheld reason drops the futures column it judged on");
+});

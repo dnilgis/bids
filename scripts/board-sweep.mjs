@@ -68,6 +68,7 @@ import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { normaliseLabel } from "../lib/place.mjs";
+import { bandFor } from "../lib/board.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DATA = join(ROOT, "data");
@@ -482,6 +483,29 @@ export function placeFromBoard(known, operator, label, { soleLocation = false } 
   return null;
 }
 
+/* WILL THIS BOARD'S ROWS ACTUALLY PUBLISH?
+ *
+ * Run 91859042090 wrote 23 manifests and twenty of them carried a commodity
+ * name that matched no band -- Scoular writes Yc, Ysb, Hww, Sor, Bly -- so
+ * every one of those rows was destined to be withheld at the first poll, and
+ * nothing between the write and that poll would have said so. A sweep that
+ * writes a source it can already tell will publish nothing is not writing a
+ * source, it is filing a problem for later.
+ *
+ * The same bandFor() the poller uses, on the same rows this run read. Nothing
+ * is guessed here and nothing is fixed here: it reports, and what it reports
+ * goes into the manifest's own _pending so the next person reads it there. */
+export function unbandable(source, byCommodity) {
+  const out = [];
+  for (const [name, rows] of byCommodity ?? new Map()) {
+    let band = null;
+    try { band = bandFor(source, name, rows); } catch { band = null; }
+    if (!band) out.push({ commodity: name, rows: rows.length,
+                          futures: [...new Set(rows.map((r) => String(r.futures ?? "none")))].join(" / ") });
+  }
+  return out;
+}
+
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
                            have = new Set(), runId = null }) {
   const operator = operatorNameFrom(html);
@@ -492,8 +516,14 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
   const byLoc = new Map();
   for (const r of rows) {
     const k = r.locationId ?? r.location ?? "";
-    const e = byLoc.get(k) ?? { locationId: r.locationId ?? null, label: r.location, rows: 0, commodities: new Set() };
+    const e = byLoc.get(k) ?? { locationId: r.locationId ?? null, label: r.location, rows: 0,
+                                commodities: new Set(), byCommodity: new Map() };
     e.rows++; e.commodities.add(r.commodity);
+    /* KEPT SO THE BAND CAN BE CHECKED AT WRITE TIME, NOT AT POLL TIME. See
+       unbandable() below: run 91859042090 wrote twenty manifests whose rows
+       would all have been withheld, and nothing said so until they polled. */
+    if (!e.byCommodity.has(r.commodity)) e.byCommodity.set(r.commodity, []);
+    e.byCommodity.get(r.commodity).push(r);
     if (!e.label && r.location) e.label = r.location;
     byLoc.set(k, e);
   }
@@ -536,8 +566,20 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
                             zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId });
     const bad = validateSource(m, new Set());
     if (bad.length) { skip.push({ id, why: bad.join("; ") }); continue; }
+    const nb = unbandable(m, loc.byCommodity);
+    if (nb.length) {
+      m._pending = `${m._pending ?? ""}\n\nWILL NOT PUBLISH AS WRITTEN. `
+        + `${nb.length} of this location's ${loc.byCommodity?.size ?? "?"} commodities match no `
+        + `band, so the poller will withhold every one of their rows:\n`
+        + nb.map((n) => `  ${n.commodity} — ${n.rows} row(s), futures "${n.futures}"`).join("\n")
+        + `\n\nA band is a misplaced-decimal guard, not a taxonomy. Add the name to this `
+        + `source's own bands once somebody has established what the board means by it, or `
+        + `add it to DEFAULT_BANDS in lib/board.mjs if it is a commodity rather than one `
+        + `operator's abbreviation. Do not copy a neighbour's band to make the refusal stop.`;
+    }
     seen.add(id);
-    write.push({ id, json: m, rows: loc.rows, town: `${dir.city}, ${dir.state} ${dir.zip}` });
+    write.push({ id, json: m, rows: loc.rows, unbandable: nb,
+                 town: `${dir.city}, ${dir.state}${dir.zip ? " " + dir.zip : ""}` });
   }
   return { ok: true, operator, locations: byLoc.size, write, skip, unmatched };
 }
@@ -675,7 +717,11 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     found.push({ ...s, board: hit.url, operator: plan.operator, locations: plan.locations, rows: hit.rows.length });
     console.log(`── [${i + 1}/${sites.length}] ${s.site}\n   [${s.platform}] ${plan.operator} — `
       + `${plan.locations} location(s), ${hit.rows.length} row(s)  ←  ${hit.url}`);
-    for (const w of plan.write) { console.log(`     + ${w.id.padEnd(38)} ${w.town}  ${w.rows} row(s)`); seenIds.add(w.id); }
+    for (const w of plan.write) {
+      console.log(`     + ${w.id.padEnd(38)} ${w.town}  ${w.rows} row(s)`
+        + (w.unbandable?.length ? `  ⚠ ${w.unbandable.map((n) => n.commodity).join("/")} will not publish` : ""));
+      seenIds.add(w.id);
+    }
     for (const u of plan.unmatched) console.log(`     - ${String(u.label).padEnd(24)} NO DIRECTORY MATCH — no town, so no manifest`);
     /* A LABEL OF "location 2451" IS NOT A DIRECTORY MISS. It is the page's own
        nav failing to match, and recording it as an unplaceable elevator would
