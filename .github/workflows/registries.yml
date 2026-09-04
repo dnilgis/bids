@@ -101,8 +101,22 @@ jobs:
       # can. Both are pure-python wheels. A reader that is missing degrades to
       # "this source needs xlrd" and loses the state, so it is installed rather
       # than hoped for — the same reasoning that put pypdf here.
+      # AND zipcodes, WHICH THE GUARD STEP BELOW NEEDS.
+      #
+      # It was installed further down, by the step that places the records —
+      # and the guard step runs test/geocode-precision.test.py, which imports
+      # scripts/build_geocodes.py, which exits 2 with "FATAL: pip install
+      # zipcodes" when it is missing. The guard step is `bash -e`, so it
+      # stopped there, and the FETCH STEP NEVER RAN.
+      #
+      # THREE RUNS IN A ROW — 91926780177, 91931213387, 91935391548 — reported
+      # "1939 businesses, 8 states scraped" and I read it as a baseline every
+      # time. The number was real; it was just yesterday's, printed by the
+      # steps below that carry `if: always()` and happily describe a file the
+      # run never touched. Texas and Wisconsin were in the table for two of
+      # those runs and neither was ever fetched.
       - name: Install the PDF and spreadsheet readers
-        run: pip install --quiet pypdf xlrd
+        run: pip install --quiet pypdf xlrd zipcodes
 
       # ══════════════════════════════════════════════════════════════════
       #  THE GUARDS RUN BEFORE THE FETCH, NOT AFTER
@@ -120,6 +134,10 @@ jobs:
           python test/unplaced-reason.test.py
           python test/geocode-precision.test.py
 
+      # DID THE FETCH ACTUALLY RUN? Everything below carries `if: always()`
+      # so that a partial run still reports and still commits — which is right,
+      # and which is exactly how three skipped fetches read as successes. This
+      # records the answer where the later steps can print it.
       - name: Fetch the state registries
         id: fetch
         continue-on-error: true
@@ -146,7 +164,21 @@ jobs:
       - name: The four questions
         if: always()
         run: |
-          pip install --quiet zipcodes
+          # SAY SO WHEN THE NUMBERS ARE NOT THIS RUN'S. registry_report.py
+          # reads the committed data/registries.json, so when the fetch was
+          # skipped it prints a perfectly good report about a file nothing
+          # touched. Three runs went by that way.
+          {
+            if [ "${{ steps.fetch.outcome }}" != "success" ]; then
+              echo "> ## THE FETCH DID NOT RUN (${{ steps.fetch.outcome || 'skipped' }})."
+              echo ">"
+              echo "> Everything below describes **data/registries.json as it was already"
+              echo "> committed**, not anything this run produced. Look at the step above"
+              echo "> this one for why."
+              echo ""
+              echo "::error::the fetch step did not run — the report below is the previous run's data"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
           python scripts/registry_report.py | tee /tmp/report.txt || true
           {
             echo "### the survey"
