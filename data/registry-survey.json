@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T21:54:24Z",
+ "generated": "2026-09-04T22:36:29Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -64,7 +64,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 280166,
+   "bytes": 280164,
    "ua": "ours",
    "rows": 304,
    "headerCells": [
@@ -252,7 +252,7 @@
    "url": "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 65193,
+   "bytes": 65089,
    "ua": "ours",
    "rows": 36,
    "headerCells": [
@@ -283,7 +283,7 @@
    "expected": "grain warehouse programme",
    "confidence": "READ 2026-09-04: a programme page. Its 36 <tr> are FORMS, not warehouses \u2014 the survey's own row count called it a table and was wrong. The list is one link down",
    "kept": "debug/registries/survey/tx-grain-warehouse-programme.html",
-   "keptBytes": 53521
+   "keptBytes": 53417
   },
   {
    "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
@@ -354,7 +354,7 @@
    "url": "https://agri.idaho.gov/ag-inspections/warehouse-program/",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 129191,
+   "bytes": 129519,
    "ua": "ours",
    "rows": 7,
    "headerCells": [
@@ -385,7 +385,7 @@
    "expected": "warehouse programme",
    "confidence": "READ 2026-09-04: twelve data links, five of them fillable bond and application forms",
    "kept": "debug/registries/survey/id-warehouse-programme.html",
-   "keptBytes": 60423
+   "keptBytes": 60751
   },
   {
    "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
@@ -477,6 +477,32 @@
    "state": "KS",
    "expected": "KDA licensed warehouses, PDF",
    "confidence": "from grainjournal.com 2026-09-04; a DIFFERENT HOST from the four that 403"
+  },
+  {
+   "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+   "status": 0,
+   "ua": "ours, slow",
+   "error": "URLError: <urlopen error timed out>",
+   "attempts": [
+    "URLError: <urlopen error timed out>",
+    "URLError: <urlopen error timed out>"
+   ],
+   "state": "WI",
+   "expected": "DATCP licensees, xls",
+   "confidence": "the file Sig downloaded 2026-09-04 is named this; fixtures/registry-wi-datcp.xls proves the reader either way"
+  },
+  {
+   "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.pdf",
+   "status": 0,
+   "ua": "ours, slow",
+   "error": "URLError: <urlopen error timed out>",
+   "attempts": [
+    "URLError: <urlopen error timed out>",
+    "URLError: <urlopen error timed out>"
+   ],
+   "state": "WI",
+   "expected": "DATCP licensees, pdf sibling",
+   "confidence": "confirmed to exist by search 2026-09-04; the fallback if the .xls path is wrong"
   },
   {
    "url": "https://www.michigan.gov/documents/mdard/Licensed_Grain_Dealers_by_Facility_640332_7.pdf",
@@ -670,27 +696,54 @@
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
-   "status": 0,
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 9907,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [],
+   "shape": "tableau dashboard",
    "state": "US",
    "expected": "USDA WCMD dashboard",
-   "confidence": "a Tableau shell; 200 and no rows on 2026-09-03 and again on 2026-09-04"
+   "confidence": "a Tableau shell; 200 and no rows on 2026-09-03 and again on 2026-09-04",
+   "kept": "debug/registries/survey/us-usda-wcmd-dashboard.html",
+   "keptBytes": 3817
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard.csv?:isGuestRedirectFromVizportal=y&:embed=y",
-   "status": 0,
+   "status": 200,
+   "contentType": "text/csv",
+   "bytes": 11251,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "shape": "csv",
+   "headerCells": [
+    "Commodity*",
+    "Measure Names",
+    "Commodity Unit",
+    "Commodity*",
+    "Measure Values",
+    "All Warehouses",
+    "Capacity*",
+    "% of Total CNT_CCC Approved Warehouses",
+    "CNT_CCC Approved Warehouses",
+    "% of Total CNT_CCC Status Approved and USWA Licensed",
+    "CNT_CCC Status Approved and USWA Licensed",
+    "% of Total CNT_USWA Licenses",
+    "CNT_USWA Licenses"
+   ],
+   "rows": 104,
    "state": "US",
    "expected": "WCMD summary, csv export",
-   "confidence": "READ 2026-09-04: 79 rows, counts by commodity. Grain = 4802"
+   "confidence": "READ 2026-09-04: 79 rows, counts by commodity. Grain = 4802",
+   "kept": "debug/registries/survey/us-wcmd-summary-csv-export.html",
+   "keptBytes": 11251
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseDetail.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "error": "HTTPError: HTTP Error 404: Not Found",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse Detail",
    "confidence": "probe, never opened"
@@ -699,7 +752,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseList.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "error": "HTTPError: HTTP Error 404: Not Found",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse List",
    "confidence": "probe, never opened"
@@ -708,7 +761,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseLocations.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "error": "HTTPError: HTTP Error 404: Not Found",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse Locations",
    "confidence": "probe, never opened"
@@ -735,7 +788,7 @@
    "url": "https://saltlake.sc.egov.usda.gov/approved_whses/uswa/approved_whses_USWA.asp",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
+   "error": "URLError: <urlopen error [Errno -2] Name or service not known>",
    "state": "US",
    "expected": "USWA licensed warehouses map",
    "confidence": "data.gov's only distribution for the USWA map; DNS fails from the sandbox"

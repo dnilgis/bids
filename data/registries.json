@@ -1,8 +1,9 @@
 {
- "generated": "2026-08-28T16:08:49Z",
+ "generated": "2026-09-04T22:38:30Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
-  "businesses": 1939,
+  "businesses": 2004,
+  "licensedButLocatedElsewhere": 31,
   "incompleteSources": [
    {
     "url": "https://psc.nebraska.gov/grain",
@@ -11,40 +12,40 @@
    }
   ],
   "byState": {
-   "null": 31,
    "AR": 37,
    "BC": 1,
    "CA": 1,
    "CN": 1,
-   "CO": 6,
+   "CO": 7,
    "CT": 2,
    "GA": 2,
-   "IA": 276,
-   "IL": 20,
+   "IA": 277,
+   "IL": 21,
    "IN": 288,
    "KS": 23,
    "LA": 3,
    "MA": 1,
    "MI": 1,
-   "MN": 36,
-   "MO": 253,
+   "MN": 42,
+   "MO": 254,
    "MT": 1,
-   "ND": 295,
-   "NE": 102,
+   "ND": 299,
+   "NE": 109,
    "NY": 1,
    "OH": 338,
    "OK": 1,
+   "ON": 1,
    "OR": 1,
    "PA": 2,
    "SC": 1,
-   "SD": 206,
+   "SD": 249,
    "TN": 1,
    "TX": 3,
    "VT": 1,
    "WA": 1,
    "WI": 3
   },
-  "both_licences": 1610,
+  "both_licences": 1674,
   "with_phone": 581
  },
  "diagnostics": [
@@ -109,37 +110,37 @@
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/grainwarehouse/",
      "status": 200,
-     "bytes": 10918
+     "bytes": 10878
     },
     {
      "url": "POST offset=25",
      "status": 200,
-     "bytes": 11318
+     "bytes": 11268
     },
     {
      "url": "POST offset=25",
      "status": 200,
-     "bytes": 11318
+     "bytes": 11268
     },
     {
      "url": "POST offset=50",
      "status": 200,
-     "bytes": 11299
+     "bytes": 11264
     },
     {
      "url": "POST offset=75",
      "status": 200,
-     "bytes": 11285
+     "bytes": 11235
     },
     {
      "url": "POST offset=100",
      "status": 200,
-     "bytes": 8126
+     "bytes": 7966
     }
    ],
    "statedTotal": {
     "shown": 25,
-    "total": 102
+    "total": 101
    },
    "tables": 1,
    "headerCells": [
@@ -148,10 +149,10 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 133,
+   "rowsSeen": 132,
    "columnMap": [
     {
-     "rows": 3,
+     "rows": 2,
      "map": {
       "name": 0,
       "city": 1,
@@ -168,11 +169,11 @@
     0,
     25,
     25,
-    2
+    1
    ],
    "offsetMode": "absolute",
-   "covered": 102,
-   "kept": 102,
+   "covered": 101,
+   "kept": 101,
    "sample": [
     {
      "name": "ADM Grain Company",
@@ -210,67 +211,62 @@
     {
      "url": "https://data.iowaagriculture.gov/licensing_lists/graindealers/",
      "status": 200,
-     "bytes": 12103
+     "bytes": 12063
     },
     {
      "url": "POST offset=25",
      "status": 200,
-     "bytes": 12440
+     "bytes": 12400
     },
     {
      "url": "POST offset=25",
      "status": 200,
-     "bytes": 12440
+     "bytes": 12400
     },
     {
      "url": "POST offset=50",
      "status": 200,
-     "bytes": 12467
+     "bytes": 12427
     },
     {
      "url": "POST offset=75",
      "status": 200,
-     "bytes": 12487
+     "bytes": 12444
     },
     {
      "url": "POST offset=100",
      "status": 200,
-     "bytes": 12479
+     "bytes": 12441
     },
     {
      "url": "POST offset=125",
      "status": 200,
-     "bytes": 12411
+     "bytes": 12372
     },
     {
      "url": "POST offset=150",
      "status": 200,
-     "bytes": 12449
+     "bytes": 12408
     },
     {
      "url": "POST offset=175",
      "status": 200,
-     "bytes": 12478
+     "bytes": 12447
     },
     {
      "url": "POST offset=200",
      "status": 200,
-     "bytes": 12502
+     "bytes": 12452
     },
     {
      "url": "POST offset=225",
      "status": 200,
-     "bytes": 12422
-    },
-    {
-     "url": "POST offset=250",
-     "status": 200,
-     "bytes": 9172
+     "bytes": 12316
     }
    ],
    "statedTotal": {
     "shown": 25,
-    "total": 251
+    "total": 250
    },
    "tables": 1,
    "headerCells": [
@@ -279,7 +275,7 @@
     "County",
     "Phone"
    ],
-   "rowsSeen": 316,
+   "rowsSeen": 314,
    "columnMap": [
     {
      "rows": 2,
@@ -304,25 +300,24 @@
     25,
     25,
     25,
-    25,
-    1
+    25
    ],
    "offsetMode": "absolute",
    "tailSweep": [
     {
-     "offset": 226,
+     "offset": 225,
      "new": 0,
      "gotPageOneBack": false
     },
     {
-     "offset": 250,
+     "offset": 249,
      "new": 0,
      "gotPageOneBack": false
     }
    ],
-   "covered": 251,
-   "shortButCovered": "the page says 251 and 250 unique businesses came back; the walk read every row, so the difference is names repeating in the same town",
-   "kept": 250,
+   "covered": 250,
+   "shortButCovered": "the page says 250 and 249 unique businesses came back; the walk read every row, so the difference is names repeating in the same town",
+   "kept": 249,
    "sample": [
     {
      "name": "218 Grain, LLC",
@@ -361,91 +356,91 @@
     "tried": [
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
-      "bytes": 279731,
+      "bytes": 280156,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=1",
-      "bytes": 279731,
+      "bytes": 280153,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?p=2",
-      "bytes": 279732,
+      "bytes": 280156,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pg=2",
-      "bytes": 279731,
+      "bytes": 280156,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?start=50",
-      "bytes": 279732,
+      "bytes": 280156,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?offset=50",
-      "bytes": 279731,
+      "bytes": 280154,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?limit=1000&offset=25",
-      "bytes": 279731,
+      "bytes": 280153,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
-      "bytes": 279732,
+      "bytes": 280155,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pageNumber=2",
-      "bytes": 279733,
+      "bytes": 280154,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page_num=2",
-      "bytes": 279732,
+      "bytes": 280155,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?paged=2",
-      "bytes": 279733,
+      "bytes": 280155,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
-      "bytes": 279733,
+      "bytes": 280156,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
-      "bytes": 279733,
+      "bytes": 280155,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -461,7 +456,7 @@
     {
      "url": "https://agriculture.mo.gov/grains/grainsearch.php",
      "status": 200,
-     "bytes": 279733
+     "bytes": 280157
     }
    ],
    "tables": 1,
@@ -506,41 +501,41 @@
    "kept": 288,
    "sample": [
     {
-     "name": "Cargill SRR Elevators, E. St. Louis, IL",
-     "city": "East St. Louis",
-     "county": "St. Clair",
-     "phone": "(618) 583-6228",
-     "address": "430 S Front Street",
-     "zip": "62201",
-     "st": "IL",
-     "capacity": "",
-     "licence": "",
+     "name": "Show-Me MFA Agri Services- Centralia",
+     "city": "Centralia",
+     "county": "Boone",
+     "phone": "(573) 682-2157",
+     "address": "202 N JeffersonPO Box 67",
+     "zip": "65240",
+     "st": "MO",
+     "capacity": "2091000",
+     "licence": "WH-554",
      "kind": "dealer+warehouse",
      "state": "MO"
     },
     {
-     "name": "Cencom",
-     "city": "Stanberry",
-     "county": "Gentry",
-     "phone": "(660) 783-2700",
-     "address": "105 S. High St.",
-     "zip": "64489",
+     "name": "ADM Processing- Mexico",
+     "city": "Mexico",
+     "county": "Audrain",
+     "phone": "(573) 581-4195",
+     "address": "400 E HoltPO Box 797",
+     "zip": "65265",
      "st": "MO",
-     "capacity": "",
-     "licence": "",
+     "capacity": "2133000",
+     "licence": "WH-988",
      "kind": "dealer+warehouse",
      "state": "MO"
     },
     {
-     "name": "Chem Gro of Houghton, Inc.",
-     "city": "Alexandria",
-     "county": "Clark",
-     "phone": "(319) 469-0015",
-     "address": "34999 Hwy 136",
-     "zip": "63430",
+     "name": "Hillside Grain, LLC",
+     "city": "Golden City",
+     "county": "Dade",
+     "phone": "(417) 682-1767",
+     "address": "1212 US Highway 160",
+     "zip": "64748",
      "st": "MO",
-     "capacity": "",
-     "licence": "",
+     "capacity": "1323000",
+     "licence": "WH-1109",
      "kind": "dealer+warehouse",
      "state": "MO"
     }
@@ -626,7 +621,7 @@
     {
      "url": "https://lars.ndda.nd.gov/public/allLicenses/4/",
      "status": 200,
-     "bytes": 81780
+     "bytes": 82571
     }
    ],
    "tables": 1,
@@ -637,10 +632,10 @@
     "City",
     "Zip"
    ],
-   "rowsSeen": 286,
+   "rowsSeen": 289,
    "columnMap": [
     {
-     "rows": 286,
+     "rows": 289,
      "map": {
       "name": 1,
       "city": 3,
@@ -653,9 +648,9 @@
    "tablesWithData": 1,
    "parsedVia": "table",
    "newPerPage": [
-    279
+    282
    ],
-   "kept": 279,
+   "kept": 282,
    "sample": [
     {
      "name": "3C Land Holdings, LLC",
@@ -677,10 +672,10 @@
     },
     {
      "name": "ADM Edible Bean Specialties, Inc.",
-     "city": "Northwood",
-     "county": "Grand Forks",
-     "zip": "58267",
-     "licence": "0106",
+     "city": "Grafton",
+     "county": "Walsh",
+     "zip": "58237",
+     "licence": "0940",
      "kind": "dealer+warehouse",
      "state": "ND"
     }
@@ -696,7 +691,7 @@
     {
      "url": "https://agriculture.arkansas.gov/crops-industry/quality-control-and-compliance/grain-warehouses/",
      "status": 200,
-     "bytes": 385184
+     "bytes": 385411
     }
    ],
    "tables": 1,
@@ -753,6 +748,41 @@
    "state": "AR"
   },
   {
+   "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+   "kind": "dealer+warehouse",
+   "note": "DATCP licensees, xls",
+   "route": "xls",
+   "errors": [
+    "URLError: <urlopen error timed out>"
+   ],
+   "kept": 0,
+   "state": "WI"
+  },
+  {
+   "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
+   "kind": "warehouse",
+   "note": "licensee list, xls",
+   "route": "xls",
+   "pages": [
+    {
+     "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
+     "status": 200,
+     "bytes": 63998
+    }
+   ],
+   "tables": 0,
+   "headerCells": [],
+   "rowsSeen": 0,
+   "columnMap": {},
+   "tablesWithData": 0,
+   "firstRowRaw": "\ufffd\ufffd\u0011\u0871\u001a\ufffd\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000>\u0000\u0003\u0000\ufffd\ufffd\t\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000{\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000z\u0000\u0000\u0000\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd",
+   "newPerPage": [
+    0
+   ],
+   "kept": 0,
+   "state": "TX"
+  },
+  {
    "url": "https://www.in.gov/dA/163601981f/Licensees-by-County-06.18.2026.pdf?language_id=1",
    "kind": "dealer+warehouse",
    "note": "licensees by county",
@@ -802,14 +832,14 @@
     {
      "url": "http://puc.sd.gov/commission/warehouse/Grain%20License%20Info.pdf",
      "status": 200,
-     "bytes": 51164
+     "bytes": 51295
     }
    ],
    "pdfPages": 13,
-   "pdfLinesJoined": 81,
-   "pdfLines": 353,
-   "pdfLinesMatched": 293,
-   "kept": 293,
+   "pdfLinesJoined": 18,
+   "pdfLines": 417,
+   "pdfLinesMatched": 355,
+   "kept": 355,
    "sample": [
     {
      "name": "ADVANCED SUNFLOWER LLC",
@@ -1131,7 +1161,7 @@
    "name": "CHS, Inc.",
    "city": "Inver Grove Heights",
    "county": null,
-   "phone": "651-355-4962",
+   "phone": "651-355-3289",
    "state": null,
    "address": null,
    "zip": null,
@@ -2479,6 +2509,28 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "WAGNER'S LLC SHAFER SEED COMPANY",
+   "city": "FLAGLER",
+   "county": null,
+   "phone": null,
+   "state": "CO",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "PENNINGTON SEED INC PPK1, PPK2, PPK3, D&D COMMODITIES",
@@ -6800,8 +6852,7 @@
    "cityAlt": null,
    "nameAlt": null,
    "licences": [
-    "warehouse",
-    "dealer"
+    "warehouse"
    ],
    "source": "registry-ia"
   },
@@ -7453,6 +7504,28 @@
   {
    "name": "PROFESSIONAL AG HEDGING LLC",
    "city": "SHELDON",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SIOUXLAND ENERGY COOPERATIVE",
+   "city": "SIOUX CENTER",
    "county": null,
    "phone": null,
    "state": "IA",
@@ -8779,6 +8852,28 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "WAGNER'S LLC SHAFER SEED COMPANY",
+   "city": "MILFORD",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "JIM TRAUB TRADING LLC",
@@ -14652,7 +14747,7 @@
    "source": "registry-in"
   },
   {
-   "name": "VOLGA AG CENTER INC SVOLGA A+VCS WAGNER'S LLC SHAFER SEED COMPANY BFLAGLER, CO B WAGNER'S LLC SHAFER SEED COMPANY BMILFORD, IL B WEST PLAINS, LLC FGERING, NE A+VCS WEST PLAINS, LLC FOMAHA, NE A+VCS WESTERN CONSOLIDATED COOPERATIVE FTWIN BROOKS A+VCS WHEATFIELD GRAIN COMPANY, LLC WHEATFIELD GRAIN",
+   "name": "WHEATFIELD GRAIN COMPANY, LLC WHEATFIELD GRAIN",
    "city": "WHEATFIELD",
    "county": null,
    "phone": null,
@@ -15936,6 +16031,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "SYNGENTA SEEDS, LLC",
+   "city": "AMBOY",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "NEW VISION CO-OP",
    "city": "BEAVER CREEK",
    "county": null,
@@ -15945,6 +16062,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SUNRICH PRODUCTS LLC",
+   "city": "BRECKENRIDGE",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -16024,7 +16163,73 @@
    "source": "registry-sd"
   },
   {
-   "name": "SUNRISE FOODS INTERNATIONAL (USA) INC BPENDER, NE B SURESOURCE COMMODITIES LLC BPETROLIA, ON B SYNGENTA SEEDS, LLC BAMBOY, MN A+VCS SYNGENTA SEEDS, LLC BDANVERS, MN A+VCS SYNGENTA SEEDS, LLC",
+   "name": "SUNRICH PRODUCTS LLC",
+   "city": "CROOKSTON",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SCHMITZ GRAIN INC",
+   "city": "CURRIE",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SYNGENTA SEEDS, LLC",
+   "city": "DANVERS",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SYNGENTA SEEDS, LLC",
    "city": "DASSEL",
    "county": null,
    "phone": null,
@@ -16463,6 +16668,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "BRIDGEWAY TRADING CORPORATION",
+   "city": "MINNEAPOLIS",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "CORPORATION MINNEAPOLIS",
+   "nameAlt": "BRIDGEWAY TRADING",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CARGILL, INCORPORATED",
    "city": "MINNEAPOLIS",
    "county": null,
@@ -16593,7 +16820,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "ELEVATOR FSISSETON A+VCS WOONSOCKET ELEVATOR LLC DAKOTA FEED & GRAIN SWOONSOCKET B WORLD FOOD PROCESSING, LLC PURIS BHARROLD A+VCS WORLD FOOD PROCESSING, LLC PURIS",
+   "name": "WORLD FOOD PROCESSING, LLC PURIS",
    "city": "RANDOLPH",
    "county": null,
    "phone": null,
@@ -16607,7 +16834,7 @@
    "outOfState": null,
    "licensedBy": null,
    "cityAlt": "PURIS RANDOLPH",
-   "nameAlt": "ELEVATOR FSISSETON A+VCS WOONSOCKET ELEVATOR LLC DAKOTA FEED & GRAIN SWOONSOCKET B WORLD FOOD PROCESSING, LLC PURIS BHARROLD A+VCS WORLD FOOD PROCESSING, LLC",
+   "nameAlt": "WORLD FOOD PROCESSING, LLC",
    "licences": [
     "dealer",
     "warehouse"
@@ -19033,6 +19260,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "STONEX COMMODITY SOLUTIONS LLC",
+   "city": "KANSAS CITY",
+   "county": null,
+   "phone": null,
+   "state": "MO",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "WEST PLAINS, LLC",
    "city": "KANSAS CITY",
    "county": null,
@@ -19633,7 +19882,7 @@
    "state": "MO",
    "address": "1246 W. Highway K",
    "zip": "64762",
-   "capacity": "2572000",
+   "capacity": "3072000",
    "licenceClass": "WH-1086",
    "nameTruncated": true,
    "nameRepaired": null,
@@ -23680,7 +23929,7 @@
    "address": null,
    "zip": "58601",
    "capacity": null,
-   "licenceClass": "2177",
+   "licenceClass": "2037",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -23703,6 +23952,28 @@
    "zip": "58601",
    "capacity": null,
    "licenceClass": "1221",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-nd"
+  },
+  {
+   "name": "Minn-Dak Ag LLC dba Minn-Dak Growers",
+   "city": "Dickinson",
+   "county": "Stark",
+   "phone": null,
+   "state": "ND",
+   "address": null,
+   "zip": "58601",
+   "capacity": null,
+   "licenceClass": "0662",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -24243,6 +24514,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "SPECIALTY COMMODITIES, LLC",
+   "city": "FARGO",
+   "county": null,
+   "phone": null,
+   "state": "ND",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "Demson Grain Company, Inc.",
    "city": "Fairmount",
    "county": "Richland",
@@ -24573,7 +24866,7 @@
    "source": "registry-nd"
   },
   {
-   "name": "ASSOCIATION SSTICKNEY A+VCS STONEX COMMODITY SOLUTIONS LLC BKANSAS CITY, MO A+VCS STONEX COMMODITY SOLUTIONS LLC BOMAHA, NE A+VCS SUNBIRD, INC BHURON A+VCS SUNBIRD, INC BREDFIELD A+VCS SUNRICH PRODUCTS LLC BBRECKENRIDGE, MN A+VCS SUNRICH PRODUCTS LLC BCROOKSTON, MN A+VCS SUNRICH PRODUCTS LLC",
+   "name": "SUNRICH PRODUCTS LLC",
    "city": "GRACE CITY",
    "county": null,
    "phone": null,
@@ -24978,6 +25271,28 @@
    "zip": "58237",
    "capacity": null,
    "licenceClass": "0215",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-nd"
+  },
+  {
+   "name": "Minn-Dak Ag LLC dba Minn-Dak Growers",
+   "city": "Grand Forks",
+   "county": "Grand Forks",
+   "phone": null,
+   "state": "ND",
+   "address": null,
+   "zip": "58208",
+   "capacity": null,
+   "licenceClass": "0159",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -25615,7 +25930,7 @@
    "address": null,
    "zip": "58401",
    "capacity": null,
-   "licenceClass": "2212",
+   "licenceClass": "2213",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -28753,6 +29068,28 @@
    "source": "registry-nd"
   },
   {
+   "name": "Genesis seed solutions llc",
+   "city": "berthold",
+   "county": "Ward",
+   "phone": null,
+   "state": "ND",
+   "address": null,
+   "zip": "58718",
+   "capacity": null,
+   "licenceClass": "3280",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-nd"
+  },
+  {
    "name": "Hoople Farmers Grain Company",
    "city": "hoople",
    "county": "Walsh",
@@ -29591,6 +29928,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "WEST PLAINS, LLC",
+   "city": "GERING",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CLARK SPECIALTY GRAINS, LLC",
    "city": "GOTHENBURG",
    "county": null,
@@ -29652,6 +30011,28 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "COOPERATIVE PRODUCERS INC",
+   "city": "HASTINGS",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "COOPERATIVE PRODUCERS, INC.",
@@ -30061,6 +30442,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "BLACK STRAP INC.",
+   "city": "NELIGH",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "TINSLEY GRAIN, INC.",
    "city": "NELIGH",
    "county": null,
@@ -30145,7 +30548,7 @@
    "source": "registry-ne"
   },
   {
-   "name": "B&L AG INC BCLEAR LAKE B BATTLE CREEK FARMERS COOPERATIVE N/S FARMERS PRIDE COOP SAVON A+VCS BISON GRAIN COMPANY SBISON A+VCS BLACK STRAP INC. BNELIGH, NE B BRIDGEWAY TRADING CORPORATION BMINNEAPOLIS, MN B BS GRAIN, LLC BGETTYSBURG B BUNGE USA GRAIN LLC FKIMBALL A+VCS BUNGE USA GRAIN LLC",
+   "name": "BUNGE USA GRAIN LLC",
    "city": "OMAHA",
    "county": null,
    "phone": null,
@@ -30238,6 +30641,28 @@
    "state": "NE",
    "address": null,
    "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "S&G COMMODITIES, LLC",
+   "city": "OMAHA",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
    "capacity": "1,000,000",
    "licenceClass": "2196",
    "nameTruncated": null,
@@ -30250,6 +30675,28 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "STONEX COMMODITY SOLUTIONS LLC",
+   "city": "OMAHA",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "THE SCOULAR COMPANY",
@@ -30293,6 +30740,28 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "WEST PLAINS, LLC",
+   "city": "OMAHA",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "872 GRAIN LLC",
@@ -30424,6 +30893,28 @@
     "warehouse"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "SUNRISE FOODS INTERNATIONAL (USA) INC",
+   "city": "PENDER",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
   },
   {
    "name": "SUNRISE FOODS INTERNATIONAL (USA) INC.",
@@ -38460,6 +38951,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "SURESOURCE COMMODITIES LLC",
+   "city": "PETROLIA",
+   "county": null,
+   "phone": null,
+   "state": "ON",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "COLUMBIA GRAIN INTERNATIONAL LLC",
    "city": "PORTLAND",
    "county": null,
@@ -38634,7 +39147,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "S&G COMMODITIES, LLC BOMAHA, NE B SCHMITZ GRAIN INC BCURRIE, MN A+VCS SCOULAR CANADA, ULC BSASKATOON, SK B SEED EXCHANGE, LLC BPLATTE B SEXAUER SEED CO. LLC BWATERTOWN B SINAI COOPERATIVE ELEVATOR COMPANY SSINAI A+VCS SIOUX NATION, LLC SFORT PIERRE B SIOUXLAND ENERGY COOPERATIVE BSIOUX CENTER, IA A+VCS SMITH FEED SERVICE INC VITA PLUS-LOYAL BLOYAL, WI A+VCS SOUTH DAKOTA HUTTERIAN CO-OPERATIVE",
+   "name": "SOUTH DAKOTA HUTTERIAN CO-OPERATIVE",
    "city": "ABERDEEN",
    "county": null,
    "phone": null,
@@ -38648,7 +39161,29 @@
    "outOfState": null,
    "licensedBy": null,
    "cityAlt": "CO-OPERATIVE ABERDEEN",
-   "nameAlt": "S&G COMMODITIES, LLC BOMAHA, NE B SCHMITZ GRAIN INC BCURRIE, MN A+VCS SCOULAR CANADA, ULC BSASKATOON, SK B SEED EXCHANGE, LLC BPLATTE B SEXAUER SEED CO. LLC BWATERTOWN B SINAI COOPERATIVE ELEVATOR COMPANY SSINAI A+VCS SIOUX NATION, LLC SFORT PIERRE B SIOUXLAND ENERGY COOPERATIVE BSIOUX CENTER, IA A+VCS SMITH FEED SERVICE INC VITA PLUS-LOYAL BLOYAL, WI A+VCS SOUTH DAKOTA HUTTERIAN",
+   "nameAlt": "SOUTH DAKOTA HUTTERIAN",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FARMERS COOPERATIVE SOCIETY",
+   "city": "ALCESTER",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "SOCIETY ALCESTER",
+   "nameAlt": "FARMERS COOPERATIVE",
    "licences": [
     "dealer",
     "warehouse"
@@ -38687,6 +39222,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "STAN'S INC",
+   "city": "ALPENA",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -38753,6 +39310,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FOUSEK FARMS & TRUCKING, LLC",
+   "city": "ARMOUR",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -38841,6 +39420,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "BATTLE CREEK FARMERS COOPERATIVE N/S FARMERS PRIDE COOP",
+   "city": "AVON",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -38964,6 +39565,72 @@
    "source": "registry-sd"
   },
   {
+   "name": "FARMERS COOPERATIVE SOCIETY",
+   "city": "BERESFORD",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "SOCIETY BERESFORD",
+   "nameAlt": "FARMERS COOPERATIVE",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SOUTHEAST FARMERS COOP",
+   "city": "BERESFORD",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "BISON GRAIN COMPANY",
+   "city": "BISON",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CHS INC",
    "city": "BLUNT",
    "county": null,
@@ -39074,7 +39741,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "COOPERATIVE FFREDERICK A+VCS FREMAR, LLC FCANOVA A+VCS FREMAR, LLC FDIMOCK A+VCS FREMAR, LLC FFREEMAN A+VCS FREMAR, LLC FLYONS A+VCS FREMAR, LLC FMARION TERMINAL A+VCS FREMAR, LLC FMT VERNON A+VCS FREMAR, LLC FSALEM A+VCS FREMAR, LLC FVIBORG A+VCS FULL CIRCLE AG",
+   "name": "ELEVATOR",
    "city": "BRITTON",
    "county": null,
    "phone": null,
@@ -39082,7 +39749,7 @@
    "address": null,
    "zip": null,
    "capacity": null,
-   "licenceClass": "B",
+   "licenceClass": "F",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -39096,7 +39763,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "ELEVATOR",
+   "name": "FULL CIRCLE AG",
    "city": "BRITTON",
    "county": null,
    "phone": null,
@@ -39104,7 +39771,7 @@
    "address": null,
    "zip": null,
    "capacity": null,
-   "licenceClass": "F",
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -39198,6 +39865,28 @@
    "licensedBy": null,
    "cityAlt": "PLEASANT, C",
    "nameAlt": "ATLANTIC GRAIN & TRADE LLC BMT",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FREMAR, LLC",
+   "city": "CANOVA",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
    "licences": [
     "dealer",
     "warehouse"
@@ -39359,6 +40048,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "SOUTHEAST FARMERS COOP",
+   "city": "CENTERVILLE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CHS INC",
    "city": "CHAMBERLAIN",
    "county": null,
@@ -39456,6 +40167,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "B&L AG INC",
+   "city": "CLEAR LAKE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -39667,6 +40400,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FREMAR, LLC",
+   "city": "DIMOCK",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CHS INC",
    "city": "DUPREE",
    "county": null,
@@ -39698,6 +40453,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SOUTHEAST FARMERS COOP",
+   "city": "ELK POINT",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -39887,7 +40664,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "HUMBOLDT FHUMBOLDT A+VCS FARMERS ELEVATOR COMPANY OF PLATTE SPLATTE A+VCS FARMERS OIL COMPANY BORIENT B FAULKTON GRAIN & FEED INC",
+   "name": "FAULKTON GRAIN & FEED INC",
    "city": "FAULKTON",
    "county": null,
    "phone": null,
@@ -39933,6 +40710,72 @@
   {
    "name": "DAKOTA MILL & GRAIN INC",
    "city": "FORT PIERRE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SIOUX NATION, LLC",
+   "city": "FORT PIERRE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "COOPERATIVE",
+   "city": "FREDERICK",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FREMAR, LLC",
+   "city": "FREEMAN",
    "county": null,
    "phone": null,
    "state": "SD",
@@ -40006,6 +40849,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "BS GRAIN, LLC",
+   "city": "GETTYSBURG",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -40144,6 +41009,28 @@
    "licensedBy": null,
    "cityAlt": null,
    "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "WORLD FOOD PROCESSING, LLC PURIS",
+   "city": "HARROLD",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "PURIS HARROLD",
+   "nameAlt": "WORLD FOOD PROCESSING, LLC",
    "licences": [
     "dealer",
     "warehouse"
@@ -40503,6 +41390,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "HUMBOLDT",
+   "city": "HUMBOLDT",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "HUMBOLDT HUMBOLDT",
+   "nameAlt": "",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "ADVANCED SUNFLOWER LLC",
    "city": "HURON",
    "county": null,
@@ -40568,6 +41477,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "SUNBIRD, INC",
+   "city": "HURON",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "AGTEGRA COOPERATIVE",
    "city": "HURON CORNRECEIVING",
    "county": null,
@@ -40583,6 +41514,28 @@
    "licensedBy": null,
    "cityAlt": null,
    "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SMITH FEED SERVICE INC VITA PLUS-LOYAL BLOYAL,",
+   "city": "I",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "W",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "BLOYAL, I",
+   "nameAlt": "SMITH FEED SERVICE INC VITA PLUS-LOYAL",
    "licences": [
     "dealer",
     "warehouse"
@@ -40649,6 +41602,28 @@
    "licensedBy": null,
    "cityAlt": "COMMODITIES JEFFERSON",
    "nameAlt": "AT STRONG COMMODITIES, LLC GREEN THUMB",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SCOULAR CANADA, ULC BSASKATOON,",
+   "city": "K",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "BSASKATOON, K",
+   "nameAlt": "SCOULAR CANADA, ULC",
    "licences": [
     "dealer",
     "warehouse"
@@ -40746,6 +41721,28 @@
   {
    "name": "AGTEGRA COOPERATIVE",
    "city": "KENNEBEC NW",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "BUNGE USA GRAIN LLC",
+   "city": "KIMBALL",
    "county": null,
    "phone": null,
    "state": "SD",
@@ -40964,6 +41961,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FREMAR, LLC",
+   "city": "LYONS",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "MADISON FARMERS ELEVATOR COMPANY",
    "city": "MADISON",
    "county": null,
@@ -41052,6 +42071,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FREMAR, LLC",
+   "city": "MARION TERMINAL",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "AGTEGRA COOPERATIVE",
    "city": "MCLAUGHLIN",
    "county": null,
@@ -41083,6 +42124,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SOUTHEAST FARMERS COOP",
+   "city": "MECKLING",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -41184,7 +42247,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "LLC BVOLGA A+VCS SOUTHEAST FARMERS COOP FBERESFORD A+VCS SOUTHEAST FARMERS COOP FCENTERVILLE A+VCS SOUTHEAST FARMERS COOP FELK POINT A+VCS SOUTHEAST FARMERS COOP FMECKLING A+VCS SPECIALTY COMMODITIES, LLC BFARGO, ND A+VCS STAN'S INC BALPENA A+VCS STENGEL GRAIN PROCESSING LLC",
+   "name": "STENGEL GRAIN PROCESSING LLC",
    "city": "MILBANK",
    "county": null,
    "phone": null,
@@ -41382,6 +42445,50 @@
    "source": "registry-sd"
   },
   {
+   "name": "FREMAR, LLC",
+   "city": "MT VERNON",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FMG FEED & SEED, LLC NEW UNDERWOOD AG SUPPLY",
+   "city": "NEW UNDERWOOD",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "AGTEGRA COOPERATIVE",
    "city": "NORTHVILLE",
    "county": null,
@@ -41536,6 +42643,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FARMERS OIL COMPANY",
+   "city": "ORIENT",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CBH COOPERATIVE BBELLE",
    "city": "OURCHE",
    "county": null,
@@ -41624,7 +42753,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "ELEVATOR FBRITTON",
+   "name": "FBRITTON",
    "city": "OUTH",
    "county": null,
    "phone": null,
@@ -41638,7 +42767,7 @@
    "outOfState": null,
    "licensedBy": null,
    "cityAlt": "FBRITTON OUTH",
-   "nameAlt": "ELEVATOR",
+   "nameAlt": "",
    "licences": [
     "dealer",
     "warehouse"
@@ -41778,6 +42907,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FARMERS ELEVATOR COMPANY OF PLATTE",
+   "city": "PLATTE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "PLATTE PLATTE",
+   "nameAlt": "FARMERS ELEVATOR COMPANY OF",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "PHARMCO INDUSTRIES, INC",
    "city": "PLATTE",
    "county": null,
@@ -41809,6 +42960,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SEED EXCHANGE, LLC",
+   "city": "PLATTE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -41954,6 +43127,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "SUNBIRD, INC",
+   "city": "REDFIELD",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "AGTEGRA COOPERATIVE",
    "city": "REDFIELD ENERGY125",
    "county": null,
@@ -42020,6 +43215,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "WESTERN CONSOLIDATED COOPERATIVE FTWIN",
+   "city": "ROOKS",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "FTWIN ROOKS",
+   "nameAlt": "WESTERN CONSOLIDATED COOPERATIVE",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "AGTEGRA COOPERATIVE",
    "city": "ROSCOE",
    "county": null,
@@ -42064,6 +43281,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "COMPANY-ROSHOLT",
+   "city": "ROSHOLT",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": "COMPANY-ROSHOLT ROSHOLT",
+   "nameAlt": "",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "RED RIVER ENERGY LLC",
    "city": "ROSHOLT",
    "county": null,
@@ -42073,6 +43312,28 @@
    "zip": null,
    "capacity": null,
    "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FREMAR, LLC",
+   "city": "SALEM",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
    "nameTruncated": null,
    "nameRepaired": null,
    "outOfState": null,
@@ -42152,6 +43413,50 @@
    "source": "registry-sd"
   },
   {
+   "name": "SINAI COOPERATIVE ELEVATOR COMPANY",
+   "city": "SINAI",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "ELEVATOR",
+   "city": "SISSETON",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CENTRAL FARMERS COOPERATIVE",
    "city": "SPRINGFIELD",
    "county": null,
@@ -42198,6 +43503,50 @@
   {
    "name": "LLC",
    "city": "ST. LAWRENCE",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "ASSOCIATION",
+   "city": "STICKNEY",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "FOOTHILLS SEED INC",
+   "city": "STURGIS",
    "county": null,
    "phone": null,
    "state": "SD",
@@ -42416,6 +43765,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "FREMAR, LLC",
+   "city": "VIBORG",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "F",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "DAKOTALAND BIRD SEED CO. LLP",
    "city": "VIVIAN",
    "county": null,
@@ -42431,6 +43802,50 @@
    "licensedBy": null,
    "cityAlt": "LLP VIVIAN",
    "nameAlt": "DAKOTALAND BIRD SEED CO.",
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "LLC",
+   "city": "VOLGA",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "VOLGA AG CENTER INC",
+   "city": "VOLGA",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
    "licences": [
     "dealer",
     "warehouse"
@@ -42460,7 +43875,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "Licensee Doing Business As PermitLocation Class FMG FEED & SEED, LLC NEW UNDERWOOD AG SUPPLY BNEW UNDERWOOD B FOOTHILLS SEED INC BSTURGIS B FOUSEK FARMS & TRUCKING, LLC BARMOUR A+VCS FOUSEK GRAINS LLC",
+   "name": "FOUSEK GRAINS LLC",
    "city": "WAGNER",
    "county": null,
    "phone": null,
@@ -42592,6 +44007,28 @@
   },
   {
    "name": "ORGANIC TRADE SOLUTIONS INC",
+   "city": "WATERTOWN",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "B",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
+   "name": "SEXAUER SEED CO. LLC",
    "city": "WATERTOWN",
    "county": null,
    "phone": null,
@@ -42921,6 +44358,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "WOONSOCKET ELEVATOR LLC DAKOTA FEED & GRAIN",
+   "city": "WOONSOCKET",
+   "county": null,
+   "phone": null,
+   "state": "SD",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "S",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-sd"
+  },
+  {
    "name": "CHS INC",
    "city": "WORTHING",
    "county": null,
@@ -42943,7 +44402,7 @@
    "source": "registry-sd"
   },
   {
-   "name": "COMPANY-ROSHOLT SROSHOLT A+VCS FARMERS COOPERATIVE SOCIETY FALCESTER A+VCS FARMERS COOPERATIVE SOCIETY FBERESFORD A+VCS FARMERS COOPERATIVE SOCIETY",
+   "name": "FARMERS COOPERATIVE SOCIETY",
    "city": "WORTHING",
    "county": null,
    "phone": null,
@@ -42957,7 +44416,7 @@
    "outOfState": null,
    "licensedBy": null,
    "cityAlt": "SOCIETY WORTHING",
-   "nameAlt": "COMPANY-ROSHOLT SROSHOLT A+VCS FARMERS COOPERATIVE SOCIETY FALCESTER A+VCS FARMERS COOPERATIVE SOCIETY FBERESFORD A+VCS FARMERS COOPERATIVE",
+   "nameAlt": "FARMERS COOPERATIVE",
    "licences": [
     "dealer",
     "warehouse"
