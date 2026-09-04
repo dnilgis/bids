@@ -218,6 +218,21 @@ jobs:
         continue-on-error: true
         run: node scripts/gap_lists.mjs
 
+      # THE WORK FIRST, THE SOUVENIRS SECOND — AND IN TWO COMMITS.
+      #
+      # Run 91883116181 kept nineteen pages and GitHub refused the push: the
+      # Illinois Department of Agriculture ships a Mapbox secret token in the
+      # markup of two of its PUBLIC pages, and push protection cannot tell
+      # whose key it is. Fair enough. What was not fair enough is what went
+      # with it — one blocked path took down the whole commit, so that run's
+      # registry fetch, its rebuilt directory and its survey JSON were all
+      # lost, and the log said only "repository rule violations".
+      #
+      # survey_registries.py now strips script and redacts anything
+      # credential-shaped before writing a capture, which should end it. This
+      # is the belt: the captures go in their own commit, AFTER the data is
+      # safely pushed, and that commit is allowed to fail. A page we could not
+      # keep costs us a page. It must never cost us the harvest.
       - name: Commit
         if: always()
         run: |
@@ -225,7 +240,22 @@ jobs:
           git add data/gaps 2>/dev/null || true
           git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
-          [ -d debug/registries/survey ] && git add -f debug/registries/survey || true
+          git reset -q -- debug/registries/survey 2>/dev/null || true
           git add geocodes/places.json data/directory.json 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
           bash scripts/commit-and-push.sh "registries: $n businesses, plus the state survey [skip ci]"
+
+      - name: Keep the survey's pages, and never at the harvest's expense
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -d debug/registries/survey ] || { echo "nothing captured"; exit 0; }
+          git add -f debug/registries/survey
+          if git diff --cached --quiet; then
+            echo "no new captures"
+          else
+            bash scripts/commit-and-push.sh "registries: the pages the survey read [skip ci]" || {
+              echo "::warning::the captures were refused. The harvest above is committed and safe."
+              echo "::warning::Look for a credential in debug/registries/survey/* — survey_registries.py should have scrubbed it."
+            }
+          fi
