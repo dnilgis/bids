@@ -39,6 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "registry-survey.json"
+PAGES = ROOT / "debug" / "registries" / "survey"
 UA = "agsist-bidreader (+https://agsist.com; sig@farmers1st.com)"
 
 # THE DENOMINATOR OF REGISTRIES, 2026-09-04.
@@ -130,22 +131,63 @@ NEEDS_A_URL = ["AL", "CO", "DE", "GA", "KY", "LA", "MS", "NM", "SC", "TN", "WV",
 HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE"]
 
 
-DATA_LINK = re.compile(r'href=["\']([^"\']+\.(?:csv|xlsx?|json|txt))["\']', re.I)
+# THE FORMAT MOST OF THEM ACTUALLY USE WAS MISSING FROM THIS.
+#
+# This hunted for csv, xlsx, json and txt -- and not PDF, while TEN of the
+# twenty-two states checked publish their list as a PDF and three of the eight
+# already harvested are read with a PDF route. So the survey of 2026-09-04
+# reported Idaho, Montana and Oklahoma as "search form" with no data file,
+# from pages of 129 KB, 195 KB and 121 KB that almost certainly link one.
+# A link hunt that cannot see the commonest format is a link hunt that reports
+# absence it never tested for.
+DATA_LINK = re.compile(
+    r'href=["\']([^"\']+\.(?:csv|xlsx?|xls|json|txt|pdf))["\']', re.I)
 FORMISH = re.compile(r"<form\b", re.I)
 TR = re.compile(r"<tr\b", re.I)
 TH = re.compile(r"<th[^>]*>(.*?)</th>", re.I | re.S)
 
 
+# A 403 IS NOT ALWAYS AN ANSWER ABOUT THE DOCUMENT.
+#
+# Kansas returned 403 on 2026-09-04 to all FOUR of its candidates -- the
+# programme page, licensing, applications, documents. Four different pages
+# refusing identically is not four pages saying no; it is one filter in front
+# of them, and the thing it filtered was the only variable those four requests
+# shared: the User-Agent. Whether that is true is a measurement and not a
+# guess, so on a 403 this asks exactly once more with a browser string and
+# RECORDS WHICH ONE GOT THROUGH, because "Kansas publishes nothing" and
+# "Kansas has a bot filter" send the next person to completely different work.
+#
+# Rule 11: these are public licence rolls that any farmer can open in a
+# browser. Nothing here is behind a login and nothing is fetched faster than a
+# person would.
+BROWSER_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+              "Chrome/124.0 Safari/537.36 agsist-bidreader (+https://agsist.com)")
+
+
+def fetch(url, timeout, ua):
+    req = urllib.request.Request(url, headers={"User-Agent": ua})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        ctype = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+        return r.status, ctype, r.read(1_500_000)
+
+
 def look(url, timeout):
     d = {"url": url}
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            ctype = (r.headers.get("Content-Type") or "").split(";")[0].strip()
-            raw = r.read(1_500_000)
-            d.update(status=r.status, contentType=ctype, bytes=len(raw))
-    except Exception as ex:
-        d.update(status=0, error="%s: %s" % (type(ex).__name__, str(ex)[:130]))
+    raw = None
+    for ua, label in ((UA, "ours"), (BROWSER_UA, "browser")):
+        try:
+            status, ctype, raw = fetch(url, timeout, ua)
+            d.update(status=status, contentType=ctype, bytes=len(raw), ua=label)
+            d["_raw"] = raw
+            d.pop("error", None)
+            break
+        except Exception as ex:
+            d.update(status=0, ua=label,
+                     error="%s: %s" % (type(ex).__name__, str(ex)[:130]))
+            if "403" not in str(ex):
+                break            # only a refusal is worth a second identity
+    if raw is None:
         return d
 
     if "pdf" in d.get("contentType", "") or url.lower().endswith(".pdf"):
@@ -177,17 +219,49 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--timeout", type=int, default=30)
     ap.add_argument("--pause", type=float, default=0.8)
+    ap.add_argument("--keep", action="store_true",
+                    help="write every page that answered to debug/registries/survey/, "
+                         "so the next reader is written from bytes rather than from a "
+                         "one-word shape")
     a = ap.parse_args()
+
+    if a.keep:
+        PAGES.mkdir(parents=True, exist_ok=True)
 
     out = []
     for st, what, url, conf in CANDIDATES:
         d = look(url, a.timeout)
         d.update(state=st, expected=what, confidence=conf)
+        """KEEP THE PAGE. A CLASSIFICATION IS NOT A DOCUMENT.
+
+        This run told us Texas serves an html table of 36 rows and no <th> at
+        all, and Washington two PDFs of 713 KB and 383 KB. None of that is
+        enough to write a reader: what a reader needs is the column order, the
+        row shape and the three rows that will break it.
+
+        Four fixes today were written from bytes the runner kept -- the
+        AgriCharts cell widening, the AgHost DataGrid selector, the
+        cashbidssingle heading and the Hillsdale tab strip -- and every one of
+        them had first been guessed at wrong from a summary. The survey is the
+        one step that reaches these hosts, so it is the one chance to bring
+        the page back."""
+        if a.keep and d.get("bytes"):
+            ext = ".pdf" if d.get("shape") == "pdf" else ".html"
+            name = "%s-%s%s" % (st.lower(),
+                                re.sub(r"[^a-z0-9]+", "-", what.lower()).strip("-")[:40], ext)
+            try:
+                (PAGES / name).write_bytes(d.pop("_raw"))
+                d["kept"] = "debug/registries/survey/%s" % name
+            except Exception as ex:
+                d["keptError"] = str(ex)[:80]
+        d.pop("_raw", None)
         out.append(d)
         print("%-3s %-28s %-18s %s"
               % (st, what[:28], d.get("shape") or ("HTTP %s" % d.get("status")),
                  d.get("error", "")[:60] or
-                 ("%s rows" % d["rows"] if d.get("rows") else "")))
+                 ((("%s rows" % d["rows"]) if d.get("rows") else "")
+                  + (("  %d data link(s)" % len(d["dataLinks"])) if d.get("dataLinks") else "")
+                  + ("  [browser UA]" if d.get("ua") == "browser" else ""))))
         time.sleep(a.pause)
 
     OUT.write_text(json.dumps({
