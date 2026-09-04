@@ -1018,17 +1018,17 @@ test("a cashgrid manifest declares round-cent; a mobile one declares nothing", (
   const dir = { branch: "X", city: "X", state: "IA", zip: "50001", phone: null };
   const mk = (kind) => manifestFor({ id: "a-x", operator: "O", website: "w", url: "u",
                                      loc, dir, zipCoord: null, kind });
-  assert.equal(mk("cashgrid").cashRounding, "round-cent");
+  assert.equal(mk("cashgrid").cashRounding, "round-cent-either");
   assert.equal(mk("mobile").cashRounding, undefined,
     "the mobile board publishes no futures price and reaches board.mjs by another door");
-  assert.match(mk("cashgrid")._pending, /round-cent, measured across/);
+  assert.match(mk("cashgrid")._pending, /round-cent-either/);
   assert.match(mk("mobile")._pending, /NOT set and must not be guessed/);
 });
 
 test("every cashgrid source on disk carries it", () => {
   const missing = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => [f, JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"))])
-    .filter(([, s]) => s.platform === "agricharts-cashgrid" && s.cashRounding !== "round-cent")
+    .filter(([, s]) => s.platform === "agricharts-cashgrid" && s.cashRounding !== "round-cent-either")
     .map(([f]) => f);
   assert.deepEqual(missing, [], `${missing.length} cashgrid sources would refuse on rounding`);
 });

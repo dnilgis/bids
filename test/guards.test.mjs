@@ -18,6 +18,8 @@ import {
   isRefusal, TornRead, CASH_ROUNDING,
 } from "../lib/board.mjs";
 import { basisToCents, filterLocation, normLocationId, parseTicks, checkIdentity } from "../lib/parse.mjs";
+import { CASH_TO_ROOTS } from "../lib/adapters/agricharts.mjs";
+import { readdirSync, readFileSync } from "node:fs";
 
 const NOW = "2026-08-20T04:00:00.000Z";
 const URL_ = "https://example.test/board";
@@ -416,7 +418,32 @@ test("round-cent takes half a cent EITHER way, and is not a wider floor-cent", (
   assert.equal(floor(-0.25), false, "floor never sees a negative residual");
   assert.equal(floor(0.75), true);
   assert.equal(round(0.75), false, "and round never sees three quarters");
-  assert.deepEqual(Object.keys(CASH_ROUNDING).sort(), ["exact", "floor-cent", "round-cent"]);
+  assert.deepEqual(Object.keys(CASH_ROUNDING).sort(),
+    ["exact", "floor-cent", "round-cent", "round-cent-either"]);
+});
+
+test("round-cent-either closes the top, and closes nothing else", () => {
+  /* THE MODE ADDED 2026-09-04, and why it is a fourth mode rather than a
+     widening of the third. `round-cent` is open at the top because Premier
+     rounds half UP and its 161 rows show -0.5 and never +0.5. The AgriCharts
+     cashgrid boards show BOTH ends in one corpus -- 660 at -0.5 and 6 at +0.5
+     across 6,228 rows -- so they do not have one tie-break rule.
+
+     And whether a given board shows +0.5 is a property of the DAY: it happens
+     only when basis + futures lands exactly on a half-cent, which depends on
+     that morning's quote. Six rows on one board looked like an outlier; the
+     next poll produced agmarkllc-scranton at +0.5 on ZCZ26 corn, a different
+     operator entirely. */
+  const either = CASH_ROUNDING["round-cent-either"];
+  assert.equal(either(0.5), true, "the case round-cent refuses");
+  assert.equal(either(-0.5), true);
+  assert.equal(either(0.25), true);
+  assert.equal(either(0.51), false, "and it is still bounded");
+  assert.equal(either(-0.51), false);
+  assert.equal(either(0.75), false, "a floored board is a different arithmetic");
+  /* Premier's mode is untouched, so the boundary dtn-probe measures still
+     agrees with the guard. */
+  assert.equal(CASH_ROUNDING["round-cent"](0.5), false);
 });
 
 test("a rounded board publishes with round-cent and refuses without it", () => {
@@ -530,4 +557,88 @@ test("scaleFutures still returns the very same array when nothing scales", () =>
   const rows = [{ futures: "ZCZ26", futuresPrice: 459.25 }];
   assert.equal(scaleByContract(rows), rows);
   assert.equal(scaleFutures(rows, {}), rows);
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+   EVERY COMMODITY THAT IS FARMED, IF THERE IS A BID
+
+   Sig, 2026-09-04: "we want wheat, corn soy sunflow, every commodity that is
+   farmed... if there are bids, i want them."
+
+   A commodity with no band is WITHHELD — not refused, not logged loudly, just
+   absent. Measured on run 91684188060 across 731 sources: only 5 rows. But
+   lib/adapters/agricharts.mjs CASH_TO_ROOTS knew how to price seven words this
+   table would not publish, so a row could pass every structural guard in the
+   repository and still never appear.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test("the adapter and the band table agree about what a commodity is", () => {
+  /* THE GUARD THAT FOUND THE GAP. Two tables in one repository disagreeing
+     about the same word is not a judgement call. Whatever the adapter can
+     price against a real CBOT contract, this table must be willing to band. */
+  const unbanded = Object.keys(CASH_TO_ROOTS)
+    .filter((n) => { try { return !bandFor({}, n); } catch { return true; } });
+  assert.deepEqual(unbanded, [],
+    `the adapter prices these and the band table withholds them: ${unbanded.join(", ")}`);
+});
+
+test("the wheat classes, waxy corn and rice all band", () => {
+  const named = (s) => { const b = bandFor({}, s); return b && b.named; };
+  assert.match(named("DNS 14.0% - Portland Price"), /^dns/);
+  assert.match(named("Dark Northern Spring"), /^dark northern/);
+  /* "red winter" is longer than "hard red" and longest-first wins — both are
+     the same wheat band, so what matters is that it bands at all and lands on
+     wheat's numbers, not which of two wheat keys claimed it. */
+  const hrw = bandFor({}, "Hard Red Winter 12%");
+  assert.deepEqual([hrw.floor, hrw.ceiling], [3.0, 20.0]);
+  assert.match(named("Waxy Corn"), /^corn/);
+  assert.match(named("Long Grain Rice"), /^rice/);
+});
+
+test("sunflower is not spelled sunflower on a Northern Plains board", () => {
+  /* AgMark, Jamestown and Lincoln: "NuSun Flowers-CWT" at 19.50 and
+     "Hi-Oleic Flowers" at 21.50. Neither contains "sunflower". */
+  for (const s of ["NuSun Flowers-CWT", "Hi-Oleic Flowers", "Confection Flowers"]) {
+    const b = bandFor({}, s);
+    assert.ok(b, `${s} is withheld`);
+    assert.deepEqual([b.floor, b.ceiling], [8.0, 45.0]);
+  }
+  assert.ok(bandFor({}, "Sunflower"), "and the plain spelling still works");
+});
+
+test("rice does not match the word price", () => {
+  /* THE BUG ADDING `rice` INTRODUCED, caught the same hour. "DNS 14.0% -
+     Portland Price" matched p-RICE and Dark Northern Spring wheat was banded
+     as rice. Both are [3, 20] today, so nothing published wrong — and the next
+     time either band moves, it would. */
+  assert.match(bandFor({}, "DNS 14.0% - Portland Price").named, /^dns/);
+  assert.match(bandFor({}, "Corn - Cash Price").named, /^corn/);
+  assert.equal(bandFor({}, "Portland Price"), null,
+    "a string that is only 'price' must match nothing at all");
+  assert.match(bandFor({}, "Long Grain Rice").named, /^rice/, "and real rice still matches");
+  assert.match(bandFor({}, "rice").named, /^rice/);
+});
+
+test("substring matching is kept, because two published commodities need it", () => {
+  /* A word-boundary rule would have been the tidy fix and it costs these. */
+  assert.match(bandFor({}, "2ycorn").named, /^corn/);
+  assert.match(bandFor({}, "1ysoybean").named, /^soybean/);
+});
+
+test("every commodity string this repository has ever published still bands", () => {
+  const seen = new Set();
+  const DATA = new URL("../data/", import.meta.url).pathname;
+  for (const f of readdirSync(DATA).filter((x) => x.endsWith(".json"))) {
+    /* NOT a bare catch. A `catch { continue }` here swallowed a missing
+       readFileSync import and the test reported "0 commodity strings found"
+       instead of "readFileSync is not defined" — a guard that cannot fail
+       loudly is not a guard. Only a malformed file is skipped. */
+    let j;
+    try { j = JSON.parse(readFileSync(DATA + f, "utf8")); }
+    catch (e) { if (e instanceof SyntaxError) continue; throw e; }
+    for (const b of j.bids || []) if (b.commodity) seen.add(b.commodity);
+  }
+  assert.ok(seen.size > 50, `only ${seen.size} commodity strings found — is data/ present?`);
+  const lost = [...seen].filter((c) => { try { return !bandFor({}, c); } catch { return true; } });
+  assert.deepEqual(lost, [], `these stopped banding: ${lost.join(", ")}`);
 });

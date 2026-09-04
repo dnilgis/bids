@@ -428,7 +428,7 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
 
        NOT set on the mobile boards: those publish no futures price at all and
        reach lib/board.mjs by a different door. */
-    ...(kind === "cashgrid" ? { cashRounding: "round-cent" } : {}),
+    ...(kind === "cashgrid" ? { cashRounding: "round-cent-either" } : {}),
     note: `WRITTEN BY scripts/agricharts-sweep.mjs${runId ? ` (run ${runId})` : ""} from their own `
       + `${kind === "cashgrid" ? "cashgrid" : "mobile"} board at ${url}. locationId `
       + `${loc.locationId} is the l= parameter on this `
@@ -468,8 +468,9 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
     website,
     inMerge: true,
     _pending: (kind === "cashgrid"
-      ? "cashRounding is round-cent, measured across 6,228 rows on 45 captured boards "
-        + "(residuals only -0.5, -0.25, +0.25, +0.5). "
+      ? "cashRounding is round-cent-either: nearest cent, tie-break not established. "
+        + "Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and "
+        + "nothing else, so the interval is closed at both ends. "
       : "cashRounding is NOT set and must not be guessed; it is measured from a real board "
         + "against real futures. ")
       + (zipCoord
