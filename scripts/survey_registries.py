@@ -124,7 +124,33 @@ CANDIDATES = [
     # already in this repository. Most elevators are licensed by their state,
     # not by USDA, so this is a few hundred names the state rolls will not
     # have, not the national roster. Worth taking; not worth waiting for.
-    ("US", "USDA WCMD dashboard", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y", "national, Tableau, export unknown; returned 200 and 0 rows on 2026-09-03"),
+    ("US", "USDA WCMD dashboard", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y", "a Tableau shell; 200 and no rows on 2026-09-03 and again on 2026-09-04"),
+    # THE DASHBOARD EXPORTS. Sig sent the dashboard URL on 2026-09-04 and
+    # appending .csv to the VIEW path returns real data -- the summary sheet,
+    # 79 rows of counts by commodity, READ that day:
+    #
+    #     Grain   4,802 warehouses   4,538 CCC approved   2,387 USWA licensed
+    #     Cotton    329              Peanut 304           Sugar 85 …
+    #
+    # 4,802 GRAIN WAREHOUSES is the first national denominator anybody has
+    # published in one place, and it is larger than this whole repository's
+    # directory. It counts warehouses under a CCC storage agreement and/or a
+    # USWA licence, which is NOT the same set as elevators posting a cash bid
+    # -- but it is a real count of real facilities, and nothing else comes
+    # close.
+    ("US", "WCMD summary, csv export", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard.csv?:isGuestRedirectFromVizportal=y&:embed=y", "READ 2026-09-04: 79 rows, counts by commodity. Grain = 4802"),
+    # The summary is one SHEET of the workbook. The per-warehouse rows are on
+    # another, and Tableau names its sheets whatever the author typed. These
+    # are probes: the sandbox cannot reach this host, so one runner pass says
+    # which of them exist and the rest get deleted. A 404 here costs nothing.
+    ("US", "WCMD sheet probe: Warehouse Detail", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseDetail.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Warehouse List", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseList.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Warehouse Locations", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseLocations.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Map", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Map.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Sheet1", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Sheet1.csv?:embed=y", "probe, never opened"),
+    # The clickable USWA map data.gov points at. DNS does not resolve from the
+    # sandbox; the runner is on a different network and may see it.
+    ("US", "USWA licensed warehouses map", "https://saltlake.sc.egov.usda.gov/approved_whses/uswa/approved_whses_USWA.asp", "data.gov's only distribution for the USWA map; DNS fails from the sandbox"),
     ("US", "USWA active warehouses, data.gov", "https://catalog.data.gov/dataset/uswa-active-warehouses", "read 2026-09-04: its only distribution is a PDF at fsa.usda.gov"),
     ("US", "USWA licensed and bonded, 2010 snapshot", "http://www.fsa.usda.gov/Internet/FSA_File/whselst2010.pdf", "READ 2026-09-04: 'Licensed and Bonded Warehouses Licensed Under the U.S. Warehouse Act As of December 31, 2010'. Town / warehouse / operator, no street address. SIXTEEN YEARS OLD — the survey should look for a newer year"),
     ("US", "USWA snapshot, another year", "http://www.fsa.usda.gov/Internet/FSA_File/whselst2012.pdf", "search 2026-09-04: the file name carries the year, so the newest one is worth finding"),
@@ -301,6 +327,19 @@ def look(url, timeout):
             if "403" not in str(ex):
                 break            # only a refusal is worth a second identity
     if raw is None:
+        return d
+
+    # A CSV IS THE ANSWER, NOT AN "UNCLEAR". Content that is not HTML falls
+    # through to the tag counters below, which find no <tr> and no <form> and
+    # report "unclear" -- about a file that is already the table we wanted.
+    ctype = d.get("contentType", "")
+    if ("csv" in ctype or "excel" in ctype or "spreadsheet" in ctype
+            or re.search(r"\.(csv|xlsx?)(\?|$)", url, re.I)):
+        head = raw[:4000].decode("utf-8", "replace")
+        first = head.splitlines()[0] if head.splitlines() else ""
+        d["shape"] = "csv" if ("," in first and "<" not in first[:200]) else "spreadsheet"
+        d["headerCells"] = [c.strip().strip('"') for c in first.split(",")][:14]
+        d["rows"] = max(0, raw.count(b"\n") - 1)
         return d
 
     if "pdf" in d.get("contentType", "") or url.lower().endswith(".pdf"):

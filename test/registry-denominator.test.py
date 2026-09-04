@@ -249,6 +249,24 @@ check("Commodity-Dealer-Licensees" in cand_urls,
 check("ID-WA-Cooperative-Licensees" in cand_urls,
       "the Idaho/Washington co-operative list was found and then not written down")
 
+# ── a csv is the answer, not an "unclear" ─────────────────────────────────
+#
+# Sig sent the WCMD dashboard URL on 2026-09-04 and appending .csv to the view
+# path returns real data. The survey would have called it "unclear": content
+# that is not HTML falls through to the tag counters, which find no <tr> and no
+# <form>, and report a mystery about a file that is already the table.
+check("WCMDDashboard.csv" in cand_urls,
+      "the WCMD csv export that actually returned data is not a candidate")
+# THE SUMMARY IS ONE SHEET. The per-warehouse rows are on another, and Tableau
+# names its sheets whatever the author typed, so the probes are how we find
+# out. They must be marked as probes and not as findings.
+probes = [c for _, what, _, c in rows if "probe" in what.lower()]
+check(len(probes) >= 5,
+      "the workbook's other sheets are no longer probed — only %d left" % len(probes))
+for c in probes:
+    check("never opened" in c or "probe" in c,
+          "a probe is recorded as though somebody had opened it")
+
 
 def measured():
     """Run the survey against a local server: does it keep the page, find a
@@ -257,7 +275,7 @@ def measured():
     Everything above reads the source. This runs it, because the three things
     that matter here are all things the source can look correct about and
     still not do."""
-    import http.server, socketserver, threading, subprocess, tempfile, shutil, os, json
+    import http.server, socketserver, threading, subprocess, tempfile, shutil, json, pathlib
     # THE PAGE THE SERVER SERVES CARRIES A KEY, because scrub() being correct
     # says nothing about whether the capture path calls it. Bypassing it broke
     # no test until this page did — the third time this repository has been
@@ -272,13 +290,19 @@ def measured():
     # links of pesticide forms produced a confident wrong answer at threshold 1.
     WEAK = (b'<html><body><a href="/SensitiveCropRegistry_guide_10_29_20.pdf">guide</a>'
             b'</body></html>')
+    # A CSV, because a file that is already the table must not come back as a
+    # mystery. Content that is not HTML falls through to the tag counters,
+    # which find no <tr> and no <form>, and report "unclear".
+    CSV = b"Commodity,All Warehouses,CCC Approved\nGrain,4802,4538\nCotton,329,325\n"
 
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path.startswith("/walled") and "Mozilla" not in self.headers.get("User-Agent", ""):
                 self.send_response(403); self.end_headers(); self.wfile.write(b"no"); return
-            body = WEAK if self.path.startswith("/weak") else PAGE
-            self.send_response(200); self.send_header("Content-Type", "text/html")
+            csvish = self.path.startswith("/data")
+            body = CSV if csvish else (WEAK if self.path.startswith("/weak") else PAGE)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv" if csvish else "text/html")
             self.send_header("Content-Length", str(len(body))); self.end_headers()
             self.wfile.write(body)
 
@@ -289,26 +313,46 @@ def measured():
     port = srv.server_address[1]
     threading.Thread(target=srv.serve_forever, daemon=True).start()
 
-    script = ROOT / "scripts" / "survey_registries.py"
-    out_json = ROOT / "data" / "registry-survey.json"
-    kept_dir = ROOT / "debug" / "registries" / "survey"
-    backup = script.read_text()
-    saved = out_json.read_text() if out_json.exists() else None
-    had = sorted(p.name for p in kept_dir.glob("*")) if kept_dir.exists() else []
+    """RUN A COPY, IN A DIRECTORY OF ITS OWN.
+
+    The first version patched scripts/survey_registries.py in place and put it
+    back in a finally. Then a run was interrupted, the finally never fired, and
+    the repository was left holding a survey script with four localhost
+    candidates in it — a guard that corrupts the thing it guards.
+
+    The script takes its ROOT from its own __file__, so a copy in a temp tree
+    writes its output there too. Nothing in the repository is touched, no
+    restore is needed, and an interrupted run leaves a temp directory behind
+    and nothing else.
+
+    The candidate list is REPLACED rather than prepended, because prepending
+    left the real thirty in place: every run of this guard fired thirty
+    requests at state agriculture departments to test a regex."""
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="survey-guard-"))
+    (tmp / "scripts").mkdir()
+    (tmp / "data").mkdir()
+    local = ('CANDIDATES = [\n'
+             '    ("ZZ", "open page", "http://127.0.0.1:%d/open", "probe, never opened"),\n'
+             '    ("ZY", "walled page", "http://127.0.0.1:%d/walled", "probe, never opened"),\n'
+             '    ("ZX", "weak page", "http://127.0.0.1:%d/weak", "probe, never opened"),\n'
+             '    ("ZW", "a csv", "http://127.0.0.1:%d/data.csv", "probe, never opened"),\n]\n'
+             'UNUSED_CANDIDATES = [' % (port, port, port, port))
+    script = tmp / "scripts" / "survey_registries.py"
+    script.write_text((ROOT / "scripts" / "survey_registries.py").read_text()
+                      .replace("CANDIDATES = [", local, 1))
     try:
-        script.write_text(backup.replace(
-            "CANDIDATES = [",
-            'CANDIDATES = [\n    ("ZZ","open","http://127.0.0.1:%d/open","probe"),\n'
-            '    ("ZY","walled","http://127.0.0.1:%d/walled","probe"),\n'
-            '    ("ZX","weak","http://127.0.0.1:%d/weak","probe"),' % (port, port, port), 1))
         subprocess.run([sys.executable, str(script), "--timeout", "3", "--pause", "0", "--keep"],
-                       capture_output=True, text=True, cwd=str(ROOT))
-        got = {r["state"]: r for r in json.loads(out_json.read_text())["results"]
-               if r.get("state") in ("ZZ", "ZY", "ZX")}
-        check("ZZ" in got and "ZY" in got, "the survey did not reach the local server")
+                       capture_output=True, text=True, cwd=str(tmp))
+        out_json = tmp / "data" / "registry-survey.json"
+        check(out_json.exists(), "the survey wrote no output at all")
+        if not out_json.exists():
+            return
+        got = {r["state"]: r for r in json.loads(out_json.read_text())["results"]}
+        check(set(got) == {"ZZ", "ZY", "ZX", "ZW"},
+              "the guard asked something other than its own local server: %s" % sorted(got))
         if "ZZ" in got:
             check(got["ZZ"].get("kept"), "the page that answered was not kept")
-            kept_path = ROOT / str(got["ZZ"].get("kept") or "x")
+            kept_path = tmp / str(got["ZZ"].get("kept") or "x")
             check(kept_path.exists(), "the survey recorded a kept path that does not exist")
             if kept_path.exists():
                 body = kept_path.read_text(errors="replace")
@@ -323,7 +367,6 @@ def measured():
             # is a link nobody can follow.
             check(any(l.endswith("?ver=AbC%3d%3d") for l in links),
                   "the query string was stripped from a stored link — it cannot be fetched back")
-            # AND THE ROSTER IS NAMED, not left as "2 data link(s)".
             roster = got["ZZ"].get("looksLikeARoster") or []
             check(roster and "warehouse-licensees.xls" in roster[0],
                   "the roster was not picked out from the form beside it")
@@ -342,16 +385,18 @@ def measured():
             check(not got["ZX"].get("looksLikeARoster"),
                   "a page whose only data file is a pesticide guide was offered a roster — "
                   "this is Oklahoma's 102 links producing a confident wrong answer")
+        if "ZW" in got:
+            # The WCMD dashboard's .csv export is exactly this case, and it is
+            # the only national grain count anyone publishes: 4,802 warehouses.
+            check(got["ZW"].get("shape") == "csv",
+                  "a csv was classified as %r — a file that IS the table came back a mystery"
+                  % got["ZW"].get("shape"))
+            check((got["ZW"].get("headerCells") or [None])[0] == "Commodity",
+                  "the csv's own header row was not read")
+            check(got["ZW"].get("rows") == 2, "the csv's rows were not counted")
     finally:
-        script.write_text(backup)
-        if saved is not None:
-            out_json.write_text(saved)
-        if kept_dir.exists():
-            for f in kept_dir.glob("*"):
-                if f.name not in had:
-                    f.unlink()
+        shutil.rmtree(tmp, ignore_errors=True)
         srv.shutdown()
-
 
 measured()
 
