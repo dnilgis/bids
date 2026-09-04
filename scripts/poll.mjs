@@ -350,7 +350,16 @@ const sharedCtx = new Map();
 async function sharedFor(platform) {
   const spec = SHARED_PAGES[platform];
   if (!spec) return undefined;
-  if (sharedCtx.has(platform)) return sharedCtx.get(platform);
+  /* KEYED BY THE PAGES, NOT BY THE PLATFORM.
+     lib/adapters/index.mjs says of the cashgrid entry "the same seven pages,
+     and they are fetched once for both". They were not: this cache was keyed
+     by platform name, so agricharts and agricharts-cashgrid each fetched the
+     same seven quote pages and the pass asked legacyfarmers.mobile.agricharts
+     .com for fourteen. The comment was written the day the second platform was
+     added and was never true. Two platforms naming the same URL list now share
+     one fetch and one parse. */
+  const key = spec.urls.join("|");
+  if (sharedCtx.has(key)) return sharedCtx.get(key);
 
   const bodies = [], problems = [];
   for (const u of spec.urls) {
@@ -376,7 +385,7 @@ async function sharedFor(platform) {
   else
     console.log(`   ${platform}: read ${spec.urls.length} shared page(s) once for the whole pass `
       + `(${spec.why})`);
-  sharedCtx.set(platform, ctx);
+  sharedCtx.set(key, ctx);
   return ctx;
 }
 

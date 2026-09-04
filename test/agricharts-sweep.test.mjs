@@ -939,15 +939,20 @@ test("the manifests a cashgrid board plans all validate", () => {
   }
 });
 
-test("the whole capture set plans 253 manifests, and the count is checked not eyeballed", () => {
+test("the whole capture set plans 253 manifests from an empty repository", () => {
   /* THE NUMBER THIS WORK IS FOR. Recomputed here rather than remembered: if a
      capture, the directory or the join changes, this says so instead of the
      README quietly going stale. */
   const known = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
   const byZip = new Map(JSON.parse(readFileSync(join(ROOT, "geocodes/zip-candidates.json"), "utf8"))
     .zips.map((z) => [z.zip, z]));
-  const seen = new Set(readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
-    .map((f) => f.slice(0, -5)));
+  /* AN EMPTY SET ON PURPOSE. Seeded from sources/, this test measured the
+     DIFFERENCE between the captures and the repository — so the moment run
+     91672980386 wrote those 233 manifests, the same captures planned nothing
+     and the test that proved the work went red because the work shipped. What
+     is worth guarding is what these boards CONTAIN, which does not change when
+     the repo catches up. */
+  const seen = new Set();
   let write = 0, unmatched = 0;
   for (const f of cashgrids()) {
     const slugName = f.slice("agricharts-cashgrid-".length, -".html".length);
@@ -961,7 +966,7 @@ test("the whole capture set plans 253 manifests, and the count is checked not ey
     for (const w of plan.write) seen.add(w.id);
     write += plan.write.length; unmatched += plan.unmatched.length;
   }
-  assert.ok(write >= 250, `only ${write} manifests would be written`);
+  assert.ok(write >= 250, `only ${write} manifests plannable from the captures`);
   /* The unmatched are a QUEUE, not a rounding error: real elevators posting
      real prices that data/known-elevators.json cannot give a town to. */
   assert.ok(unmatched > 0, "every location matching would be surprising, not good news");

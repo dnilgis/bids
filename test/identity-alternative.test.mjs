@@ -229,7 +229,24 @@ test("the poller fetches the shared pages and passes them to the adapter", () =>
 
 test("the shared pages are fetched once per pass, not once per source", () => {
   // 211 sites x 7 pages is 1,477 requests to say the same thing.
-  assert.match(POLL, /sharedCtx\.has\(platform\)/,
+  assert.match(POLL, /sharedCtx\.has\(key\)/,
     "without the cache this is a fetch per source");
-  assert.match(POLL, /sharedCtx\.set\(platform,/);
+  assert.match(POLL, /sharedCtx\.set\(key,/);
+});
+
+test("...and once for ALL the platforms that name the same pages", () => {
+  /* THE COMMENT SAID SO BEFORE THE CODE DID. lib/adapters/index.mjs describes
+     the cashgrid entry as "the same seven pages, and they are fetched once for
+     both" — but sharedCtx was keyed by PLATFORM NAME, so agricharts and
+     agricharts-cashgrid each fetched all seven and the pass asked
+     legacyfarmers.mobile.agricharts.com for fourteen pages to learn one set of
+     futures. A cache keyed by the thing being cached fixes it. */
+  assert.match(POLL, /const key = spec\.urls\.join/,
+    "the cache key must be the page list, not the platform name");
+  assert.doesNotMatch(POLL, /sharedCtx\.(has|set)\(platform/,
+    "keyed by platform, two platforms sharing one page list fetch it twice");
+
+  const lists = Object.values(SHARED_PAGES).map((s) => s.urls.join("|"));
+  assert.ok(lists.length > new Set(lists).size,
+    "this guard is pointless unless two platforms really do share a list");
 });
