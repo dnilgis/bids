@@ -39,7 +39,7 @@ on:
         type: boolean
         default: false
       platform:
-        description: "One platform only: aghost, cashbidssingle, bushel, dtn-cs or graindesk. Blank asks all five."
+        description: "One platform only: aghost, cashbidssingle, dtn-cs or graindesk. Blank asks all four. (bushel is scripts/bushel-probe.mjs's — its board is a keyed runtime call.)"
         required: false
         default: ""
       limit:
@@ -54,6 +54,10 @@ on:
         description: "Comma-separated substrings — ask only sites whose URL contains one. For trying a single co-op."
         required: false
         default: ""
+      capture:
+        description: "Keep the HTML of boards that refused, or whose locations could not be named, in fixtures/board-sweep/. Turn this ON when a run reports 'location 2451' — the parser gets fixed from the page, not from a guess about it."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -84,10 +88,12 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           START: ${{ inputs.start }}
           ONLY: ${{ inputs.only }}
+          CAPTURE: ${{ inputs.capture }}
         run: |
           set -o pipefail
           ARGS=""
           if [ "$WRITE" = "true" ]; then ARGS="$ARGS --write"; fi
+          if [ "$CAPTURE" = "true" ]; then ARGS="$ARGS --capture"; fi
           if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
           if [ -n "$START" ]; then ARGS="$ARGS --start $START"; fi
           if [ -n "$PLATFORM" ]; then ARGS="$ARGS --platform $PLATFORM"; fi
@@ -99,6 +105,19 @@ jobs:
       - name: Every manifest still loads
         if: ${{ inputs.write }}
         run: node --test test/sources.test.mjs test/manifest.test.mjs
+
+      # CAPTURED PAGES ARE COMMITTED EVEN ON A DRY RUN. The whole point of
+      # asking for them is that the next parser fix is written from bytes, and
+      # bytes that stay on a runner for six hours are bytes nobody has.
+      - name: Keep the captured boards
+        if: ${{ always() && inputs.capture }}
+        run: |
+          git add -A fixtures/board-sweep/ || true
+          if git diff --cached --quiet; then
+            echo "nothing captured"
+          else
+            bash scripts/commit-and-push.sh "bids: board pages captured by the sweep"
+          fi
 
       - name: Commit what it wrote
         if: ${{ always() && inputs.write }}
