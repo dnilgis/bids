@@ -187,6 +187,68 @@ pdf = b"%PDF-1.4 stream sk.eyJ1IjoiZXhhbXBsZSJ9.xxxxxxxxxxxxxxxxxxxxxxxxxx endst
 back, n = _srv.scrub(pdf, "application/pdf")
 check(back == pdf and n == 0, "a PDF was rewritten; a licence book must come back as itself")
 
+# ── the query string hid the one link that mattered ───────────────────────
+#
+# Texas publishes its licensed grain warehouses as an EXCEL FILE, and the link
+# hunt could not see it, because the href is
+#
+#     /Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d
+#
+# and the extension has to be last before the quote. DotNetNuke stamps ?ver= on
+# every asset it serves and so does most of the web. Measured against the pages
+# kept on 2026-09-04: allowing a query string finds TWENTY-EIGHT more links on
+# the Texas page alone, one of them the list this whole exercise is for.
+for href in ['href="/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXX%3d%3d"',
+             "href='/a/list.pdf?v=2'", 'href="/b/data.csv?download=1&x=2"']:
+    check(_srv.DATA_LINK.search(href), "a versioned asset is invisible: %s" % href)
+check(_srv.DATA_LINK.search('href="/Portals/x.xls?ver=1"').group(1).endswith("?ver=1"),
+      "the query string is dropped from the pattern's capture")
+
+# A WEAK POSITIVE ON A PAGE WITH NOTHING is worse than saying nothing: it is a
+# wrong answer with a filename attached. Oklahoma's page is 102 links of
+# pesticide forms and an egg statute, and at a threshold of one it confidently
+# offered "SensitiveCropRegistry_guide" as the grain roster.
+for weak in ["/SensitiveCropRegistry_guide_10_29_20.pdf", "/Oklahoma-RUP-Dealer-Lic-ver-2.pdf"]:
+    check(_srv.rank_link(weak) < 2,
+          "%s would be offered as a roster; it is not one" % weak)
+
+# ── which of eight links is the roster ────────────────────────────────────
+#
+# Idaho offers eight PDFs: five fillable bond and application forms, and two
+# licensee lists. Oklahoma offers a hundred and two, and not one of them is a
+# grain roster. "8 data link(s)" tells nobody which is which.
+check(_srv.rank_link("/Portals/0/Reports/PIR/grain_warehouse.xls?ver=x") >= 2,
+      "Texas's own licensee spreadsheet does not read as a roster")
+check(_srv.rank_link(".../WarehouseProgram/Commodity-Dealer-Licensees-1.pdf") >= 2,
+      "Idaho's licensee list does not read as a roster")
+# EVERY ONE OF THESE BEAT A REAL ROSTER TO THE TOP OF A REAL PAGE.
+for form in ["/ACP grain warehouse supporting docs info.pdf",
+             "/AG00884%20Rates%20for%20Storing%20and%20Handling%20Grain.pdf",
+             "/AG04019%20Grain%20Licensing%20Financial%20Statement.pdf",
+             "/10_25_Warehouse-Charter-App.pdf",
+             "/Final-Website-10162025-Dealer-Renewal.pdf",
+             "/Commodity-Dealer-Bond-FILLABLE.pdf",
+             "/rgw_300_application_to_operate_a_public_grain_warehouse.pdf"]:
+    check(_srv.rank_link(form) < 2,
+          "%s outranks a real roster — it is a form" % form.rsplit("/", 1)[-1][:40])
+# A SPREADSHEET IS MORE OFTEN A ROSTER THAN A FORM IS. Texas ships .xls, Ohio
+# .csv; the forms are always PDFs.
+check(_srv.rank_link("/x/warehouse-list.csv") > _srv.rank_link("/x/warehouse-list.pdf"),
+      "a tabular format is not preferred over a PDF of the same name")
+
+# ── and the two rosters those pages named are now candidates ──────────────
+# COMMENTS ARE NOT COVERAGE — for the third time today. Checking `"x" in
+# SURVEY` passed with the candidate deleted, because the comment above it
+# quotes the same filename. Look in the CANDIDATE URLs and nowhere else.
+cand_urls = " ".join(re.findall(r'\(\"[A-Z]{2}\",\s*\"[^\"]+\",\s*\"([^\"]+)\"',
+                                cand.group(1)))
+check("grain_warehouse.xls" in cand_urls,
+      "the Texas licensee spreadsheet was found and then not written down as a candidate")
+check("Commodity-Dealer-Licensees" in cand_urls,
+      "Idaho's licensee list was found and then not written down as a candidate")
+check("ID-WA-Cooperative-Licensees" in cand_urls,
+      "the Idaho/Washington co-operative list was found and then not written down")
+
 
 def measured():
     """Run the survey against a local server: does it keep the page, find a
@@ -203,15 +265,22 @@ def measured():
     PAGE = (b'<html><head><script>var t="sk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGFiY2RlZmdoIn0.QqWwEe";'
             b'</script></head><body>'
             b'<table><tr><th>Company</th></tr><tr><td>A</td></tr></table>'
-            b'<a href="/lists/warehouses.pdf">Licensed warehouses</a></body></html>')
+            b'<a href="/lists/warehouse-licensees.xls?ver=AbC%3d%3d">Licensed warehouses</a>'
+            b'<a href="/forms/bond-FILLABLE.pdf">Bond form</a></body></html>')
+
+    # A page whose ONLY data file is a weak match — Oklahoma's case, where 102
+    # links of pesticide forms produced a confident wrong answer at threshold 1.
+    WEAK = (b'<html><body><a href="/SensitiveCropRegistry_guide_10_29_20.pdf">guide</a>'
+            b'</body></html>')
 
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path.startswith("/walled") and "Mozilla" not in self.headers.get("User-Agent", ""):
                 self.send_response(403); self.end_headers(); self.wfile.write(b"no"); return
+            body = WEAK if self.path.startswith("/weak") else PAGE
             self.send_response(200); self.send_header("Content-Type", "text/html")
-            self.send_header("Content-Length", str(len(PAGE))); self.end_headers()
-            self.wfile.write(PAGE)
+            self.send_header("Content-Length", str(len(body))); self.end_headers()
+            self.wfile.write(body)
 
         def log_message(self, *a):
             pass
@@ -230,11 +299,12 @@ def measured():
         script.write_text(backup.replace(
             "CANDIDATES = [",
             'CANDIDATES = [\n    ("ZZ","open","http://127.0.0.1:%d/open","probe"),\n'
-            '    ("ZY","walled","http://127.0.0.1:%d/walled","probe"),' % (port, port), 1))
+            '    ("ZY","walled","http://127.0.0.1:%d/walled","probe"),\n'
+            '    ("ZX","weak","http://127.0.0.1:%d/weak","probe"),' % (port, port, port), 1))
         subprocess.run([sys.executable, str(script), "--timeout", "3", "--pause", "0", "--keep"],
                        capture_output=True, text=True, cwd=str(ROOT))
         got = {r["state"]: r for r in json.loads(out_json.read_text())["results"]
-               if r.get("state") in ("ZZ", "ZY")}
+               if r.get("state") in ("ZZ", "ZY", "ZX")}
         check("ZZ" in got and "ZY" in got, "the survey did not reach the local server")
         if "ZZ" in got:
             check(got["ZZ"].get("kept"), "the page that answered was not kept")
@@ -246,8 +316,19 @@ def measured():
                       "THE CAPTURE PATH DID NOT SCRUB. A key on the page reached the file "
                       "that gets committed — this is exactly what blocked run 91883116181.")
                 check("<th>Company</th>" in body, "the kept page lost the table it was kept for")
-            check(any(l.endswith(".pdf") for l in got["ZZ"].get("dataLinks") or []),
-                  "the PDF link on the page was not found")
+            links = got["ZZ"].get("dataLinks") or []
+            check(any(".pdf" in l for l in links), "the PDF link on the page was not found")
+            # THE URL MUST COME BACK FETCHABLE. Texas's spreadsheet is served
+            # only at its ?ver= URL; a link recorded without its query string
+            # is a link nobody can follow.
+            check(any(l.endswith("?ver=AbC%3d%3d") for l in links),
+                  "the query string was stripped from a stored link — it cannot be fetched back")
+            # AND THE ROSTER IS NAMED, not left as "2 data link(s)".
+            roster = got["ZZ"].get("looksLikeARoster") or []
+            check(roster and "warehouse-licensees.xls" in roster[0],
+                  "the roster was not picked out from the form beside it")
+            check(not any("bond-FILLABLE" in r for r in roster),
+                  "a bond form was offered as a roster")
         if "ZY" in got:
             # THE WHOLE POINT OF THE RETRY. Kansas refused four candidates
             # identically; this proves a filter on the user-agent is passed and
@@ -256,6 +337,11 @@ def measured():
                   "a page that refuses our user-agent was reported as unreachable")
             check(got["ZY"].get("ua") == "browser",
                   "the survey did not record that it took a second identity to get in")
+        if "ZX" in got:
+            check(got["ZX"].get("dataLinks"), "the weak page's link was not seen at all")
+            check(not got["ZX"].get("looksLikeARoster"),
+                  "a page whose only data file is a pesticide guide was offered a roster — "
+                  "this is Oklahoma's 102 links producing a confident wrong answer")
     finally:
         script.write_text(backup)
         if saved is not None:

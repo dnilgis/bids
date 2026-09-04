@@ -95,14 +95,23 @@ CANDIDATES = [
     ("MN", "grain licensing", "https://www.mda.state.mn.us/grain-licensing-0", "search 2026-09-04, unopened"),
     ("MN", "warehouse licensing", "https://www.mda.state.mn.us/warehouse-licensing", "search 2026-09-04, unopened"),
 
-    ("TX", "grain warehouse programme", "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse", "search 2026-09-04, unopened"),
+    ("TX", "grain warehouse programme", "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse", "READ 2026-09-04: a programme page. Its 36 <tr> are FORMS, not warehouses — the survey's own row count called it a table and was wrong. The list is one link down"),
+    # THE LIST ITSELF, read off that page's bytes on 2026-09-04:
+    #   "Find a TDA-Licensed Grain Warehouse — Click here for a list of grain
+    #    warehouses licensed by TDA."   ->  /Portals/0/Reports/PIR/grain_warehouse.xls
+    # An EXCEL FILE, which is the best shape any state has offered so far, and
+    # the link the survey could not see until it learned about query strings.
+    ("TX", "THE LICENSEE LIST, xls", "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d", "found in the page kept on 2026-09-04; never fetched"),
 
     ("WA", "licence book PDF", "https://cms.agr.wa.gov/WSDAKentico/Documents/GWA-License-Book-21-22.pdf", "search 2026-09-04: titled PUBLIC GRAIN WAREHOUSES/DEALERS LICENSED WITH THE STATE OF WASHINGTON"),
     ("WA", "warehouses and dealers PDF", "https://cms.agr.wa.gov/WSDAKentico/Documents/Grain-Warehouse-Audit-Grain-Dealers.pdf", "search 2026-09-04, unopened"),
 
     ("OR", "SOS licence directory, bonded grain warehouse", "https://apps.oregon.gov/SOS/LicenseDirectory/LicenseDetail/170", "search 2026-09-04: says 'Last updated 01/05/2026'"),
 
-    ("ID", "warehouse programme", "https://agri.idaho.gov/ag-inspections/warehouse-program/", "search 2026-09-04, unopened"),
+    ("ID", "warehouse programme", "https://agri.idaho.gov/ag-inspections/warehouse-program/", "READ 2026-09-04: twelve data links, five of them fillable bond and application forms"),
+    # Two of those twelve are licensee ROSTERS, and the second covers two states.
+    ("ID", "commodity dealer licensees", "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf", "found in the page kept on 2026-09-04; never fetched"),
+    ("ID", "Idaho AND Washington co-op licensees", "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/ID-WA-Cooperative-Licensees.pdf", "found in the page kept on 2026-09-04; never fetched"),
 
     ("MT", "commodity warehouse licence", "https://prod-agr.mt.gov/Topics/A-D/Commodity-Pages/Commodity-Warehouse-License", "search 2026-09-04, unopened"),
 
@@ -140,8 +149,63 @@ HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE"]
 # from pages of 129 KB, 195 KB and 121 KB that almost certainly link one.
 # A link hunt that cannot see the commonest format is a link hunt that reports
 # absence it never tested for.
+# ...AND THE QUERY STRING HID THE ONE THAT MATTERED.
+#
+# Texas publishes its licensed grain warehouses as an EXCEL FILE and this
+# pattern could not see it, because the href is
+#
+#     /Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d
+#
+# and the extension has to be the last thing before the quote. DotNetNuke
+# stamps ?ver= on every asset it serves; so do most CMSes. Measured against the
+# pages kept on 2026-09-04: allowing a query string finds TWENTY-EIGHT more
+# links on the Texas page alone, one of which is the list this whole exercise
+# is looking for.
 DATA_LINK = re.compile(
-    r'href=["\']([^"\']+\.(?:csv|xlsx?|xls|json|txt|pdf))["\']', re.I)
+    r'href=["\']([^"\']+\.(?:csv|xlsx?|xls|json|txt|pdf)(?:\?[^"\']*)?)["\']', re.I)
+
+# WHICH OF EIGHT LINKS IS THE ROSTER.
+#
+# Idaho's page offers eight PDFs: five are fillable bond and application forms,
+# and two are "Commodity-Dealer-Licensees-1.pdf" and
+# "ID-WA-Cooperative-Licensees.pdf". Oklahoma's eight are pesticide forms and
+# an egg statute, and none of them is a grain list at all. Reporting "8 data
+# link(s)" tells nobody which is which, and a person checking by hand opens
+# eight PDFs to find that seven were never candidates.
+#
+# So the links are RANKED, on the words in their own file names, and the
+# ranking is reported rather than acted on. Nothing is fetched because it
+# scored well; the score decides what to say and what order to say it in.
+ROSTER_WORDS = ("licensee", "licensed", "license-list", "warehouse", "dealer", "buyer",
+                "grain", "list", "directory", "registry", "roster", "active", "current")
+# Tuned against the pages kept on 2026-09-04, not guessed at. Each of these
+# beat a real roster to the top of a real page: "ACP grain warehouse supporting
+# docs info.pdf" outscored Texas's own grain_warehouse.xls, Minnesota's "Rates
+# for Storing and Handling Grain" and "Grain Licensing Financial Statement"
+# both read as grain lists, and Oklahoma's "Warehouse-Charter-App" and
+# "Dealer-Renewal" led its 102 links.
+FORM_WORDS = ("application", "app", "renewal", "fillable", "bond", "form", "instruction",
+              "certificate", "claim", "fee-schedule", "fee_schedule", "rates", "financial",
+              "statement", "supporting", "info", "charter", "proof", "contact", "brochure",
+              "template", "notice", "org-chart", "plan", "invite", "statute", "manual",
+              "order", "tutorial", "faq")
+# A ROSTER IS FAR MORE OFTEN A SPREADSHEET THAN A FORM IS. Texas publishes an
+# .xls, Ohio a .csv; the forms are always PDFs. That is a signal about the
+# format, not about any one state.
+TABULAR = (".csv", ".xls", ".xlsx", ".json")
+
+
+def rank_link(href):
+    """+1 per roster word, -2 per form word, +2 for a tabular format.
+
+    A file NAME is all there is to go on before fetching, so this decides what
+    to SAY and in what order — nothing is fetched because it scored well."""
+    name = href.rsplit("/", 1)[-1].split("?")[0].lower()
+    score = sum(1 for w in ROSTER_WORDS if w in name)
+    score -= 2 * sum(1 for w in FORM_WORDS if w in name)
+    if any(name.endswith(e) for e in TABULAR):
+        score += 2
+    return score
 FORMISH = re.compile(r"<form\b", re.I)
 TR = re.compile(r"<tr\b", re.I)
 TH = re.compile(r"<th[^>]*>(.*?)</th>", re.I | re.S)
@@ -249,8 +313,12 @@ def look(url, timeout):
     body = raw.decode("utf-8", "replace")
     rows = len(TR.findall(body))
     heads = [re.sub(r"<[^>]+>|\s+", " ", h).strip() for h in TH.findall(body)][:12]
-    links = sorted(set(DATA_LINK.findall(body)))[:8]
-    d.update(rows=rows, headerCells=[h for h in heads if h], dataLinks=links)
+    links = sorted(set(DATA_LINK.findall(body)))
+    ranked = sorted(links, key=lambda l: (-rank_link(l), l))
+    d.update(rows=rows, headerCells=[h for h in heads if h], dataLinks=ranked[:12])
+    best = [l for l in ranked if rank_link(l) >= 2]
+    if best:
+        d["looksLikeARoster"] = best[:4]
     if links:
         d["shape"] = "page offering a data file"
     elif rows >= 15:
@@ -314,6 +382,8 @@ def main():
                  d.get("error", "")[:60] or
                  ((("%s rows" % d["rows"]) if d.get("rows") else "")
                   + (("  %d data link(s)" % len(d["dataLinks"])) if d.get("dataLinks") else "")
+                  + (("  ROSTER? %s" % d["looksLikeARoster"][0].rsplit("/", 1)[-1][:44])
+                     if d.get("looksLikeARoster") else "")
                   + ("  [browser UA]" if d.get("ua") == "browser" else ""))))
         time.sleep(a.pause)
 
