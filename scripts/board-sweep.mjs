@@ -380,6 +380,40 @@ export function alreadyHave(sources) {
   return new Set(sources.map((s) => k(s.operator, s.location, s.state)));
 }
 
+/* TWO DIRECTORIES, AND THEY ARE COMPLEMENTARY.
+ *
+ * data/known-elevators.json is Barchart's 1,802 — it carries BRANCH names, a
+ * phone and a ZIP. data/directory.json is the merged 4,225, which adds the
+ * state registries. Measured 2026-09-04 against the seven boards captured in
+ * fixtures/board-sweep/, neither one subsumes the other:
+ *
+ *     Agassiz Valley / "AVG Barnesville"   known: Barnesville MN    wide: —
+ *     Country Grain  / "Eldridge"          known: —                 wide: Eldridge ND
+ *     Dakota Midland / "Voltaire"          known: Volitaire ND      wide: Voltaire ND
+ *
+ * The third is why known goes first and why the wide set is not a replacement:
+ * Barchart spells that town "Volitaire" and the registry spells it Voltaire.
+ * Two answers, and the one with the phone number attached is the one whose
+ * branch names match these boards, so it is asked first and the wide set fills
+ * in behind it. Both together: four of seven, where known alone finds two.
+ *
+ * ROWS WE WROTE OURSELVES ARE EXCLUDED. directory.json carries every source in
+ * sources/ with status "read". Joining a board against manifests derived from
+ * boards is circular — the same trap that made the `website` join score 33%
+ * on nothing but sites we already read. Only rows this repository did NOT
+ * write are eligible. */
+export function wideDirectory(directory) {
+  const out = [];
+  for (const e of directory.elevators ?? []) {
+    if (e.status === "read") continue;
+    if (!e.operator || !e.location || !e.state) continue;
+    out.push({ facility: e.operator, branch: e.location, city: e.location, state: e.state,
+               zip: e.zip ?? null, phone: e.phone ?? null,
+               source: e.knownFrom || "directory" });
+  }
+  return out;
+}
+
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
                            have = new Set(), runId = null }) {
   const operator = operatorNameFrom(html);
@@ -453,7 +487,13 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   const platforms = JSON.parse(io.readText("data/platforms.json"));
   const sources = readdirSync(SOURCES).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(readFileSync(join(SOURCES, f), "utf8")));
-  const known = JSON.parse(io.readText("data/known-elevators.json")).elevators;
+  const barchart = JSON.parse(io.readText("data/known-elevators.json")).elevators;
+  let wide = [];
+  try { wide = wideDirectory(JSON.parse(io.readText("data/directory.json"))); }
+  catch { wide = []; }
+  const known = barchart.concat(wide);
+  console.log(`directory: ${barchart.length} from known-elevators + ${wide.length} from the merged `
+    + `directory that this repository did not write = ${known.length} rows`);
   const byZip = new Map(JSON.parse(io.readText("geocodes/zip-candidates.json")).zips.map((z) => [z.zip, z]));
   const existing = new Set(readdirSync(SOURCES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));
 

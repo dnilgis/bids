@@ -27,8 +27,12 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
          NOT_SWEEPABLE, boardCandidates, linkedBoards, navEvidence, readHostsOf, readKeysOf,
-         siteKeyOf, WANTS_JSON }
+         siteKeyOf, WANTS_JSON, wideDirectory }
   from "../scripts/board-sweep.mjs";
+import { joinDirectory } from "../scripts/agricharts-sweep.mjs";
+import { extractListBids, locationHeading } from "../lib/parse.mjs";
+
+const slugOf = (v) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 import { adapterFor } from "../lib/adapters/index.mjs";
 import { locationNames } from "../lib/parse.mjs";
 import { validateSource } from "../lib/sources.mjs";
@@ -425,4 +429,120 @@ test("--platform and --limit are read, and nothing else is assumed", () => {
 test("hostOf strips www and is not fooled by a path", () => {
   assert.equal(hostOf("https://www.Example.COM/a/b?c=1"), "example.com");
   assert.equal(hostOf("not a url"), null);
+});
+
+
+/* ── the location a board names, and the two directories that place it ──── */
+
+test("the heading above the board names the location when the nav will not", () => {
+  /* Run 91847384302 asked 32 cashbidssingle sites and found NO
+     "cashbidssingle-<id>" reference at all — not one, in 238,098 bytes of
+     Adell Cooperative. Eighty locations posting real prices came back as
+     "location 2451". The captures below are that run's own bytes. */
+  const want = {
+    "cashbidssingle-agassizvalleygraincom.html": "AVG Barnesville",
+    "cashbidssingle-bertholdfarmerscom.html": "Berthold",
+    "cashbidssingle-countrygraincooperativecom.html": "Eldridge",
+    "cashbidssingle-crossroadscoopcom.html": "Bridgeport",
+    "cashbidssingle-dakotamidlandcom.html": "Voltaire",
+  };
+  for (const [f, town] of Object.entries(want)) {
+    const rows = extractListBids(fix(join("board-sweep", f)), f);
+    assert.ok(rows.length > 0, `${f} read no rows`);
+    assert.deepEqual([...new Set(rows.map((r) => r.location))], [town], f);
+  }
+});
+
+test("a heading that is page furniture is refused, not filed as a town", () => {
+  /* Adell Cooperative's is "Cash Bids". Filing that would put a place called
+     Cash Bids on a map, which is the exact failure Rule 1 is about. */
+  const rows = extractListBids(fix(join("board-sweep", "cashbidssingle-adellcoopcom.html")),
+                               "adell");
+  assert.deepEqual([...new Set(rows.map((r) => r.location))], ["location 2451"]);
+  for (const t of ["Cash Bids", "Markets", "News", "Futures", "Hours", "Bids", "Prices",
+                   "Berthold Farmers Announcements", "CGC Updates"])
+    assert.equal(locationHeading(t), null, `"${t}" is furniture, not a place`);
+  for (const t of ["Berthold", "AVG Barnesville", "Voltaire", "Eldridge"])
+    assert.equal(locationHeading(t), t);
+});
+
+test("when a page offers both, the NAV name wins over the heading", () => {
+  /* THE SEAM, NOT THE RULE. No fixture in this repository has a nav name AND
+     a differing heading, so swapping the precedence changes no captured
+     output and a mutation of it survives silently. It still matters, and the
+     case is the ordinary multi-location one: a nav name is keyed on the id the
+     ROW carries, a heading only on where it sits. Let a heading win and a
+     three-location board collapses into one town — the wrong town for two of
+     them, published as fact. */
+  const row = (id, cash) => `<ul class='fcControls1'>`
+    + `<li class='c1'><span>Sep</span><img onclick="showChart('x?CashBidsLocationID=${id}')"></li>`
+    + `<li class='c2'>${cash}</li><li class='c3'>-0.50</li></ul>`;
+  const hdr = `<ul class='fcControlsSubHdr'><li>Delivery</li><li>Bid</li><li>Basis</li></ul>`;
+  const html = `<a href="/cashbidssingle-11">Alpha</a><a href="/cashbidssingle-22">Beta</a>`
+    + `<h2 class="fcControls">Gamma</h2><h3 class='fcControls'>Corn</h3>${hdr}`
+    + row(11, "4.10") + row(22, "4.20");
+  const rows = extractListBids(html, "t");
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((r) => r.location), ["Alpha", "Beta"]);
+  /* And with the nav gone the heading is what is left, for both. */
+  const noNav = html.replace(/<a href="\/cashbidssingle-\d+">[^<]*<\/a>/g, "");
+  assert.deepEqual(extractListBids(noNav, "t").map((r) => r.location), ["Gamma", "Gamma"]);
+});
+
+test("THE NAV STILL WINS. Big River's three towns are unchanged", () => {
+  /* The heading is a fallback and must stay one: a nav name is keyed on the id
+     the row itself carries, where a heading is only keyed on position. Big
+     River's board is the first this repository ever read. */
+  const rows = extractListBids(fix("bigriver-2121.html"), "bigriver");
+  assert.deepEqual([...new Set(rows.map((r) => r.location))].sort(),
+                   ["Boyceville", "Dyersville", "Monmouth"]);
+  assert.equal(rows.length, 14);
+});
+
+test("both directories are asked, and the ones we wrote ourselves are excluded", () => {
+  const dir = JSON.parse(readFileSync(join(ROOT, "data/directory.json"), "utf8"));
+  const wide = wideDirectory(dir);
+  assert.ok(wide.length > 1500, `only ${wide.length} rows from the merged directory`);
+  /* CIRCULARITY. directory.json carries every source in sources/ with status
+     "read". Joining a board against manifests derived from boards measures
+     nothing — the same trap that made the `website` join score 33% on nothing
+     but sites we already read. */
+  const ours = dir.elevators.filter((e) => e.status === "read");
+  assert.ok(ours.length > 100, "expected the merged directory to carry our own sources");
+  /* Not one of them is eligible to place a board. */
+  const wideNames = new Set(wide.map((r) => `${slugOf(r.facility)}|${slugOf(r.branch)}`));
+  const leaked = ours.filter((e) => wideNames.has(`${slugOf(e.operator)}|${slugOf(e.location)}`))
+    .filter((e) => !dir.elevators.some((k) => k.status !== "read"
+      && slugOf(k.operator) === slugOf(e.operator) && slugOf(k.location) === slugOf(e.location)));
+  assert.deepEqual(leaked.map((e) => e.id), [],
+    "rows this repository wrote are eligible to place a board — that is circular");
+  const both = KNOWN.concat(wide);
+  /* Complementary, measured on run 91847384302's own captures. */
+  assert.ok(joinDirectory(KNOWN, "Agassiz Valley Grain", "AVG Barnesville"),
+            "Barchart carries the branch name");
+  assert.equal(joinDirectory(KNOWN, "Country Grain Cooperative", "Eldridge"), null,
+               "and does not carry Eldridge");
+  assert.ok(joinDirectory(wide, "Country Grain Cooperative", "Eldridge"),
+            "the registry does");
+  for (const [op, l] of [["Agassiz Valley Grain", "AVG Barnesville"],
+                         ["Country Grain Cooperative", "Eldridge"],
+                         ["Berthold Farmers", "Berthold"],
+                         ["Dakota Midland Grain", "Voltaire"]])
+    assert.ok(joinDirectory(both, op, l), `${op} / ${l} places against neither directory`);
+});
+
+test("main() actually asks BOTH directories — the wiring, not the rule", () => {
+  /* Three times now a correct, tested function has sat in this repository
+     unwired: scaleByContract was right, had tests, and scaleFutures never
+     called it. wideDirectory() being correct says nothing about whether the
+     sweep loads it. This reads the seam. */
+  const src = readFileSync(join(ROOT, "scripts/board-sweep.mjs"), "utf8");
+  const body = src.slice(src.indexOf("export async function main"));
+  assert.match(body, /wideDirectory\(/, "main() never calls wideDirectory()");
+  assert.match(body, /data\/directory\.json/, "main() never reads the merged directory");
+  assert.match(body, /barchart\.concat\(wide\)/,
+    "main() reads both and hands the join only one of them");
+  /* A directory.json that will not parse must not take the sweep down with
+     it: the Barchart set alone is still a directory. */
+  assert.match(body, /catch \{ wide = \[\]; \}/);
 });

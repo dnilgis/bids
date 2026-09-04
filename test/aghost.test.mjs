@@ -262,3 +262,71 @@ test("tick-shaped futures prices are never silently truncated", () => {
   assert.equal(parseEighths("473'"), null);
   assert.equal(parseEighths("473"), 473);
 });
+
+/* ── attribute order is not part of the meaning of HTML ────────────────── */
+
+test("the DataGrid is found wherever the class attribute sits", async () => {
+  /* Run 91847384302 asked 38 AgHost sites and read NONE. The selector was
+     `<table class="DataGrid` — the class in FIRST position, which is how
+     Flash Grain writes it. POET Grain and Glacial Lakes Energy write:
+         <table name="cashbids-data-table" border="0" width="630"
+                class="DataGrid DataGridPlus" align="center">
+     and describe() duly printed "DataGrid ABSENT" about a page that plainly
+     has one. An error message that prints the right answer back at you is a
+     selector bug. This is the third time this repository has pinned an
+     attribute position or a whitespace shape and called it a fact about
+     somebody else's website. */
+  const { DATAGRID } = await import("../lib/adapters/aghost.mjs");
+  const first = `<table class="DataGrid DataNormal" width="100%" ><thead></thead></table>`;
+  const fourth = `<table name="cashbids-data-table" border="0" width="630" `
+    + `class="DataGrid DataGridPlus" align="center" ><thead></thead></table>`;
+  const single = `<table id=x class='DataGrid'><thead></thead></table>`;
+  for (const h of [first, fourth, single]) assert.ok(DATAGRID.test(h), h.slice(0, 60));
+
+  /* THE WHOLE TOKEN, NOT A PREFIX. DataGridPlus on its own is a different
+     class and must not pass for the board. */
+  assert.ok(!DATAGRID.test(`<table class="DataGridPlus"><thead></thead></table>`));
+  assert.ok(!DATAGRID.test(`<table class="MyDataGrid"><thead></thead></table>`));
+  assert.ok(!DATAGRID.test(`<table class="Data"><thead></thead></table>`));
+  /* And a table with no class at all is not a board. */
+  assert.ok(!DATAGRID.test(`<table width="630"><thead></thead></table>`));
+
+  /* The two boards this repository already reads are unaffected. */
+  const { extract } = await import("../lib/adapters/aghost.mjs");
+  for (const f of ["flashgrain-cashbids-2026-08-19.html",
+                   "flashgrain-conditional-2026-08-19.html"]) {
+    const rows = extract(readFileSync(new URL("../fixtures/" + f, import.meta.url), "utf8"), f);
+    assert.equal(rows.length, 8, f);
+  }
+});
+
+test("the two AgHost layouts we cannot yet read refuse with the right reason", () => {
+  /* Nine of the 38 serve a real DataGrid in a shape this adapter does not
+     read, and they are two DIFFERENT shapes, not one:
+   
+       POET / Glacial Lakes / E-Energy / CFS — DELIVERY DOWN THE ROWS
+         thead: Delivery | Futures Month | Futures Price | Basis | Futures Change
+   
+       Topflight — LOCATIONS ACROSS THE COLUMNS
+         caption CORN, thead: (blank) | MAR ×6 | BEM ×6 | MON ×6 | …
+   
+     Flash Grain's board is the transpose of the first and unrelated to the
+     second. Both need their own reader; neither gets a widened regex, because
+     widening a selector until it swallows a different table is how a board
+     gets read wrong instead of refused. What is pinned here is that they
+     refuse for the reason that is actually true of them — a grid is present
+     and its header is not one we know — so the next person reads a diagnosis
+     and not a mystery. */
+  const seen = [];
+  for (const f of ["board-sweep/aghost-poetbiorefiningashtonaghostnet.html",
+                   "board-sweep/aghost-cornglaciallakesenergycom.html",
+                   "board-sweep/aghost-topflightgrain2com.html"]) {
+    let why = null;
+    try { extract(readFileSync(new URL("../fixtures/" + f, import.meta.url), "utf8"), f); }
+    catch (e) { why = e.message; }
+    assert.ok(why, `${f} claimed to read a board this adapter does not know`);
+    assert.match(why, /no delivery columns in the DataGrid header/, f);
+    seen.push(f);
+  }
+  assert.equal(seen.length, 3);
+});
