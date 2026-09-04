@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T21:25:19Z",
+ "generated": "2026-09-04T21:54:24Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -64,7 +64,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 279741,
+   "bytes": 280166,
    "ua": "ours",
    "rows": 304,
    "headerCells": [
@@ -90,7 +90,7 @@
    "expected": "dealer/warehouse database",
    "confidence": "confirmed, 304 rows",
    "kept": "debug/registries/survey/mo-dealer-warehouse-database.html",
-   "keptBytes": 270404
+   "keptBytes": 270527
   },
   {
    "url": "https://psc.nebraska.gov/sites/default/files/doc/administration/RR-212/Mailing%20List%20GDGW,%20Interested%20Parties,%20&%20Insurance%20Carriers.pdf",
@@ -110,6 +110,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 403: Forbidden",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 403: Forbidden"
+   ],
    "state": "KS",
    "expected": "grain warehouse programme",
    "confidence": "search 2026-09-04; the licensing and resources pages both timed out on the last survey"
@@ -119,6 +123,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 403: Forbidden",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 403: Forbidden"
+   ],
    "state": "KS",
    "expected": "grain warehouse licensing",
    "confidence": "surveyed 2026-09-03, no answer"
@@ -128,6 +136,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 403: Forbidden",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 403: Forbidden"
+   ],
    "state": "KS",
    "expected": "applications and licences",
    "confidence": "search 2026-09-04, unopened"
@@ -137,6 +149,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 403: Forbidden",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 403: Forbidden"
+   ],
    "state": "KS",
    "expected": "documents page",
    "confidence": "search 2026-09-04, unopened \u2014 may link a list"
@@ -452,8 +468,12 @@
   {
    "url": "http://wapp.kda.ks.gov/grain-warehouse/gw_public.pdf",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "URLError: <urlopen error timed out>",
+   "attempts": [
+    "URLError: <urlopen error timed out>",
+    "URLError: <urlopen error timed out>"
+   ],
    "state": "KS",
    "expected": "KDA licensed warehouses, PDF",
    "confidence": "from grainjournal.com 2026-09-04; a DIFFERENT HOST from the four that 403"
@@ -463,6 +483,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 403: Forbidden",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 403: Forbidden"
+   ],
    "state": "MI",
    "expected": "licensed grain dealers by facility, PDF",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -470,8 +494,12 @@
   {
    "url": "http://www2.mda.state.mn.us/webapp/lis/default.jsp",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "URLError: <urlopen error timed out>",
+   "attempts": [
+    "URLError: <urlopen error timed out>",
+    "URLError: <urlopen error timed out>"
+   ],
    "state": "MN",
    "expected": "MDA licence search",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -536,6 +564,10 @@
    "status": 0,
    "ua": "browser",
    "error": "HTTPError: HTTP Error 404: Not Found",
+   "attempts": [
+    "HTTPError: HTTP Error 403: Forbidden",
+    "HTTPError: HTTP Error 404: Not Found"
+   ],
    "state": "CO",
    "expected": "commodity handler programme",
    "confidence": "from grainjournal.com 2026-09-04 (colorado.gov/pacific redirects); unopened"
@@ -544,7 +576,7 @@
    "url": "https://mtplants.mt.gov/Licenses/External/ExternalLicenseSearch.aspx",
    "status": 0,
    "ua": "ours",
-   "error": "HTTPError: HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.\nThe last 30x error message was:\nFou",
+   "error": "HTTPError: HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.\nThe last 30x error message was:\nFou -> /Licenses/External/ExternalLicenseSearch.aspx",
    "state": "MT",
    "expected": "licence search",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -552,8 +584,12 @@
   {
    "url": "http://oda.state.or.us/dbs/licenses/search.lasso?&division=cid",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "URLError: <urlopen error timed out>",
+   "attempts": [
+    "URLError: <urlopen error timed out>",
+    "URLError: <urlopen error timed out>"
+   ],
    "state": "OR",
    "expected": "ODA licence search",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -613,63 +649,48 @@
   },
   {
    "url": "http://www.grainscanada.gc.ca/licensee-licence/licensed-agreees-eng.htm",
-   "status": 0,
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 53045,
    "ua": "ours",
-   "error": "URLError: <urlopen error timed out>",
+   "rows": 181,
+   "headerCells": [
+    "Name",
+    "Head office",
+    "Class of licence",
+    "Licensed elevators"
+   ],
+   "dataLinks": [],
+   "shape": "html table",
    "state": "CN",
    "expected": "Canadian Grain Commission licensees",
-   "confidence": "from grainjournal.com 2026-09-04; out of scope for now, recorded so nobody re-finds it"
+   "confidence": "from grainjournal.com 2026-09-04; out of scope for now, recorded so nobody re-finds it",
+   "kept": "debug/registries/survey/cn-canadian-grain-commission-licensees.html",
+   "keptBytes": 52453
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
-   "status": 200,
-   "contentType": "text/html",
-   "bytes": 9907,
+   "status": 0,
    "ua": "ours",
-   "rows": 0,
-   "headerCells": [],
-   "dataLinks": [],
-   "shape": "tableau dashboard",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "USDA WCMD dashboard",
-   "confidence": "a Tableau shell; 200 and no rows on 2026-09-03 and again on 2026-09-04",
-   "kept": "debug/registries/survey/us-usda-wcmd-dashboard.html",
-   "keptBytes": 3817
+   "confidence": "a Tableau shell; 200 and no rows on 2026-09-03 and again on 2026-09-04"
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard.csv?:isGuestRedirectFromVizportal=y&:embed=y",
-   "status": 200,
-   "contentType": "text/csv",
-   "bytes": 11251,
+   "status": 0,
    "ua": "ours",
-   "shape": "csv",
-   "headerCells": [
-    "Commodity*",
-    "Measure Names",
-    "Commodity Unit",
-    "Commodity*",
-    "Measure Values",
-    "All Warehouses",
-    "Capacity*",
-    "% of Total CNT_CCC Approved Warehouses",
-    "CNT_CCC Approved Warehouses",
-    "% of Total CNT_CCC Status Approved and USWA Licensed",
-    "CNT_CCC Status Approved and USWA Licensed",
-    "% of Total CNT_USWA Licenses",
-    "CNT_USWA Licenses"
-   ],
-   "rows": 104,
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "WCMD summary, csv export",
-   "confidence": "READ 2026-09-04: 79 rows, counts by commodity. Grain = 4802",
-   "kept": "debug/registries/survey/us-wcmd-summary-csv-export.html",
-   "keptBytes": 11251
+   "confidence": "READ 2026-09-04: 79 rows, counts by commodity. Grain = 4802"
   },
   {
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseDetail.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "HTTPError: HTTP Error 404: Not Found",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse Detail",
    "confidence": "probe, never opened"
@@ -678,7 +699,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseList.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "HTTPError: HTTP Error 404: Not Found",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse List",
    "confidence": "probe, never opened"
@@ -687,7 +708,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseLocations.csv?:embed=y",
    "status": 0,
    "ua": "ours",
-   "error": "HTTPError: HTTP Error 404: Not Found",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "WCMD sheet probe: Warehouse Locations",
    "confidence": "probe, never opened"
@@ -714,7 +735,7 @@
    "url": "https://saltlake.sc.egov.usda.gov/approved_whses/uswa/approved_whses_USWA.asp",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -2] Name or service not known>",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "USWA licensed warehouses map",
    "confidence": "data.gov's only distribution for the USWA map; DNS fails from the sandbox"
@@ -753,8 +774,12 @@
   {
    "url": "http://www.fsa.usda.gov/Internet/FSA_File/whselst2010.pdf",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "TimeoutError: timed out",
+   "attempts": [
+    "TimeoutError: timed out",
+    "TimeoutError: timed out"
+   ],
    "state": "US",
    "expected": "USWA licensed and bonded, 2010 snapshot",
    "confidence": "READ 2026-09-04: 'Licensed and Bonded Warehouses Licensed Under the U.S. Warehouse Act As of December 31, 2010'. Town / warehouse / operator, no street address. SIXTEEN YEARS OLD \u2014 the survey should look for a newer year"
@@ -762,8 +787,12 @@
   {
    "url": "http://www.fsa.usda.gov/Internet/FSA_File/whselst2012.pdf",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "TimeoutError: timed out",
+   "attempts": [
+    "TimeoutError: timed out",
+    "TimeoutError: timed out"
+   ],
    "state": "US",
    "expected": "USWA snapshot, another year",
    "confidence": "search 2026-09-04: the file name carries the year, so the newest one is worth finding"
