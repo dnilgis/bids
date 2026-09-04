@@ -137,8 +137,14 @@ if m:
 # not four answers. The retry is one extra request and it records which
 # identity got through, because "Kansas publishes nothing" and "Kansas has a
 # bot filter" send the next person to entirely different work.
-check('if "403" not in str(ex):' in SURVEY,
-      "the retry is not limited to a refusal — every failure would be asked twice")
+# EVERY RETRY MUST BE GATED. A refusal earns a second identity, a timeout
+# earns a slower one, and nothing else earns anything — otherwise a 404 is
+# asked three times and every dead link costs a runner three round trips.
+check("ATTEMPTS = (" in SURVEY, "the attempt table is gone")
+check(SURVEY.count("lambda e:") >= 3, "the attempts are no longer individually gated")
+check('"403" in e' in SURVEY, "a refusal no longer earns a second identity")
+check('"timed out" in e' in SURVEY, "a timeout no longer earns a slower attempt")
+check("redirect_target" in SURVEY, "the redirect reporter is gone")
 check('d.update(status=status, contentType=ctype, bytes=len(raw), ua=label)' in SURVEY,
       "the survey no longer records WHICH user-agent answered")
 
@@ -181,6 +187,28 @@ check("git reset -q -- debug/registries/survey" in data_commit,
 import importlib.util as _iu
 _s = _iu.spec_from_file_location("_srv2", ROOT / "scripts" / "survey_registries.py")
 _srv = _iu.module_from_spec(_s); _s.loader.exec_module(_srv)
+
+# MONTANA'S 302 WAS THE ONLY THING IN THAT RESPONSE WORTH HAVING.
+# urllib follows redirects itself, so a raw 302 reaching this code means its
+# handler declined — no Location, or one it will not follow. Reporting "302"
+# and stopping throws away where it was trying to send us.
+import urllib.error as _ue
+import io as _io
+
+
+class _Fake(_ue.HTTPError):
+    def __init__(self, loc):
+        super().__init__("http://x/", 302, "Found",
+                         {"Location": loc} if loc else {}, _io.BytesIO(b""))
+
+
+check(_srv.redirect_target(_Fake("https://elsewhere.example/list.pdf"))
+      == "https://elsewhere.example/list.pdf",
+      "a declined redirect does not report where it was sending us")
+check(_srv.redirect_target(_Fake("")) == "",
+      "a redirect with no Location invents one")
+check(_srv.redirect_target(ValueError("not http")) == "",
+      "redirect_target throws on something that is not an HTTP error")
 
 PAGE = (b'<html><head><script>var t="sk.eyJ1IjoiaWxsaW5vaXMiLCJhIjoiY2xhYmNkZWZnaGlqayJ9.AbCdEf";'
         b'</script><style>.x{color:red}</style></head><body>'
@@ -332,11 +360,29 @@ def measured():
     # mystery. Content that is not HTML falls through to the tag counters,
     # which find no <tr> and no <form>, and report "unclear".
     CSV = b"Commodity,All Warehouses,CCC Approved\nGrain,4802,4538\nCotton,329,325\n"
+    # A host that is slow the FIRST time and answers the second — Kansas,
+    # Minnesota, Oregon and Canada all timed out on the 2026-09-04 run, and
+    # Kansas is the largest hole on the map. Thirty seconds is not an answer.
+    slow = {"n": 0}
 
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path.startswith("/walled") and "Mozilla" not in self.headers.get("User-Agent", ""):
                 self.send_response(403); self.end_headers(); self.wfile.write(b"no"); return
+            if self.path.startswith("/redir"):
+                # A redirect urllib will NOT follow, which is what Montana's
+                # raw 302 was: the handler declines and the only useful thing
+                # in the response is the Location it declined.
+                self.send_response(302)
+                self.send_header("Location", "mailto:grain@example.invalid")
+                self.end_headers()
+                return
+            if self.path.startswith("/slow"):
+                slow["n"] += 1
+                if slow["n"] == 1:
+                    import time as _t
+                    _t.sleep(6)            # longer than the first attempt's 3s
+                # and then answers normally, as a slow host does
             csvish = self.path.startswith("/data")
             body = CSV if csvish else (WEAK if self.path.startswith("/weak") else PAGE)
             self.send_response(200)
@@ -347,7 +393,14 @@ def measured():
         def log_message(self, *a):
             pass
 
-    srv = socketserver.TCPServer(("127.0.0.1", 0), H)
+    # THREADED, because the point of the slow route is that a first request is
+    # still hanging when the second arrives. A single-threaded server would
+    # queue them and prove nothing.
+    class Srv(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
+    srv = Srv(("127.0.0.1", 0), H)
     port = srv.server_address[1]
     threading.Thread(target=srv.serve_forever, daemon=True).start()
 
@@ -373,8 +426,10 @@ def measured():
              '    ("ZZ", "open page", "http://127.0.0.1:%d/open", "probe, never opened"),\n'
              '    ("ZY", "walled page", "http://127.0.0.1:%d/walled", "probe, never opened"),\n'
              '    ("ZX", "weak page", "http://127.0.0.1:%d/weak", "probe, never opened"),\n'
-             '    ("ZW", "a csv", "http://127.0.0.1:%d/data.csv", "probe, never opened"),\n]\n'
-             'UNUSED_CANDIDATES = [' % (port, port, port, port))
+             '    ("ZW", "a csv", "http://127.0.0.1:%d/data.csv", "probe, never opened"),\n'
+             '    ("ZV", "a slow host", "http://127.0.0.1:%d/slow", "probe, never opened"),\n'
+             '    ("ZU", "a declined redirect", "http://127.0.0.1:%d/redir", "probe, never opened"),\n]\n'
+             'UNUSED_CANDIDATES = [' % (port, port, port, port, port, port))
     script = tmp / "scripts" / "survey_registries.py"
     script.write_text((ROOT / "scripts" / "survey_registries.py").read_text()
                       .replace("CANDIDATES = [", local, 1))
@@ -386,7 +441,7 @@ def measured():
         if not out_json.exists():
             return
         got = {r["state"]: r for r in json.loads(out_json.read_text())["results"]}
-        check(set(got) == {"ZZ", "ZY", "ZX", "ZW"},
+        check(set(got) == {"ZZ", "ZY", "ZX", "ZW", "ZV", "ZU"},
               "the guard asked something other than its own local server: %s" % sorted(got))
         if "ZZ" in got:
             check(got["ZZ"].get("kept"), "the page that answered was not kept")
@@ -432,6 +487,24 @@ def measured():
             check((got["ZW"].get("headerCells") or [None])[0] == "Commodity",
                   "the csv's own header row was not read")
             check(got["ZW"].get("rows") == 2, "the csv's rows were not counted")
+        if "ZV" in got:
+            # KANSAS TIMED OUT AND WAS WRITTEN OFF. So did Minnesota, Oregon
+            # and Canada. A machine giving up at thirty seconds is not a state
+            # saying no, and the biggest hole on the map is worth a slower ask.
+            check(got["ZV"].get("status") == 200,
+                  "a host that was slow once was reported as unreachable")
+            check(got["ZV"].get("ua") == "ours, slow",
+                  "the survey did not record that it took a longer wait to get an answer")
+        if "ZU" in got:
+            # THE SEAM. redirect_target() being correct says nothing about
+            # whether the error message uses it — and it did not, until this.
+            # THE ARROW IS OURS. urllib's own message for THIS refusal happens
+            # to quote the Location too, so checking that the target appears
+            # anywhere in the string passed with the append deleted. The
+            # separator is the part only this code writes.
+            err = got["ZU"].get("error") or ""
+            check(err.endswith(" -> mailto:grain@example.invalid"),
+                  "a declined redirect did not record where it was pointing: %r" % err[:90])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
         srv.shutdown()

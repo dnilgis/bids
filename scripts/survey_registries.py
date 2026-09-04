@@ -357,22 +357,61 @@ def fetch(url, timeout, ua):
         return r.status, ctype, r.read(1_500_000)
 
 
+# A TIMEOUT IS NOT AN ANSWER EITHER, AND NOR IS A REDIRECT WE DECLINED.
+#
+# The 2026-09-04 run of Grain Journal's fourteen state links produced, among
+# the failures: Kansas TIMED OUT, Minnesota timed out, Oregon timed out, Canada
+# timed out, and Montana came back "HTTPError: 302". Four of those are the
+# machine giving up rather than the state saying no, and Kansas is the largest
+# hole on the map — worth more than thirty seconds before writing it off.
+#
+# urllib follows 301/302/303/307 on its own, so a RAW 302 reaching this code
+# means its redirect handler declined: no Location header, or one pointing
+# somewhere it will not follow. Reporting "302" and stopping throws away the
+# only useful thing in that response, which is where it was trying to send us.
+ATTEMPTS = (
+    # (user-agent, label, timeout multiplier, retry only when...)
+    (UA,         "ours",       1, lambda e: True),
+    (BROWSER_UA, "browser",    1, lambda e: "403" in e),
+    (UA,         "ours, slow", 3, lambda e: "timed out" in e or "timeout" in e.lower()),
+)
+
+
+def redirect_target(ex):
+    """Where a declined redirect was pointing, if it said."""
+    try:
+        return (ex.headers.get("Location") or ex.headers.get("location") or "").strip()[:200]
+    except Exception:
+        return ""
+
+
 def look(url, timeout):
     d = {"url": url}
     raw = None
-    for ua, label in ((UA, "ours"), (BROWSER_UA, "browser")):
+    tried = []
+    for ua, label, mult, want in ATTEMPTS:
+        # SKIP, DO NOT STOP. A first version broke out of the loop as soon as
+        # one gate said no, so a TIMEOUT never reached the slow attempt at all:
+        # the browser gate ("403 in e") answered False and ended the walk. Each
+        # attempt decides for itself whether the last failure was its kind.
+        if tried and not want(tried[-1]):
+            continue
         try:
-            status, ctype, raw = fetch(url, timeout, ua)
+            status, ctype, raw = fetch(url, timeout * mult, ua)
             d.update(status=status, contentType=ctype, bytes=len(raw), ua=label)
             d["_raw"] = raw
             d.pop("error", None)
             break
         except Exception as ex:
-            d.update(status=0, ua=label,
-                     error="%s: %s" % (type(ex).__name__, str(ex)[:130]))
-            if "403" not in str(ex):
-                break            # only a refusal is worth a second identity
+            msg = "%s: %s" % (type(ex).__name__, str(ex)[:130])
+            where = redirect_target(ex)
+            if where:
+                msg += " -> %s" % where
+            tried.append(msg)
+            d.update(status=0, ua=label, error=msg)
     if raw is None:
+        if len(tried) > 1:
+            d["attempts"] = tried
         return d
 
     # A CSV IS THE ANSWER, NOT AN "UNCLEAR". Content that is not HTML falls
