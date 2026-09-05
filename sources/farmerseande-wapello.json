@@ -1,0 +1,39 @@
+{
+  "id": "farmerseande-wapello",
+  "operator": "Farmers Elevator & Exchange, Inc.",
+  "location": "Wapello",
+  "state": "IA",
+  "platform": "agricharts",
+  "url": "https://mobile.farmerseande.com/cash/prices.php",
+  "locationId": "82049",
+  "identityAlternative": "agricharts:board-agrees+quotes-agree",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 33997564782) from their own mobile board at https://mobile.farmerseande.com/cash/prices.php. locationId 82049 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 14 row(s) in Corn, Soybeans.\n\nidentityAlternative: this board publishes cash, basis and a futures CHANGE and no futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp from the adapter. The board was read and both of the adapter's checks passed before this file was written: every location on it implies the same futures for one commodity and one delivery code, and every row sits within 5c of a real quoted CBOT contract. futuresPriceCents publishes as null, because there is no quote to republish.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the \"Visit Our Main Website\" link on their own mobile board.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": null,
+  "lat": 41.207,
+  "lon": -91.1719,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://www.farmerseande.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Wapello, IA, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
+}
