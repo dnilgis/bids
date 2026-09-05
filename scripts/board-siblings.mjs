@@ -200,11 +200,43 @@ for (const r of rows.values()) {
       ? "the label names its own state"
       : "the label names its own state (no town of that name on file there yet)";
     resolved++;
-  } else if (states.size === 1) {
-    r.state = [...states][0]; r.how = "one town of that name in the directory"; resolved++;
-  } else if (states.size > 1 && states.has(r.sourceState)) {
-    r.state = r.sourceState; r.how = "several states have the town; the operator's own is one"; resolved++;
-  } else if (states.size > 1) {
+  } else if (states.has(r.sourceState)) {
+    /* The operator's own state, and the directory agrees a town of that name
+       is in it. This is the only unassisted placement that is safe. */
+    r.state = r.sourceState;
+    r.how = "the operator's own state, and the town is there"; resolved++;
+  } else if (states.size >= 1) {
+    /* ══════════════════════════════════════════════════════════════════════
+     *  "EXACTLY ONE TOWN OF THAT NAME" IS NOT EVIDENCE. IT WAS A BUG.
+     * ══════════════════════════════════════════════════════════════════════
+     *  Caught 2026-09-05 by a dry run of agricharts-sweep, not by any counter
+     *  here. AgMark LLC is a KANSAS co-operative. Its board lists Kansas
+     *  towns. This branch placed six of them like this:
+     *
+     *      Belleville -> WI      Delphos -> OH      Hunter  -> ND
+     *      Midland    -> SD      Randall -> IA      Gaylord -> MN
+     *
+     *  Every one is a Kansas town. They were misplaced because our directory
+     *  holds a Belleville in Wisconsin and not the Kansas one — so "exactly
+     *  one town of that name" fired and put a Kansas elevator in Wisconsin,
+     *  with Wisconsin coordinates, on a map farmers use to decide where to
+     *  haul grain.
+     *
+     *  THE ABSENCE OF THE OPERATOR'S OWN STATE FROM OUR DIRECTORY IS MISSING
+     *  DATA, NOT EVIDENCE FOR SOMEWHERE ELSE. A directory that covers Iowa
+     *  well and Kansas badly will always have a same-named town in Iowa, and
+     *  this branch would always have preferred it.
+     *
+     *  So there is no such branch now. Either the label names the state, or
+     *  the operator's own state has the town, or it is refused and stays on
+     *  the worklist. Refusing costs coverage. Guessing costs trust, and puts
+     *  a farmer on the road to the wrong elevator. */
+    r.state = "";
+    r.how = `REFUSED — the town is on file in ${[...states].sort().join("/")}, ` +
+            `but the operator is in ${r.sourceState || "an unstated state"}, and ` +
+            `a same-named town elsewhere is not evidence`;
+    ambiguous++;
+  } else if (false) {
     r.state = ""; r.how = `AMBIGUOUS — ${[...states].sort().join("/")}, and nothing chooses between them`; ambiguous++;
   } else {
     r.state = ""; r.how = "no town of that name in data/directory.json"; unknown++;
@@ -223,10 +255,10 @@ const all = [...rows.values()].sort((a, b) =>
 mkdirSync(ROOT + "data/gaps", { recursive: true });
 const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 writeFileSync(ROOT + "data/gaps/board-siblings.csv",
-  "operator,label,state,how_the_state_was_decided,lat,lon,precision,via," +
+  "operator,operator_state,label,state,how_the_state_was_decided,lat,lon,precision,via," +
   "location_id,platform,board_url\n" +
-  all.map((r) => [r.operator, r.label, r.state, r.how, r.lat, r.lon, r.precision, r.via,
-                  r.locationId, r.platform, r.url].map(q).join(",")).join("\n") + "\n");
+  all.map((r) => [r.operator, r.sourceState, r.label, r.state, r.how, r.lat, r.lon,
+                  r.precision, r.via, r.locationId, r.platform, r.url].map(q).join(",")).join("\n") + "\n");
 
 console.log("\nLOCATIONS ON BOARDS WE ALREADY FETCH");
 console.log("  boards that reported their siblings : " + boardsThatReported);

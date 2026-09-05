@@ -42,8 +42,17 @@ test("a label that names a state is never overruled by the directory", () => {
      both. The board said which. A directory that does not know the Kansas one
      is missing data, not evidence — and letting missing data outrank an
      explicit statement puts a pin 200 miles into the wrong state. */
-  const branch = code.match(/if \(ownState\)[\s\S]{0,500}?else if \(states\.size === 1\)/);
-  assert.ok(branch, "the label-state branch is not first any more");
+  /* Checked as a PROPERTY, not a code shape: the label-state test must come
+     before any other branch that assigns r.state. An earlier version of this
+     matched the exact `else if` that followed it and went red when the unsafe
+     branch beneath was deleted — testing the arrangement rather than the rule,
+     which is this project's oldest mistake. */
+  const iOwn = code.indexOf("if (ownState)");
+  assert.ok(iOwn > 0, "there is no label-state branch at all");
+  const others = [...code.matchAll(/r\.state = (?!"")/g)].map((m) => m.index);
+  const firstAssign = Math.min(...others);
+  assert.ok(firstAssign > iOwn,
+    "something assigns a state before the label's own is considered");
   assert.ok(!/if \(ownState && \(states\.has/.test(code),
     "the label's own state is conditional on the directory agreeing with it");
 
@@ -66,10 +75,14 @@ test("AMBIGUOUS IS REFUSED, NOT GUESSED", () => {
      coin toss, and a coin toss here becomes a pin on a map in the wrong
      state. 18 of the 337 are this. They must stay refused. */
   assert.match(code, /AMBIGUOUS/, "nothing marks the ambiguous case");
-  const amb = code.match(/states\.size > 1[\s\S]{0,400}?ambiguous\+\+/);
-  assert.ok(amb, "the ambiguous branch does not increment its own counter");
-  assert.match(amb[0], /r\.state = ""/,
-    "an ambiguous row is given a state — that is a guess, and it must be blank");
+  /* Every branch that refuses must leave the state blank and say why. Written
+     against the behaviour rather than one branch's condition, which changed
+     the moment the "exactly one town of that name" branch was deleted. */
+  assert.match(code, /ambiguous\+\+/, "nothing counts the refusals");
+  const refusals = [...code.matchAll(/r\.state = "";[\s\S]{0,220}?ambiguous\+\+/g)];
+  assert.ok(refusals.length >= 1, "no refusal branch blanks the state before counting it");
+  for (const m of refusals)
+    assert.match(m[0], /AMBIGUOUS|REFUSED/, "a refusal does not say why it refused");
 });
 
 test("a location with no id is skipped, because nothing could address it", () => {
@@ -109,14 +122,31 @@ test("the worklist it last wrote is internally consistent", () => {
   const f = ROOT + "data/gaps/board-siblings.csv";
   if (!existsSync(f)) return;                 /* not run yet — not a failure */
   const lines = readFileSync(f, "utf8").trim().split("\n");
-  assert.match(lines[0], /^operator,label,state,how_the_state_was_decided,lat,lon,precision,via,location_id,platform,board_url$/);
+  assert.match(lines[0], /^operator,operator_state,label,state,how_the_state_was_decided,lat,lon,precision,via,location_id,platform,board_url$/);
   const US = new Set(("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT " +
     "NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY").split(" "));
   let placed = 0;
   for (const line of lines.slice(1)) {
     const cells = [...line.matchAll(/"((?:[^"]|"")*)"/g)].map((m) => m[1].replace(/""/g, '"'));
-    assert.equal(cells.length, 11, "malformed row: " + line.slice(0, 80));
-    const [, , state, how, lat, lon, precision, via, id] = cells;
+    assert.equal(cells.length, 12, "malformed row: " + line.slice(0, 80));
+    const [, opState, label, state, how, lat, lon, precision, via, id] = cells;
+    /* ══════════════════════════════════════════════════════════════════════
+     *  A PLACED ROW IS IN THE STATE ITS LABEL NAMED, OR THE OPERATOR'S OWN.
+     *  NEVER A THIRD.
+     * ══════════════════════════════════════════════════════════════════════
+     *  AgMark LLC is a Kansas co-op. Its Kansas towns were placed in WI, OH,
+     *  ND, SD, IA and MN, because the directory holds a same-named town in
+     *  each of those and not the Kansas one. Six wrong pins, and a dry run
+     *  caught it rather than a test. This is that test. */
+    if (state) {
+      const named = (String(label).match(/^(.*?)[,\s]+([A-Za-z]{2})$/) || [])[2];
+      const namedUp = named ? named.toUpperCase() : null;
+      const ok = (namedUp && namedUp === state) || (opState && opState === state);
+      assert.ok(ok,
+        `"${label}" (operator in ${opState || "?"}) was placed in ${state}, which is ` +
+        `neither the state its label names nor the operator's own — that is how a ` +
+        `Kansas elevator ends up in Wisconsin`);
+    }
     /* A COORDINATE MUST SAY HOW IT WAS MADE. Rule 45. A row carrying a
        lat/lon with no precision and no `via` is a pin with no provenance,
        which is the thing the coverage map exists not to draw. */
@@ -138,7 +168,7 @@ test("the worklist it last wrote is internally consistent", () => {
       assert.ok(how && !/AMBIGUOUS/.test(how),
         "a row is both placed and ambiguous, which cannot both be true: " + line.slice(0, 80));
     } else {
-      assert.ok(/AMBIGUOUS|no town/.test(how),
+      assert.ok(/AMBIGUOUS|REFUSED|no town/.test(how),
         "a row has no state and no reason why: " + line.slice(0, 80));
     }
   }
