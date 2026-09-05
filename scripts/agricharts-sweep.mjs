@@ -426,6 +426,9 @@ export const PUBLIC_NOTE = "Their publicly posted cash board, read from the mobi
 
 export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, runId,
                               kind = "mobile" }) {
+  /* dir.coord, when the directory row brought its own; otherwise the ZIP
+     lookup exactly as before. */
+  const coord = dir.coord ?? zipCoord;
   const bands = { corn: [2.0, 12.0], soybean: [6.0, 32.0], wheat: [3.0, 20.0] };
   if ([...loc.commodities].some((c) => /waxy/i.test(c))) bands.waxy = [2.0, 12.0];
   const m = {
@@ -492,9 +495,26 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
     publicNote: PUBLIC_NOTE,
     address: null,
     zip: dir.zip ?? null,
-    lat: zipCoord ? zipCoord.lat : null,
-    lon: zipCoord ? zipCoord.lon : null,
-    ...(zipCoord ? { latPrecision: "town" } : {}),
+    /* A COORDINATE THIS REPOSITORY ALREADY HOLDS BEATS A ZIP LOOKUP.
+     *
+     * The path to a coordinate ran only through `byZip`, and
+     * geocodes/zip-candidates.json is a curated file of the 743 ZIPs this
+     * project has already needed -- not a gazetteer. Measured 2026-09-05
+     * against the 100 board siblings that could be placed: it covers THREE.
+     *
+     * geocodes/places.json already holds a coordinate for 3,957 places, each
+     * with the precision and the `via` that made it. The ZIP was only ever a
+     * key on the way to a coordinate, and for 67 of those siblings the
+     * coordinate is already here.
+     *
+     * So a directory row may carry `coord` and it wins. Nothing is computed:
+     * the precision travels with the coordinate rather than being assumed
+     * "town", which is what rule 45 asks for. A row with no `coord` behaves
+     * exactly as before -- this is additive, and a test asserts every source
+     * written before this change comes out byte-identical after it. */
+    lat: coord ? coord.lat : null,
+    lon: coord ? coord.lon : null,
+    ...(coord ? { latPrecision: dir.coord ? (dir.coord.precision || "town") : "town" } : {}),
     phone: phoneOf(dir.phone),
     email: null,
     website,
@@ -505,7 +525,14 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
         + "nothing else, so the interval is closed at both ends. "
       : "cashRounding is NOT set and must not be guessed; it is measured from a real board "
         + "against real futures. ")
-      + (zipCoord
+      + (dir.coord
+        ? `lat/lon was NOT derived here: it is the coordinate geocodes/places.json already `
+          + `holds for ${dir.city}, ${dir.state}, at ${dir.coord.precision || "unstated"} `
+          + `precision via ${dir.coord.via || "unstated"}. This location came from a sibling `
+          + `list on a board this repository already reads, and it has no ZIP in `
+          + `data/known-elevators.json -- which is why the coordinate is carried in rather `
+          + `than looked up.`
+        : zipCoord
         ? "lat/lon is the CENTROID OF THE TOWN's ZIP and can be miles from the yard; a street fix "
           + "needs a street address, which data/known-elevators.json does not carry."
         : "lat/lon is null: this ZIP has no coordinate in geocodes/zip-candidates.json. `sync "
@@ -522,6 +549,48 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
  * hundred diffs. Given a board's bytes it returns exactly what would be
  * written, what would be left alone, and what could not be given a town.
  */
+
+/** The placeable rows of data/gaps/board-siblings.csv, as directory rows.
+ *
+ *  Returns [] and says nothing if the file is absent — the sweep predates it
+ *  and must still run without it. */
+export function readSiblingDirectory(root = ROOT) {
+  const f = join(root, "data/gaps/board-siblings.csv");
+  if (!existsSync(f)) return [];
+  const lines = readFileSync(f, "utf8").trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const cells = (line) => [...line.matchAll(/"((?:[^"]|"")*)"/g)].map((m) => m[1].replace(/""/g, '"'));
+  const head = lines[0].split(",");
+  const ix = (n) => head.indexOf(n);
+  const iOp = ix("operator"), iLab = ix("label"), iSt = ix("state"),
+        iLat = ix("lat"), iLon = ix("lon"), iPre = ix("precision"), iVia = ix("via");
+  if ([iOp, iLab, iSt, iLat, iLon].some((i) => i < 0)) return [];
+  const out = [];
+  for (const line of lines.slice(1)) {
+    const c = cells(line);
+    if (c.length !== head.length) continue;
+    const lat = Number(c[iLat]), lon = Number(c[iLon]);
+    /* No state or no coordinate: not a directory row, still a worklist row. */
+    if (!c[iSt] || !c[iLat] || !c[iLon] || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    /* A LABEL THAT NAMED ITS OWN STATE MUST NOT KEEP IT.
+       "Alpena SD" as the branch makes the location read "Alpena SD" beside a
+       state field of SD, and makes the id `agtegra-alpenasd`, which matches
+       nothing else in sources/. The suffix is only stripped when it is the
+       state we resolved — so "Corn IN" loses "IN" only if the row is Indiana,
+       and a town genuinely called something ending in two letters is safe. */
+    let branch = c[iLab];
+    const tail = branch.match(/^(.*?)[,\s]+([A-Za-z]{2})$/);
+    if (tail && tail[2].toUpperCase() === c[iSt].toUpperCase()) branch = tail[1].trim();
+    if (!branch) continue;
+    out.push({
+      facility: c[iOp], branch, city: branch, state: c[iSt],
+      zip: null, phone: null, source: "board-siblings",
+      coord: { lat, lon, precision: c[iPre] || "", via: c[iVia] || "" },
+    });
+  }
+  return out;
+}
+
 export function planBoard({ html, url, site, rows, known, byZip, existingIds, runId = null,
                             kind = "mobile" }) {
   const operator = operatorFrom(html);
@@ -709,6 +778,29 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   }
 
   const known = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
+  /* ── THE SIBLINGS, AS DIRECTORY ROWS ─────────────────────────────────────
+   *
+   * data/gaps/board-siblings.csv is written by scripts/board-siblings.mjs
+   * from `otherLocationsOnPage` — the locations these boards name themselves.
+   * 337 of them are not sources; 67 have a state decided honestly AND a
+   * coordinate this repository already holds.
+   *
+   * Those 67 are appended here as ordinary directory rows, in exactly the
+   * shape joinDirectory already understands, carrying their coordinate. The
+   * matching logic is untouched: it simply has more rows to match against,
+   * and its generic-word protection — the Hillsdale/Britton case — still
+   * applies to every one of them.
+   *
+   * AFTER Barchart's own rows, so a real directory entry always wins. That is
+   * the file a street-precision fix would have landed in.
+   *
+   * A row with no coordinate is not added at all: a source with no lat/lon is
+   * a pin the coverage map cannot draw, and the worklist is the right place
+   * for it until its state's registry lands. */
+  const siblingRows = readSiblingDirectory();
+  if (siblingRows.length)
+    console.log(`   ${siblingRows.length} sibling row(s) from data/gaps/board-siblings.csv`);
+  known.push(...siblingRows);
   const zipRows = JSON.parse(readFileSync(join(ROOT, "geocodes/zip-candidates.json"), "utf8")).zips;
   const byZip = new Map(zipRows.map((z) => [z.zip, z]));
   const existing = new Set(readdirSync(SOURCES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));

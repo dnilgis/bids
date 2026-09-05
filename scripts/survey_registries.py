@@ -195,11 +195,53 @@ CANDIDATES = [
     # another, and Tableau names its sheets whatever the author typed. These
     # are probes: the sandbox cannot reach this host, so one runner pass says
     # which of them exist and the rest get deleted. A 404 here costs nothing.
+    # ── PROBES OPENED 2026-09-05. Three are dead; do not re-try them. ───────
+    #
+    # Fetched individually, from a network that reaches this host:
+    #
+    #     WarehouseList.csv    404
+    #     Warehouses.csv       404
+    #     Map.csv              404
+    #
+    # And the summary re-read the same day: Grain 4,805 warehouses, 4,541 CCC
+    # approved, 2,390 USWA licensed, 9,607,879,882 bushels of capacity. It was
+    # 4,802 / 4,538 / 2,387 on 09-04, so THE DASHBOARD IS LIVE and grew by
+    # three in a day. That is worth more than the number: it is a maintained
+    # source, not a snapshot somebody posted once.
+    #
+    # A filtered request — ?Commodity=Grain&State=Oklahoma on the summary view
+    # — returned an EMPTY body rather than an error, so the filter parameter
+    # names are not those. Tableau names filters after the field, and the
+    # field names are inside the workbook's JavaScript, which is what neither
+    # this sandbox nor a plain fetch can read.
     ("US", "WCMD sheet probe: Warehouse Detail", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseDetail.csv?:embed=y", "probe, never opened"),
-    ("US", "WCMD sheet probe: Warehouse List", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseList.csv?:embed=y", "probe, never opened"),
     ("US", "WCMD sheet probe: Warehouse Locations", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WarehouseLocations.csv?:embed=y", "probe, never opened"),
-    ("US", "WCMD sheet probe: Map", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Map.csv?:embed=y", "probe, never opened"),
     ("US", "WCMD sheet probe: Sheet1", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Sheet1.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Licensed", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Licensed.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Warehouse", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Warehouse.csv?:embed=y", "probe, never opened"),
+    ("US", "WCMD sheet probe: Detail", "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/Detail.csv?:embed=y", "probe, never opened"),
+    #
+    # ── AND THE PROGRAMME MOVED AGENCY, WHICH IS WHY THE OLD LINKS ROT ──────
+    #
+    # Every USWA URL above points at fsa.usda.gov. The United States Warehouse
+    # Act is administered by AMS — the Warehouse and Commodity Management
+    # Division — and its live pages are:
+    #
+    #     https://www.ams.usda.gov/services/warehouse
+    #     https://www.ams.usda.gov/services/warehouse/approved-storage-warehouses
+    #     https://www.ams.usda.gov/rules-regulations/uswa
+    #
+    # data.gov's USWA entry was re-read 2026-09-05 and STILL offers only the
+    # 2010 PDF, last modified 2014-02-27. That dead end is confirmed, not
+    # assumed. The AMS pages publish no file either — the dashboard IS the
+    # publication, and AMS gives an address for asking:
+    #
+    #     AMS.WCMD.Operations@usda.gov
+    #
+    # WHICH IS THE CHEAPEST ROUTE LEFT AND NOBODY HAS TRIED IT. A public
+    # licence roster, asked for by email, from the division that publishes it.
+    ("US", "AMS warehouse services (the live programme page)", "https://www.ams.usda.gov/services/warehouse", "read 2026-09-05: USWA is AMS, not FSA. No file published; the dashboard is the publication"),
+    ("US", "AMS approved storage warehouses", "https://www.ams.usda.gov/services/warehouse/approved-storage-warehouses", "read 2026-09-05: links the WCMD dashboard and gives AMS.WCMD.Operations@usda.gov"),
     # The clickable USWA map data.gov points at. DNS does not resolve from the
     # sandbox; the runner is on a different network and may see it.
     ("US", "USWA licensed warehouses map", "https://saltlake.sc.egov.usda.gov/approved_whses/uswa/approved_whses_USWA.asp", "data.gov's only distribution for the USWA map; DNS fails from the sandbox"),
