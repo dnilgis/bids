@@ -938,6 +938,35 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     for (const u of unmatched.slice(0, 40))
       console.log(`   ${String(u.operator).padEnd(34)} ${String(u.label).padEnd(24)} l=${u.locationId}  ${u.rows} row(s)`);
     if (unmatched.length > 40) console.log(`   … and ${unmatched.length - 40} more`);
+
+    /* ══════════════════════════════════════════════════════════════════════
+     *  AND THE OTHER 541 GO TO A FILE, NOT INTO AN EXPIRED LOG
+     * ══════════════════════════════════════════════════════════════════════
+     *  This printed forty and dropped the rest. On 2026-09-05 that was 581
+     *  locations — real elevators posting real prices — of which 541 existed
+     *  nowhere afterwards except a run log that GitHub deletes in ninety
+     *  days. It is the same fault that hid the 337 board siblings for weeks,
+     *  five times larger, and it is the biggest single number in this
+     *  repository.
+     *
+     *  Written on a DRY RUN too. The dry run is the one somebody reads.
+     *
+     *  This is a worklist, not a plan: each row is a location we can see and
+     *  cannot place, with the operator, the board and the row count, so the
+     *  fattest boards can be worked first. Nothing here writes a source. */
+    try {
+      mkdirSync(join(ROOT, "data/gaps"), { recursive: true });
+      const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const rows = [...unmatched].sort((a, b) =>
+        String(a.operator).localeCompare(String(b.operator)) ||
+        (b.rows || 0) - (a.rows || 0));
+      writeFileSync(join(ROOT, "data/gaps/board-locations-with-no-town.csv"),
+        "operator,label,location_id,rows,board_url\n" +
+        rows.map((u) => [u.operator, u.label, u.locationId, u.rows, u.url].map(q).join(",")).join("\n") + "\n");
+      console.log(`   all ${unmatched.length} written to data/gaps/board-locations-with-no-town.csv`);
+    } catch (e) {
+      console.log(`::warning::could not write the no-town worklist: ${e.message}`);
+    }
   }
   if (wrote.length) {
     console.log(`::notice title=${wrote.length} AgriCharts source(s) ${cfg.write ? "written" : "found"}::`
