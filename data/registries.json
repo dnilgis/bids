@@ -1,8 +1,8 @@
 {
- "generated": "2026-09-04T22:38:30Z",
+ "generated": "2026-09-04T23:55:40Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
-  "businesses": 2004,
+  "businesses": 2293,
   "licensedButLocatedElsewhere": 31,
   "incompleteSources": [
    {
@@ -16,23 +16,23 @@
    "BC": 1,
    "CA": 1,
    "CN": 1,
-   "CO": 7,
+   "CO": 8,
    "CT": 2,
-   "GA": 2,
-   "IA": 277,
-   "IL": 21,
+   "GA": 3,
+   "IA": 282,
+   "IL": 26,
    "IN": 288,
-   "KS": 23,
+   "KS": 26,
    "LA": 3,
    "MA": 1,
-   "MI": 1,
-   "MN": 42,
-   "MO": 254,
+   "MI": 2,
+   "MN": 51,
+   "MO": 255,
    "MT": 1,
-   "ND": 299,
-   "NE": 109,
+   "ND": 302,
+   "NE": 110,
    "NY": 1,
-   "OH": 338,
+   "OH": 339,
    "OK": 1,
    "ON": 1,
    "OR": 1,
@@ -40,12 +40,12 @@
    "SC": 1,
    "SD": 249,
    "TN": 1,
-   "TX": 3,
-   "VT": 1,
+   "TX": 82,
+   "VT": 2,
    "WA": 1,
-   "WI": 3
+   "WI": 181
   },
-  "both_licences": 1674,
+  "both_licences": 1884,
   "with_phone": 581
  },
  "diagnostics": [
@@ -356,91 +356,91 @@
     "tried": [
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
-      "bytes": 280156,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=1",
-      "bytes": 280153,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?p=2",
-      "bytes": 280156,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pg=2",
-      "bytes": 280156,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?start=50",
-      "bytes": 280156,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?offset=50",
-      "bytes": 280154,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?limit=1000&offset=25",
-      "bytes": 280153,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
-      "bytes": 280155,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pageNumber=2",
-      "bytes": 280154,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page_num=2",
-      "bytes": 280155,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?paged=2",
-      "bytes": 280155,
+      "bytes": 279731,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
-      "bytes": 280156,
+      "bytes": 279732,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
-      "bytes": 280155,
+      "bytes": 279733,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -456,7 +456,7 @@
     {
      "url": "https://agriculture.mo.gov/grains/grainsearch.php",
      "status": 200,
-     "bytes": 280157
+     "bytes": 279733
     }
    ],
    "tables": 1,
@@ -752,10 +752,81 @@
    "kind": "dealer+warehouse",
    "note": "DATCP licensees, xls",
    "route": "xls",
-   "errors": [
-    "URLError: <urlopen error timed out>"
+   "pages": [
+    {
+     "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+     "status": 200,
+     "bytes": 3137536
+    }
    ],
-   "kept": 0,
+   "sheet": {
+    "name": "as of May 4, 2026 ",
+    "rows": 215,
+    "cols": 9,
+    "of": 1
+   },
+   "xlsColumns": [
+    "Current License Status",
+    "Legal Name of Entity",
+    "Mailing Address",
+    "City, State & Zip Code",
+    "Dealer License",
+    "Warehouse Keeper License",
+    "Comments / Conditional Licenses",
+    "Dealer - Required Disclosure to Producers",
+    "Warehouse Keeper - Required Disclosure to Depositors"
+   ],
+   "rowsSeen": 214,
+   "columnsStated": {
+    "name": "legal name of entity",
+    "address": "mailing address",
+    "city": "city, state & zip code",
+    "licence": "current license status"
+   },
+   "columnMap": [
+    {
+     "rows": 214,
+     "map": {
+      "name": 1,
+      "city": 3,
+      "address": 2,
+      "licence": 0
+     }
+    }
+   ],
+   "kept": 210,
+   "sample": [
+    {
+     "name": "121 Farms LLC",
+     "city": "Independence",
+     "address": "W22452 State Road 121",
+     "licence": "Warehouse & Dealer",
+     "st": "WI",
+     "zip": "54747",
+     "kind": "dealer+warehouse",
+     "state": "WI"
+    },
+    {
+     "name": "24/7 Grain Services LLC",
+     "city": "Almena",
+     "address": "1673 6th St.",
+     "licence": "Warehouse Only",
+     "st": "WI",
+     "zip": "54805",
+     "kind": "dealer+warehouse",
+     "state": "WI"
+    },
+    {
+     "name": "Ace Ethanol, LLC",
+     "city": "Stanley",
+     "address": "815 W Maple St.",
+     "licence": "Warehouse & Dealer",
+     "st": "WI",
+     "zip": "54768",
+     "kind": "dealer+warehouse",
+     "state": "WI"
+    }
+   ],
    "state": "WI"
   },
   {
@@ -767,19 +838,66 @@
     {
      "url": "https://texasagriculture.gov/Portals/0/Reports/PIR/grain_warehouse.xls?ver=8h5xCiF7GXXNfllq9gtibA%3d%3d",
      "status": 200,
-     "bytes": 63998
+     "bytes": 64000
     }
    ],
-   "tables": 0,
-   "headerCells": [],
-   "rowsSeen": 0,
-   "columnMap": {},
-   "tablesWithData": 0,
-   "firstRowRaw": "\ufffd\ufffd\u0011\u0871\u001a\ufffd\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000>\u0000\u0003\u0000\ufffd\ufffd\t\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000{\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000z\u0000\u0000\u0000\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd",
-   "newPerPage": [
-    0
+   "sheet": {
+    "name": "Sheet1",
+    "rows": 140,
+    "cols": 14,
+    "of": 1
+   },
+   "xlsColumns": [
+    "ACCT_NUM",
+    "EXPIRE_DT",
+    "CLI_NUM",
+    "CLI_LEGAL_NAME",
+    "CLI_DBA",
+    "CONTACT_NAME_PREFIX",
+    "CONTACT_NAME_FIRST",
+    "CONTACT_NAME_MIDDLE",
+    "CONTACT_NAME_LAST",
+    "CONTACT_NAME_SUFFIX",
+    "CONTACT_NAME",
+    "ATTN_NAME",
+    "FACILITY_NAME",
+    "COUNTY_NAME"
    ],
-   "kept": 0,
+   "rowsSeen": 139,
+   "columnsStated": {
+    "name": "cli_legal_name",
+    "county": "county_name"
+   },
+   "columnMap": [
+    {
+     "rows": 139,
+     "map": {
+      "name": 3,
+      "county": 13
+     }
+    }
+   ],
+   "kept": 139,
+   "sample": [
+    {
+     "name": "WEST GRAIN INC",
+     "county": "MCLENNAN",
+     "kind": "warehouse",
+     "state": "TX"
+    },
+    {
+     "name": "APEX GRAIN COMPANY LLC",
+     "county": "HILL",
+     "kind": "warehouse",
+     "state": "TX"
+    },
+    {
+     "name": "VALLEY FEED MILL INC OF PARIS",
+     "county": "LAMAR",
+     "kind": "warehouse",
+     "state": "TX"
+    }
+   ],
    "state": "TX"
   },
   {
@@ -2555,6 +2673,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "Pilgrim's Pride Corporation",
+   "city": "Greeley",
+   "county": null,
+   "phone": null,
+   "state": "CO",
+   "address": "1770 Promontory Circle",
+   "zip": "80634",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "COLORADO MILLS, LLC",
    "city": "LAMAR",
    "county": null,
@@ -2682,6 +2822,28 @@
     "warehouse"
    ],
    "source": "registry-sd"
+  },
+  {
+   "name": "Hero Farmed Cooperative",
+   "city": "Atlanta",
+   "county": null,
+   "phone": null,
+   "state": "GA",
+   "address": "7000 Central Pkwy Ste 1460",
+   "zip": "30328",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "PENNINGTON SEED INC PPK1, PPK2, PPK3, D&D COMMODITIES",
@@ -2982,6 +3144,28 @@
     "dealer"
    ],
    "source": "registry-ia"
+  },
+  {
+   "name": "NFO Members Grain, Inc.",
+   "city": "Ames",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": "PO Box 2508",
+   "zip": "50010",
+   "capacity": null,
+   "licenceClass": "Producer Agent / Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "Andover Grain & Fertilizer, Inc.",
@@ -3349,6 +3533,28 @@
     "dealer"
    ],
    "source": "registry-ia"
+  },
+  {
+   "name": "Stonebridge, Ltd.",
+   "city": "Cedar Falls",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": "3411 Midway Dr.",
+   "zip": "50613",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "Interstate Grain Service, LLC",
@@ -5961,6 +6167,28 @@
    "source": "registry-ia"
   },
   {
+   "name": "Plains Salvage, Inc.",
+   "city": "Lowden",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": "717 Union Ave.",
+   "zip": "52255",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "Pruess Elevator, Inc.",
    "city": "Lowden",
    "county": "Cedar",
@@ -6345,6 +6573,28 @@
     "dealer"
    ],
    "source": "registry-ia"
+  },
+  {
+   "name": "Innovative Ag Services Co.",
+   "city": "Monticello",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": "2010 S Main St.",
+   "zip": "52310",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "G & I Feed & Grain, Inc.",
@@ -8423,6 +8673,28 @@
    "source": "registry-ia"
   },
   {
+   "name": "Big River Resources Boyceville, LLC",
+   "city": "West Burlington",
+   "county": null,
+   "phone": null,
+   "state": "IA",
+   "address": "211 North Gear Suite 200",
+   "zip": "52655",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "Big River Resources West Burlington",
    "city": "West Burlington",
    "county": "Des Moines",
@@ -8940,6 +9212,72 @@
    "source": "registry-mo"
   },
   {
+   "name": "Cereal Byproducts Company",
+   "city": "Mt. Prospect",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": "601 E Kensington Rd.",
+   "zip": "60056",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "All Star Trading Inc.",
+   "city": "Oak Brook",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": "1750 E Golf Rd. Suite 388",
+   "zip": "60523",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Phil's Eggs, LLC",
+   "city": "Pearl City",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": "968 South Kent Rd.",
+   "zip": "61060",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "H & B Specialties, Inc.",
    "city": "Pleasant Plains",
    "county": "Sangamon",
@@ -9006,6 +9344,28 @@
    "source": "registry-mo"
   },
   {
+   "name": "Furst-McNess Company",
+   "city": "Rockford",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": "1252 Bell Valley Rd. Suite 220",
+   "zip": "61108",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "ALL STAR TRADING",
    "city": "SCHAUMBURG",
    "county": null,
@@ -9069,6 +9429,28 @@
     "warehouse"
    ],
    "source": "registry-mo"
+  },
+  {
+   "name": "Eastland Feed and Grain, Inc.",
+   "city": "Shannon",
+   "county": null,
+   "phone": null,
+   "state": "IL",
+   "address": "PO Box 200",
+   "zip": "61078",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "CHS - Shipman Elevator",
@@ -15663,6 +16045,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "Redwood Group, LLC (The)",
+   "city": "Mission",
+   "county": null,
+   "phone": null,
+   "state": "KS",
+   "address": "5920 Nail Ave",
+   "zip": "66202",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "The Redwood Commodities Group, LLC",
    "city": "Mission",
    "county": "Johnson",
@@ -15813,6 +16217,50 @@
     "warehouse"
    ],
    "source": "registry-mo"
+  },
+  {
+   "name": "CSC Gold, Inc.",
+   "city": "Overland Park",
+   "county": null,
+   "phone": null,
+   "state": "KS",
+   "address": "11880 College Blvd",
+   "zip": "66210",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Scoular Company (The)",
+   "city": "Overland Park",
+   "county": null,
+   "phone": null,
+   "state": "KS",
+   "address": "10801 Mastin Ste 800",
+   "zip": "66210",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "The Andersons, Inc.- Overland Park, KS",
@@ -16010,6 +16458,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "Stephenson Marketing Cooperative, Inc.",
+   "city": "Stephenson",
+   "county": null,
+   "phone": null,
+   "state": "MI",
+   "address": "PO Box 399",
+   "zip": "49887",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "NEBRASKA CORN PROCESSING, LLC",
    "city": "ZEELAND",
    "county": null,
@@ -16051,6 +16521,50 @@
     "warehouse"
    ],
    "source": "registry-sd"
+  },
+  {
+   "name": "Land O'Lakes, Inc.",
+   "city": "Arden Hills",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "4001 Lexington Ave. N",
+   "zip": "55126",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hormel Foods Corporation",
+   "city": "Austin",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "1 Hormel Place",
+   "zip": "55912",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "NEW VISION CO-OP",
@@ -16382,6 +16896,28 @@
    "source": "registry-mo"
   },
   {
+   "name": "Grain Millers, Inc.",
+   "city": "Eden Prairie",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "10400 Viking Dr. Suite 301",
+   "zip": "55344",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "RICHLAND IFC, INC",
    "city": "FOXHOME",
    "county": null,
@@ -16424,6 +16960,28 @@
     "warehouse"
    ],
    "source": "registry-sd"
+  },
+  {
+   "name": "Riverland Ag Corp.",
+   "city": "Golden Valley",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "701 Xenia Ave S Ste 400",
+   "zip": "55416",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "CHANDLER FEED COMPANY",
@@ -16754,6 +17312,72 @@
    "source": "registry-ne"
   },
   {
+   "name": "Cargill, Incorporated",
+   "city": "Minneapolis",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "PO Box 5606",
+   "zip": "55440",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "General Mills, Inc.",
+   "city": "Minneapolis",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "1 General Mills Blvd.  W04-C",
+   "zip": "55426",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "World Food Processing, L.L.C.",
+   "city": "Minneapolis",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "811 Glenwood Ave. Ste 230",
+   "zip": "55405",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "LABOLT FARMERS GRAIN COMPANY",
    "city": "NASSAU",
    "county": null,
@@ -16864,6 +17488,28 @@
    "source": "registry-sd"
   },
   {
+   "name": "Red Wing Grain, LLC",
+   "city": "Red Wing",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "810 Levee Rd.",
+   "zip": "55066",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "CHS INC.",
    "city": "SAINT PAUL",
    "county": null,
@@ -16927,6 +17573,28 @@
     "warehouse"
    ],
    "source": "registry-sd"
+  },
+  {
+   "name": "CHS Inc.",
+   "city": "St. Paul",
+   "county": null,
+   "phone": null,
+   "state": "MN",
+   "address": "PO Box 64089 MS 301",
+   "zip": "55164",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "CHANDLER FEED COMPANY",
@@ -19477,6 +20145,28 @@
     "warehouse"
    ],
    "source": "registry-mo"
+  },
+  {
+   "name": "StoneX Commodity Solutions LLC",
+   "city": "Kansas City",
+   "county": null,
+   "phone": null,
+   "state": "MO",
+   "address": "1251 NW Briarcliff Pkwy",
+   "zip": "64116",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "StoneX Commodity Solutions, LLC",
@@ -23019,6 +23709,28 @@
    "source": "registry-nd"
   },
   {
+   "name": "Lighthouse Commodities, LLC",
+   "city": "Bismarck",
+   "county": null,
+   "phone": null,
+   "state": "ND",
+   "address": "4719 Shelburne St STE 9",
+   "zip": "58503",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "Border Ag & Energy",
    "city": "Bottineau",
    "county": "Bottineau",
@@ -23457,6 +24169,28 @@
     "warehouse"
    ],
    "source": "registry-nd"
+  },
+  {
+   "name": "SB&B Foods, LLC",
+   "city": "Casselton",
+   "county": null,
+   "phone": null,
+   "state": "ND",
+   "address": "PO Box 549",
+   "zip": "58012",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "Unity Seed Company",
@@ -24622,6 +25356,28 @@
     "warehouse"
    ],
    "source": "registry-nd"
+  },
+  {
+   "name": "Hesco Grains, LLC",
+   "city": "Fargo",
+   "county": null,
+   "phone": null,
+   "state": "ND",
+   "address": "4666 Amber Valley Parkway",
+   "zip": "58104",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "Red River Commodities Inc.",
@@ -30807,6 +31563,28 @@
    "source": "registry-mo"
   },
   {
+   "name": "Bunge USA Grain, LLC",
+   "city": "Omaha",
+   "county": null,
+   "phone": null,
+   "state": "NE",
+   "address": "1331 Capitol Ave",
+   "zip": "68102",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "Bunge USA Grain, LLC - Cross Country",
    "city": "Omaha",
    "county": "Clay",
@@ -36133,6 +36911,28 @@
     "warehouse"
    ],
    "source": "registry-oh"
+  },
+  {
+   "name": "Andersons, Inc. (The)",
+   "city": "Maumee",
+   "county": null,
+   "phone": null,
+   "state": "OH",
+   "address": "PO Box 119",
+   "zip": "43537",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "The Andersons, Inc.",
@@ -44555,6 +45355,1665 @@
    "source": "registry-ne"
   },
   {
+   "name": "ABILENE AG SERVICE AND SUPPLY INC",
+   "city": null,
+   "county": "TAYLOR",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ACN AGRIPRODUCTS LLC",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ADJ ACQUISITION LLC",
+   "city": null,
+   "county": "MEDINA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ALAN RITCHEY INC",
+   "city": null,
+   "county": "COOKE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "AMIGOS GRAIN ELEVATOR LLC",
+   "city": null,
+   "county": "BEE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "APEX GRAIN COMPANY LLC",
+   "city": null,
+   "county": "HILL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ASSOCIATED COTTON GROWERS INC",
+   "city": null,
+   "county": "CROSBY",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "BEAKLEY FARMS GRAIN LLC",
+   "city": null,
+   "county": "ELLIS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "BEN DIETERICH",
+   "city": null,
+   "county": "MCLENNAN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "BOMARTON COOP INC",
+   "city": null,
+   "county": "BAYLOR",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "C E GRAIN LLC",
+   "city": null,
+   "county": "HASKELL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CHAFIN INVESTMENTS LTD",
+   "city": null,
+   "county": "WILLIAMSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CHAPA QUIROGA LLC",
+   "city": null,
+   "county": "WILLACY",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CHILTON GRAIN COMPANY",
+   "city": null,
+   "county": "FALLS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CHS INC",
+   "city": null,
+   "county": "PARMER",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CIRCLEVILLE GRAIN LLC",
+   "city": null,
+   "county": "WILLIAMSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "CONAGRI GOLDEN LLC",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "COOPERATIVE GIN COMPANY",
+   "city": null,
+   "county": "FANNIN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "COTTON CENTER GRAIN LTD",
+   "city": null,
+   "county": "HALE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "D AND M COMMUNITY GRAIN LLC",
+   "city": null,
+   "county": "BELL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ELKINS GRAIN LLC",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "F TROOP GRAINS LLC",
+   "city": null,
+   "county": "RANDALL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "FARMER'S GRAIN COOPERATIVE OF MUNDAY TEXAS",
+   "city": null,
+   "county": "KNOX",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "FARMERS COOP GIN AND ELEVATOR",
+   "city": null,
+   "county": "WILBARGER",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "FARMERS COOP GIN OF MALONE",
+   "city": null,
+   "county": "HILL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "FARMERS COOPERATIVE SOCIETY OF STAMFORD",
+   "city": null,
+   "county": "JONES",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "GLASSCOCK COUNTY COOP",
+   "city": null,
+   "county": "GLASSCOCK",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "GRAIN GROWTH LLC",
+   "city": null,
+   "county": "HAMILTON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "GRAIN INVESTORS INC",
+   "city": null,
+   "county": "SWISHER",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "HAMLIN ELEVATOR LLC",
+   "city": null,
+   "county": "JONES",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "HI STARR GRAIN ELEVATOR CORP",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "HONEY GROVE GRAIN AND PEANUT INC",
+   "city": null,
+   "county": "FANNIN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ITASCA COOPERATIVE GRAIN COMPANY",
+   "city": null,
+   "county": "HILL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "IV FARMERS GRAIN INC",
+   "city": null,
+   "county": "COLLIN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "JOSEPH TRUCKING INC",
+   "city": null,
+   "county": "VICTORIA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "K AG INC",
+   "city": null,
+   "county": "GUADALUPE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "KELLER GRAIN INC",
+   "city": null,
+   "county": "MEDINA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LIVESTOCK NUTRITION CENTER LLC",
+   "city": null,
+   "county": "LAMAR",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LONE STAR FARMERS COOPERATIVE",
+   "city": null,
+   "county": "TOM GREEN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LONE STAR GRAIN LLC",
+   "city": null,
+   "county": "BELL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LONE STAR GRAIN-CHILLICOTHE LLC",
+   "city": null,
+   "county": "HARDEMAN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LOUIS DREYFUS COMPANY LLC",
+   "city": null,
+   "county": "RUNNELS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "LUBIANSKI GRAIN COMPANY",
+   "city": null,
+   "county": "BEXAR",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MARTINEK GRAIN AND BINS INC",
+   "city": null,
+   "county": "GRAYSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MCFADDIN GRAIN CO",
+   "city": null,
+   "county": "GOLIAD",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MID COAST GRAIN CO",
+   "city": null,
+   "county": "MATAGORDA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MUENNINK GRAIN MERCHANDISING",
+   "city": null,
+   "county": "MEDINA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MUENSTER MILLING COMPANY LLC",
+   "city": null,
+   "county": "COOKE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MUNCY ELEVATOR INC",
+   "city": null,
+   "county": "FLOYD",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "MYERS GRAIN AND FERTILIZER INC",
+   "city": null,
+   "county": "KNOX",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "POOLE PARTNERS LP",
+   "city": null,
+   "county": "DALLAM",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "PRODUCERS COOPERATIVE ELEVATOR",
+   "city": null,
+   "county": "FLOYD",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "PRODUCERS COOPERATIVE MARKETING ASSOCATION",
+   "city": null,
+   "county": "GUADALUPE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "QUALITY GRAIN LLC",
+   "city": null,
+   "county": "GRAYSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "R AND R COMMODITIES LLC",
+   "city": null,
+   "county": "BEE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "REGAL AG LLC",
+   "city": null,
+   "county": "CAMERON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "REUS GRAIN LP",
+   "city": null,
+   "county": "MEDINA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "ROBERTSON COUNTY GRAIN COMPANY LLC",
+   "city": null,
+   "county": "ROBERTSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "SANDERSON GRAIN INC",
+   "city": null,
+   "county": "LAMB",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "SCOTT GING GRAIN INC",
+   "city": null,
+   "county": "TRAVIS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "SILVERCOT INC",
+   "city": null,
+   "county": "BRISCOE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "STRATFORD GRAIN CO",
+   "city": null,
+   "county": "SHERMAN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "TEXAS VALLEY GRAIN LLC",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "THORNDALE COOP GIN AND GRAIN CO",
+   "city": null,
+   "county": "MILAM",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "THRALL COOP GRAIN CO",
+   "city": null,
+   "county": "WILLIAMSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "TONY'S GRAIN LLC",
+   "city": null,
+   "county": "COOKE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "UVALDE COUNTY FARMERS COOPERATIVE",
+   "city": null,
+   "county": "UVALDE",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "VALLEY FEED MILL INC OF PARIS",
+   "city": null,
+   "county": "LAMAR",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "VICTORIA CALHOUN GRAIN COMPANY",
+   "city": null,
+   "county": "VICTORIA",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "VIOLET GRAIN CO INC",
+   "city": null,
+   "county": "NUECES",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WALLER RICE DRIER INC",
+   "city": null,
+   "county": "HARRIS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WALTON GRAIN LLC",
+   "city": null,
+   "county": "HILL",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WEST GRAIN INC",
+   "city": null,
+   "county": "MCLENNAN",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WILLAMAR PARTNERS LLC",
+   "city": null,
+   "county": "WILLACY",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WILLIAMS GIN AND GRAIN INC",
+   "city": null,
+   "county": "NAVARRO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WILLIAMSON COUNTY GRAIN INC",
+   "city": null,
+   "county": "WILLIAMSON",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WINGATE GIN CORPORATION",
+   "city": null,
+   "county": "RUNNELS",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WNGU LLC",
+   "city": null,
+   "county": "HIDALGO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
+   "name": "WOODSBORO FARMERS COOPERATIVE",
+   "city": null,
+   "county": "REFUGIO",
+   "phone": null,
+   "state": "TX",
+   "address": null,
+   "zip": null,
+   "capacity": null,
+   "licenceClass": null,
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "warehouse"
+   ],
+   "source": "registry-tx"
+  },
+  {
    "name": "RED RIVER COMMODITIES INC",
    "city": "LUBBOCK",
    "county": null,
@@ -44642,6 +47101,28 @@
    "source": "registry-ne"
   },
   {
+   "name": "F.W. Cobs Co., Inc.",
+   "city": "St Albans Bay",
+   "county": null,
+   "phone": null,
+   "state": "VT",
+   "address": "PO Box 30",
+   "zip": "05481",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "GLOBAL HARVEST FOODS, LLC",
    "city": "TUKWILLA",
    "county": null,
@@ -44661,6 +47142,688 @@
     "dealer"
    ],
    "source": "registry-ne"
+  },
+  {
+   "name": "Wisco Frozen Foods, Inc.",
+   "city": "Abbotsford",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 128",
+   "zip": "54405",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Adell Cooperative Union",
+   "city": "Adell",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "606 Tower Ave.",
+   "zip": "53001",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Great Lakes Agri-Services, Inc.",
+   "city": "Adell",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "615 Tower Ave.",
+   "zip": "53001",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Rio Creek Feed Mill, Inc.",
+   "city": "Algoma",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N7295 Feed Mill Ln.",
+   "zip": "54201",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Farmers' Grain & Feed, LLC",
+   "city": "Allenton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 428",
+   "zip": "53002",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "24/7 Grain Services LLC",
+   "city": "Almena",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1673 6th St.",
+   "zip": "54805",
+   "capacity": null,
+   "licenceClass": "Warehouse Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hay River Grain, LLC",
+   "city": "Almena",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "547 17th Ave.",
+   "zip": "54805",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Schumitsch Companies, Inc.",
+   "city": "Antigo",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "420 Wausau Rd.",
+   "zip": "54409",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Townline Feeds, LLC",
+   "city": "Antigo",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N3750 Clover Rd.",
+   "zip": "54409",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "S & S Grains LLP",
+   "city": "Arcadia",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N29483 River Valley Rd.",
+   "zip": "54612",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Peter Grain, Inc.",
+   "city": "Athens",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "118576 County Road A",
+   "zip": "54411",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Augusta Feed Service, Inc.",
+   "city": "Augusta",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 479",
+   "zip": "54722",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Borntrager, Mervin W.",
+   "city": "Augusta",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "S11845 Cty Rd M",
+   "zip": "54722",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Midwest Commodity Service, Inc.",
+   "city": "Baldwin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1881 140TH Ave.",
+   "zip": "54002",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Michaelson, Larry D",
+   "city": "Balsam Lake",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1063 185th Ave.",
+   "zip": "54810",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Luther Grain Sales & Service, LLC",
+   "city": "Baraboo",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "E12434 Highway 33",
+   "zip": "53913",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "United Cooperative",
+   "city": "Beaver Dam",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N7160 Raceway Rd.",
+   "zip": "53916",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Zimmerman, Randy",
+   "city": "Belleville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W3962 County Road W",
+   "zip": "53508",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Wolters Farm, Inc.",
+   "city": "Belmont",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "24548 Center Dr.",
+   "zip": "53510",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Aurora Grains, LLC",
+   "city": "Berlin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N825 32nd Ave.",
+   "zip": "54923",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Berlin Feed, Inc.",
+   "city": "Berlin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "328 S Church St.",
+   "zip": "54923",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Willow Creek Grain, LLC",
+   "city": "Berlin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N2084 State Road 49",
+   "zip": "54923",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Salentine Brothers Family Limited Partnership",
+   "city": "Big Bend",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "S87W22355 Forest Home Ave.",
+   "zip": "53103",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "CDR Farms, LLC",
+   "city": "Bloomer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "18909 80th St.",
+   "zip": "54724",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Ed's Feed Service, Inc.",
+   "city": "Bloomer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 52",
+   "zip": "54724",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "River Country Co-op",
+   "city": "Bloomer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "16779 98th St.",
+   "zip": "54724",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Two Y Hilltop, LLC",
+   "city": "Bloomer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "916 15th Ave.",
+   "zip": "54724",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Economy Feed Mill, LLC",
+   "city": "Bloomington",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 427",
+   "zip": "53804",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Herdsman Feeds Inc.",
+   "city": "Boyceville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "E1353 State Highway 64",
+   "zip": "54725",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Country Visions Cooperative",
+   "city": "Brillion",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1010 W Ryan St.",
+   "zip": "54110",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Peachey Brothers Elevator, Inc.",
+   "city": "Burnett",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 36",
+   "zip": "53922",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   },
   {
    "name": "LABUDDE GROUP, INC.",
@@ -44705,6 +47868,336 @@
    "source": "registry-ne"
   },
   {
+   "name": "Cadott Grain Service, LLC",
+   "city": "Cadott",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 63",
+   "zip": "54727",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Cloverleaf Farm Supply, LLC",
+   "city": "Cadott",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "127 Elm St.",
+   "zip": "54727",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hughes Trucking, Inc.",
+   "city": "Cambria",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W1203 Vaughn Rd.",
+   "zip": "53923",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Legacy Grain Solutions LLC",
+   "city": "Cambria",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N8585 Casey Dr",
+   "zip": "53923",
+   "capacity": null,
+   "licenceClass": "Warehouse Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Camp Douglas Farmers Cooperative",
+   "city": "Camp Douglas",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "107 Main St.",
+   "zip": "54618",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hanmann Milling Co., Inc.",
+   "city": "Casco",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 158",
+   "zip": "54205",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "CFS Specialties, Inc.",
+   "city": "Cashton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "300 State Highway 27",
+   "zip": "54619",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Westdale Farm, LLC",
+   "city": "Centuria",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1854 190th St.",
+   "zip": "54824",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Chaseburg Farmers Union Cooperative Service",
+   "city": "Chaseburg",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "113 Cactus Dr.",
+   "zip": "54621",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Stutzman, John E.",
+   "city": "Chili",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N5527 Division Ave.",
+   "zip": "54420",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Briess Industries, Inc.",
+   "city": "Chilton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "625 S Irish Rd.",
+   "zip": "53014",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Rooney Grain, LLC",
+   "city": "Chippewa Falls",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "9996 County Highway Q",
+   "zip": "54729",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Wheaton Grain, Inc.",
+   "city": "Chippewa Falls",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5852 County Highway T",
+   "zip": "54729",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Clayton Feed Store, Inc.",
+   "city": "Clayton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 70",
+   "zip": "54004",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "DeLong Co., Inc. (The)",
+   "city": "Clinton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 552",
+   "zip": "53525",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
    "name": "The DeLong Co., Inc.",
    "city": "Clinton",
    "county": "Rock",
@@ -44725,6 +48218,2910 @@
     "warehouse"
    ],
    "source": "registry-mo"
+  },
+  {
+   "name": "Clintonville Elevator Company",
+   "city": "Clintonville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "215 Autumn St.",
+   "zip": "54929",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Reynolds Feed and Supply LLC",
+   "city": "Cobb",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 248",
+   "zip": "53526",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "La Crosse Milling Company",
+   "city": "Cochrane",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 86",
+   "zip": "54622",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Duffy Grain, Inc.",
+   "city": "Columbus",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 250",
+   "zip": "53925",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Main Grain L.L.C.",
+   "city": "Conrath",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N2672 Vine St.",
+   "zip": "54731",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Koon Kreek Feeds, Inc.",
+   "city": "Coon Valley",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 431",
+   "zip": "54623",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Landmark Services Cooperative",
+   "city": "Cottage Grove",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1401 Landmark Dr.",
+   "zip": "53527",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Crivitz Feed Mill, LLC",
+   "city": "Crivitz",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 730",
+   "zip": "54114",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "D & S Milling, Inc.",
+   "city": "Curtiss",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 157",
+   "zip": "54422",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Cushing Cooperative Society",
+   "city": "Cushing",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 458",
+   "zip": "54006",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Farm-City Elevator, Inc.",
+   "city": "Darien",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 628",
+   "zip": "53114",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Brown, Wallace G.",
+   "city": "Darlington",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "15211 Dobbs Rd.",
+   "zip": "53530",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "See-Mor Grain, Inc.",
+   "city": "Darlington",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "12785 County Road O",
+   "zip": "53530",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "River Valley Cooperative",
+   "city": "Davenport",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "254 E 90th",
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Tarkowski Grain & Roasting, LLC",
+   "city": "Denmark",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "3377 S County Road T",
+   "zip": "54208",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Eau Galle Grain Company LLC",
+   "city": "Eau Galle",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N435 State Road 25",
+   "zip": "54737",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Albion Grain LLC",
+   "city": "Eleva",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N50704 County Highway Y",
+   "zip": "54738",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Kruger, Inc.",
+   "city": "Eleva",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N49494 County Road Y",
+   "zip": "54738",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Tweet, James A.",
+   "city": "Eleva",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N50704 County Highway Y",
+   "zip": "54738",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Meyer Brothers Grain, Inc.",
+   "city": "Elk Mound",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N5406 970th St.",
+   "zip": "54739",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Schroeder Family Farms, Inc.",
+   "city": "Ellsworth",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N5814 530th Street",
+   "zip": "54011",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hegg Mill, LLC",
+   "city": "Ettrick",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N23395 US Highway 53",
+   "zip": "54627",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Exeland Feed Mill, Inc.",
+   "city": "Exeland",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 25",
+   "zip": "54835",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Fairwater Feed & Supply, LLC",
+   "city": "Fairwater",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 114",
+   "zip": "53931",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Central Garden & Pet Company",
+   "city": "Franklin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5401 W Oakwood Park Dr.",
+   "zip": "53132",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Klema Feeds, Inc.",
+   "city": "Franksville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "10540 Northwestern Ave.",
+   "zip": "53126",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Jeff Helser Grain Services LLC",
+   "city": "Fremont",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "9093 Marion Lane",
+   "zip": "54940",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "United Wisconsin Grain Producers LLC",
+   "city": "Friesland",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 247",
+   "zip": "53935",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Andersen Feeds, Inc.",
+   "city": "Galesville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 98",
+   "zip": "54630",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Olson Feed Service, Inc.",
+   "city": "Gays Mills",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "18998 Olson Feed Rd.",
+   "zip": "54631",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Gillett Milling Co., Inc.",
+   "city": "Gillett",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 416",
+   "zip": "54124",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Zahn's Farms, LLC",
+   "city": "Gillett",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "11620 County Road H",
+   "zip": "54124",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Burnett Dairy Cooperative",
+   "city": "Grantsburg",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "11631 State Road 70",
+   "zip": "54840",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "D & S Farms",
+   "city": "Gratiot",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "323 S Madison St.",
+   "zip": "53807",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Arno Pfeifer, Incorporated",
+   "city": "Greenbush",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 101",
+   "zip": "53026",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Wiese Brothers Farms",
+   "city": "Greenleaf",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "7043 Bunker Hill Rd.",
+   "zip": "54126",
+   "capacity": null,
+   "licenceClass": "Warehouse Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Fox Valley Alfalfa Mill, Inc.",
+   "city": "Hilbert",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "508 N 3rd St.",
+   "zip": "54129",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Dummer Farms Incorporated",
+   "city": "Holmen",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N6673 County Road XX",
+   "zip": "54636",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "McHugh, Judith d/b/a McHugh Farms",
+   "city": "Holmen",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1900 Old Highway 93",
+   "zip": "54636",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "121 Farms LLC",
+   "city": "Independence",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W22452 State Road 121",
+   "zip": "54747",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Growmark, Inc.",
+   "city": "Jefferson",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "222 E Puerner St.",
+   "zip": "53549",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Aztalan Bio LLC",
+   "city": "Johnson Creek",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W5289 Valero Way",
+   "zip": "53038",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Fliss Feeds, Inc.",
+   "city": "Junction City",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 185",
+   "zip": "54443",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Dan Meulemans Trucking, Inc.",
+   "city": "Kaukauna",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W411 Garrity Rd.",
+   "zip": "54130",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Van De Loo Feed & Grain",
+   "city": "Kaukauna",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N2455 Ridge Creek Ct.",
+   "zip": "54130",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Van Groll, Inc.",
+   "city": "Kaukauna",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N1515 Vanden Broek Rd.",
+   "zip": "54130",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Mt. Tabor Mill, LLC",
+   "city": "Kendall",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "S765 County Road V",
+   "zip": "54638",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "TMV Feed and Supply, LLP",
+   "city": "Kiel",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "12207 Mill Rd.",
+   "zip": "53042",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Cooperative Regions of Organic Producer Pools",
+   "city": "La Farge",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "One Organic Way",
+   "zip": "54639",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Buchholz Feed Store, Inc.",
+   "city": "Ladysmith",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 144",
+   "zip": "54848",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Holtz Farms Grain LLC",
+   "city": "Lake Delton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "101 Miller Dr",
+   "zip": "53940",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Daybreak Foods, Inc.",
+   "city": "Lake Mills",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 800",
+   "zip": "53551",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Universal Co-operative Association",
+   "city": "Lebanon",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 9",
+   "zip": "53047",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Lime Ridge Ag Supply, Inc.",
+   "city": "Lime Ridge",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 115",
+   "zip": "53942",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Linden Milling Co., Inc.",
+   "city": "Linden",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 529",
+   "zip": "53553",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hartmann Farms, LLC",
+   "city": "Lodi",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W12148 Highway 60",
+   "zip": "53555",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Northside Elevator, Inc.",
+   "city": "Loyal",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 159",
+   "zip": "54446",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Atlas Cooperative",
+   "city": "Luck",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "2120 295th Ave.",
+   "zip": "54853",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Luxemburg Milling Co. Ltd.",
+   "city": "Luxemburg",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "219 Cedar St.",
+   "zip": "54217",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Inotiv, Inc.",
+   "city": "Madison",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1401 S Stoughton Rd.",
+   "zip": "53716",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "VP Holdings Corporation",
+   "city": "Madison",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 259126",
+   "zip": "53725",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Maribel Grain Company",
+   "city": "Maribel",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 167",
+   "zip": "54227",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "JTA Management, LLC",
+   "city": "Marinette",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "630 Hattie St.",
+   "zip": "54143",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "McMillan Farms, Inc.",
+   "city": "Marshfield",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "200955 Galvin Ave.",
+   "zip": "54449",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "ProVision Partners Cooperative",
+   "city": "Marshfield",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 988",
+   "zip": "54449",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Walsh Grain Farms, Inc.",
+   "city": "Mauston",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N3092 Highway 12",
+   "zip": "53948",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Fan-Agra Corp.",
+   "city": "Mazomanie",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5764 Morrill Rd.",
+   "zip": "53560",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Medford Co-operative, Inc.",
+   "city": "Medford",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 407",
+   "zip": "54451",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Melrose Farm Service, Inc.",
+   "city": "Melrose",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 295",
+   "zip": "54642",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Prairie Ag Supply, LLC",
+   "city": "Menomonie",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "E6565 629th Ave.",
+   "zip": "54751",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Red Cedar Grain Service, Inc.",
+   "city": "Menomonie",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 385",
+   "zip": "54751",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Rusk Prairie Grain Service",
+   "city": "Menomonie",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 385",
+   "zip": "54751",
+   "capacity": null,
+   "licenceClass": "Warehouse Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Middleton Farmers Cooperative Company",
+   "city": "Middleton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 620348",
+   "zip": "53562",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Malteurop North America Inc.",
+   "city": "Milwaukee",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "6737 W Washington St.",
+   "zip": "53214",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Stello Storage, LLC",
+   "city": "Mindoro",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N8754 State Road 108",
+   "zip": "54644",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Bluff Country Feed & Seed, LLC",
+   "city": "Mondovi",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "158 Marten St.",
+   "zip": "54755",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Harvey Creek Grain, LLC",
+   "city": "Mondovi",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W911 US Hwy 10",
+   "zip": "54755",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Badger State Ethanol, LLC",
+   "city": "Monroe",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "820 W 17th St.",
+   "zip": "53566",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Carrousel Grain Service Inc.",
+   "city": "Monroe",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W2702 County Road FF",
+   "zip": "53566",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Pleasant Grain, LLC",
+   "city": "Monticello",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N5670 Gutzmer Rd.",
+   "zip": "53570",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Grain St-Laurent Inc.",
+   "city": "Montreal, Quebec H2Y 2G3",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "407 Rue McGill Suite 315",
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Premier Cooperative",
+   "city": "Mount Horeb",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "501 W Main St.",
+   "zip": "53572",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Horn Feeds, Inc.",
+   "city": "Mukwonago",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "728 Clarendon Ave.",
+   "zip": "53149",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Riverdale Ag Service, Inc.",
+   "city": "Muscoda",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 327",
+   "zip": "53573",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Danes Fairylane Dairy Farms, Inc.",
+   "city": "New Holstein",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N2556 Honeymoon Hill Rd.",
+   "zip": "53061",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Pfister, Donald",
+   "city": "New Holstein",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N3091 County Road T",
+   "zip": "53061",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Oakfield Elevator Company, Inc.",
+   "city": "Oakfield",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 67",
+   "zip": "53065",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Oregon Farm Center, Inc.",
+   "city": "Oregon",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "4636 State Road 138",
+   "zip": "53575",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Peshtigo Feed Mill, Inc.",
+   "city": "Peshtigo",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "305 Railroad St.",
+   "zip": "54157",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Jay-Mar, Inc.",
+   "city": "Plover",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 429",
+   "zip": "54467",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Plum City Feed Mill, Inc.",
+   "city": "Plum City",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "400 1st St.",
+   "zip": "54761",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Century Acres, Inc.",
+   "city": "Port Washington",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "3420 Highway W",
+   "zip": "53074",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Hohl's Farm Supply, Inc.",
+   "city": "Portage",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W11942 Highway 33",
+   "zip": "53901",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Poskin Feed Store, Inc.",
+   "city": "Poskin",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "968 14th Ave.",
+   "zip": "54812",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Grantland Grain, LLC",
+   "city": "Potosi",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5627 Lone Elm Tree Rd.",
+   "zip": "53820",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Leibfried Farms, Inc.",
+   "city": "Potosi",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5109 Oak Rd.",
+   "zip": "53820",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Potter Farm Supply, Inc.",
+   "city": "Potter",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 8",
+   "zip": "54160",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "New Age Grain, LLC",
+   "city": "Prairie Du Sac",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "S9179 Highway 78",
+   "zip": "53578",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Century Sun Oil, LLC",
+   "city": "Pulaski",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W926 Main Laney Dr",
+   "zip": "54162",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Nutrition Service Company, LLC",
+   "city": "Pulaski",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "W249 Deer Dr.",
+   "zip": "54162",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Edward Reinemann & Son, Inc.",
+   "city": "Reedsville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 212",
+   "zip": "54230",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Synergy Community Cooperative",
+   "city": "Ridgeland",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 155",
+   "zip": "54763",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Bickford Farms, Inc.",
+   "city": "Ridgeway",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "3630 Ridgevue Rd.",
+   "zip": "53582",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Sunrise Foods International (USA) Inc.",
+   "city": "Saskatoon, SK",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "306 Queen St. Suite 200",
+   "zip": null,
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Saukville Feed Supplies, Inc.",
+   "city": "Saukville",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "313 W Church St.",
+   "zip": "53080",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Seymour Flour Mill, Inc.",
+   "city": "Seymour",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "213 E Wisconsin St.",
+   "zip": "54165",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Complete Feed Service, LLC",
+   "city": "Sharon",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "3 Natural Way",
+   "zip": "53585",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Appell Grain Inc.",
+   "city": "Shullsburg",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5883 County Road P",
+   "zip": "53586",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Sparta Cooperative Services",
+   "city": "Sparta",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "325 Hemstock Dr.",
+   "zip": "54656",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Star Blends, LLC",
+   "city": "Sparta",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1919 Riley Rd.",
+   "zip": "54656",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "General Farm Supply, Inc.",
+   "city": "Spencer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 336",
+   "zip": "54479",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Kronseder Farms, Inc.",
+   "city": "Spring Green",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "E4614 Hwy 14-60",
+   "zip": "53588",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Ace Ethanol, LLC",
+   "city": "Stanley",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "815 W Maple St.",
+   "zip": "54768",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Berlin, Shaine",
+   "city": "Stanley",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "35055 50th Ave",
+   "zip": "54768",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Reddy Feed & Grain LLC",
+   "city": "Stitzer",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 38",
+   "zip": "53825",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Furseth Farms, Inc.",
+   "city": "Stoughton",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "2157 County Road A",
+   "zip": "53589",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Door County Cooperative",
+   "city": "Sturgeon Bay",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "317 Green Bay Rd.",
+   "zip": "54235",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Grain X Milling LLC",
+   "city": "Sturgeon Bay",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "5102 County Road I",
+   "zip": "54235",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Didion, Inc.",
+   "city": "Sun Prairie",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "121 S Bristol St. Suite 201",
+   "zip": "53590",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Suring Farmers Mercantile Company",
+   "city": "Suring",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 276",
+   "zip": "54174",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Flash Grain LLC",
+   "city": "Thorp",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "N14036 Fisher Ave.",
+   "zip": "54771",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Spooner Mills of Thorp, Inc.",
+   "city": "Thorp",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "213 E Soo St.",
+   "zip": "54771",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Tisch Mills Farm Center, Inc.",
+   "city": "Tisch Mills",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 236",
+   "zip": "54240",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Quality Roasting, Inc.",
+   "city": "Valders",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "2514 Marken Rd.",
+   "zip": "54245",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Community AG Service, Inc.",
+   "city": "Van Dyne",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 184",
+   "zip": "54979",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Key Grains LLC",
+   "city": "Viroqua",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1225 Nelson Pkwy.",
+   "zip": "54665",
+   "capacity": null,
+   "licenceClass": "Warehouse Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Key Ingredients, LLC",
+   "city": "Viroqua",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "1225 Nelson Pkwy.",
+   "zip": "54665",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Farmers Elevator Company (Limited) of Waupun",
+   "city": "Waupun",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "2 W Main St.",
+   "zip": "53963",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Christianson Feed Mill, LLP",
+   "city": "Wauzeka",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 216",
+   "zip": "53826",
+   "capacity": null,
+   "licenceClass": "Dealer Only",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "West Bend Elevator, Inc.",
+   "city": "West Bend",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "PO Box 408",
+   "zip": "53095",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Badger Grain Supply, LLC",
+   "city": "Wheeler",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "E5210 1040th Ave.",
+   "zip": "54772",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
+  },
+  {
+   "name": "Total Grain Services, LLC",
+   "city": "Wrightstown",
+   "county": null,
+   "phone": null,
+   "state": "WI",
+   "address": "2730 Poplar St.",
+   "zip": "54180",
+   "capacity": null,
+   "licenceClass": "Warehouse & Dealer",
+   "nameTruncated": null,
+   "nameRepaired": null,
+   "outOfState": null,
+   "licensedBy": null,
+   "cityAlt": null,
+   "nameAlt": null,
+   "licences": [
+    "dealer",
+    "warehouse"
+   ],
+   "source": "registry-wi"
   }
  ]
 }
