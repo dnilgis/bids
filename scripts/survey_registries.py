@@ -167,6 +167,27 @@ CANDIDATES = [
     ("IL", "licensed dealer and warehouse look-up", "https://www2.illinois.gov/sites/agr/Consumers/GrainWarehouses/Pages/Licensed-Grain-Dealer-Warehouse-Look-up.aspx", "from grainjournal.com 2026-09-04; the older sharepoint spelling"),
     ("IN", "ISDA licensed warehouses", "https://secure.in.gov/isda/2399.htm", "from grainjournal.com 2026-09-04; Indiana is already scraped from a PDF"),
     # Not a state, and worth knowing it exists: Canada licenses centrally.
+    # ── KANSAS. THE LARGEST HOLE, AND THESE ARE THE DOORS ───────────────────
+    #
+    # 364 rows on file. K-State's Arthur Capper Cooperative Center counts OVER
+    # 550 co-operative grain locations plus MORE THAN 250 non-co-op ones. The
+    # sweep's own no-town worklist is dominated by Kansas towns on Kansas
+    # boards: every one of AgMark's 40 unplaceable locations is a Kansas town,
+    # and AgMark is owned by six Kansas co-ops (Cloud County, Trinity Ag,
+    # Concordia Terminal, Central Valley Ag, Ottawa Coop, Jackson Farmers —
+    # read from agmarkllc.com 2026-09-05), which is why its board spans
+    # north-central AND eastern Kansas.
+    #
+    # Four agriculture.ks.gov URLs have 403'd the runner on three separate
+    # days. These are the pages a PERSON should open; the 403 is a network
+    # question, not a missing publication.
+    ("KS", "Grain Warehouse programme", "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse", "found 2026-09-05, never opened from here — 403s to the runner"),
+    ("KS", "Grain Warehouse — Documents", "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/documents", "MOST LIKELY to hold the licence report K-State cites"),
+    ("KS", "Grain Warehouse — Resources", "https://www.agriculture.ks.gov/divisions-programs/grain-warehouse/resources", "second most likely"),
+    ("KS", "Grain Warehouse Applications and Licenses", "https://www.agriculture.ks.gov/licenses/grain-warehouse-applications-and-licenses", "the licensing side"),
+    ("KS", "K-State ACCC, Mapping Grain Locations in Kansas", "https://agmanager.info/sites/default/files/pdf/ACCC_FactSheet-9_MappingGrainLocations_KS.pdf", "names KDA's 'Grain Elevator Licenses' report and USDA's USWA report as its sources; read 2026-09-04"),
+    ("KS", "KS Revenue grain elevator appraisal guide", "https://www.ksrevenue.gov/pdf/2022KSGrainElevatorGuide.pdf", "a DIFFERENT agency and a different network — an appraisal guide may carry a facility list, and ksrevenue.gov has never been tried"),
+
     ("CN", "Canadian Grain Commission licensees", "http://www.grainscanada.gc.ca/licensee-licence/licensed-agreees-eng.htm", "from grainjournal.com 2026-09-04; out of scope for now, recorded so nobody re-finds it"),
 
     # ---- the national list, which is a SUPPLEMENT and not the denominator --
