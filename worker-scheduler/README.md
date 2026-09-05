@@ -80,3 +80,13 @@ never usefully in both: `wrangler deploy` replaces the deployed trigger list
 with whatever is in the file, so a cron added by hand in the dashboard is
 deleted by the next deploy, and silently. Pick the file, keep it in the repo,
 and make every schedule change there.
+## Deploying
+
+This Worker deploys itself. Cloudflare Workers Builds is connected to
+`dnilgis/bids`, root directory `worker-scheduler`, and builds only when a file
+in this folder changes. Push here and it deploys; there is no manual step, and
+the cron triggers come from `wrangler.toml` rather than being typed into the
+dashboard.
+
+Wired 2026-09-05, after the Worker and the repository had drifted seven days
+apart with nothing to notice it.
