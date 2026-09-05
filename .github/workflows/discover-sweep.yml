@@ -104,6 +104,25 @@ jobs:
       - name: Commit
         if: always()
         run: |
+          # ══════════════════════════════════════════════════════════════
+          #  THE SIBLINGS THE BOARDS NAMED
+          # ══════════════════════════════════════════════════════════════
+          #  Every board we read lists its own other locations, and the
+          #  adapters have been capturing that in `otherLocationsOnPage` all
+          #  along. Measured 2026-09-05: 964 locations exposed, 627 already
+          #  sources, 337 NOT — on pages we fetch every poll, costing no new
+          #  request and no discovery.
+          #
+          #  agricharts-sweep refuses to place what it cannot join to a town,
+          #  which is right. But it printed the refusals to this log and threw
+          #  them away, so the 337 existed only in expired run logs and no
+          #  worklist of them existed anywhere.
+          #
+          #  This writes them to data/gaps/board-siblings.csv with the state
+          #  where one can be decided honestly. It writes no sources.
+          #  It cannot fail the sweep: the harvest above is the valuable part.
+          node scripts/board-siblings.mjs || echo "::warning::board-siblings did not run"
+
           git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
           # --cached LEFT THEM ON DISK AS UNTRACKED FILES, AND THAT BROKE A PUSH.
           # 2026-08-28, run 33214328053: the sharded sweep decided all 674
