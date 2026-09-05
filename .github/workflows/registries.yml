@@ -69,7 +69,11 @@ jobs:
     # stop fitting inside this. A ceiling on each step is worth nothing if the
     # ceilings add up to more than the job: the last step to run would still be
     # the one that gets cancelled, which is exactly how the harvest was lost.
-    timeout-minutes: 45
+    #
+    # 55 = fetch 15 + survey 20 + place 12, plus five for checkout, the two
+    # setups, pip, the guards and the two commits. These are CEILINGS, not
+    # expectations: run 26 measured 34s, 11m and (killed at) 5m.
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -191,9 +195,32 @@ jobs:
       # runs weekly in a different workflow. Four hundred grey pins sat in a
       # data file for up to six days. The registries are fetched to be drawn;
       # they get drawn in the same run.
+      # TWELVE, AND THE NUMBER IS READ OFF build_geocodes.py.
+      #
+      # This was 5, and run 26 — the first run that ever had Wisconsin's 210
+      # street addresses to place — was killed here at five minutes with
+      # NOTHING WRITTEN. No geocodes/places.json, no data/directory.json in
+      # the commit. 2,293 businesses landed in the data file and the map did
+      # not move, which is the exact thing this step was added to prevent.
+      #
+      # I sized the 5 from run 25's measured 1m 26s. Run 25's fetch had been
+      # CANCELLED, so this step had no new addresses to geocode and never
+      # touched the Census at all. I measured a degraded run and called it a
+      # measurement.
+      #
+      # build_geocodes.py budgets CENSUS_BUDGET_S = 420 seconds of Census
+      # lookups, and its own comment says why: "a slow morning at their end is
+      # 96 minutes, which is not a degraded build — it is a job killed by its
+      # own timeout with nothing written". Seven minutes of geocoding inside a
+      # five-minute step could only ever end one way.
+      #
+      # 420s + two minutes for pip, the ZIP shards and build_directory.mjs.
+      # test/workflow-order.test.py derives this from the script rather than
+      # trusting the number here, and covers barchart.yml and sync_known.yml
+      # too — they run the same script under job ceilings of their own.
       - name: Place them and rebuild the directory the map reads
         if: always()
-        timeout-minutes: 5
+        timeout-minutes: 12
         continue-on-error: true
         run: |
           pip install --quiet zipcodes
