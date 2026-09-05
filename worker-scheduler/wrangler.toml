@@ -6,6 +6,29 @@ compatibility_date = "2026-08-27"
 # Cloudflare cron triggers use UTC, same as GitHub, so these are the same
 # clock as poll.yml's own crons and the two cannot drift apart when the
 # clocks change.
+# ══════════════════════════════════════════════════════════════════════════════
+#  DAY-OF-WEEK IS SPELT OUT, AND THAT IS NOT A STYLE CHOICE
+# ══════════════════════════════════════════════════════════════════════════════
+#  2026-09-05: the first Git-triggered build uploaded the code fine and then
+#  FAILED setting the triggers:
+#
+#      invalid cron string: 20 */3 * * 6,0 [code: 10100]
+#
+#  Cloudflare's weekday field is 1-7, and 0 is not in it. GitHub Actions uses
+#  0-6 with 0 = Sunday. The same five characters therefore mean different days
+#  on the two schedulers that this repository runs side by side, and one of
+#  them rejects what the other requires.
+#
+#  Cloudflare's own documentation recommends the three-letter abbreviations for
+#  exactly this reason, so that is what these use. MON-FRI and SAT,SUN mean the
+#  same thing to every cron implementation there is and cannot be read as the
+#  wrong days by either scheduler.
+#
+#  poll.yml keeps 1-5 and 6,0 because those are correct FOR GITHUB. Do not
+#  "make them consistent" — consistency between two systems that number the
+#  week differently is how this bug is written.
+# ══════════════════════════════════════════════════════════════════════════════
+
 [triggers]
 # FIVE IS THE WHOLE ACCOUNT'S ALLOWANCE ON THE FREE PLAN, not this Worker's.
 # https://developers.cloudflare.com/workers/platform/limits -- "Number of Cron
@@ -19,12 +42,12 @@ crons = [
   # Every ten minutes through the trading day. 12:00-21:59 UTC is 7am-4pm
   # Central in both CST and CDT, so the clocks changing cannot quietly shift
   # the window out of market hours.                        -> poll.yml
-  "*/10 12-21 * * 1-5",
+  "*/10 12-21 * * MON-FRI",
   # Hourly the rest of the weekday, so an overnight move is picked up.
-  "20 0-11,22-23 * * 1-5",
+  "20 0-11,22-23 * * MON-FRI",
   # Weekends every three hours. The board does not move; this is a heartbeat,
   # and three rather than four for the reason poll.yml documents at length.
-  "20 */3 * * 6,0",
+  "20 */3 * * SAT,SUN",
 
   # THE DISCOVERY SWEEP. Was six fixed hours; now every two, which is 12 fires
   # a day out of the same one slot.

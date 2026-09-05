@@ -100,11 +100,11 @@ const REF = "main";
  * ledger and resumes past every URL already decided, the queued run does the
  * NEXT 45 hosts instead of repeating the last 45. */
 const ROUTES = {
-  "*/10 12-21 * * 1-5":      ["poll.yml"],
-  "20 0-11,22-23 * * 1-5":   ["poll.yml"],
-  "20 */3 * * 6,0":          ["poll.yml"],
-  "35 */2 * * *":            ["discover-sweep.yml"],
-  "10 7 * * *":              ["registries.yml", "sync_known.yml"],
+  "*/10 12-21 * * MON-FRI":    ["poll.yml"],
+  "20 0-11,22-23 * * MON-FRI": ["poll.yml"],
+  "20 */3 * * SAT,SUN":        ["poll.yml"],
+  "35 */2 * * *":              ["discover-sweep.yml"],
+  "10 7 * * *":                ["registries.yml", "sync_known.yml"],
 };
 
 const DEFAULT_WORKFLOW = "poll.yml";

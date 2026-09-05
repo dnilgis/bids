@@ -225,7 +225,12 @@ test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
   assert.ok(win, "the external scheduler has no trading-window cron");
   assert.match(win, /^\*\/10 |^(\d+,){5,}/, `the external trading cron is "${win}", not every ten minutes`);
   assert.ok(crons.some((c) => /0-11,22-23/.test(c)), "no off-hours cron on the external scheduler");
-  assert.ok(crons.some((c) => /\* \* 6,0|6,0$/.test(c)), "no weekend cron on the external scheduler");
+  /* Accepts either spelling. 6,0 was the original and is what GitHub wants;
+     Cloudflare rejected it outright (its weekday field is 1-7, no 0), so the
+     toml now says SAT,SUN. A test pinned to one spelling would have gone red
+     for the fix rather than for the fault. */
+  assert.ok(crons.some((c) => /\* \*\s+(?:6,0|6,7|SAT,SUN)$/i.test(c)),
+    "no weekend cron on the external scheduler");
 
   const js = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
   /* The path is built from constants, so assert the constant AND the shape —
@@ -740,9 +745,9 @@ test("EMMERT: all three price cadences route to the reader, not just one", () =>
 
   /* The three price windows, by what each one protects. */
   const PRICE_CADENCES = [
-    ["*/10 12-21 * * 1-5",    "the trading day"],
-    ["20 0-11,22-23 * * 1-5", "overnight, where a pre-dawn move is picked up"],
-    ["20 */3 * * 6,0",        "the weekend, where 14h withdrawal is closest"],
+    ["*/10 12-21 * * MON-FRI",    "the trading day"],
+    ["20 0-11,22-23 * * MON-FRI", "overnight, where a pre-dawn move is picked up"],
+    ["20 */3 * * SAT,SUN",        "the weekend, where 14h withdrawal is closest"],
   ];
   for (const [cron, what] of PRICE_CADENCES) {
     assert.ok(routes[cron],
@@ -770,10 +775,78 @@ test("EMMERT: the weekend cadence stays at three hours, never four", () => {
     .replace(/^\s*#.*$/gm, "");
   const poll = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8")
     .replace(/^\s*#.*$/gm, "");
-  assert.doesNotMatch(toml, /"\d+ \*\/[4-9] \* \* 6,0"/,
+  assert.doesNotMatch(toml, /"\d+ \*\/[4-9] \* \* (?:6,0|6,7|SAT,SUN)"/i,
     "the scheduler's weekend cadence is 4-hourly or slower — two dropped runs " +
     "reach 15.95h and the Emmert sites withdraw at 14h");
   assert.doesNotMatch(poll, /cron:\s*"\d+ \*\/[4-9] \* \* 6,0"/,
     "poll.yml's own weekend fallback is 4-hourly or slower — same 14h exposure " +
     "when the scheduler is the thing that is down");
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  CLOUDFLARE AND GITHUB NUMBER THE WEEK DIFFERENTLY
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  2026-09-05. The first Git-triggered build uploaded the Worker successfully
+ *  and then failed setting its triggers:
+ *
+ *      invalid cron string: 20 *\/3 * * 6,0 [code: 10100]   (slash escaped:
+ *      the literal sequence would end this comment)
+ *      Trigger configuration was only partially updated.
+ *
+ *  GitHub Actions numbers the weekday field 0-6 with 0 = Sunday. Cloudflare's
+ *  runs 1-7 and has no 0 at all. This repository drives BOTH schedulers from
+ *  crons that look identical, so a string that is correct in poll.yml is
+ *  rejected outright by Cloudflare — and, worse than rejected, a string like
+ *  `1-5` is accepted by both and is not guaranteed to mean the same five days.
+ *
+ *  Cloudflare's own documentation recommends the three-letter abbreviations to
+ *  avoid this. MON-FRI and SAT,SUN mean one thing everywhere.
+ *
+ *  So: no numeric weekday may appear in wrangler.toml. poll.yml keeps its
+ *  numbers, because they are right for GitHub — this checks the Cloudflare
+ *  side only, deliberately.
+ *
+ *  What made this expensive is that the code deployed and the triggers did
+ *  not. `/health` reported the new route table while the Worker was still
+ *  firing on the old schedule, so the one page built to answer "what is
+ *  running?" answered it wrongly. A guard, not a look at the dashboard, is
+ *  what has to catch this.
+ */
+test("CLOUDFLARE: no numeric day-of-week in wrangler.toml — 0 is invalid there", () => {
+  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8")
+    .replace(/^\s*#.*$/gm, "");
+  const crons = [...toml.matchAll(/"([^"]+)"/g)].map((m) => m[1])
+    .filter((c) => c.trim().split(/\s+/).length === 5);
+  assert.ok(crons.length, "no cron expressions found in wrangler.toml");
+  for (const c of crons) {
+    const dow = c.trim().split(/\s+/)[4];
+    if (dow === "*") continue;
+    assert.ok(!/\d/.test(dow),
+      `wrangler.toml cron "${c}" uses a numeric day-of-week ("${dow}"). ` +
+      "Cloudflare's weekday field is 1-7 with no 0, GitHub's is 0-6 with 0 = Sunday, " +
+      "and this repo drives both. Use MON-FRI / SAT,SUN.");
+  }
+});
+
+test("CLOUDFLARE: the ROUTES keys are the exact strings wrangler.toml declares", () => {
+  /* event.cron is handed back verbatim, so a route keyed on a string the toml
+     does not declare is a cron that silently falls through to the default
+     workflow. Spelling the days out is only safe if BOTH files were changed. */
+  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8")
+    .replace(/^\s*#.*$/gm, "");
+  const declared = [...toml.matchAll(/"([^"]+)"/g)].map((m) => m[1])
+    .filter((c) => c.trim().split(/\s+/).length === 5);
+  const src = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const block = src.match(/const ROUTES\s*=\s*(\{[\s\S]*?\n\});/);
+  assert.ok(block, "ROUTES is not a literal object any more");
+  const routed = Object.keys(JSON.parse(block[1].replace(/,(\s*\})/g, "$1")));
+  for (const c of declared)
+    assert.ok(routed.includes(c),
+      `wrangler.toml fires "${c}" and ROUTES has no key for it — that fire ` +
+      "falls through to the default workflow instead of what it was meant to do");
+  for (const c of routed)
+    assert.ok(declared.includes(c),
+      `ROUTES has a key "${c}" that wrangler.toml never fires — dead route`);
 });
