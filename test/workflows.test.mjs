@@ -247,7 +247,15 @@ test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
      not "there is one workflow and it is poll.yml" but "every workflow this
      thing can fire is one we meant it to fire" — which is what it asserts now,
      and which would have survived the refactor that broke it. */
-  const routed = [...js.matchAll(/"[^"]+":\s*"([a-z0-9-]+\.yml)"/g)].map((m) => m[1]);
+  /* CORRECTED AGAIN 2026-09-05, and again the code was right while this was
+     red. A cron now routes to a LIST of workflows, because Cloudflare's free
+     plan allows five Cron Triggers PER ACCOUNT -- not three per Worker, as
+     worker/wrangler.toml had assumed -- so a slot is scarce and a fire may
+     usefully ask for more than one thing. The old regex wanted `"cron":
+     "x.yml"` and found nothing, which read as "the scheduler routes no
+     workflow at all" about a scheduler routing six. */
+  const routed = [...js.matchAll(/"([a-z0-9-]+\.yml)"/g)].map((m) => m[1])
+    .filter((w) => !/^\s*\*/.test(w));
   assert.ok(routed.length, "the scheduler routes no workflow at all");
   assert.ok(routed.includes("poll.yml"), "the scheduler no longer fires the reader");
   for (const w of new Set(routed))
@@ -271,6 +279,78 @@ test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
     "the external scheduler passes workflow inputs; a dispatched run must be one short pass");
   assert.match(code, /JSON\.stringify\(\{ ref: REF \}\)/,
     "the dispatch body is not just the ref");
+
+  /* ── FIVE CRON TRIGGERS, FOR THE WHOLE ACCOUNT ──────────────────────────
+   *
+   * https://developers.cloudflare.com/workers/platform/limits — "Number of
+   * Cron Triggers per account": Free 5, Paid 250. PER ACCOUNT. worker/ called
+   * three "the free-plan ceiling, not a style choice", which is the wrong
+   * shape of limit, and on 2026-09-05 this repository was defining SEVEN
+   * across two Workers: bigriver-worker 3 and agsist-bid-scheduler 4.
+   *
+   * Every wrangler.toml in the repository counts, because they all deploy to
+   * the same account. A sixth added anywhere is a deploy that fails or a cron
+   * that silently never fires, and either way something stops running. */
+  const tomls = ["worker-scheduler/wrangler.toml", "worker/wrangler.toml"]
+    .map((f) => new URL(`../${f}`, import.meta.url))
+    .filter((u) => existsSync(u));
+  let account = 0;
+  const per = [];
+  for (const u of tomls) {
+    const t = readFileSync(u, "utf8");
+    const block = t.slice(t.indexOf("[triggers]"));
+    const n = [...block.matchAll(/^\s*"([^"]+)",/gm)].length;
+    account += n;
+    per.push(`${u.pathname.split("/").slice(-2).join("/")}=${n}`);
+  }
+  assert.ok(account <= 5,
+    `${account} cron triggers across this repository's Workers (${per.join(", ")}) ` +
+    "and the free plan allows 5 PER ACCOUNT");
+
+  /* ── AND THE TOML AND THE ROUTE TABLE MUST AGREE ────────────────────────
+   *
+   * routeFor() falls back to poll.yml on an unrecognised cron, deliberately —
+   * a typo then costs one wasted poll instead of dropping every fire in that
+   * slot. But that same fallback means a cron added to the toml and NOT to
+   * ROUTES fires the reader silently, forever, while somebody waits for the
+   * workflow they thought they had scheduled. Nothing was checking it. */
+  /* ── EVERY WORKFLOW THE WORKER FIRES MUST QUEUE A DUPLICATE ────────────
+   *
+   * The Worker is NOT a fallback that fires when GitHub Actions fails. It
+   * cannot be: it holds no state, checks nothing, and makes one POST. It is a
+   * second scheduler running in parallel, and BOTH are armed on purpose —
+   * GitHub cron is the fallback now, not the Worker, so if Cloudflare stops
+   * the system degrades to GitHub's 17.4% rather than to nothing.
+   *
+   * Which means every workflow on this Worker is fired twice on any slot the
+   * two schedulers share, and the only thing that makes that safe is a
+   * top-level `concurrency` group with `cancel-in-progress: false`: the
+   * duplicate queues behind the running one instead of two runs writing the
+   * same files at once.
+   *
+   * src/index.js has ASSERTED this in prose since August — "Both workflows
+   * hold a concurrency group with cancel-in-progress: false". It was true of
+   * the two workflows it was written about. registries.yml and sync_known.yml
+   * were added on 2026-09-05 and nothing checked whether it was still true;
+   * they do share `group: map-data`, and that was luck, not a guarantee.
+   * Comments are not coverage. */
+  for (const w of new Set(routed)) {
+    const y = readFileSync(new URL(`../.github/workflows/${w}`, import.meta.url), "utf8");
+    const block = /^concurrency:\n((?:[ \t]+.*\n?)+)/m.exec(y);
+    assert.ok(block,
+      `${w} is fired by the Worker and has no top-level concurrency group — ` +
+      "two schedulers are armed, so it can run twice over its own output");
+    assert.match(block[1], /cancel-in-progress:\s*false/,
+      `${w} cancels in progress, so the Worker's fire would kill a run that ` +
+      "is mid-write rather than queueing behind it");
+  }
+
+  const wtb = wt.slice(wt.indexOf("[triggers]"));
+  const tomlCrons = [...wtb.matchAll(/^\s*"([^"]+)",/gm)].map((m) => m[1]);
+  const routeKeys = [...js.matchAll(/^\s*"([^"]+)":\s*\[/gm)].map((m) => m[1]);
+  assert.deepEqual([...tomlCrons].sort(), [...routeKeys].sort(),
+    "wrangler.toml and ROUTES disagree about which crons exist — a cron in " +
+    "the toml with no route silently fires poll.yml instead");
 });
 
 test("AND IT EMAILS: every path that gives up sends mail before it files an issue", () => {
@@ -622,4 +702,78 @@ test("a better browser identity re-asks every negative taken with the old one", 
   const v = Number(/export const PROBE_VERSION = (\d+)/.exec(d)[1]);
   assert.ok(v >= 4, `PROBE_VERSION is ${v} — the user-agent change did not bump it, so ` +
     "every page asked as HeadlessChrome stays written off");
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  THE EMMERT CHAIN: EVERY PRICE CADENCE REACHES THE READER
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Sig, 2026-09-05: the two Emmert sites must have "flawless continuous site
+ *  freshness" through whatever else changes in this repository.
+ *
+ *  The chain is: Big River's board -> scripts/one-pass.sh -> data/boyceville.json
+ *  here -> repository_dispatch into midwestagsupply/badgergrain and
+ *  midwestagsupply/midwestcommodity -> both sites rebuild. Everything upstream
+ *  of the dispatch is poll.yml, and poll.yml now gets its real cadence from
+ *  worker-scheduler rather than from GitHub cron.
+ *
+ *  THE FAILURE THIS EXISTS TO STOP. The test above asserts the scheduler fires
+ *  poll.yml *somewhere*. That is not enough. There are three price cadences --
+ *  trading day, overnight, weekend -- and if a future edit hands one of those
+ *  slots to a sweep instead, poll.yml silently falls back to GitHub cron for
+ *  that window. GitHub delivered 17.4% of asked fires when measured over
+ *  2026-08-18 to 08-26 with its own incidents excluded, and TWO consecutive
+ *  dropped weekend runs have already been measured at 15.95 hours of staleness
+ *  -- against the 14 hours at which the Emmert sites withdraw the price and
+ *  show "Call for today's price". So losing the weekend slot specifically
+ *  darkens two customer sites on a Sunday, with nothing red anywhere.
+ *
+ *  Each of the three is therefore named and checked on its own.
+ */
+test("EMMERT: all three price cadences route to the reader, not just one", () => {
+  const src = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
+  /* Comments are not coverage. This file explains the cadences in prose and a
+     regex over the prose would pass on a scheduler that routes none of them. */
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const block = code.match(/const ROUTES\s*=\s*(\{[\s\S]*?\n\});/);
+  assert.ok(block, "ROUTES is not a literal object any more — this guard cannot read it");
+  const routes = JSON.parse(block[1].replace(/,(\s*\})/g, "$1"));
+
+  /* The three price windows, by what each one protects. */
+  const PRICE_CADENCES = [
+    ["*/10 12-21 * * 1-5",    "the trading day"],
+    ["20 0-11,22-23 * * 1-5", "overnight, where a pre-dawn move is picked up"],
+    ["20 */3 * * 6,0",        "the weekend, where 14h withdrawal is closest"],
+  ];
+  for (const [cron, what] of PRICE_CADENCES) {
+    assert.ok(routes[cron],
+      `no cron covers ${what} — poll.yml falls back to GitHub cron in that window`);
+    assert.ok(routes[cron].includes("poll.yml"),
+      `${what} is routed to ${routes[cron].join(", ")} and not to poll.yml — ` +
+      `the Emmert sites lose their reader for that whole window`);
+  }
+
+  /* The toml has to declare the same three, or the Worker is never woken for
+     them however good its route table is. */
+  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8");
+  const tomlCode = toml.replace(/^\s*#.*$/gm, "");
+  for (const [cron, what] of PRICE_CADENCES)
+    assert.ok(tomlCode.includes(`"${cron}"`),
+      `wrangler.toml does not declare the cron for ${what}, so it never fires`);
+});
+
+test("EMMERT: the weekend cadence stays at three hours, never four", () => {
+  /* Four-hourly puts the natural weekend commit interval at exactly 8.00h,
+     which is the dashboard's own gap threshold, AND two dropped runs reach
+     15.95h against the 14h the Emmert sites withdraw at. Three-hourly is the
+     margin. Checked in both places that can set it. */
+  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8")
+    .replace(/^\s*#.*$/gm, "");
+  const poll = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8")
+    .replace(/^\s*#.*$/gm, "");
+  assert.doesNotMatch(toml, /"\d+ \*\/[4-9] \* \* 6,0"/,
+    "the scheduler's weekend cadence is 4-hourly or slower — two dropped runs " +
+    "reach 15.95h and the Emmert sites withdraw at 14h");
+  assert.doesNotMatch(poll, /cron:\s*"\d+ \*\/[4-9] \* \* 6,0"/,
+    "poll.yml's own weekend fallback is 4-hourly or slower — same 14h exposure " +
+    "when the scheduler is the thing that is down");
 });

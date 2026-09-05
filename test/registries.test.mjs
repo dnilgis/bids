@@ -614,8 +614,12 @@ print(len(r), told[1] if told else 0, "|".join(names), len(loose), sep=";")`).sp
   /* AND THE TWO WITHOUT A STATE ARE THE TWO THAT HAVE NONE — not a US
      licensee whose state the pattern quietly stopped capturing. */
   const stateless = out[2] ? out[2].split("|") : [];
+  /* THREE, NOT TWO. C.B. Constantini of Vancouver joined them when a
+     two-letter code outside US_STATES stopped counting as a state: it had
+     been filed under "BC" as though British Columbia were Iowa. */
   assert.deepEqual(stateless.sort(),
-    ["LYFT COMMODITY TRADING LTD @ BC",
+    ["C.B. CONSTANTINI LTD @ VANCOUVER",
+     "LYFT COMMODITY TRADING LTD @ BC",
      "SURESOURCE COMMODITIES, LLC @ PETROLIA"],
     `these Nebraska records came back with no state: ${stateless.join(", ")}`);
   /* AND THE FOREIGN BRANCH IS ANCHORED ON THE WORD THE DOCUMENT PRINTS.
@@ -626,6 +630,51 @@ print(len(r), told[1] if told else 0, "|".join(names), len(loose), sep=";")`).sp
     "the pattern read 'SOME COMPANY LLC 1234 50,000 SPRINGFIELD ILLINOIS' " +
     "as a record — the foreign branch has stopped requiring CANADA and now " +
     "accepts any trailing words as a location");
+});
+
+test("no record is filed under a two-letter code that is not a US state", () => {
+  /* THE COMMITTED RUN PUT THREE BUSINESSES IN THREE COUNTRIES THAT DO NOT
+     EXIST — "BC", "ON" and "CN" appeared in the per-state map beside Iowa
+     and Ohio:
+
+       BC  C.B. CONSTANTINI LTD              VANCOUVER
+       ON  SURESOURCE COMMODITIES LLC        PETROLIA
+       CN  C.B. CONSTANTINI LTD BVANCOUVER,  city "C"
+
+     Nebraska and South Dakota both license Constantini, of Vancouver. The US
+     branch matched "VANCOUVER, BC" and took the trailing CANADA as the
+     optional word a state code may be followed by. The third is South
+     Dakota's glued permit letter producing a company called "...BVANCOUVER,"
+     in a town called "C" — an invented town, which is the one thing this
+     file must never produce.
+
+     The rule is not one state's regex. US_STATES is the list of things that
+     ARE states; anything else means the location is foreign. */
+  const out = pyOn(`
+bad = []
+for st, f in (("NE", "${fixture(PDFS.NE)}"), ("SD", "${fixture(PDFS.SD)}")):
+    src = [x for x in m.SOURCES if x["state"] == st and x.get("pattern")][0]
+    t = open(f, encoding="utf-8", errors="replace").read()
+    for r in m.pdf_records(t, {}, src["pattern"], src.get("continuation"), src.get("cityStrip")):
+        if r.get("st") and r["st"] not in m.US_STATES:
+            bad.append("%s %s %s" % (st, r["st"], r.get("name", "")[:30]))
+print(len(bad), "|".join(bad), sep=";")`).split(";");
+  assert.equal(Number(out[0]), 0,
+    `filed under a code that is not a US state: ${out[1] || ""}`);
+
+  /* AND THE FOREIGN ONES ARE STILL READ, not quietly dropped. A licensee we
+     cannot place is still a licensee, and the count must not fall. */
+  const kept = pyOn(`
+src = [x for x in m.SOURCES if x["state"] == "NE" and x.get("kind") == "dealer"][0]
+t = open(r"${fixture(PDFS.NE)}", encoding="utf-8", errors="replace").read()
+r = m.pdf_records(t, {}, src["pattern"], src.get("continuation"), src.get("cityStrip"))
+f = [x for x in r if x.get("outOfCountry")]
+print(len(r), len(f), (f[0]["city"] if f else ""), sep=";")`).split(";");
+  assert.equal(Number(kept[0]), 116,
+    "moving the foreign records out of the state column lost some of them");
+  assert.ok(Number(kept[1]) >= 1, "no record was marked out of country");
+  assert.equal(kept[2], "VANCOUVER",
+    "Constantini kept its state code and lost its town, which is backwards");
 });
 
 test("Ohio's header is on the second row and the first is junk", { skip: !existsSync(fixture(OHIO)) }, () => {

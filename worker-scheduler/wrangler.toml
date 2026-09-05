@@ -7,10 +7,18 @@ compatibility_date = "2026-08-27"
 # clock as poll.yml's own crons and the two cannot drift apart when the
 # clocks change.
 [triggers]
+# FIVE IS THE WHOLE ACCOUNT'S ALLOWANCE ON THE FREE PLAN, not this Worker's.
+# https://developers.cloudflare.com/workers/platform/limits -- "Number of Cron
+# Triggers per account": Free 5, Paid 250. worker/wrangler.toml called three
+# "the free-plan ceiling", which is the wrong shape of limit, and between the
+# two Workers this repository was defining seven.
+#
+# src/index.js routes each of these to a LIST of workflows, so five slots buys
+# five cadences, not five workflows.
 crons = [
   # Every ten minutes through the trading day. 12:00-21:59 UTC is 7am-4pm
   # Central in both CST and CDT, so the clocks changing cannot quietly shift
-  # the window out of market hours.
+  # the window out of market hours.                        -> poll.yml
   "*/10 12-21 * * 1-5",
   # Hourly the rest of the weekday, so an overnight move is picked up.
   "20 0-11,22-23 * * 1-5",
@@ -18,12 +26,20 @@ crons = [
   # and three rather than four for the reason poll.yml documents at length.
   "20 */3 * * 6,0",
 
-  # THE DISCOVERY SWEEP, ADDED 2026-08-28.
-  # Same six slots discover-sweep.yml already asks GitHub for, so nothing about
-  # the workflow changes and GitHub stays armed underneath as the fallback.
-  # This is the queue that turns a grey pin green: 45 operator sites a run,
-  # 614 still unasked. Six fires a day empties it in under three days; the one
-  # in six GitHub delivers takes a fortnight.
-  # src/index.js routes this cron to discover-sweep.yml by exact string.
-  "35 1,4,7,16,19,22 * * *",
+  # THE DISCOVERY SWEEP. Was six fixed hours; now every two, which is 12 fires
+  # a day out of the same one slot.
+  #
+  # This is the queue that turns a grey pin green, and on 2026-09-05 it is the
+  # binding constraint on the whole project: 4,097 of 4,581 known elevators
+  # have no website on file at all, and 45 sites a run means 91 runs to clear
+  # it.                                             -> discover-sweep.yml
+  "35 */2 * * *",
+
+  # OVERNIGHT, ONCE. registries.yml was on `10 7 3 * *` -- monthly, on GitHub
+  # cron, which at the 17.4% measured in src/index.js is an expected run about
+  # twice a year. It is the harvest that took the directory to 2,295
+  # businesses and put 426 of them on real street points. sync_known.yml wants
+  # the same quiet hour and rides along for nothing.
+  #                          -> registries.yml, sync_known.yml
+  "10 7 * * *",
 ]

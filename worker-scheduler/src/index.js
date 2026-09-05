@@ -51,21 +51,44 @@ const OWNER = "dnilgis";
 const REPO = "bids";
 const REF = "main";
 
-/* WHICH CRON FIRES WHICH WORKFLOW.
+/* WHICH CRON FIRES WHICH WORKFLOWS.
  *
  * ADDED 2026-08-28. This Worker was written to rescue poll.yml, and it did:
  * GitHub cron delivered 66 of 380 asked over 18-26 August, 17.4%, while the
  * Worker delivered 47 of 48 in the trading window on the 28th, 97.9%.
  *
- * But `discover-sweep.yml` was left on GitHub cron, and that is the workflow
- * that turns a grey pin into a green one: it asks each operator's own site
- * what board it runs, 45 hosts a run, six runs a day. 614 hosts are still
- * unasked. At the six fires a day it asks for, that queue is empty in under
- * three days. At the one in six GitHub actually delivers, it is a fortnight.
- * On 2026-08-28, of five scheduled discover fires due, exactly one arrived.
+ * A LIST, NOT A WORKFLOW, AS OF 2026-09-05, AND THE REASON IS A HARD LIMIT.
  *
- * So the cheapest single thing that moves national coverage is four lines
- * here, not new scraper code.
+ * Cloudflare's Cron Triggers are capped at FIVE PER ACCOUNT on the free plan
+ * -- per account, not per Worker, which is what worker/wrangler.toml had
+ * assumed when it called three "the free-plan ceiling". This repository was
+ * defining seven across two Workers.
+ *
+ * So a cron slot is the scarce thing, and it need not be. One fire can ask
+ * for several workflows: the dispatch is a single HTTPS POST each, they are
+ * independent, and GitHub queues them. Five slots now cover five cadences and
+ * as many workflows as those cadences want.
+ *
+ * WHAT CHANGED WITH THE ROOM THAT FREED, AND WHY THOSE TWO
+ *
+ * Measured on 2026-09-05 from data/directory.json:
+ *
+ *     4,581 elevators known, 648 with a board we can read -- 14.1%
+ *     4,097 of them have NO WEBSITE ON FILE at all -- 89%
+ *
+ * You cannot read a board you cannot find, so the binding constraint on
+ * national coverage is not adapters or parsing: it is discovery.
+ * discover-sweep.yml asks 45 operator sites a run, so the queue is 91 runs.
+ * At the six fires a day it was asking for, that is 15 days; at the one in six
+ * GitHub delivers, 88. The cron is now every two hours -- 12 fires a day in
+ * the SAME single slot -- which halves the 15 again.
+ *
+ * registries.yml was on `10 7 3 * *`: monthly, on GitHub cron, which at 17.4%
+ * is an expected run about twice a year. It is the harvest that took the
+ * directory from 1,939 to 2,295 businesses and put 426 of them on real street
+ * points, and it was scheduled on the one component measured not to fire. It
+ * shares the daily slot with sync_known.yml, which wants the same overnight
+ * hour and costs nothing extra.
  *
  * Cloudflare hands `event.cron` back as the exact string from wrangler.toml,
  * so routing on it is an equality test and cannot drift.
@@ -77,21 +100,23 @@ const REF = "main";
  * ledger and resumes past every URL already decided, the queued run does the
  * NEXT 45 hosts instead of repeating the last 45. */
 const ROUTES = {
-  "*/10 12-21 * * 1-5":        "poll.yml",
-  "20 0-11,22-23 * * 1-5":     "poll.yml",
-  "20 */3 * * 6,0":            "poll.yml",
-  "35 1,4,7,16,19,22 * * *":   "discover-sweep.yml",
+  "*/10 12-21 * * 1-5":      ["poll.yml"],
+  "20 0-11,22-23 * * 1-5":   ["poll.yml"],
+  "20 */3 * * 6,0":          ["poll.yml"],
+  "35 */2 * * *":            ["discover-sweep.yml"],
+  "10 7 * * *":              ["registries.yml", "sync_known.yml"],
 };
+
 const DEFAULT_WORKFLOW = "poll.yml";
-const WORKFLOWS = [...new Set(Object.values(ROUTES))];
+const WORKFLOWS = [...new Set(Object.values(ROUTES).flat())];
 
 /* An unrecognised cron falls back to the reader rather than throwing.
  * A typo in wrangler.toml then costs one wasted poll, which is cheap and
  * idempotent, instead of silently dropping every fire in that slot. The log
  * line carries `unmatchedCron` so it is still findable. */
 function routeFor(cron) {
-  const workflow = ROUTES[cron];
-  return { workflow: workflow ?? DEFAULT_WORKFLOW, unmatchedCron: !workflow };
+  const workflows = ROUTES[cron];
+  return { workflows: workflows ?? [DEFAULT_WORKFLOW], unmatchedCron: !workflows };
 }
 const UA = "agsist-bid-scheduler (+https://agsist.com; sig@farmers1st.com)";
 
@@ -121,12 +146,25 @@ async function dispatch(env, why, workflow = DEFAULT_WORKFLOW) {
 
 export default {
   async scheduled(event, env, ctx) {
-    const { workflow, unmatchedCron } = routeFor(event.cron);
-    const r = { ...(await dispatch(env, event.cron, workflow)), unmatchedCron };
-    /* A Worker's log is the only place this is visible, so say enough to
-       diagnose it from the log alone. */
-    console.log(JSON.stringify({ at: new Date(event.scheduledTime).toISOString(), ...r }));
-    if (!r.ok) throw new Error(`dispatch failed: ${r.status} ${r.detail}`);
+    /* EVERY WORKFLOW ON THIS CRON IS ASKED, AND ONE FAILURE DOES NOT HIDE THE
+       REST. A `for` loop that threw on the first bad dispatch would leave the
+       second workflow unfired and unlogged, which is the failure mode this
+       whole Worker exists to remove. Fire them all, log them all, then throw
+       once if any failed. */
+    const { workflows, unmatchedCron } = routeFor(event.cron);
+    const at = new Date(event.scheduledTime).toISOString();
+    const results = [];
+    for (const workflow of workflows) {
+      const r = { ...(await dispatch(env, event.cron, workflow)), unmatchedCron };
+      /* A Worker's log is the only place this is visible, so say enough to
+         diagnose it from the log alone. */
+      console.log(JSON.stringify({ at, ...r }));
+      results.push(r);
+    }
+    const bad = results.filter((r) => !r.ok);
+    if (bad.length)
+      throw new Error(`dispatch failed: ` +
+        bad.map((r) => `${r.workflow} ${r.status} ${r.detail}`).join("; "));
   },
 
   /* A URL to fire it by hand, for proving the token works without waiting for

@@ -857,6 +857,30 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
             if "fcity" in rec and not rec.get("city"):
                 rec["city"] = rec.pop("fcity")
             rec.pop("fcity", None)
+            # AND A TWO-LETTER CODE THAT IS NOT A US STATE IS NOT A STATE.
+            #
+            # Nebraska and South Dakota both license C.B. Constantini Ltd of
+            # Vancouver, and the committed run filed it three times over:
+            #
+            #     "BC"  C.B. CONSTANTINI LTD            VANCOUVER
+            #     "ON"  SURESOURCE COMMODITIES LLC      PETROLIA
+            #     "CN"  C.B. CONSTANTINI LTD BVANCOUVER,  city "C"
+            #
+            # The first two are real businesses in the wrong column: the
+            # US branch matched "VANCOUVER, BC" and swallowed the trailing
+            # CANADA as the optional word after a state code. The third is
+            # South Dakota's glued permit letter making a company called
+            # "...BVANCOUVER," in a town called "C" — an invented town, which
+            # is the one thing this file must never produce.
+            #
+            # Anchoring one state's regex on CANADA fixes one document. The
+            # rule belongs here: US_STATES is the list of things that ARE
+            # states, and a code outside it means the location is foreign, so
+            # the record keeps its town, loses its state, and joins the
+            # businesses a state licenses and places somewhere else. Nothing
+            # is invented to fill the gap.
+            if rec.get("st") and rec["st"] not in US_STATES:
+                rec["outOfCountry"] = rec.pop("st")
             # Agtegra's locations carry a facility number — "ALPENA-098",
             # "ANDOVER-064". The town is the part a gazetteer has heard of.
             if citystrip and rec.get("city"):
