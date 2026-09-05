@@ -225,6 +225,70 @@ if isinstance(_job_cap, int):
           "step to run is the one that gets cancelled, which is how the "
           "harvest was lost on run 25" % (_sum, _job_cap))
 
+
+# ══════════════════════════════════════════════════════════════════════════
+#  RULE 4: A STEP MUST BE ALLOWED MORE TIME THAN THE SCRIPT INSIDE IT SPENDS
+# ══════════════════════════════════════════════════════════════════════════
+#
+# Run 26, 2026-09-05. The fetch worked — Texas 139, Wisconsin 210, 2,293
+# businesses committed. Then:
+#
+#     ##[error]The action 'Place them and rebuild the directory the map reads'
+#              has timed out after 5 minutes.
+#
+# Nothing written. No geocodes/places.json and no data/directory.json in the
+# commit. 2,293 businesses landed in the data file and the map did not move —
+# the exact outcome that step was added to prevent.
+#
+# build_geocodes.py budgets CENSUS_BUDGET_S = 420 seconds of Census lookups,
+# and its own comment says why: "a slow morning at their end is 96 minutes,
+# which is not a degraded build — it is a job killed by its own timeout with
+# nothing written." Seven minutes of geocoding in a five-minute step.
+#
+# I had sized that 5 from run 25's measured 1m 26s — a run whose fetch was
+# CANCELLED, so the step had no new addresses and never called the Census at
+# all. Measuring a degraded run is not measuring.
+#
+# So the ceiling is READ OFF THE SCRIPT, for every workflow that runs it:
+# barchart.yml and sync_known.yml run the same one under job ceilings of their
+# own, and neither has a step budget, so the job's is what they get.
+_GEO = (ROOT / "scripts" / "build_geocodes.py").read_text()
+_m = re.search(r'CENSUS_BUDGET_S\s*=\s*float\(os\.environ\.get\(\s*"CENSUS_BUDGET_S"\s*,\s*"(\d+)"',
+               _GEO)
+check(_m is not None,
+      "CENSUS_BUDGET_S is no longer readable from build_geocodes.py, so no "
+      "workflow ceiling can be checked against it")
+
+if _m:
+    _budget_min = int(_m.group(1)) / 60.0
+    for _wf in sorted(WF.glob("*.yml")):
+        try:
+            _d = yaml.safe_load(_wf.read_text())
+        except Exception:
+            continue
+        for _jn, _j in (_d.get("jobs") or {}).items():
+            for _st in _j.get("steps") or []:
+                if "build_geocodes" not in str(_st.get("run", "")):
+                    continue
+                # an override in the step's own env changes the answer
+                _env = {**(_d.get("env") or {}), **(_j.get("env") or {}),
+                        **(_st.get("env") or {})}
+                _b = float(_env.get("CENSUS_BUDGET_S", _m.group(1))) / 60.0
+                _cap = _st.get("timeout-minutes") or _j.get("timeout-minutes")
+                _name = _st.get("name") or "(unnamed)"
+                check(_cap is not None,
+                      "%s: step '%s' runs build_geocodes.py and neither it nor "
+                      "its job has any ceiling at all" % (_wf.name, _name))
+                if _cap is None:
+                    continue
+                # two minutes for pip, the ZIP shards and build_directory.mjs
+                check(_cap >= _b + 2,
+                      "%s: step '%s' is allowed %g minutes and build_geocodes.py "
+                      "may spend %g of them on the Census alone. It will be "
+                      "killed mid-geocode and write nothing — which is how run "
+                      "26 committed 2,293 businesses and left the map unmoved."
+                      % (_wf.name, _name, _cap, _b))
+
 if fails:
     for f in fails:
         print("FAIL: %s" % f)

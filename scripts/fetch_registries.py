@@ -304,8 +304,23 @@ SOURCES = [
     # GRAIN DEALERS 116" — which is the completeness check for free.
     {"state": "NE", "kind": "dealer", "note": "PSC dealer list", "route": "pdf",
      "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf",
+     # THE TWO NEBRASKA LICENSEES THAT ARE NOT IN THE UNITED STATES.
+     # This read 114 of a stated 116 for weeks, and the INCOMPLETE line said so
+     # on every run. The two it could not see are the two the document does not
+     # give a US state:
+     #
+     #     LYFT COMMODITY TRADING LTD  3079  220,000  BC, CANADA
+     #     SURESOURCE COMMODITIES, LLC 3056   75,000  PETROLIA, ONTARIO CANADA
+     #
+     # The second branch matches the word the document itself prints. It is
+     # anchored on CANADA rather than on "any trailing words", which would have
+     # swallowed the totals line. `fcity` carries the town and no `st` is set,
+     # so these join the 31 businesses a state licenses and places elsewhere:
+     # counted, not attributed to a state, and nothing invented to give them one.
+     # Measured: 114 -> 116, and all 114 US records byte-identical.
      "pattern": r"^(?P<name>.+?)\s+(?P<licence>\d{2,5})\s+(?P<capacity>[\d,]{3,})\s+"
-                r"(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?\s*$"},
+                r"(?:(?P<city>[A-Z][A-Za-z .'&/-]+)[,.]\s*(?P<st>[A-Z]{2})(?:\s+[A-Z]+)?"
+                r"|(?P<fcity>[A-Z][A-Za-z .'&/-]*?)[,.]?\s*(?:[A-Z]{2,}\s+)?CANADA)\s*$"},
     {"state": "NE", "kind": "warehouse", "note": "PSC warehouse list", "route": "pdf",
      "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Warehouse[%20\s]*List[^\"']*\.pdf",
      # A DIFFERENT DOCUMENT ENTIRELY from the dealer list next to it, by the same
@@ -833,6 +848,15 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
                 continue
             rec = {k: (v or "").strip() for k, v in m.groupdict().items() if v}
             rec.pop("no", None); rec.pop("cls", None); rec.pop("status", None)
+            # A LICENSEE THE STATE LISTS OUTSIDE THE UNITED STATES.
+            # A pattern may capture that town as `fcity` — a branch that
+            # matched a foreign location and so set no `st`. It becomes the
+            # city, and the missing state is the truth about the record, not a
+            # gap to fill: this file already carries 31 businesses a state
+            # licenses and its own list places somewhere else.
+            if "fcity" in rec and not rec.get("city"):
+                rec["city"] = rec.pop("fcity")
+            rec.pop("fcity", None)
             # Agtegra's locations carry a facility number — "ALPENA-098",
             # "ANDOVER-064". The town is the part a gazetteer has heard of.
             if citystrip and rec.get("city"):

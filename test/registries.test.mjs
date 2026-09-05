@@ -545,7 +545,7 @@ const pyOn = (code) => py(`${LOAD}\n${code}`).trim();
  * The table's own <tr> count, less its header, is what the parse must equal.
  * A dropped column, a dropped state, a rejoin eating rows: all still red.
  */
-for (const [file, label, floor] of [[NDAK, "North Dakota", 285], [ARK, "Arkansas", 32]]) {
+for (const [file, label, floor] of [[NDAK, "North Dakota", 288], [ARK, "Arkansas", 32]]) {
   test(`${label} publishes no phone column and every row is still read`, { skip: !existsSync(fixture(file)) }, () => {
     const raw = readFileSync(fixture(file), "utf8");
     const rows = (raw.match(/<tr\b/gi) || []).length;
@@ -558,14 +558,75 @@ print(len(m.extract(b, {})))`));
     assert.equal(n, rows - 1,
       `${n} records from a table of ${rows - 1} data rows — a state without ` +
       "phones is being dropped again");
-    /* AND THE LIST DOES NOT SHRINK. A licence register grows through a
-       licensing year; a fall below what was last measured is our bug or the
-       state's, and either way somebody should look. */
-    assert.ok(n >= floor,
-      `${n} records, down from the ${floor} last measured — this list has ` +
-      "only ever grown");
+    /* THE SECOND CHECK ASKS A DIFFERENT QUESTION, AND IT IS NOT "HOW MANY".
+     *
+     * The equality above already answers completeness: every row the document
+     * has became a record. What it cannot see is a document that is WRONG —
+     * an error page, a login wall, a truncated capture — because a four-row
+     * error table parsed into three records passes `n == rows - 1` perfectly.
+     *
+     * The floor that stood here was 285, with a comment saying "this list has
+     * only ever grown". I reasoned that; I did not measure it. Six North
+     * Dakota licences lapsed the same day and the register went 288 -> 282,
+     * which would have turned this red for a state doing its paperwork — the
+     * exact defect this test was rewritten to remove, reintroduced one clause
+     * lower down.
+     *
+     * So it is a PLAUSIBILITY floor, at half of what was last measured. It
+     * cannot fire on a renewal cycle and it still catches a page that is not
+     * the register. */
+    assert.ok(n >= Math.floor(floor / 2),
+      `${n} records where ${floor} were last measured — less than half the ` +
+      "register is not a licensing cycle, it is the wrong page");
   });
 }
+
+test("Nebraska's dealer list reconciles to the total it prints", { skip: !existsSync(fixture(PDFS.NE)) }, () => {
+  /* IT READ 114 OF A STATED 116 FOR WEEKS, AND SAID SO EVERY RUN.
+   *
+   * The INCOMPLETE line was doing its job — "the document says 116 and this
+   * parse found 114" — and the two it could not read were the two Nebraska
+   * lists outside the United States:
+   *
+   *     LYFT COMMODITY TRADING LTD  3079  220,000  BC, CANADA
+   *     SURESOURCE COMMODITIES, LLC 3056   75,000  PETROLIA, ONTARIO CANADA
+   *
+   * They are licensed Nebraska grain dealers and they belong in the count.
+   * They get no state, which is the truth about them, and they join the 31
+   * businesses a state licenses and places somewhere else.
+   *
+   * This asks the DOCUMENT what its total is and requires the parse to reach
+   * it, so a state adding a dealer moves both sides together. */
+  const out = pyOn(`
+src = [s for s in m.SOURCES if s["state"] == "NE" and s.get("kind") == "dealer"][0]
+t = open(r"${fixture(PDFS.NE)}", encoding="utf-8", errors="replace").read()
+d = {}
+r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
+told = m.stated_total(t)
+names = sorted("%s @ %s" % (x["name"], x.get("city", "NO CITY")) for x in r if not x.get("st"))
+loose = m.pdf_records("SOME COMPANY LLC 1234 50,000 SPRINGFIELD ILLINOIS", {},
+                      src["pattern"], src.get("continuation"), src.get("cityStrip"))
+print(len(r), told[1] if told else 0, "|".join(names), len(loose), sep=";")`).split(";");
+  const [got, said] = [Number(out[0]), Number(out[1])];
+  assert.ok(said > 0, "the Nebraska document no longer prints its own total");
+  assert.equal(got, said,
+    `the document says ${said} and this parse found ${got}`);
+  /* AND THE TWO WITHOUT A STATE ARE THE TWO THAT HAVE NONE — not a US
+     licensee whose state the pattern quietly stopped capturing. */
+  const stateless = out[2] ? out[2].split("|") : [];
+  assert.deepEqual(stateless.sort(),
+    ["LYFT COMMODITY TRADING LTD @ BC",
+     "SURESOURCE COMMODITIES, LLC @ PETROLIA"],
+    `these Nebraska records came back with no state: ${stateless.join(", ")}`);
+  /* AND THE FOREIGN BRANCH IS ANCHORED ON THE WORD THE DOCUMENT PRINTS.
+     Written as "a town and then any trailing capitals", it matches a line
+     with a spelled-out US state and no comma — a shape this document does
+     not have today and the next one might. It must not match one. */
+  assert.equal(Number(out[3]), 0,
+    "the pattern read 'SOME COMPANY LLC 1234 50,000 SPRINGFIELD ILLINOIS' " +
+    "as a record — the foreign branch has stopped requiring CANADA and now " +
+    "accepts any trailing words as a location");
+});
 
 test("Ohio's header is on the second row and the first is junk", { skip: !existsSync(fixture(OHIO)) }, () => {
   const out = pyOn(`
@@ -601,7 +662,7 @@ print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
  * 354 — and lets the register grow. It is not a softened threshold: it is the
  * same number, with the direction the bug actually travels.
  */
-for (const [st, file, floor] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 354], ["NE", PDFS.NE, 114]]) {
+for (const [st, file, floor] of [["IN", PDFS.IN, 307], ["SD", PDFS.SD, 355], ["NE", PDFS.NE, 116]]) {
   test(`the ${st} bid sheet's own line shape is read`, { skip: !existsSync(fixture(file)) }, () => {
     const out = pyOn(`
 src = [s for s in m.SOURCES if s["state"] == "${st}" and s.get("pattern")][0]
@@ -610,10 +671,18 @@ d = {}
 r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
 print(len(r), r[0]["name"], r[0].get("city", ""), sep="|")`).split("|");
     const n = Number(out[0]);
-    assert.ok(n >= floor,
-      `${n} lines matched, below the ${floor} last measured — the rejoin is ` +
-      "eating records again (it read 265, then 293, before it read " +
-      floor + ")");
+    /* NINETY PER CENT OF WHAT WAS MEASURED, FOR THE SAME REASON THE STATE
+       TABLES ABOVE STOPPED ASKING FOR AN EXACT COUNT. These documents are
+       republished and the counts move: South Dakota went 354 -> 355 the day
+       after this was written, and North Dakota's register fell by six. Ten
+       per cent of slack cannot be reached by a licensing cycle and leaves
+       every regression this guard exists for red — the rejoin read 265 and
+       then 293 against 354, both far below 318. */
+    const least = Math.floor(floor * 0.9);
+    assert.ok(n >= least,
+      `${n} lines matched, below the ${least} this guard allows against the ` +
+      `${floor} last measured — the rejoin is eating records again (it read ` +
+      "265, then 293, before it read " + floor + ")");
     /* AND NOT WILDLY MORE, WHICH WOULD MEAN THE PATTERN HAS GONE LOOSE AND IS
        matching the document's headers, footers and page numbers as licensees. */
     assert.ok(n <= floor * 1.25,
