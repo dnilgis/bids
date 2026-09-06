@@ -47,7 +47,15 @@ assert cand, "CANDIDATES is not defined"
 CAND_STATES = sorted({s for s in re.findall(r"\(\"([A-Z]{2})\",", cand.group(1))} - {"US"})
 
 # ── the three buckets are disjoint ────────────────────────────────────────
-ALREADY_SCRAPED_BUT_STILL_PROBED = {"IA", "MO", "NE", "IL", "IN", "WA", "ID"}
+# A HARVESTED STATE MAY STAY IN CANDIDATES, ON PURPOSE. The survey's own header
+# says the first block is "harvested already; kept so a change of shape is
+# noticed" — a state whose list moves or turns into a form should be caught by
+# the thing that watches lists, not by a fetch failing at three in the morning.
+# TX and WI joined this set on 2026-09-06 when they were added to HARVESTED,
+# where they always belonged; WA and ID joined it the same day, harvested for
+# the first time. The set is written out rather than derived so that adding a
+# state here is a deliberate act and not a side effect.
+ALREADY_SCRAPED_BUT_STILL_PROBED = {"IA", "MO", "NE", "IL", "IN", "WA", "ID", "TX", "WI"}
 check(not (set(HARVESTED) & set(NEEDS)),
       "a state is both harvested and needing a URL: %s" % (set(HARVESTED) & set(NEEDS)))
 check(not (set(NEEDS) & set(CAND_STATES)),

@@ -94,6 +94,37 @@ CANDIDATES = [
 
     ("MN", "grain licensing", "https://www.mda.state.mn.us/grain-licensing-0", "search 2026-09-04, unopened"),
     ("MN", "warehouse licensing", "https://www.mda.state.mn.us/warehouse-licensing", "search 2026-09-04, unopened"),
+    # THE SCHEME WAS THE WHOLE PROBLEM. The 2026-09-04 survey asked
+    # http://www2.mda.state.mn.us/... and recorded "urlopen error timed out",
+    # twice, and Minnesota was written off as unreachable. Fetched over HTTPS
+    # on 2026-09-06 it answers immediately: MDA's licence search, County and
+    # License Type both REQUIRED, "GRAIN BUYER" among sixty-odd types, 87
+    # counties plus OUT OF STATE and MOBILE UNIT, and the page's own words say
+    # "Text downloads include county FIPS codes according to state data
+    # exchange standards" — so an export exists.
+    #
+    # The form's parameter names cannot be read through a markdown converter,
+    # which is what this survey exists to fix: it keeps the bytes. Minnesota is
+    # 224 unread facilities in this repository's directory, the largest hole of
+    # any state whose list is not behind a robots rule or a 403.
+    ("MN", "MDA licence search, over HTTPS", "https://www2.mda.state.mn.us/webapp/lis/default.jsp", "the http:// spelling timed out twice on 2026-09-04 and the state was written off; https answers. KEEP THE FORM MARKUP"),
+    ("MN", "licence lookup landing", "https://www.mda.state.mn.us/licensing/license-lookup", "read 2026-09-06: names the search app and mentions a text download"),
+
+    # ── MICHIGAN. Twenty-eight unread, and its list is a dashboard. ─────────
+    # michigan.gov/documents/mdard/Licensed_Grain_Dealers_by_Facility_640332_7.pdf
+    # answered 403 to both user-agents on 2026-09-04 and the page that used to
+    # link it is a 404 now. MDARD moved the list into two POWER BI reports,
+    # read off the live programme page on 2026-09-06:
+    #
+    #   "Michigan Licensed Grain Dealers Dashboard"
+    #   "Michigan Licensed Grain Dealers by County or Facility"
+    #
+    # A Power BI embed serves its rows from a querydata endpoint rather than in
+    # the page, so this will not come back as a table. It is recorded so the
+    # shape is on file and the state stops looking like one with no list.
+    ("MI", "grain dealer programme page", "https://www.michigan.gov/mdard/licensing/agprod/grain", "read 2026-09-06: links two Power BI dashboards, no file"),
+    ("MI", "licensed grain dealers dashboard", "https://app.powerbigov.us/view?r=eyJrIjoiZDUyOGI4ZjgtOWY1MS00Nzc4LWFkMTQtNTk1MmVmMTk2NWJhIiwidCI6ImQ1ZmI3MDg3LTM3NzctNDJhZC05NjZhLTg5MmVmNDcyMjVkMSJ9", "Power BI embed; rows come from querydata, not the page"),
+    ("MI", "grain dealers by county or facility", "https://app.powerbigov.us/view?r=eyJrIjoiNTgzYTIwYTQtMGUwZS00M2NhLTlhNTItYTU3NTEyZTRkNTQ3IiwidCI6ImQ1ZmI3MDg3LTM3NzctNDJhZC05NjZhLTg5MmVmNDcyMjVkMSJ9", "Power BI embed; the BY FACILITY one is the shape we want"),
 
     ("TX", "grain warehouse programme", "https://texasagriculture.gov/Home/Production-Agriculture/Grain-Warehouse", "READ 2026-09-04: a programme page. Its 36 <tr> are FORMS, not warehouses — the survey's own row count called it a table and was wrong. The list is one link down"),
     # THE LIST ITSELF, read off that page's bytes on 2026-09-04:
@@ -278,7 +309,28 @@ CANDIDATES = [
 NEEDS_A_URL = ["AL", "DE", "KY", "NM", "SC", "TN", "WV", "WY"]
 
 # Regulated states already harvested by scripts/fetch_registries.py.
-HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE"]
+HARVESTED = ["IA", "MO", "OH", "ND", "AR", "IN", "SD", "NE", "TX", "WI", "WA", "ID"]
+
+# DOORS OPENED AND SHUT, 2026-09-06, one at a time by fetching each page.
+# Written down because a state that was checked and publishes nothing looks
+# exactly like a state nobody has looked at, and the second kind is worth
+# somebody's evening while the first is not.
+CLOSED = {
+    "IL": "the only list is apps.agr.illinois.gov/AEM/warehouselookup.php and it "
+          "is ROBOTS-DISALLOWED. The two pages around it link to it and nothing "
+          "else. Not to be fetched by any other means.",
+    "OK": "ag.ok.gov/licensing-permits carries a Grain Warehouse Charter "
+          "APPLICATION and no directory. Confirmed twice, 2026-09-04 and -09-06.",
+    "GA": "agr.georgia.gov/warehouse.aspx serves no table and no data link; the "
+          "page is JavaScript-only.",
+    "MD": "mda.maryland.gov grain page says 'JavaScript is required to use "
+          "content on this page' and serves nothing else.",
+    "MT": "prod-agr.mt.gov Commodity Warehouse page is 404 as of 2026-09-06 and "
+          "the surveyed copy carries no table and no data link.",
+    "OR": "apps.oregon.gov Business Xpress is a licence LOOKUP; two tables, four "
+          "rows, no listing.",
+    "LA": "ldaf.state.la.us commodities-commission is 404.",
+}
 
 
 # THE FORMAT MOST OF THEM ACTUALLY USE WAS MISSING FROM THIS.

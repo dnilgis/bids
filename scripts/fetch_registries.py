@@ -23,6 +23,27 @@ Ten candidates asked once. Seven answered, and no two states are alike:
 
 So this is a table of states, not a script per state. Adding one is a row.
 
+HOW BIG IS THE COUNTRY, MEASURED 2026-09-06
+
+There is no national list to fetch — data.gov's "USWA Active Warehouses"
+dataset resolves to a PDF from 2010, and USDA's live figures come out of the
+WCMD Tableau dashboard, which needs a person with a browser. But its SUMMARY
+sheet is already in this repository (debug/registries/survey/
+us-wcmd-summary-csv-export.html), and that sheet prints the denominator:
+
+    GRAIN   4,802 warehouses   4,534 CCC-approved   2,388 USWA-licensed
+                               9,615,545,319 bushels of capacity
+
+That is the federally-tracked population, and it is a FLOOR, not a ceiling: it
+counts warehouses that store for CCC or hold a federal licence, so a country
+elevator licensed only by its own state, and every grain DEALER that buys
+without storing, is outside it. For scale, this repository's directory holds
+4,581 facilities across 37 states and READS 648 of them.
+
+The per-warehouse sheet behind that dashboard is the closest thing to a
+national list that exists. It is a browser job — Download -> Crosstab — and it
+is the single largest thing still missing from this file.
+
 WHAT THE LIVE RUNS TAUGHT, AND WHY THE PARSER LOOKS LIKE THIS
 
 Four runs, each of which reported success. Every one of these was found by
@@ -220,38 +241,51 @@ SOURCES = [
      # somebody reorders the export.
      "columns": {"name": "cli_legal_name", "county": "county_name"}},
 
-    # ── IDAHO IS NOT TAKEN, AND HERE IS EXACTLY WHY ─────────────────────────
+    # ── IDAHO, AND THE ROUTE THAT TURNED OUT TO ALREADY EXIST ───────────────
     #
-    # Two PDFs were found on 2026-09-04 and both were fetched and read:
-    #   Commodity-Dealer-Licensees-1.pdf     40 licensees
-    #   ID-WA-Cooperative-Licensees.pdf      15 licensees, Idaho AND Washington
+    # On 2026-09-04 this was written off. The note said a pattern gets the count
+    # and the state right and CANNOT SPLIT THE TOWN FROM THE COMPANY, because
+    # the line carries no separator between them:
     #
-    # A pattern gets the count and the state right and CANNOT SPLIT THE TOWN
-    # FROM THE COMPANY. Measured, not guessed -- this is what came back:
+    #     Ag Solution, Inc. dba Mountain Malt Idaho Falls, ID
+    #     Cereal Byproducts Company Mount Prospect, IL
+    #     CHS, Inc. dba CHS Primeland Lewiston, ID
     #
-    #     name "Ag Solution, Inc. dba"        city "Mountain Malt Idaho Falls"
-    #     name "Amy's Kitchen,"               city "Inc. Pocatello"
-    #     name "Almota Elevato r"             city "Company Colfax"
+    # It concluded that splitting them needed a gazetteer and "that is a new
+    # route rather than a pattern".
     #
-    # The extractor leaves double spaces INSIDE words ("Mountain  Malt",
-    # "Idaho  Falls", "Elevato r"), so whitespace marks nothing, and the line
-    # carries no other separator. A human reads "Idaho Falls" as a town because
-    # they know it is one. A regex cannot, and a town filed wrongly is worse
-    # than a state left unread.
+    # IT IS NEITHER. The route was already in this file, thirty lines below, and
+    # had been since Nebraska: _two_word_city. It offers the last word of the
+    # company name as the first word of the town, carries BOTH readings, and
+    # lets the Census geocoder decide on evidence. Every one of these is settled
+    # by it without anything being invented:
     #
-    # It could be split against geocodes/zip-candidates.json -- take the
-    # longest trailing phrase that is a real town in that state -- and that is
-    # a new route rather than a pattern.
+    #     city "Falls"     alt "Idaho Falls"        -> "Falls, ID" does not resolve
+    #     city "City"      alt "Brigham City"       -> "City, UT" does not resolve
+    #     city "Prospect"  alt "Mount Prospect"     -> "Prospect, IL" does not
+    #     city "Lewiston"  alt "Primeland Lewiston" -> the ALTERNATIVE is the one
+    #                                                  that does not resolve
     #
-    # AND IT IS NOT WORTH ONE YET. Their own page says "A Licensee is only
-    # listed once but may have multiple business locations", and several are
-    # headquartered out of state: Ardent Mills at Ogden UT, Cereal Byproducts
-    # at Mount Prospect IL, Columbia Grain at Clarkston WA. These are COMPANIES
-    # with a mailing address, not elevators with a location. Fifty-five company
-    # names put nothing on a map.
+    # Rule 96, and it cost a state: before building a pipeline, grep the
+    # consumer for the one that already exists.
     #
-    # The captures are in debug/registries/survey/ for whoever writes that
-    # route.
+    # THESE ARE COMPANIES, NOT ELEVATORS, and the run says so. Idaho's own page
+    # states "A Licensee is only listed once but may have multiple business
+    # locations", and several are headquartered out of state — Ardent Mills at
+    # Ogden UT, Cereal Byproducts at Mount Prospect IL, Columbia Grain at
+    # Clarkston WA. `st` carries the state the document printed, so those join
+    # the businesses a state licenses and places elsewhere: counted, not
+    # attributed to Idaho. Measured on the committed captures: 40 and 15.
+    {"state": "ID", "kind": "dealer", "note": "commodity dealer licensees", "route": "pdf",
+     "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/Commodity-Dealer-Licensees-1.pdf",
+     "pattern": r"^(?P<no>\d{1,3})\s+(?P<name>.+)\s+(?P<city>[A-Z][A-Za-z.'-]*),\s*(?P<st>[A-Z]{2})$"},
+    # The same shape, and it is an IDAHO AND WASHINGTON document — most of its
+    # fifteen are Washington co-ops. The pattern reads the state off the line
+    # rather than off the filename, so they file where the document puts them.
+    {"state": "ID", "kind": "warehouse", "note": "Idaho and Washington co-op licensees",
+     "route": "pdf",
+     "url": "https://agri.idaho.gov/wp-content/uploads/WarehouseProgram/ID-WA-Cooperative-Licensees.pdf",
+     "pattern": r"^(?P<no>\d{1,3})\s+(?P<name>.+)\s+(?P<city>[A-Z][A-Za-z.'-]*),\s*(?P<st>[A-Z]{2})$"},
 
     # ── PDFs. Eight states publish this way; these three are the largest. ────
     # "1 Berne Hi-Way Hatchery, Inc. Berne Adams Active"
@@ -302,6 +336,43 @@ SOURCES = [
     # discovered from the programme page each run instead. Nebraska is also the
     # only state that prints its own totals on the document — "TOTAL LICENSED
     # GRAIN DEALERS 116" — which is the completeness check for free.
+    # ── WASHINGTON. Twenty rows in the directory; a hundred and fourteen here. ─
+    #
+    # The state's own licence book, and the first source that is a BLOCK per
+    # company rather than a line per licensee — which is why `carry` exists.
+    # It is also the best-shaped location data any state publishes: every row
+    # is one warehouse, with its own licence code, its own TOWN, its county and
+    # its capacity in bushels. Most states give a company and a mailing
+    # address; this gives the elevator.
+    #
+    #     *Almota Elevator Company, Inc. 509/397-3456 185A Port Almota/Whitman 2,703,000
+    #                                                 185B Union Center/Whitman  426,000
+    #                                                 185C Mockonema/Whitman     457,000
+    #
+    # Measured on the committed capture (debug/registries/survey/
+    # wa-warehouses-and-dealers-pdf.pdf, the 2023-24 book): 205 location rows,
+    # 114 distinct company-and-town pairs, 109 distinct towns, 20 companies.
+    # The towns are the Palouse and the Big Bend — Ritzville, Lacrosse, Colfax,
+    # Pomeroy, Almira, Hartline, Steptoe, Uniontown — and Uniontown Cooperative
+    # is a board this repository already reads.
+    #
+    # THE LICENCE CODE ABSORBS ITS OWN TRAILING LETTERS. Ritzville has enough
+    # sites to run past Z and number them 295U, 295UU, 295UUU, which the text
+    # extractor renders "295U U" and "295U UU". A code of \d+[A-Z] left the
+    # spare letters at the front of the town and filed grain at "U Edwall" and
+    # "V Washtucna" — towns that do not exist. `(?:\s?[A-Z])*` takes them.
+    #
+    # COUNTY IS A LABEL HERE, NOT A KEY. The extractor puts spaces inside words
+    # ("Dougl as", "Ada ms", "Lincol n") and the county is carried as printed;
+    # the TOWN is what geocodes and the towns come out clean.
+    {"state": "WA", "kind": "dealer+warehouse", "note": "WSDA licence book", "route": "pdf",
+     "url": "https://cms.agr.wa.gov/WSDAKentico/Documents/Grain-Warehouse-Audit-Grain-Dealers.pdf",
+     "carry": r"^\*(?P<name>[A-Z][A-Za-z0-9&.,'\- ]{2,70}?)\s+\d{3}/\s?\d{3}\s?-\s?\d{4}",
+     "pattern": r"^.*?(?:^|\s)(?:[BSD]-\d{1,4}[A-Z]?|\d{1,4}[A-Z](?:\s?[A-Z])*)"
+                r"(?:\s+\([A-Z]{2}\))?\s+(?P<city>[A-Z][A-Za-z.']*(?:\s[A-Z][A-Za-z.']*)*?)"
+                r"\s*/\s*(?P<county>[A-Z][A-Za-z.']*(?:\s[A-Za-z.']+)?)\s+"
+                r"(?P<capacity>[\d,]{3,}).*$"},
+
     {"state": "NE", "kind": "dealer", "note": "PSC dealer list", "route": "pdf",
      "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf",
      # THE TWO NEBRASKA LICENSEES THAT ARE NOT IN THE UNITED STATES.
@@ -785,7 +856,7 @@ def pdf_text(raw, diag):
         return None
 
 
-def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
+def pdf_records(text, diag, pattern=None, cont=None, citystrip=None, carry=None):
     """With a pattern, read the document's own shape; without one, fall back to
     lines carrying a phone.
 
@@ -835,8 +906,38 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
     diag["pdfLines"] = len(lines)
     if pattern:
         rx = re.compile(pattern)
+        # A DOCUMENT THAT NAMES THE COMPANY ONCE AND THE PLACES UNDER IT.
+        #
+        # Washington's licence book is the first source that is not one record
+        # per line. It is a block per company, and the locations are the point:
+        #
+        #     *Almota Elevator Company, Inc. 509/397-3456 185A Port Almota/Whitman 2,703,000
+        #     Dan Hart, Mgr. 509/397-3459 (Fax)           185B Union Center/Whitman  426,000
+        #     P.O. Box 617                                185C Mockonema/Whitman     457,000
+        #     Colfax, WA 99111
+        #
+        # Three elevators, and the company's name appears on the first line
+        # only. The other two lines carry a manager and a PO box, so reading
+        # each line on its own gives an elevator run by "Dan Hart, Mgr." in
+        # Union Center — a real town filed under a person.
+        #
+        # `carry` names the line that starts a block; `pattern` names a
+        # location. A line can be both, and the first line of every block is.
+        # The marker is the DOCUMENT'S OWN: its key page says "* =
+        # Warehouse/Dealer License", and every company header carries it while
+        # no manager or address line does. Matching on "has a phone" instead
+        # picked up the Fax line under it and 10 records came out named after a
+        # PO box.
+        #
+        # A location before any header is dropped rather than guessed at.
+        rxcarry = re.compile(carry) if carry else None
+        carried = None
         out = []
         for l in lines:
+            if rxcarry:
+                mc = rxcarry.match(l)
+                if mc:
+                    carried = re.sub(r"\s+", " ", mc.group("name")).strip().rstrip(",")
             # THE TOTALS LINE IS NOT A BUSINESS. Nebraska's own
             # "TOTAL LICENSED GRAIN WAREHOUSES 44" — the line the completeness
             # check reads — matched the record pattern and came out as a company
@@ -848,6 +949,10 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
                 continue
             rec = {k: (v or "").strip() for k, v in m.groupdict().items() if v}
             rec.pop("no", None); rec.pop("cls", None); rec.pop("status", None)
+            if rxcarry:
+                if not carried:
+                    continue          # a location above its own company header
+                rec["name"] = carried
             # A LICENSEE THE STATE LISTS OUTSIDE THE UNITED STATES.
             # A pattern may capture that town as `fcity` — a branch that
             # matched a foreign location and so set no `st`. It becomes the
@@ -885,7 +990,15 @@ def pdf_records(text, diag, pattern=None, cont=None, citystrip=None):
             # "ANDOVER-064". The town is the part a gazetteer has heard of.
             if citystrip and rec.get("city"):
                 rec["city"] = re.sub(citystrip, "", rec["city"]).strip()
-            _two_word_city(rec)
+            # NOT WHEN THE NAME CAME FROM ANOTHER LINE. _two_word_city guesses
+            # that the last word of the company name might be the first word of
+            # the town, and that guess is only meaningful where the two ran
+            # together on ONE line with nothing between them. Under `carry` the
+            # name is from a header line and the town is delimited by the
+            # document's own "/" — so it fired on "United Grain Corporation of
+            # Oregon" + "Vancouver" and offered a town called "Oregon Vancouver".
+            if not rxcarry:
+                _two_word_city(rec)
             if len(rec.get("name", "")) > 2:
                 out.append(rec)
         diag["pdfLinesMatched"] = len(out)
@@ -1044,7 +1157,8 @@ def fetch_file(src, timeout, diag, dump):
         if text is None:
             return []
         recs = pdf_records(text, diag, src.get("pattern"),
-                           src.get("continuation"), src.get("cityStrip"))
+                           src.get("continuation"), src.get("cityStrip"),
+                           src.get("carry"))
         told = stated_total(text)
         if told and told[1]:
             diag["statedTotal"] = {"total": told[1]}
