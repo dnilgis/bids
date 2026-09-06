@@ -302,9 +302,12 @@ export function operatorSlug(mobileUrl) {
  * 61 uncovered operators, 2 had a mobile board and 47 had a cashgrid.
  *
  * The kind is decided by WHICH ADAPTER READS IT, not by the URL. Two of the 47
- * cashgrid captures are not cashgrid boards at all -- faasfeed serves the
- * MOBILE table at its cashgrid address -- so a URL-shaped guess would have
- * handed that page to the wrong parser and called the refusal a broken board.
+ * cashgrid captures are not cashgrid boards at all -- agricharts-cashgrid-
+ * faasfeed.html is a MOBILE cashprices table -- so a URL-shaped guess would
+ * have handed that page to the wrong parser and called the refusal a broken
+ * board. (The FILE NAME is not the address it came from: captureName() below
+ * keeps the operator and drops the path, so a /cash/prices.php capture lands
+ * under the cashgrid prefix too. Ask readBoard, never the name.)
  *
  * Mobile is tried first because it is the shape with 84 sources behind it.
  */
@@ -345,6 +348,14 @@ export function readBoard(html, url, contracts) {
  * two different documents under one name is how a parser ends up tested
  * against the wrong evidence.
  */
+/* THE PREFIX IS A NAMESPACE, NOT A SHAPE. operatorSlug() reads the HOST, so
+   the path is thrown away and /cash/prices.php captures to the same name as
+   /markets/cashgrid.php. That is deliberate -- one board per operator, however
+   many spellings answered -- but it means the name never states what the bytes
+   are. agricharts-cashgrid-faasfeed.html is a mobile board, and a test that
+   paired sources to captures by this name alone reported a refusal against a
+   source whose own board it had never opened. Anything deciding what a capture
+   IS must call readBoard on the bytes. */
 export function captureName(url) {
   const s = operatorSlug(url);
   return s ? `agricharts-cashgrid-${s}.html` : null;

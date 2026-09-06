@@ -145,7 +145,10 @@ test("47 captures are on file and they are all cashgrid boards", () => {
    and total — a list that merely tolerates whatever fails is not a test. */
 const NOT_CASHGRID = {
   "agricharts-cashgrid-faasfeed.html":
-    "serves the MOBILE cashprices table at its cashgrid URL — the other adapter reads it",
+    "a MOBILE cashprices table filed under the cashgrid prefix: two <table class=\"cashprices\"> "
+    + "elements, 8 rows across North English and Webster/Keswick, zero writeBidCell calls, and its "
+    + "own form posts to prices.php. captureName() drops the path, so the prefix says which "
+    + "operator, never which address answered. The other adapter reads it.",
   "agricharts-cashgrid-heartlandcoop.html":
     "1,306 characters of page furniture and no board: the bids load from somewhere else",
 };

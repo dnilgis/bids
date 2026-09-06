@@ -701,15 +701,27 @@ test("--capture takes a directory, or defaults to fixtures, and eats no other fl
   assert.equal(parseArgs([]).capture, null, "off unless asked for");
 });
 
-test("a capture is named for the shape, not only the operator", () => {
-  /* fixtures/agricharts-auroraelevator.html is already that operator's MOBILE
-     board. Two different documents under one name is how a parser ends up
-     tested against the wrong evidence. */
+test("a capture is named for the operator and the prefix, and NOT for its shape", () => {
+  /* WHAT THE PREFIX DOES AND DOES NOT MEAN. fixtures/agricharts-auroraelevator
+     .html is already that operator's MOBILE board, so captures need a prefix of
+     their own: two different documents under one name is how a parser ends up
+     tested against the wrong evidence.
+
+     The prefix is NOT a claim about the bytes. captureName takes operatorSlug
+     (the host) and nothing else, so `cashgrid` here is a namespace, not a
+     shape — the same name comes back for a /cash/prices.php capture as for a
+     /markets/cashgrid.php one, which is measured below and is how
+     agricharts-cashgrid-faasfeed.html (a mobile board) got its name. Anything
+     that needs to know the shape must ask readBoard. */
   assert.equal(captureName("https://auroraelevator.agricharts.com/markets/cashgrid.php"),
                "agricharts-cashgrid-auroraelevator.html");
   assert.equal(captureName("https://www.uniontowncoop.com/markets/cashgrid.php"),
                "agricharts-cashgrid-uniontowncoop.html");
   assert.equal(captureName("not a url"), null);
+  /* THE PATH IS NOT IN THE NAME, stated as a fact so nobody reads it back in. */
+  assert.equal(captureName("https://uniontowncoop.agricharts.com/cash/prices.php"),
+               captureName("https://uniontowncoop.agricharts.com/markets/cashgrid.php"),
+               "the prefix survives a mobile path unchanged — it names a namespace, not a shape");
 });
 
 test("the same operator's two spellings capture to one name", () => {
@@ -846,9 +858,16 @@ test("every cashgrid capture yields a usable operator name", () => {
 });
 
 test("which parser reads a board is decided by the board, never by the URL", () => {
-  /* faasfeed serves the MOBILE cashprices table at its /markets/cashgrid.php
-     address. A URL-shaped guess hands that page to the wrong parser and calls
-     the refusal a broken board. */
+  /* fixtures/agricharts-cashgrid-faasfeed.html is a MOBILE cashprices table
+     filed under the cashgrid prefix. It is NOT evidence that faasfeed serves
+     mobile bytes at /markets/cashgrid.php — this file used to say that, and it
+     was reading the claim off a file name. captureName() keeps the operator
+     and drops the path, so the prefix records nothing about which address
+     answered; the capture's own <form action="prices.php"> and its nav links
+     to /cash/prices.php are the only addresses in the bytes.
+
+     What it does prove is the thing this test is for: hand any URL you like to
+     readBoard and the PARSER is still chosen by the page. */
   const faas = readBoard(fix("agricharts-cashgrid-faasfeed.html"),
                          "https://faasfeed.agricharts.com/markets/cashgrid.php", QUOTES);
   assert.equal(faas.kind, "mobile", "read by its shape, not its address");
@@ -1058,18 +1077,47 @@ test("the captured boards publish through the real guard, and refuse without the
     .replace(/\.(com|net|org|coop)$/, "").replace(/-/g, "");
 
   let withRule = 0, withoutRule = 0, tried = 0;
+  /* A CAPTURE'S NAME IS NOT EVIDENCE OF ITS SHAPE, AND THIS TEST LEARNED IT THE
+     EXPENSIVE WAY. The pairing above is by HOST SLUG alone, which quietly
+     assumes every fixtures/agricharts-cashgrid-<slug>.html is that operator's
+     cashgrid board. captureName() builds that name from operatorSlug(url) and
+     throws the PATH away, so a capture taken from /cash/prices.php is filed
+     under the cashgrid prefix and reads as a cashgrid board to nobody but the
+     file listing.
+
+     fixtures/agricharts-cashgrid-faasfeed.html is one: 18,248 bytes, two
+     <table class="cashprices"> elements, eight rows across North English and
+     Webster/Keswick, and ZERO writeBidCell calls. Its own form posts to
+     `prices.php` and its own nav links to /cash/prices.php. It is a MOBILE
+     board, and asking the cashgrid parser to read it earns the refusal it
+     gets. Counting that refusal against sources/faasfeed-websterkeswick.json
+     said "1 still refuse WITH round-cent" about a source whose own board was
+     never replayed at all.
+
+     So the capture has to BE a cashgrid board before a cashgrid source is
+     replayed against it — decided by readBoard, the same way the sweep decides
+     it, never by the file name. Every skip is named and asserted, because a
+     silent skip is exactly how a real refusal would be absorbed by this fix. */
+  const notItsBoard = new Set();
   for (const f of readdirSync(join(ROOT, "sources")).filter((x) => x.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"));
     if (s.platform !== "agricharts-cashgrid") continue;
     const ff = fixFor[slugOf(s.url)];
     if (!ff) continue;
+    const bytes = readFileSync(join(ROOT, "fixtures", ff), "utf8");
+    const shape = readBoard(bytes, s.url, CONTRACTS).kind;
+    if (shape !== "cashgrid") { notItsBoard.add(`${ff} reads as ${shape}`); continue; }
     tried++;
-    const html = readFileSync(join(ROOT, "fixtures", ff), "utf8");
+    const html = bytes;
     const opts = (cfg) => ({ now: new Date(), sourceUrl: s.url, source: cfg,
                              extract: (h, u) => extractCashgrid(h, u, { contracts: CONTRACTS }) });
     try { buildFile(html, opts(toConfig(s))); withRule++; } catch { /* counted below */ }
     try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined }))); withoutRule++; } catch { /* ditto */ }
   }
+  assert.deepEqual([...notItsBoard].sort(),
+    ["agricharts-cashgrid-faasfeed.html reads as mobile"],
+    "a capture under the cashgrid prefix that is not a cashgrid board — declare it here "
+    + "with what it actually is, or fix the capture");
   assert.ok(tried > 200, `only ${tried} sources had a capture to replay against`);
   assert.equal(withRule, tried, `${tried - withRule} still refuse WITH round-cent`);
   assert.ok(withoutRule < tried / 4,
