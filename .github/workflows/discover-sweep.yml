@@ -123,6 +123,16 @@ jobs:
           #  It cannot fail the sweep: the harvest above is the valuable part.
           node scripts/board-siblings.mjs || echo "::warning::board-siblings did not run"
 
+          #  AND THE ONE THAT FINDS A PIN IN THE WRONG STATE.
+          #  AgMark LLC. of Beloit, Kansas had two sources filed at Gaylord,
+          #  MINNESOTA — 384 miles out, matched on a town name because
+          #  data/known-elevators.json holds exactly one Gaylord and it is the
+          #  Minnesota one. Nothing broke: the bid published and the map drew a
+          #  pin, in the wrong state. This tool was written to find that and
+          #  then ran in no workflow at all, which is how it was still there
+          #  five days later. Writes a worklist, changes nothing.
+          node scripts/state-outliers.mjs || echo "::warning::state-outliers did not run"
+
           git add data/platforms.json probe-lists/barchart-sites.txt data/gaps 2>/dev/null || true
           # --cached LEFT THEM ON DISK AS UNTRACKED FILES, AND THAT BROKE A PUSH.
           # 2026-08-28, run 33214328053: the sharded sweep decided all 674
