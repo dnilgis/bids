@@ -1,0 +1,235 @@
+			
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html><head>
+<title>Licensing Information Search</title>
+<link rel="stylesheet" type="text/css" href= "css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery-ui.theme.min.css" />
+<link rel="stylesheet" type="text/css" href="css/header.css" /> 
+<link rel="stylesheet" type="text/css" href="css/newprint.css" media="print"/>
+
+<div class = "container" >
+			<a href="https://www.mda.state.mn.us">
+				<img src="newMDALogo.jpg" class="header-logo" alt="Minnesota Department of Agriculture logo" title="Minnesota Dept. of Agriculture logo" />
+			</a>
+		
+		 <div class="header-menu">
+		 	<p>Licensing Information Search</p>
+		 </div>
+
+<!-- 9/11/2015 LDM added frame busting Javascript -->
+  <!-- script removed by survey_registries.py: a licence list is markup, and script is where other people's API keys live -->
+
+
+</head>
+<body>
+<form name="default" method="post" action="LisResults.jsp">
+
+<table cellpadding="5" cellspacing="5" border="0">
+<tr><th align="right" nowrap valign="top">License Number:</th>
+<td valign="top"><input type=text name="license" size="10"> (Optional)</td></tr>
+
+<tr><th align="right" nowrap valign="top">Company Name or<br>Person's Last Name:</th>
+<td valign="top"><input type=text name="compname" size="30"> (Optional)
+<br>If you're not sure how a name begins, type a percent sign (%) in front of it.
+<br>If you're not sure how a name ends, only type the beginning of it. Do not include a percent sign.</td></tr>
+
+<tr><th align="right" nowrap valign="top">City:</th>
+<td valign="top"><input type="text" name="city" size="20"> (Optional)</td></tr>
+
+
+<tr><th align="right" nowrap valign="top">County:</th>
+<td valign="top"> 
+<FONT FACE="Courier" SIZE="3">
+<SELECT MULTIPLE NAME="countycode" SIZE=6 >
+<option selected value ="****" > ***ALL***</option>
+<option  value ="001"> AITKIN</option>
+<option  value ="003"> ANOKA</option>
+<option  value ="005"> BECKER</option>
+<option  value ="007"> BELTRAMI</option>
+<option  value ="009"> BENTON</option>
+<option  value ="011"> BIG STONE</option>
+<option  value ="013"> BLUE EARTH</option>
+<option  value ="015"> BROWN</option>
+<option  value ="017"> CARLTON</option>
+<option  value ="019"> CARVER</option>
+<option  value ="021"> CASS</option>
+<option  value ="023"> CHIPPEWA</option>
+<option  value ="025"> CHISAGO</option>
+<option  value ="027"> CLAY</option>
+<option  value ="029"> CLEARWATER</option>
+<option  value ="031"> COOK</option>
+<option  value ="033"> COTTONWOOD</option>
+<option  value ="035"> CROW WING</option>
+<option  value ="037"> DAKOTA</option>
+<option  value ="039"> DODGE</option>
+<option  value ="041"> DOUGLAS</option>
+<option  value ="043"> FARIBAULT</option>
+<option  value ="045"> FILLMORE</option>
+<option  value ="047"> FREEBORN</option>
+<option  value ="049"> GOODHUE</option>
+<option  value ="051"> GRANT</option>
+<option  value ="053"> HENNEPIN</option>
+<option  value ="055"> HOUSTON</option>
+<option  value ="057"> HUBBARD</option>
+<option  value ="059"> ISANTI</option>
+<option  value ="061"> ITASCA</option>
+<option  value ="063"> JACKSON</option>
+<option  value ="065"> KANABEC</option>
+<option  value ="067"> KANDIYOHI</option>
+<option  value ="069"> KITTSON</option>
+<option  value ="071"> KOOCHICHING</option>
+<option  value ="073"> LAC QUI PARLE</option>
+<option  value ="075"> LAKE</option>
+<option  value ="077"> LAKE OF THE WOODS</option>
+<option  value ="079"> LESUEUR</option>
+<option  value ="081"> LINCOLN</option>
+<option  value ="083"> LYON</option>
+<option  value ="087"> MAHNOMEN</option>
+<option  value ="089"> MARSHALL</option>
+<option  value ="091"> MARTIN</option>
+<option  value ="085"> MCLEOD</option>
+<option  value ="093"> MEEKER</option>
+<option  value ="095"> MILLE LACS</option>
+<option  value ="000"> MOBILE UNIT</option>
+<option  value ="097"> MORRISON</option>
+<option  value ="099"> MOWER</option>
+<option  value ="101"> MURRAY</option>
+<option  value ="103"> NICOLLET</option>
+<option  value ="105"> NOBLES</option>
+<option  value ="107"> NORMAN</option>
+<option  value ="109"> OLMSTED</option>
+<option  value ="111"> OTTER TAIL</option>
+<option  value ="999"> OUT OF STATE</option>
+<option  value ="113"> PENNINGTON</option>
+<option  value ="115"> PINE</option>
+<option  value ="117"> PIPESTONE</option>
+<option  value ="119"> POLK</option>
+<option  value ="121"> POPE</option>
+<option  value ="123"> RAMSEY</option>
+<option  value ="125"> RED LAKE</option>
+<option  value ="127"> REDWOOD</option>
+<option  value ="129"> RENVILLE</option>
+<option  value ="131"> RICE</option>
+<option  value ="133"> ROCK</option>
+<option  value ="135"> ROSEAU</option>
+<option  value ="137"> SAINT LOUIS</option>
+<option  value ="139"> SCOTT</option>
+<option  value ="141"> SHERBURNE</option>
+<option  value ="143"> SIBLEY</option>
+<option  value ="145"> STEARNS</option>
+<option  value ="147"> STEELE</option>
+<option  value ="149"> STEVENS</option>
+<option  value ="151"> SWIFT</option>
+<option  value ="153"> TODD</option>
+<option  value ="155"> TRAVERSE</option>
+<option  value ="157"> WABASHA</option>
+<option  value ="159"> WADENA</option>
+<option  value ="161"> WASECA</option>
+<option  value ="163"> WASHINGTON</option>
+<option  value ="165"> WATONWAN</option>
+<option  value ="167"> WILKIN</option>
+<option  value ="169"> WINONA</option>
+<option  value ="171"> WRIGHT</option>
+<option  value ="173"> YELLOW MEDICINE</option>
+</select></FONT>
+
+<br>Use Ctrl+Click or Shift+Click to select more than one county.</td></tr>
+
+<tr><th align="right" nowrap valign="top">License Type:</th>
+<td valign="top">
+<FONT FACE="Courier" SIZE="3">
+<SELECT MULTIPLE NAME="lictype" SIZE=8 >
+<option selected value ="****" > ***ALL***</option>
+<option  value ="14"> AGRICULTURAL LIMING MATERIAL</option>
+<option  value ="83"> ANHYDROUS AMMONIA STORAGE FACILITY PERMIT</option>
+<option  value ="109"> APPLICANT FORM</option>
+<option  value ="63"> BULK MILK HAULER & SAMPLER</option>
+<option  value ="31"> BULK PESTICIDE/FERTILIZER STORAGE PERMIT</option>
+<option  value ="39"> BUY & STORE GRAIN</option>
+<option  value ="33"> CHEMIGATION PERMIT</option>
+<option  value ="8"> COMMERCIAL ANIMAL WASTE TECHNICIAN APPLICATOR</option>
+<option  value ="6"> COMMERCIAL ANIMAL WASTE TECHNICIAN COMPANY</option>
+<option  value ="4"> COMMERCIAL ANIMAL WASTE TECHNICIAN SITE MANAGER</option>
+<option  value ="20"> COMMERCIAL FEED</option>
+<option  value ="25"> COMMERCIAL PESTICIDE APPLICATOR</option>
+<option  value ="101"> COTTAGE FOOD PRODUCER REGISTRATION</option>
+<option  value ="105"> CUSTOM EXEMPT FOOD HANDLER LICENSE</option>
+<option  value ="68"> DAIRY TRANSFER STATION</option>
+<option  value ="5"> FERTILIZER LICENSE</option>
+<option  value ="57"> FOOD BROKER</option>
+<option  value ="116"> FOOD HANDLER DAIRY</option>
+<option  value ="115"> FOOD HANDLER E2 MEAT & POULTRY PLANT</option>
+<option  value ="112"> FOOD HANDLER MANUFACTURING</option>
+<option  value ="113"> FOOD HANDLER MOBILE</option>
+<option  value ="110"> FOOD HANDLER RETAIL</option>
+<option  value ="118"> FOOD HANDLER USDA</option>
+<option  value ="111"> FOOD HANDLER WAREHOUSE</option>
+<option  value ="38"> GENERAL MERCHANDISE WAREHOUSE</option>
+<option  value ="40"> GRAIN BUYER</option>
+<option  value ="108"> LIVE PLANT DEALER</option>
+<option  value ="45"> LIVESTOCK DEALER</option>
+<option  value ="44"> LIVESTOCK DEALER AGENT</option>
+<option  value ="37"> LIVESTOCK MARKET AGENCY</option>
+<option  value ="46"> LIVESTOCK MEAT PACKING COMPANY</option>
+<option  value ="42"> LIVESTOCK MEAT PACKING COMPANY AGENT</option>
+<option  value ="97"> MANURE ANALYSIS PROFICIENCY (MAP)</option>
+<option  value ="96"> MANURE TESTING CERTIFICATION</option>
+<option  value ="54"> MILK MARKETING</option>
+<option  value ="81"> MINNESOTA GROWN LABELING</option>
+<option  value ="24"> NON-COMMERCIAL PESTICIDE APPLICATOR</option>
+<option  value ="21"> NURSERY STOCK DEALER CERTIFICATE</option>
+<option  value ="15"> NURSERY STOCK GROWER CERTIFICATE</option>
+<option  value ="17"> PESTICIDE DEALER</option>
+<option  value ="26"> PESTICIDE REGISTRATION</option>
+<option  value ="107"> PPD LIMITED PERMIT</option>
+<option  value ="77"> RETAIL FOOD HANDLER</option>
+<option  value ="89"> RETAIL MOBILE FOOD HANDLER</option>
+<option  value ="13"> SEED BRAND NAME & REGISTRATION</option>
+<option  value ="90"> SEED PERMIT -  ANNUAL</option>
+<option  value ="82"> SEED PERMIT -  PERMANENT</option>
+<option  value ="117"> SEED SCREENINGS</option>
+<option  value ="12"> SOIL & PLANT AMENDMENT REGISTRATION</option>
+<option  value ="95"> SOIL TESTING CERTIFICATION</option>
+<option  value ="103"> SPECIAL EVENT</option>
+<option  value ="35"> SPECIALTY FERTILIZER REGISTRATION</option>
+<option  value ="114"> STATE FAIR ONLY</option>
+<option  value ="18"> STRUCTURAL PEST CONTROL APPLICATOR</option>
+<option  value ="11"> STRUCTURAL PEST CONTROL COMPANY</option>
+<option  value ="98"> TREE CARE REGISTRY</option>
+<option  value ="76"> WHOLESALE FOOD HANDLER</option>
+<option  value ="62"> WHOLESALE FOOD PROC/MANU</option>
+<option  value ="61"> WHOLESALE FOOD PROC/MANU - USDA</option>
+</select></FONT>
+
+<br>Use Ctrl+Click or Shift+Click to select more than one license type.</td></tr>
+
+
+</table>
+
+<table cellpadding="5" cellspacing="5" border="0">
+<tr><td><input type=checkbox value="Y" name="unexpiredonly" checked>
+Unexpired Licenses Only (Uncheck to select all licenses)</td></tr>
+
+<tr><td><input type=checkbox value="Y" name="holderonly" checked>
+License Holders Only (Uncheck to select all license relationships)</td></tr>
+
+<tr><td><input type=radio name="sortorder" value="1" checked>Sort by Name&nbsp;&nbsp;
+<input type=radio name="sortorder" value="2">Sort by City&nbsp;&nbsp;
+<input type=radio name="sortorder" value="3">Sort by County</td></tr>
+
+<tr><td><input name="cmd" type=submit value = "Search">
+&nbsp;&nbsp;<input type="reset">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input name="cmd" type=submit value="Download As Text"></td></tr>
+
+<tr><td>Text downloads include county FIPS codes according to state 
+<a href="https://mn.gov/mnit/government/policies/geo/mn-county-identification-codes.jsp">
+<b>data exchange standards</b></a>.</td></tr>
+</table>
+
+</form>
+</body>
+</div>
+</html>
+
