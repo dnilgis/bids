@@ -23,7 +23,7 @@
   },
   "cadence": "grain-day",
   "provenance": "scraped",
-  "enabled": true,
+  "enabled": false,
   "cashRounding": "round-cent-either",
   "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 33997564782) from their own cashgrid board at https://agmarkllc.agricharts.com/markets/cashgrid.php. locationId 463 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 12 row(s) in Corn, Milo, Soybeans, Wheat.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. The checks that CAN fail all passed before this file was written: the named contract is one our quote pages price, its root agrees with the board's own commodity heading, and every delivery code appears in its own table's column headers.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the site the sweep was pointed at.",
   "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
@@ -35,6 +35,7 @@
   "phone": null,
   "email": null,
   "website": "https://agmarkllc.com/",
-  "inMerge": true,
-  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else, so the interval is closed at both ends. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Beloit, KS, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
+  "inMerge": false,
+  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else, so the interval is closed at both ends. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Beloit, KS, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up.",
+  "retired": "2026-09-06: the same elevator as sources/agmarkresp-beloit.json — identical locationId 463 on the same AgriCharts board, read through a second door. This one is fetched from agmarkllc.agricharts.com; the twin is fetched from the platform host agmarkresp.agricharts.com, which is the address data/platforms.json recorded the probe finding. A vanity domain can be repointed or let lapse without the grain desk hearing about it: 46 CoMark sources were written against ceagrain.com and were unreachable six hours later while ceagrain.agricharts.com served the identical board. Kept on disk, disabled, so the reason stays with the file."
 }

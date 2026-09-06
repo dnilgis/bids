@@ -47,6 +47,19 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const PRINT = process.argv.includes("--print");
 
+/* HOW FAR IS TOO FAR, AND THE MEASUREMENT THAT SET IT.
+   Measured 2026-09-06 over 973 sources: 48 sit in a state other than the rest
+   of their operator's, and the distances fall into two groups with nothing in
+   between. Under 200 miles: CoMark's five Oklahoma yards (156-195) and Farmers
+   Cooperative Dorchester's delivery point at Bunge Emporia (150) — a co-op
+   reaching over a state line, which is ordinary. At 384: AgMark's two Gaylord
+   sources, filed in MINNESOTA when every one of the twenty-five towns on
+   AgMark's own board is in Kansas.
+   150 is the floor of the ordinary group, not a tolerance chosen to make
+   anything pass, and test/state-outliers.test.mjs makes every row above it
+   something a person had to write down. */
+export const FAR_MILES = 150;
+
 /* Great-circle miles. Plain arithmetic on two coordinates we already hold —
    nothing is looked up and nothing is invented. */
 function miles(a, b) {
@@ -57,10 +70,11 @@ function miles(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+export function analyse(root = ROOT) {
 const byOperator = new Map();
-for (const f of readdirSync(ROOT + "sources")) {
+for (const f of readdirSync(root + "sources")) {
   if (!f.endsWith(".json")) continue;
-  let s; try { s = JSON.parse(readFileSync(ROOT + "sources/" + f, "utf8")); } catch { continue; }
+  let s; try { s = JSON.parse(readFileSync(root + "sources/" + f, "utf8")); } catch { continue; }
   if (!s.operator || !s.state) continue;
   if (!byOperator.has(s.operator)) byOperator.set(s.operator, []);
   byOperator.get(s.operator).push(s);
@@ -114,6 +128,19 @@ for (const [operator, rows] of byOperator) {
  *  is counted on its own line. */
 const rank = (f) => f.milesFromOperatorCentre === "" ? Infinity : Number(f.milesFromOperatorCentre);
 findings.sort((a, b) => rank(b) - rank(a));
+  return { byOperator, findings };
+}
+
+/* THE REPORT IS THE PROGRAMME, NOT THE MODULE. Everything below writes a CSV
+   and prints to stdout, and it ran on IMPORT — so test/state-outliers.test.mjs
+   rewrote data/gaps/state-outliers.csv as a side effect of asking a question,
+   and printed the whole report into the middle of its own failure message.
+   A file that is both a tool and a library has to say which one it is being. */
+const IS_CLI = process.argv[1] &&
+  fileURLToPath(import.meta.url) === (await import("node:fs")).realpathSync(process.argv[1]);
+if (IS_CLI) {
+
+const { byOperator, findings } = analyse();
 
 mkdirSync(ROOT + "data/gaps", { recursive: true });
 const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -124,7 +151,7 @@ writeFileSync(ROOT + "data/gaps/state-outliers.csv",
 
 const unchecked = findings.filter((f) => f.milesFromOperatorCentre === "");
 const far = findings.filter((f) => f.milesFromOperatorCentre !== "" &&
-                                   Number(f.milesFromOperatorCentre) >= 150);
+                                   Number(f.milesFromOperatorCentre) >= FAR_MILES);
 console.log("\nSOURCES IN A DIFFERENT STATE FROM THE REST OF THEIR OPERATOR");
 console.log("  operators examined (4+ sources) : " +
   [...byOperator.values()].filter((r) => r.length >= 4).length);
@@ -142,4 +169,6 @@ if (PRINT || far.length || unchecked.length) {
     console.log("  " + f.operator.slice(0, 31).padEnd(32) + String(f.location).slice(0, 21).padEnd(22) +
       f.state.padEnd(4) + f.homeState.padEnd(6) +
       (f.milesFromOperatorCentre === "" ? "  n/a" : String(f.milesFromOperatorCentre).padStart(5)));
+}
+
 }
