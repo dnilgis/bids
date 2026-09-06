@@ -1,0 +1,95 @@
+# WRITE THE COUNTRY AND THE CURRENCY INTO EVERY MANIFEST, ONCE.
+#
+# NOT REQUIRED FOR CORRECTNESS, AND THAT IS DELIBERATE. lib/currency.mjs
+# resolves a board's currency from its payload where the feed states one and
+# from the source's own state where it does not, so 946 of the 973 manifests
+# already answer the question without being stamped. This makes the answer
+# EXPLICIT -- a line in the file that a person can read and argue with, rather
+# than a derivation three modules away.
+#
+# WHAT IT ACTUALLY BUYS TODAY. Sixteen sources have no state because their
+# location is a delivery point at somebody else's plant -- "ADM CC", "Bunge
+# PDC", "Futures Markets" -- and those cannot resolve from a state they do not
+# have. The script places them from THE OTHER LOCATIONS OF THE SAME OPERATOR in
+# this repository, and only when those are unanimous. Six of them are publishing
+# rows right now that merge_bids.mjs is withholding for want of a currency.
+# Running this returns them in one commit instead of waiting for a poll.
+#
+# EIGHT WILL STILL BE UNPLACED after this runs, and the log names them. They are
+# CHS Big Sky, CHS Mountain West, CHS Primeland and Clifford Farmers Co-op --
+# operators where EVERY location lacks a state, so there is no sibling to learn
+# from. All eight are dtn-cs or bushel, both of which state the currency in the
+# payload, so each one places itself the first time it is polled. Nothing has to
+# be typed for them and nothing should be guessed.
+#
+# IT NEVER OVERWRITES A DECLARATION. A manifest that already carries a country
+# is skipped. Re-running this is a no-op, which is the property that makes it
+# safe to leave in the tab.
+
+name: stamp country
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Actually write the manifests. Off = report only."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stamp-country
+  cancel-in-progress: false
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Stamp
+        run: |
+          if [ "${{ inputs.write }}" = "true" ]; then
+            node scripts/stamp_country.mjs --write | tee /tmp/stamp.txt
+          else
+            node scripts/stamp_country.mjs | tee /tmp/stamp.txt
+          fi
+          {
+            echo '```'
+            cat /tmp/stamp.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # THE MANIFESTS ARE THE INPUT TO EVERY READER, so a stamp that broke one
+      # must not reach main. This is the repo's own validator, not a new check.
+      - name: The manifests still load
+        run: |
+          node --input-type=module -e '
+            import { loadSources } from "./lib/sources.mjs";
+            import { readFileSync, readdirSync } from "node:fs";
+            const rows = readdirSync("sources").filter(f => f.endsWith(".json"))
+              .map(f => JSON.parse(readFileSync("sources/" + f, "utf8")));
+            const { sources, errors } = loadSources(rows);
+            for (const e of errors) console.log("  " + e);
+            console.log(`${sources.length} enabled sources, ${errors.length} error(s)`);
+            if (errors.length) process.exit(1);
+          '
+
+      - name: Commit
+        if: ${{ inputs.write }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sources
+          if git diff --cached --quiet; then
+            echo "every manifest already declares its country — nothing to do"
+            exit 0
+          fi
+          git commit -m "stamp: country and currency on every source manifest"
+          bash scripts/commit-and-push.sh || git push

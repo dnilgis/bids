@@ -1,0 +1,104 @@
+# WHAT THE CANADIAN BUYERS RUN, AND WHAT ID THEIR OWN WIDGET ASKS FOR.
+#
+# Sig, 2026-09-06: "i say we add canadian elevators please".
+#
+# discover.mjs loads each page in a real browser and records which platform it
+# runs and which id its widget calls. That is the only way to get a DTN site id
+# -- DTN answers a server-side probe with "the api key is valid, but it is valid
+# to be used within a browser only" -- and it is how every DTN line in
+# probe-lists/dtn-sites.txt was found.
+#
+# WHY THIS IS A BUTTON AND NOT A SCHEDULE. The list is 26 pages that somebody
+# researched once. There is nothing here to re-crawl on a timer, and pointing a
+# browser at somebody's site every night to learn a fact that does not change is
+# how you get blocked.
+#
+# IT WRITES THE LEDGER, NOT SOURCES. A hit here is an entry in
+# data/platforms.json saying "this host runs DTN and asks for E0051001". Turning
+# that into a source file is the platform's own probe -- dtn-probe, gd-sweep --
+# and then a human. Nothing publishes off this run.
+#
+# NOTHING FROM THIS SWEEP PUBLISHES IN THE WRONG MONEY. Every board it finds is
+# Canadian and quotes CAD. lib/currency.mjs is what stops that being an
+# accident, and merge_bids.mjs withholds any row whose currency is not
+# established. Read the notes in probe-lists/canada-hosts.txt on units before
+# enabling anything: Ontario is mostly per bushel, Quebec and the Maritimes lean
+# per tonne, and the Prairies are mixed BY COMMODITY rather than by company.
+
+name: canada discover
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Which list to ask"
+        type: choice
+        options:
+          - probe-lists/canada-hosts.txt
+        default: probe-lists/canada-hosts.txt
+      limit:
+        description: "How many pages to ask in this run (the list is 26)"
+        default: "26"
+      budget:
+        description: "Minutes of wall clock before it stops and writes what it has"
+        default: "25"
+      patience:
+        description: "Seconds to wait on one page. These are slower than US sites."
+        default: "60"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canada-discover
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ask them
+        continue-on-error: true
+        run: |
+          node scripts/discover.mjs \
+            --list "${{ inputs.list || 'probe-lists/canada-hosts.txt' }}" \
+            --ledger data/platforms.json \
+            --limit "${{ inputs.limit || '26' }}" \
+            --budget "${{ inputs.budget || '25' }}" \
+            --patience "${{ inputs.patience || '60' }}" \
+            | tee /tmp/canada.txt
+          tail -60 /tmp/canada.txt >> "$GITHUB_STEP_SUMMARY"
+
+      # NO --resume. The US sweep resumes because its list is 674 hosts and one
+      # run cannot finish it. This list is 26 and every run should ask all of
+      # them: the whole point of re-running it is to see whether a page that was
+      # unreachable last time answers now.
+
+      - name: What platform each one turned out to run
+        if: always()
+        run: |
+          node scripts/platform_report.mjs | tee /tmp/report.txt || echo "no ledger yet"
+          {
+            echo '```'
+            cat /tmp/report.txt 2>/dev/null || echo "no ledger yet"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the ledger
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/platforms.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "nothing new — no page in the list changed what it runs"
+            exit 0
+          fi
+          git commit -m "canada discover: what the Canadian buyers run"
+          bash scripts/commit-and-push.sh || git push

@@ -198,6 +198,30 @@ jobs:
       - name: Merge
         run: node scripts/merge_bids.mjs
 
+      # ══════════════════════════════════════════════════════════════════
+      #  WHICH MONEY, AND DOES ANY BOARD DISAGREE WITH ITS NEIGHBOURS
+      # ══════════════════════════════════════════════════════════════════
+      #  lib/currency.mjs stops a board publishing in an UNKNOWN currency. It
+      #  cannot stop one publishing in the WRONG one, and Wanstead published
+      #  Canadian dollars as American ones for eight days with every guard
+      #  agreeing. This is the measurement that separates them: within one
+      #  currency, basis sits in a tight band, and a currency error moves every
+      #  crop on a board at once.
+      #
+      #  IT NEVER FAILS THE RUN. It is a report, not a guard -- see the head of
+      #  the script for why a threshold tight enough to catch this reliably
+      #  would eventually withhold a real price.
+      - name: Currency audit
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/currency_audit.mjs | tee /tmp/cur.txt
+          {
+            echo '```'
+            cat /tmp/cur.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # A run that produced a much smaller feed than the last one is either a
       # real outage or a bug in something above, and either way it must not be
       # committed quietly. This compares against the file already in the repo.
