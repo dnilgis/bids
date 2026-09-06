@@ -46,6 +46,7 @@ import { createHash } from "node:crypto";
 import { crop, ppu, plausible, basisCents, basisDollars, PPU_BAND } from "../lib/crop.mjs";
 import { delivery } from "../lib/delivery.mjs";
 import { feedVerdict, WITHDRAW_H } from "../lib/freshness.mjs";
+import { resolveCurrency, countryOfCurrency } from "../lib/currency.mjs";
 
 /* --root, SO THE MERGE CAN BE RUN END TO END AGAINST A SCRATCH TREE.
  *
@@ -157,6 +158,16 @@ function row(o) {
     operator: o.operator, branch: o.branch || null,
     city: o.city || null, state: o.state || null, zip: o.zip || null,
     lat: r5(o.lat), lon: r5(o.lon), precision: o.precision || null,
+
+    /* WHICH MONEY, AND HOW WE KNOW -- 2026-09-06. `cash` and `basis` below are
+       numbers in THIS currency and in no other. Nothing here converts: there is
+       no FX rate in this repository and a converted price is one the elevator
+       never posted. A consumer showing two currencies in one list has to say
+       so, and a consumer comparing them has to convert them itself, with a rate
+       it can name. */
+    currency: o.currency ?? null,
+    country: countryOfCurrency(o.currency),
+    currencyVia: o.currencyVia ?? null,
 
     commodity: o.commodity ?? null,      // verbatim, the board's own words
     crop: c,                             // derived here, never taken from a feed
@@ -299,8 +310,17 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
       continue;
     }
     const g = coordOf(s, places);
+    /* THE BOARD FILE FIRST, THE MANIFEST SECOND. On the day this shipped every
+       committed board file predated the currency key, so the manifest's own
+       state is what carried 949 of the 973 sources through the first merge.
+       Each board picks up its stated currency on its next poll and stops
+       needing the fallback. */
+    const cur = j.currency
+      ? { currency: j.currency, currencyVia: j.currencyVia || "file" }
+      : resolveCurrency({ id, state: s.usState, currency: s.currency ?? null }, []);
     for (const b of j.bids || []) {
       out.push(row({
+        currency: cur.currency, currencyVia: cur.currencyVia,
         place: placeKey(s.operator, "", s.location, s.usState),
         operator: s.operator, branch: null,
         city: s.location, state: s.usState, zip: s.zip,
@@ -335,6 +355,11 @@ function readBarchart(bc, places, tally) {
       continue;
     }
     out.push(row({
+      /* Barchart OnDemand's cash-bid product covers US elevators and quotes
+         them in US dollars. Stated as `platform` rather than `payload`: the
+         response carries no currency field, so this is our reading of what the
+         product is, not something the feed said. */
+      currency: "USD", currencyVia: "platform",
       place: k,
       operator: r.facility, branch: r.branch,
       city: r.city || p.location, state: r.state || p.state, zip: r.zip,
@@ -360,6 +385,18 @@ function readBarchart(bc, places, tally) {
  * published so nobody mistakes the map for the whole feed. */
 function keepable(b, tally) {
   if (b.cash == null && b.basis == null) { tally.drop("no cash and no basis", `${b.place} ${b.commodity}`); return false; }
+  /* A PRICE WITH NO CURRENCY IS NOT A PRICE -- 2026-09-06.
+   *
+   * This file is where 824 places are put in one list and sorted by distance,
+   * so this is where a number in the wrong money does its damage. A board that
+   * could not establish its own currency publishes nothing here and is counted,
+   * because a counted number gets fixed and a silent one does not. See
+   * lib/currency.mjs for why the read itself does not refuse. */
+  if (!b.currency) {
+    tally.drop("no currency established for this board — see lib/currency.mjs",
+      `${b.place} ${b.commodity}`);
+    return false;
+  }
   if (b.period == null) { tally.drop(`delivery unreadable (${b.periodVia})`, JSON.stringify(b.delivery)); return false; }
   /* The FJ Krob band. A per-ton row rescaled by ppu() comes out absurdly cheap
    * and would otherwise win its crop outright. Withheld and counted, never
@@ -500,6 +537,11 @@ function main() {
   }
 
   const byCrop = {}, byVia = {}, byState = {}, byPeriodVia = {};
+  /* Published so nobody has to trust that the network is all in one money.
+     `byCurrencyVia` is the more useful of the two: it says how much of the
+     feed's currency was READ off the elevator's own payload and how much was
+     taken from which side of a border it sits on. */
+  const byCurrency = {}, byCurrencyVia = {};
   const placesSeen = new Set();
   let unmappable = 0, noState = 0, noCoord = 0;
   for (const b of kept) {
@@ -512,6 +554,8 @@ function main() {
     byVia[b.via] = (byVia[b.via] || 0) + 1;
     byState[b.state] = (byState[b.state] || 0) + 1;
     byPeriodVia[b.periodVia] = (byPeriodVia[b.periodVia] || 0) + 1;
+    byCurrency[b.currency] = (byCurrency[b.currency] || 0) + 1;
+    byCurrencyVia[b.currencyVia] = (byCurrencyVia[b.currencyVia] || 0) + 1;
     placesSeen.add(b.place);
   }
 
@@ -531,7 +575,7 @@ function main() {
     },
     counts: {
       rows: kept.length, places: placesSeen.size,
-      byCrop, byVia, byState, byPeriodVia,
+      byCrop, byVia, byState, byPeriodVia, byCurrency, byCurrencyVia,
       collisionsBetweenFeeds: collisions.length,
       /* Real prices that cannot go on a map. Published so the map is never
          mistaken for the whole feed. */

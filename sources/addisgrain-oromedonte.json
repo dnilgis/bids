@@ -3,6 +3,9 @@
   "operator": "Addis Grain",
   "location": "Addis Grain Ltd.",
   "state": "ON",
+  "country": "CA",
+  "currency": "CAD",
+  "countryVia": "state",
   "platform": "graindesk",
   "url": "https://marketplace.graindiscovery.com/api/public-sites/addisGrain/cash-bids",
   "locationId": "Addis Grain Ltd.",
@@ -22,7 +25,7 @@
   },
   "cadence": "grain-day",
   "provenance": "scraped",
-  "enabled": false,
+  "enabled": true,
   "note": "BUILT FROM THE SHARDED SWEEP (run 33219871278) AND PROVEN BY THE GRAIN DESK SWEEP, run 90042308698, 2026-08-29 00:03 UTC. discover.mjs watched https://addisgrain.com/ call this endpoint; the gd sweep then read the board itself: 13 offer(s) across 1 destination(s) [Addis Grain Ltd.], commodities Wheat SRW, Wheat HRW, Wheat HRS, Soybeans Crush (RR), Corn Yellow. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it. lib/adapters/graindesk.mjs sets every row's locationId to o.destination, and filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold. A null here would match zero rows and refuse the source. Operator, town, state, street, coordinate and phone are copied verbatim from data/known-elevators.json.",
   "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": "274 Line 3 South",
@@ -33,5 +36,5 @@
   "email": null,
   "website": "https://addisgrain.com/",
   "inMerge": true,
-  "_pending": "HELD DISABLED - THE CURRENCY IS NOT ESTABLISHED. This board is in Ontario (Oro Medonte ON) and its commodities read \"Wheat SRW\", \"Wheat HRW\", \"Wheat HRS\", \"Soybeans Crush (RR)\", \"Corn Yellow\". A Canadian board quotes cash in CAD, and the Grain Desk payload carries its OWN futuresPrice, so cash minus basis reconciles internally whatever the currency - the identity guard would pass and the number would publish as though it were USD. The corn band [2, 12] does not catch it either: CAD per bushel corn lands inside it. Somebody has to read one row against a known quote and establish the currency before this is enabled.\n\ncashRounding is NOT set and must not be guessed. It is measured from a real board against real futures, the way sources/chsfarmersalliance-mitchell.json records. Expect the first live poll to refuse if this board floors or rounds to the cent; that refusal IS the measurement.\n\nbands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs. They are sanity floors, not a claim about what this elevator trades. Anything else on their board falls through to DEFAULT_BANDS by substring."
+  "_pending": "2026-09-06: ENABLED. The hold was \"the currency is not established\", and it was the right hold: this board carries its own futures quote, so cash minus basis reconciles internally whatever the money, and CAD per bushel corn lands inside the [2, 12] band. Nothing in the schema could say which currency it was, so nothing did.\n\nThat is now expressible. lib/currency.mjs resolves a board's currency from the payload where the feed states one, from this manifest where it does not, and from the province as a last resort; merge_bids.mjs withholds any row whose currency it cannot establish, and every published row carries `currency`, `country` and `currencyVia`. This source resolves CAD via `declared`, and a consumer that wants only measured currencies can filter it out on that field.\n\nWHAT IS STILL NOT MEASURED, AND IT IS THE SAME THING THE OLD NOTE SAID: nobody has read one row of this board against a known quote. `declared` is evidence, not a fact, and it is labelled as evidence all the way to the consumer. The board itself has never been read by this repository -- it was found by the sweep and skeletoned, never polled.\n\ncashRounding is STILL NOT SET and still must not be guessed. Expect the first live poll to refuse if this board floors or rounds to the cent. THAT REFUSAL IS THE MEASUREMENT and is the reason to enable this now rather than later: a source held disabled forever produces no evidence about itself."
 }

@@ -14,6 +14,10 @@ const base = {
   place: "Acme Coop||Thorp|WI", operator: "Acme Coop", branch: null,
   city: "Thorp", state: "WI", zip: "54771", lat: 44.96, lon: -90.799,
   precision: "town", via: "scrape", source: "acme-thorp", asOf: ASOF,
+  /* Added 2026-09-06 with the currency guard. Thorp is in Wisconsin, so this
+     is what the merge would resolve for it anyway -- the fixture is being told
+     something true, not being given a pass. The guard itself is tested below. */
+  currency: "USD", currencyVia: "province",
 };
 const mk = (o) => row({ ...base, ...o });
 
@@ -138,6 +142,39 @@ test("a row with no state is kept and flagged too", () => {
   const b = mk({ state: "", commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 });
   assert.equal(b.mappable, false);
   assert.equal(keepable(b, new Tally()), true);
+});
+
+/* ── WHICH MONEY ────────────────────────────────────────────────────────────
+   Wanstead Farmers Cooperative published Ontario corn at 6.92 into this feed
+   for eight days beside a US median of 4.99. Every guard passed: 6.92 is inside
+   corn's band, and cash - basis = futures holds on a board that quotes a
+   Canadian basis over a US futures price. Nothing in the schema said which
+   money it was, so nothing could. */
+test("a row whose board could not establish a currency does not publish", () => {
+  const t = new Tally();
+  const b = row({ ...base, currency: null, currencyVia: null,
+                  commodity: "Corn", delivery: "OCT 2026", cash: 4.2, basis: -0.3 });
+  assert.equal(keepable(b, t), false, "a price with no currency reached the merge");
+  assert.equal(t.total, 1);
+  assert.match(JSON.stringify(t), /currency/, "the drop does not say why");
+});
+
+test("a Canadian row publishes, in Canadian dollars, and says so", () => {
+  const b = row({ ...base, place: "Wanstead Farmers Cooperative||Wanstead|ON",
+                  city: "Wanstead", state: "ON", zip: null,
+                  currency: "CAD", currencyVia: "payload",
+                  commodity: "Corn", delivery: "Sept 26", cash: 6.92, basis: 1.55 });
+  assert.equal(keepable(b, new Tally()), true, "a real Canadian bid was thrown away");
+  assert.equal(b.currency, "CAD");
+  assert.equal(b.country, "CA");
+  assert.equal(b.currencyVia, "payload");
+  assert.equal(b.cash, 6.92, "the cash was converted — it must be published as posted");
+});
+
+test("the country is derived from the currency, never from the state alone", () => {
+  assert.equal(row({ ...base, currency: "USD" }).country, "US");
+  assert.equal(row({ ...base, currency: "CAD" }).country, "CA");
+  assert.equal(row({ ...base, currency: null }).country, null);
 });
 
 test("a row with a coordinate and a state is mappable", () => {

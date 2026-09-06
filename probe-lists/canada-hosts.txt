@@ -1,0 +1,69 @@
+# CANADIAN GRAIN BUYERS, FOR scripts/discover.mjs --list
+#
+# discover loads each page in a real browser and records WHICH platform it runs
+# and WHAT id its own widget asks for. That is the only way to get a DTN site id
+# — DTN answers a server-side probe with "the api key is valid, but it is valid
+# to be used within a browser only" — and it is how every DTN line in
+# dtn-sites.txt was found.
+#
+# PROVENANCE, IN TWO GRADES, BECAUSE THEY ARE NOT THE SAME THING.
+#
+#   [seen]   A bid table was loaded and read on this domain. Four of them.
+#   [named]  The company and the domain came off a real page — a trade body
+#            roster, a buyer directory, its own site — and the bid page was
+#            either behind robots.txt, rendered by script with no server HTML,
+#            or behind a login. NOT a constructed URL, and NOT proof of a board.
+#
+# THE ROBOTS WALL IS WHY SO MANY ARE [named]. Every AgriCharts and Bushel
+# customer disallows the path its board lives on. That is a rule about crawlers,
+# not evidence the board is missing, and discover loads pages the way a person
+# does. It is also exactly why this is a button and not a schedule.
+#
+# CURRENCY AND UNITS, WHICH ARE THE WHOLE JOB HERE:
+#   Ontario quotes CAD per bushel, mostly. Two of the four [seen] sites publish
+#   BOTH a per-bushel and a per-tonne column, so a reader must pick a column
+#   rather than take the first number in the row.
+#   Quebec and the Maritimes lean CAD per TONNE. Ansems states it outright.
+#   The Prairies are mixed BY COMMODITY, not by company: cereals and oilseeds
+#   per bushel, pulses per pound, some contracts per tonne.
+# None of that is a reason not to read them. All of it is a reason nothing here
+# publishes until its manifest says which money and which unit.
+
+# ── ONTARIO ────────────────────────────────────────────────────────────────
+https://andersonscanada.com/grain-marketing/          # [seen] DTN, 14 locations in one table
+https://ganaraskagrain.com/                           # [seen] AgriCharts; $/bu AND $/tonne columns
+https://rkmgrain.com/cashbids.php                     # [seen] Grainview — a platform we have no reader for
+https://www.rollingacresgrain.com/markets/cash.php    # [named] AgriCharts
+https://www.soybeancrop.com/cash.php                  # [named] Huron Commodities, AgriCharts + GD slug "huron"
+https://www.collwestgrain.com/cash-bids               # [named] Bushel
+https://www.londonag.com/bids/                        # [named] DTN, portal at londonag-dtn.com
+https://dgglobal.ca/cash-bids                         # [named] Grain Discovery, also SK
+https://clearviewgrain.com/markets/                   # [named] Grain Discovery
+https://www.vdbgrains.ca/farm-direct-grain-bids       # [named] Grain Discovery
+https://snobelenfarms.com/grain/cash-bids/            # [named] DTN portal, login + GD app
+https://www.greatlakesgrain.com/New-Cash-Bids         # [named] DTN; unauthenticated sees elevator bids only
+https://fscooperatives.com/sunderlandcoop/agriculture/cash-bids   # [named] DTN, Sunderland Co-operative
+https://www.sharpefarmsupplies.com/grain/cash-bids    # [named] DTN-shaped CMS path
+https://woodrill.com/grain-bids/                      # [named] QT Info Systems — another platform we have no reader for
+https://ggi.marketplace.barchart.com/cash-bids        # [named] Greenfield Global, Barchart marketplace
+https://fmn1.agricharts.com/markets/cashgrid.php      # [named] an AGGREGATOR, not a buyer — the densest ON grid seen
+
+# ── PRAIRIES ───────────────────────────────────────────────────────────────
+https://www.lineargrain.com/markets/cash.php          # [named] AgriCharts, Carman MB
+https://www.prairiegrainpartners.com/cash-bids        # [named] Bushel
+https://www.northwestterminal.com/cashbidssingle-2118 # [named] Bushel, Unity SK
+https://providencegrain.ca/producers/cash-bids/       # [named] AB
+https://offers.agfinity.com/public/picked-up-grain-prices/   # [named] AB, custom
+https://cmiterminal.com/cmi-grain-prices/             # [named] SK, myBunge login
+
+# ── QUEBEC AND THE MARITIMES ───────────────────────────────────────────────
+https://ansemsgrainelevators.ca/                      # [named] NS, Grain Discovery; states pricing is per metric tonne
+https://agrocentrebelcan.com/grains-soya-tourteau-meal-organic/   # [named] QC
+https://www.grainwiz.com/contrats                     # [named] QC, Barchart Solutions; media/aggregator
+
+# ── NOT LISTED, AND WHY ────────────────────────────────────────────────────
+# Cargill Canada, Viterra and Parrish & Heimbecker all put bids behind a login.
+# Primatis, McDougall Acres, Grainshark, Battle River Railway and J-MAS exist as
+# Grain Discovery slugs with no domain anybody could show me, so they are in
+# canada-gd.txt where a slug is all the sweep needs, and not here where a
+# guessed domain would be a fabrication.

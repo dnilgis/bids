@@ -3,6 +3,9 @@
   "operator": "Wanstead Farmers Cooperative",
   "location": "Any Wanstead Branch",
   "state": "ON",
+  "country": "CA",
+  "currency": "CAD",
+  "countryVia": "state",
   "platform": "dtn-cs",
   "url": "https://api.dtn.com/markets/sites/E0051001/cash-bids?units=us",
   "browserPage": "https://wansteadfarmerscoop.com/",
@@ -41,5 +44,5 @@
   "email": null,
   "website": "https://wansteadfarmerscoop.com/",
   "inMerge": true,
-  "_pending": "NO COORDINATE. This location will publish bids and will not appear on the distance-sorted map until somebody places it. That is the correct order: a bid with no pin is honest, a pin in the wrong county is not.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+  "_pending": "2026-09-06: THIS SOURCE PUBLISHED CANADIAN DOLLARS AS AMERICAN ONES FOR EIGHT DAYS.\n\nEnabled 2026-08-29. Measured on 2026-09-06 across the whole feed: its corn cash reads 6.92 against a US median of 4.99, ratio 1.387, and its corn basis reads +1.45 against a US median of -0.45. That is the exchange rate, not a market.\n\nEVERY GUARD PASSED, AND EACH FOR A GOOD REASON. The band passed because 6.92 is inside corn's [2, 12] -- CAD per bushel corn simply lands there. The identity check passed because an Ontario board quotes a CAD basis over a USD futures price and the two really do add up to the CAD cash. foreignQuote did not fire because it is aimed at ONE row in another currency beside domestic ones, and here the whole board is foreign and internally consistent.\n\nTHE WARNING WAS ALREADY WRITTEN, THREE LINES ABOVE THIS SOURCE'S OWN ENTRY. probe-lists/dtn-sites.txt says, of Hensall: \"HENSALL IS IN ONTARIO. Its cash is quoted in Canadian dollars... Establish the currency before enabling anything from E0010801.\" E0051001 is the next line but one. Hensall was held. This was not.\n\nThe DTN payload has stated `currency` on every record since the first day and the adapter read `unitOfMeasure` beside it and threw the currency away. It is read now, so this source resolves CAD via `payload` -- measured, not declared -- from its next poll onward. Until that poll the manifest's own province carries it.\n\nSTILL NO COORDINATE. \"Any Wanstead Branch\" is not a town and none will be invented."
 }
