@@ -8,8 +8,9 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bidLink, boardPagesToTry, FALLBACK_PATHS, DEFAULT_FOLLOW, verdict, SIGNATURES }
-  from "../scripts/discover.mjs";
+import { bidLink, boardPagesToTry, FALLBACK_PATHS, DEFAULT_FOLLOW, verdict, SIGNATURES,
+         fingerprint } from "../scripts/discover.mjs";
+import { readFileSync } from "node:fs";
 
 const page = (html, url = "https://coop.example.com/") =>
   ({ responses: [{ url, mime: "text/html", body: html, status: 200 }] });
@@ -109,4 +110,46 @@ test("every signature either has a family or its identity is a path, not a host"
   for (const s of SIGNATURES)
     assert.ok(s.family || PATH_IDENTITY.has(s.platform),
       `${s.platform} has no family, so it can never report a near miss`);
+});
+
+/* --- gradable, found 2026-09-07 in discover run 92318597788 -------------- */
+
+test("gradable is named, and the market id comes off the path", () => {
+  /* Ten poetgrain.com sites sat as "no known platform" while calling four
+     poet.gradable.com endpoints each. A platform without its id names an
+     adapter and still cannot produce a source file, so the id is the test. */
+  const board = fingerprint(
+    "https://poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331845223?offer_type=public");
+  assert.equal(board.platform, "gradable");
+  assert.equal(board.market, "331845223", "the market id is the one fact a source file needs");
+  assert.equal(fingerprint("https://adm.gradable.com/api/commodities/v2/merchandising/instruments/market/371713182?offer_type=public").market,
+    "371713182", "ADM answers the same shape on its own subdomain");
+});
+
+test("the 202 KB bootstrap is not the same finding as the 6 KB board", () => {
+  /* Keeping the endpoint in the identity is what stops four sibling calls on
+     one page collapsing to one in dedupe() — the fault bushel and barchart are
+     both commented for. The bootstrap is byte-identical on all ten POET sites;
+     the board is different on every one. */
+  const boot = fingerprint("https://poet.gradable.com/api/commodities/merchandising/bootstrap");
+  const board = fingerprint("https://poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331847160?offer_type=public");
+  assert.notDeepEqual(boot, board);
+  assert.equal(boot.market, null, "the bootstrap belongs to no one market");
+});
+
+test("gradable has no adapter, and says so rather than implying one", () => {
+  /* Nothing has read a gradable payload. A platform flag claiming an adapter
+     that does not exist is what filed 47 finished Bushel feeds under "the
+     build queue" on 2026-08-23, and a parser written against a shape nobody
+     has seen is the same error pointing the other way. */
+  const sig = SIGNATURES.find((s) => s.platform === "gradable");
+  assert.equal(sig.adapter, null);
+  assert.ok(sig.family.test("poet.gradable.com") && sig.family.test("adm.gradable.com"));
+});
+
+test("the gradable probe list holds the pages that found it", () => {
+  const txt = readFileSync(new URL("../probe-lists/gradable-sites.txt", import.meta.url), "utf8");
+  const urls = txt.split("\n").map((s) => s.trim()).filter((s) => s && !s.startsWith("#"));
+  assert.equal(urls.length, 11, "ten POET plants and ADM");
+  for (const u of urls) assert.match(u, /^https?:\/\//);
 });

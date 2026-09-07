@@ -79,7 +79,12 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
  * the field exists. It costs a re-ask of 268 sites at up to --patience seconds
  * each, spread over the sweep's own budget; it does not touch a site already
  * identified, because finding a board is not made wrong by looking harder. */
-export const PROBE_VERSION = 5;
+/* v6 — 2026-09-07, hours after v5. A `gradable` signature exists now. The ten
+ * poetgrain.com sites the v5 sweep re-filed as "no known platform" in run
+ * 92318597788 were calling poet.gradable.com the whole time, four endpoints
+ * each, and this probe had no name for it. Same rule as every bump before it:
+ * a verdict reached by a weaker test is not a verdict. */
+export const PROBE_VERSION = 6;
 
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
                              "--budget", "--list", "--ledger", "--follow"]);
@@ -184,6 +189,48 @@ export const SIGNATURES = [
      * from the config, so a page shows what it actually asked for. */
     id: (u) => { try { return { endpoint: new URL(u).pathname.split("/").filter(Boolean).pop() ?? null }; }
                  catch { return { endpoint: null }; } } },
+
+  /* GRADABLE — POET AND ADM, FOUND IN THE SWEEP OF 2026-09-07, run 92318597788.
+   *
+   * Ten poetgrain.com sites had sat in the ledger as "no known platform" since
+   * 2026-08-29. Every one of them calls the same four endpoints on
+   * poet.gradable.com, and adm.gradable.com answers the identical shape:
+   *
+   *   /api/commodities/v2/merchandising/instruments/market/<id>?offer_type=public
+   *                                    6,281 - 24,398 B, one per market  <- the board
+   *   /api/commodities/v2/merchandising/market/<id>/hours      ~1,200 B
+   *   /api/commodities/merchandising/bootstrap        202,657 B, byte-identical
+   *                                                   on all ten POET sites
+   *   /api/commodities/profit-center/commodities       46,114 B, byte-identical
+   *                                                   on all ten, and on ADM too
+   *
+   *   big.poetgrain.com  market 331845223   poet.gradable.com/market/Big-Stone-City--SD
+   *   bin.poetgrain.com  market 331846201   /market/Bingham-Lake--MN
+   *   cha.poetgrain.com  market 331846432   /market/Chancellor--SD
+   *   gle.poetgrain.com  market 331848537   /market/Albert-Lea--MN
+   *   gro.poetgrain.com  market 331847160   /market/Groton--SD
+   *   hud.poetgrain.com  market 331847138   /market/Hudson--SD
+   *   jwl.poetgrain.com  market 331847297   /market/Jewell--IA
+   *   lak.poetgrain.com  market 331847176   /market/Lake-Crystal--MN
+   *   mit.poetgrain.com  market 331847487   /market/Mitchell--SD
+   *   pre.poetgrain.com  market 331847126   /market/Preston--MN
+   *   adm.gradable.com   market 371713182   /market
+   *
+   * THE MARKET ID IS THE IDENTITY, and it is in the path. Without it a
+   * platform names an adapter and still cannot produce a source file — the
+   * lesson stonehedge and barchart are both commented for below. `endpoint` is
+   * kept alongside it for the same reason bushel needs it: four sibling calls
+   * on one page collapse to one in dedupe() otherwise, and the 202 KB bootstrap
+   * is not the same finding as the 6 KB board.
+   *
+   * NO ADAPTER YET, DELIBERATELY. Nothing here has read a gradable payload; the
+   * sizes and ids above are what the browser recorded, and a parser written
+   * against a shape nobody has seen is a guess. `--dump` on one of these prints
+   * a whole body, and that is the next step, not this. */
+  { platform: "gradable", adapter: null, family: /gradable\.com$/,
+    test: (u) => /gradable\.com$/.test(host(u)),
+    id: (u) => ({ market: path(u).match(/\/market\/(\d+)/)?.[1] ?? null,
+                  endpoint: endpointOf(u) }) },
 
   { platform: "agricharts", adapter: null, family: /agricharts\.com$/,
     test: (u) => /agricharts\.com$/.test(host(u)) || /\/markets\/cashgrid\.php/i.test(path(u)),

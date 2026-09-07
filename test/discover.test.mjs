@@ -10,7 +10,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fingerprint, findFeeds, countLocations, readList, SIGNATURES , flagValue, setArgs} from "../scripts/discover.mjs";
+import { fingerprint, findFeeds, countLocations, readList, SIGNATURES , flagValue, setArgs,
+         PROBE_VERSION } from "../scripts/discover.mjs";
 import { looksLikeData } from "../lib/cdp.mjs";
 
 const KNOWN = {
@@ -23,6 +24,12 @@ const KNOWN = {
   "barchart":       "https://new.marketplace.barchart.com/cash-bids",
   "bushel":         "https://portal.bushelpowered.com/arthur/welcome",
   "agricharts":     "https://www.heartlandcoop.com/markets/cashgrid.php",
+  /* POET's Big Stone City plant, measured in discover run 92318597788,
+     2026-09-07. Ten poetgrain.com sites and adm.gradable.com all call this
+     shape; the board is 6-24 KB per market, the bootstrap beside it 202 KB and
+     byte-identical across all ten. */
+  "gradable":       "https://poet.gradable.com/api/commodities/v2/merchandising/" +
+                    "instruments/market/331845223?offer_type=public",
 };
 
 for (const [platform, url] of Object.entries(KNOWN)) {
@@ -44,6 +51,45 @@ test("the DTN site id comes back, and is the path segment", () => {
 
 test("the Grain Desk slug comes back", () => {
   assert.equal(fingerprint(KNOWN.graindesk).slug, "albertleaelevator");
+});
+
+test("the Gradable market id comes back, and the bootstrap is a separate finding", () => {
+  /* The market id is the one fact a source file cannot be written without —
+     the lesson stonehedge and barchart are both commented for. And keeping the
+     endpoint in the identity is what stops the four sibling calls on one POET
+     page collapsing to a single "feed" in dedupe(). */
+  assert.equal(fingerprint(KNOWN.gradable).market, "331845223");
+  assert.equal(
+    fingerprint("https://adm.gradable.com/api/commodities/v2/merchandising/instruments/market/371713182?offer_type=public").market,
+    "371713182", "ADM answers the same shape on its own subdomain");
+  const boot = fingerprint("https://poet.gradable.com/api/commodities/merchandising/bootstrap");
+  assert.equal(boot.platform, "gradable");
+  assert.equal(boot.market, null, "the bootstrap belongs to no one market");
+  assert.equal(boot.endpoint, "/api/commodities/merchandising/bootstrap");
+  /* THE CASE THE ENDPOINT IS ACTUALLY FOR. Two calls on the SAME market —
+     the board and its trading hours — differ only in their path, so without
+     the endpoint they are one entry in dedupe() and a page that asked for two
+     things reports one. That is the exact fault bushel and barchart are each
+     commented for, and dropping `market` alone does not expose it. */
+  const board = fingerprint("https://poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331847160?offer_type=public");
+  const hours = fingerprint("https://poet.gradable.com/api/commodities/v2/merchandising/market/331847160/hours");
+  assert.equal(board.market, hours.market, "same market, and that is the point");
+  assert.notDeepEqual(board, hours, "the board and its hours must not collapse into one feed");
+  assert.notDeepEqual(boot, fingerprint(KNOWN.gradable));
+});
+
+test("PROBE_VERSION is never below a version already written into the ledger", () => {
+  /* A FLOOR, NOT A BUMP DETECTOR — and the difference matters, so it is said
+     out loud. Nothing here can tell that a widened signature SHOULD have moved
+     the number; that judgement lives in the comment above the constant. What
+     this catches is the version going BACKWARDS, which is worse and silent:
+     --resume would then read every record written by the newer probe as stale
+     and re-ask the whole ledger for ever. */
+  const ledger = JSON.parse(readFileSync(new URL("../data/platforms.json", import.meta.url), "utf8"));
+  const highest = Math.max(0, ...Object.values(ledger.sites ?? {})
+    .map((v) => Number(v?.probeVersion ?? 0)).filter(Number.isFinite));
+  assert.ok(PROBE_VERSION >= highest,
+    `PROBE_VERSION is ${PROBE_VERSION} and the ledger already holds records written by v${highest}`);
 });
 
 test("THE STONEX KEY IS NEVER REPORTED, only that there is one", () => {
