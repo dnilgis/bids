@@ -9,8 +9,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { extract, marketsFrom, boardUrl, describe, roundingFor, parseBody,
-         COMMODITY_NAMES, GradableRefused } from "../lib/adapters/gradable.mjs";
+         COMMODITY_NAMES, DECLARED_ROUNDING, GradableRefused } from "../lib/adapters/gradable.mjs";
+import { CASH_ROUNDING } from "../lib/board.mjs";
 import { buildFile } from "../lib/board.mjs";
 import { toConfig, validateSource, PLATFORMS, transportOf } from "../lib/sources.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
@@ -53,16 +55,114 @@ test("the identity holds on every row, and the residual is floor", () => {
   for (const s of signed) assert.ok(s >= 0 && s < 1, `${s} is outside floor-cent`);
 });
 
-test("their board declares its own rounding, and we translate only what was seen", () => {
+test("their board declares its own rounding, and only the seen one is measured", () => {
   /* No other platform in this repository states its mode. `always_down` is
-     floor-cent. A mode nobody has observed gets null rather than a guess,
-     because roundingRule() throws Refused on a name board.mjs does not know. */
+     floor-cent and that is MEASURED — these five rows. A mode outside the
+     table gets null rather than a guess, because roundingRule() throws Refused
+     on a name board.mjs does not know. */
   const rows = extract(BOARD, URL_);
   for (const r of rows) assert.equal(r.cashRoundingDeclared, "always_down");
   assert.equal(roundingFor("always_down"), "floor-cent");
-  assert.equal(roundingFor("always_up"), null, "never map a mode nobody has seen");
+  assert.equal(roundingFor("always_up"), null, "never map a mode nobody has stated");
   assert.equal(roundingFor("nearest"), null);
   assert.equal(roundingFor(undefined), null);
+});
+
+test("every mode the table names is one a manifest can declare", () => {
+  /* roundingRule() throws Refused on a cashRounding lib/board.mjs does not
+     know, so a name here that is not there is a manifest that refuses at its
+     first poll — which is exactly how a good board gets written off. */
+  for (const v of Object.values(DECLARED_ROUNDING))
+    assert.ok(v in CASH_ROUNDING, `${v} is not a mode board.mjs knows`);
+});
+
+test("half_up and half_down are DERIVED, and the derivation is the test", () => {
+  /* Their cash cell is basis + futures rounded to the cent, and a futures quote
+     lives on an eighth-cent grid, so the residual can only be a quarter, a half
+     or three quarters of a cent away from whole. Round each frac the way the
+     mode says and see which window the results fall in. This is arithmetic
+     about a rule they state — not a measurement — and the manifests written on
+     these two are held disabled until a board proves each one. */
+  const FRACS = [0, 0.25, 0.5, 0.75];
+  const residuals = (round) => FRACS.map((f) => Number((f - round(f)).toFixed(4)));
+  const fits = (rs, mode) => rs.every((r) => CASH_ROUNDING[mode](r));
+
+  const down = residuals(Math.floor);                       // always_down
+  assert.deepEqual(down, [0, 0.25, 0.5, 0.75]);
+  assert.ok(fits(down, "floor-cent"));
+  assert.equal(DECLARED_ROUNDING.always_down, "floor-cent");
+
+  const halfUp = residuals((f) => (f >= 0.5 ? 1 : 0));       // .5 goes UP
+  assert.deepEqual(halfUp, [0, 0.25, -0.5, -0.25]);
+  assert.ok(fits(halfUp, "round-cent"), "half_up never produces +0.5, so the open top is right");
+  assert.equal(DECLARED_ROUNDING.half_up, "round-cent");
+
+  const halfDown = residuals((f) => (f > 0.5 ? 1 : 0));      // .5 goes DOWN
+  assert.deepEqual(halfDown, [0, 0.25, 0.5, -0.25]);
+  assert.ok(!fits(halfDown, "round-cent"), "+0.5 is exactly what round-cent refuses");
+  assert.ok(fits(halfDown, "round-cent-either"));
+  assert.equal(DECLARED_ROUNDING.half_down, "round-cent-either");
+});
+
+test("the mode is per market, and POET states three of them", () => {
+  /* A mode read off one board is a fact about that board. 17 of POET's 35 live
+     markets say always_down, 10 say half_down, 6 say half_up and 2 say nothing
+     at all — so inheriting Big Stone City's answer across the platform would
+     have been wrong on eighteen of them. */
+  const live = marketsFrom(BOOT).filter((m) => !m.demo && m.publicSite);
+  const tally = {};
+  for (const m of live) tally[String(m.declaredRounding)] = (tally[String(m.declaredRounding)] ?? 0) + 1;
+  assert.deepEqual(tally, { always_down: 17, half_down: 10, half_up: 6, null: 2 });
+  const bsc = live.find((m) => m.marketId === 331845223);
+  assert.equal(bsc.declaredRounding, "always_down");
+  assert.equal(bsc.cashRounding, "floor-cent");
+  const none = live.filter((m) => m.declaredRounding == null);
+  for (const m of none) assert.equal(m.cashRounding, null, `${m.displayName} must get no mode`);
+});
+
+test("only a mode that has been SEEN on a board is enabled", () => {
+  /* The rule this repository already has: a board is not enabled on a rounding
+     we cannot state. always_down was measured at Big Stone City. The other two
+     are arithmetic, so exactly ONE market on each is enabled as the test that
+     settles it and the rest are held. */
+  const dir = new URL("../sources/", import.meta.url);
+  const poet = readdirSync(dir).filter((f) => f.startsWith("poetgrain-"))
+    .map((f) => JSON.parse(readFileSync(new URL(f, dir), "utf8")));
+  assert.equal(poet.length, 35);
+  const enabledBy = {};
+  for (const s of poet.filter((x) => x.enabled))
+    enabledBy[String(s.cashRounding)] = (enabledBy[String(s.cashRounding)] ?? 0) + 1;
+  assert.equal(enabledBy["floor-cent"], 17,
+    "the measured mode: every always_down market, Big Stone City among them");
+  assert.equal(enabledBy["round-cent"], 1, "one probe, not six");
+  assert.equal(enabledBy["round-cent-either"], 1, "one probe, not ten");
+  for (const s of poet.filter((x) => !x.enabled))
+    assert.ok(s._pending, `${s.id} is held with no reason written down`);
+  for (const s of poet.filter((x) => x.enabled))
+    assert.ok(!s._pending, `${s.id} is enabled and still carries a _pending`);
+});
+
+test("every POET manifest carries a coordinate and a corn band, and no guess", () => {
+  const dir = new URL("../sources/", import.meta.url);
+  const poet = readdirSync(dir).filter((f) => f.startsWith("poetgrain-"))
+    .map((f) => JSON.parse(readFileSync(new URL(f, dir), "utf8")));
+  const byId = new Map(marketsFrom(BOOT).map((m) => [String(m.marketId), m]));
+  for (const s of poet) {
+    assert.deepEqual(validateSource(s), [], s.id);
+    /* bands is corn alone because commodity_settings names crop_id 1 and no
+       other, and their own table maps crop 1 to CN. Not a guess about what an
+       ethanol plant buys. */
+    assert.deepEqual(Object.keys(s.bands), ["corn"], s.id);
+    const m = byId.get(s.locationId);
+    assert.ok(m, `${s.id} names a market id not in their bootstrap`);
+    /* THEIRS, TO THE LAST DIGIT. A coordinate that has been rounded, nudged or
+       re-geocoded is no longer the measurement it claims to be. */
+    assert.equal(s.lat, m.lat, s.id);
+    assert.equal(s.lon, m.lon, s.id);
+    assert.equal(s.location, m.city, `${s.id} town must be their normalised city`);
+    assert.equal(s.state, m.state, s.id);
+    assert.equal(s.cashRounding ?? null, m.cashRounding, `${s.id} mode must be their declaration`);
+  }
 });
 
 test("their offset is the residual, and it is NOT applied", () => {

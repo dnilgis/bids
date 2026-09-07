@@ -1,0 +1,31 @@
+{
+  "id": "poetgrain-fairmontne",
+  "operator": "POET Grain",
+  "location": "Fairmont",
+  "state": "NE",
+  "platform": "gradable",
+  "url": "https://poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331847619?offer_type=public",
+  "browserPage": "https://poet.gradable.com/market/Fairmont--NE",
+  "locationId": "331847619",
+  "bands": {
+    "corn": [
+      2.0,
+      12.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent",
+  "cashRoundingCents": 0,
+  "lat": 40.613712310791016,
+  "lon": -97.60104370117188,
+  "zip": "68354",
+  "address": "1214 Road G",
+  "phone": null,
+  "email": null,
+  "website": "https://poet.gradable.com/market/Fairmont--NE",
+  "inMerge": true,
+  "note": "BUILT FROM POET'S OWN BOOTSTRAP, captured 2026-09-07 in discover run 92448826700 and committed as fixtures/gradable-poet-bootstrap.json. market id, town, state, zip, street address and the coordinate are copied verbatim from that payload; the coordinate is their geocoder's, recorded under geocodes[\\\"Google/Address\\\"]. Nothing here was looked up or derived. bands carries corn alone because this market's commodity_settings names crop_id 1 and no other, and POET's own table maps crop 1 to CN, Corn. Their board declares cash_rounding_mode \\\"half_up\\\" for that crop. half_up maps to round-cent by arithmetic about the rule they state, not by measurement. THIS SOURCE IS THE TEST OF THAT MAPPING: it is enabled deliberately, and its first poll either publishes or refuses with every row named. Nothing else is enabled on half_up until it does.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own market page asks for. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed."
+}

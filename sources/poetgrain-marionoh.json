@@ -1,0 +1,31 @@
+{
+  "id": "poetgrain-marionoh",
+  "operator": "POET Grain",
+  "location": "Marion",
+  "state": "OH",
+  "platform": "gradable",
+  "url": "https://poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331847642?offer_type=public",
+  "browserPage": "https://poet.gradable.com/market/Marion--OH",
+  "locationId": "331847642",
+  "bands": {
+    "corn": [
+      2.0,
+      12.0
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "cashRoundingCents": 0,
+  "lat": 40.617164611816406,
+  "lon": -83.15643310546875,
+  "zip": "43302",
+  "address": "1660 Hillman-Ford Road",
+  "phone": null,
+  "email": null,
+  "website": "https://poet.gradable.com/market/Marion--OH",
+  "inMerge": true,
+  "note": "BUILT FROM POET'S OWN BOOTSTRAP, captured 2026-09-07 in discover run 92448826700 and committed as fixtures/gradable-poet-bootstrap.json. market id, town, state, zip, street address and the coordinate are copied verbatim from that payload; the coordinate is their geocoder's, recorded under geocodes[\\\"Google/Address\\\"]. Nothing here was looked up or derived. bands carries corn alone because this market's commodity_settings names crop_id 1 and no other, and POET's own table maps crop 1 to CN, Corn. Their board declares cash_rounding_mode \\\"None\\\" for that crop. Their commodity_settings names NO rounding mode for this market \u2014 the field is absent or null, not a value we failed to translate. So no cashRounding is written and the identity guard stays exact.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own market page asks for. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "_pending": "HELD DISABLED \u2014 THEIR BOARD DECLARES NO ROUNDING MODE. Every other POET market states one in commodity_settings and this one does not, so there is nothing to translate and nothing measured. Read it once: if its rows balance to the last digit, exact is the answer and it needs no cashRounding at all; if they do not, the residuals in the refusal say which mode it is."
+}
