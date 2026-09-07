@@ -182,6 +182,39 @@ SOURCES = [
     # So the work was never "nineteen more scrapers like Iowa's". It is three
     # routes — table, csv, pdf — and a row per state.
 
+    # ── THE THREE BIGGEST HOLES, ASKED AGAIN ON 2026-09-07 ──────────────────
+    #
+    # Illinois, Kansas and Minnesota carry 383, 373 and 302 facilities in this
+    # repository's directory and not one of them comes from the state. All
+    # three were re-checked, from a network that is not the runner's, and none
+    # of them is a row here yet. What was actually found:
+    #
+    # ILLINOIS — the lookup exists and is CLOSED TO ROBOTS.
+    #   agr.illinois.gov points at apps.agr.illinois.gov/AEM/warehouselookup.php
+    #   and that host's robots.txt disallows it. That is a decision by the
+    #   publisher, not an obstacle to route around, and the older
+    #   agr.state.il.us/sharepoint/warehouselookup.php would not answer a
+    #   robots.txt request at all. Illinois needs a person, an email to the
+    #   Warehouse Bureau, or a FOIA — not a cleverer fetch.
+    #
+    # KANSAS — still 403 to the runner, and the documents page has no list.
+    #   agriculture.ks.gov IS reachable from an ordinary network, so the 403 is
+    #   about who is asking rather than about the data. But its Grain Warehouse
+    #   "Documents" page was read in full and publishes eleven items — an annual
+    #   report, bond forms, a stock statement, a scale ticket — and NO licensee
+    #   list. So the K-State paper's "Grain Elevator Licenses" report is not on
+    #   the public documents page, and finding it is a question for KDA rather
+    #   than a URL to guess at.
+    #
+    # MINNESOTA — a form, and the most promising of the three.
+    #   www2.mda.state.mn.us/webapp/lis/default.jsp searches licences with
+    #   County = ***ALL*** and License Type = GRAIN BUYER, sorts by name, city
+    #   or county, and its own page says "Text downloads include county FIPS
+    #   codes" — so an export exists. It is a POST form, which this file already
+    #   knows how to walk (see Iowa's `post` rows), but its field names have not
+    #   been read and are NOT guessed at here. One survey run against that page
+    #   turns Minnesota into a row.
+    #
     # OHIO IS THE BEST-SHAPED SOURCE ANY STATE PUBLISHES: a plain CSV at a
     # stable URL, no form, no pager, no licence key. Ohio is also one of the
     # worst holes on the map — 42 Barchart facilities and not one read.
@@ -214,8 +247,13 @@ SOURCES = [
     # THE URL IS INFERRED FROM THE FILE'S OWN NAME and the .pdf sibling that
     # search confirms exists at the same path. If the .xls 404s, the run says
     # so and fixtures/registry-wi-datcp.xls still proves the reader.
+    # `snapshot` IS THE COPY IN THIS REPOSITORY, and it is used ONLY when the
+    # live fetch fails outright. fixtures/registry-wi-datcp.xls is the file Sig
+    # downloaded on 2026-09-04; its sheet tab is named "as of May 4, 2026", so
+    # the document dates itself and nothing here has to guess.
     {"state": "WI", "kind": "dealer+warehouse", "note": "DATCP licensees, xls", "route": "xls",
      "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+     "snapshot": "fixtures/registry-wi-datcp.xls",
      "columns": {"name": "legal name of entity", "address": "mailing address",
                  "city": "city, state & zip code", "licence": "current license status"}},
 
@@ -1109,6 +1147,32 @@ def discover_pdf(page_url, pattern, timeout, diag):
     return None
 
 
+def mark_incomplete_if_empty(recs, diag):
+    """KEPT NOTHING IS INCOMPLETE.
+
+    A source that fetched nothing at all — no rows, an error, kept 0 — used to
+    sail past the INCOMPLETE list, which was only ever set when a document
+    published its own total and the parse fell short of it. So
+    data/registries.json shipped "incompleteSources": [] while Wisconsin
+    contributed zero records, on both runs of 2026-09-06.
+
+    Applied once, to every source, rather than inside each route — a timeout, a
+    403, a shape that changed and a document that emptied are four different
+    causes and one symptom, and a branch that has to remember is a branch that
+    will not.
+
+    A NAMED FUNCTION AND NOT AN `if` INSIDE main(), so a test can call the
+    shipped code. The first version of test/registry-zero-kept.test.py
+    reimplemented this rule to test it, and deleting the real one left the test
+    green — a guard reading its own copy, which is the failure this repository
+    keeps a skill about."""
+    if recs or diag.get("INCOMPLETE"):
+        return diag
+    why = "; ".join(diag.get("errors") or []) or "no error was raised and no record came back"
+    diag["INCOMPLETE"] = "kept 0 records: %s" % why
+    return diag
+
+
 def fetch_file(src, timeout, diag, dump):
     """A CSV or a PDF: one request, no pagination, and the RAW TEXT IS KEPT.
 
@@ -1142,7 +1206,39 @@ def fetch_file(src, timeout, diag, dump):
             if attempt == 1 and timed_out:
                 continue
             diag.setdefault("errors", []).append(msg)
+            break
+    if raw is None:
+        # THE STATE'S SERVER IS NOT THE ONLY COPY — 2026-09-07.
+        #
+        # Wisconsin's .xls answered on 2026-09-05 and timed out on both runs of
+        # 2026-09-06, twice each, at 45 seconds and then at 135. The document
+        # was fine and the reader was fine; datcp.wi.gov was slow, and 210
+        # licensed Wisconsin grain dealers and warehouse keepers — the only
+        # roster in the country that gives a STREET ADDRESS — fell off the map
+        # for it.
+        #
+        # A licence roster is not a price. It changes when a state reissues
+        # licences, which is annual, and Wisconsin's own sheet is NAMED with the
+        # date it was drawn: its tab reads "as of May 4, 2026". So a committed
+        # copy is a real answer to a slow server, on two conditions that are
+        # enforced rather than hoped for:
+        #
+        #   - the record says where it came from. Every row gets `via:
+        #     "snapshot"` and the run prints it, so a stale roster can never be
+        #     mistaken for a live read.
+        #   - the source stays INCOMPLETE, so it appears in the summary and in
+        #     counts.incompleteSources every single run until the live fetch
+        #     works again. A fallback that makes a run look green is worse than
+        #     the failure.
+        snap = src.get("snapshot")
+        path = (ROOT / snap) if snap else None
+        if not path or not path.exists():
             return []
+        raw = path.read_bytes()
+        diag["usedSnapshot"] = {"path": snap, "bytes": len(raw)}
+        diag["INCOMPLETE"] = ("the live fetch failed (%s) and this run read the committed "
+                              "snapshot %s instead" % ("; ".join(diag.get("errors") or []), snap))
+        status = None
     diag["pages"] = [{"url": url, "status": status, "bytes": len(raw)}]
 
     if src["route"] == "csv":
@@ -1794,6 +1890,7 @@ def main():
             continue
         recs, diag = scrape(src, a.pages, a.timeout, verbose=True, dump=dump)
         diag["state"] = src["state"]
+        mark_incomplete_if_empty(recs, diag)
         diags.append(diag)
         note = ""
         if not recs:
@@ -1807,6 +1904,13 @@ def main():
               % (src["state"], src["kind"], src["url"][:52], len(recs), note))
         for r in recs:
             r["state"] = src["state"]
+            # A ROW FROM A COMMITTED COPY SAYS SO, ON THE ROW. The diagnostic
+            # says it too, but a diagnostic is read once and a record is read
+            # for months. Without this a dated roster is indistinguishable from
+            # a live one downstream, which is the whole objection to a fallback.
+            if diag.get("usedSnapshot"):
+                r["via"] = "snapshot"
+                r["snapshot"] = diag["usedSnapshot"]["path"]
             # AFTER the state is stamped, not before. Called from scrape() this
             # read r["state"] before main() had put it there, so licensedBy came
             # out null on all 31 records and the state stayed "IA" — the flag was
@@ -1900,6 +2004,25 @@ def main():
               # Licensed by a state, located somewhere else, and the state's own
               # list says so. Not in byState, because they are not in that state.
               "licensedButLocatedElsewhere": no_state,
+              # A SOURCE THAT KEPT NOTHING IS INCOMPLETE, AND FOR TWO RUNS IT
+              # WAS NOT — 2026-09-07.
+              #
+              # INCOMPLETE was only ever set when a document published its own
+              # total and the parse fell short of it. So a source that fetched
+              # NOTHING AT ALL — no rows, an error, kept 0 — sailed past this
+              # list, and data/registries.json shipped "incompleteSources": []
+              # while Wisconsin contributed zero records.
+              #
+              # It was not a one-off. The runs of 2026-09-06 at 02:18 and at
+              # 07:43 BOTH recorded
+              #     {"state": "WI", "errors": ["URLError: <urlopen error timed
+              #      out>"], "kept": 0}
+              # and both summaries said nothing was incomplete. Wisconsin is
+              # Sig's own state and its roster is 210 licensees WITH STREET
+              # ADDRESSES, which no other state gives.
+              #
+              # Zero is the loudest possible signal that a source did not work,
+              # and it was the one shape this list could not see.
               "incompleteSources": [{"url": d["url"], "state": d.get("state"),
                                      "why": d["INCOMPLETE"]} for d in diags
                                     if d.get("INCOMPLETE")],
