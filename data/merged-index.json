@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-07T23:09:38Z",
+ "generated": "2026-09-07T23:27:20Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 9507,
-   "boards": 824,
-   "generated": "2026-09-07T23:02:42.113Z"
+   "rows": 9803,
+   "boards": 859,
+   "generated": "2026-09-07T23:20:44.367Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,33 +15,33 @@
   }
  },
  "counts": {
-  "rows": 9507,
-  "places": 815,
+  "rows": 9803,
+  "places": 850,
   "byCrop": {
-   "wheat": 1718,
-   "soybeans": 3149,
+   "wheat": 1719,
+   "soybeans": 3278,
    "sorghum": 522,
-   "corn": 4089,
+   "corn": 4255,
    "oats": 10,
    "other": 19
   },
   "byVia": {
-   "scrape": 9507
+   "scrape": 9803
   },
   "byState": {
    "KS": 1476,
    "IL": 916,
    "ON": 10,
+   "MN": 1521,
    "PA": 6,
-   "MN": 1348,
-   "IN": 265,
+   "IN": 273,
    "GA": 10,
-   "IA": 1377,
-   "SD": 1150,
+   "IA": 1508,
+   "SD": 1143,
    "WI": 254,
-   "NE": 1305,
+   "NE": 1290,
    "null": 111,
-   "ND": 433,
+   "ND": 440,
    "OH": 366,
    "OK": 134,
    "MO": 22,
@@ -50,51 +50,50 @@
    "WA": 52,
    "MI": 149,
    "TX": 14,
-   "WY": 8,
-   "AR": 1
+   "WY": 8
   },
   "byPeriodVia": {
-   "explicit-range": 337,
-   "us-date": 6055,
-   "month-year": 2150,
-   "deadline-inferred-year": 5,
-   "month-inferred-year": 140,
-   "season": 296,
-   "contract-pair": 107,
+   "explicit-range": 338,
+   "us-date": 6211,
+   "month-inferred-year": 148,
+   "month-year": 2220,
+   "deadline-inferred-year": 6,
+   "season": 298,
+   "contract-pair": 103,
    "month-day-year": 7,
-   "month-pair": 141,
+   "month-pair": 204,
    "day-range-inferred-year": 15,
    "quarter": 7,
-   "month-pair-inferred-year": 7,
+   "month-pair-inferred-year": 6,
    "spot-word": 174,
    "iso-date": 66
   },
   "byCurrency": {
-   "USD": 9497,
+   "USD": 9793,
    "CAD": 10
   },
   "byCurrencyVia": {
-   "declared": 6434,
-   "payload": 2765,
-   "province": 308
+   "declared": 6598,
+   "payload": 2893,
+   "province": 312
   },
   "collisionsBetweenFeeds": 0,
-  "unmappable": 231,
-  "unmappableNoCoordinate": 223,
+  "unmappable": 241,
+  "unmappableNoCoordinate": 233,
   "unmappableNoState": 111
  },
  "dropped": {
   "scrape": {
-   "board file with no entry in index.json": 84,
+   "board file with no entry in index.json": 43,
    "inMerge is false on the source": 1,
-   "refused: price is 162.8h old, past the 14h withdrawal": 1,
-   "refused: price is 79.0h old, past the 14h withdrawal": 1,
-   "broken: price is 166.8h old, past the 14h withdrawal": 1
+   "refused: price is 106.5h old, past the 14h withdrawal": 1,
+   "refused: price is 77.4h old, past the 14h withdrawal": 10,
+   "refused: price is 32.1h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
    "basis more than $3.00 from the board — a unit error, not a market": 2,
-   "delivery unreadable (unreadable-season-no-year)": 11,
+   "delivery unreadable (unreadable-season-no-year)": 14,
    "delivery unreadable (unreadable)": 16
   }
  },
@@ -102,7 +101,7 @@
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 815,
+  "written": 850,
   "unchanged": 0,
   "orphaned": [
    "agmark-llc-gaylord-mn-cf9f8b79.json",
@@ -110,19 +109,7 @@
    "aurora-cooperative-keene-39ed7caf.json",
    "aurora-cooperative-murphy-a96644d8.json",
    "aurora-cooperative-sedan-bc8529b4.json",
-   "boswell-chase-grain-inc-boswell-in-bc84718d.json",
-   "central-united-coop-bird-island-mn-5bd88457.json",
-   "central-united-coop-buffalo-lake-mn-c23086e2.json",
-   "central-united-coop-cobden-mn-b7567752.json",
-   "central-united-coop-cologne-mn-7c34ca60.json",
    "central-united-coop-cosmos-mn-d17a86d1.json",
-   "central-united-coop-fairfax-mn-dfdfdca5.json",
-   "central-united-coop-hector-mn-867e81b7.json",
-   "central-united-coop-le-sueur-mn-335ecb2f.json",
-   "central-united-coop-litchfield-mn-8aa8e7aa.json",
-   "central-united-coop-new-ulm-mn-f791082b.json",
-   "central-united-coop-sleepy-eye-mn-ebf3a3bc.json",
-   "central-united-coop-winthrop-mn-9dea2aa5.json",
    "chs-river-terminals-processing-plants-absolute-energy-c177c53f.json",
    "country-partners-cooperative-agp-david-city-ne-e4f874fa.json",
    "country-partners-cooperative-agp-hastings-ne-faa148b1.json",
@@ -135,48 +122,28 @@
    "country-partners-cooperative-merna-ne-1aae2bf2.json",
    "country-partners-cooperative-north-loup-ne-25af68bb.json",
    "country-partners-cooperative-ord-ne-95d1ae87.json",
-   "faas-feed-grain-webster-keswick-ia-239eb61a.json",
+   "country-partners-cooperative-spalding-ne-7225a54c.json",
    "farmers-pride-coop-neligh-oakdale-4762ca83.json",
-   "farmers-win-cooperative-agp-mason-city-ia-d4a126c6.json",
-   "farmers-win-cooperative-bremer-ia-29d5b425.json",
-   "farmers-win-cooperative-cresco-east-ia-55b8d48a.json",
-   "farmers-win-cooperative-cresco-ia-9e313dd6.json",
-   "farmers-win-cooperative-f-burg-ia-17b0f177.json",
-   "farmers-win-cooperative-granger-ia-ba23213a.json",
-   "farmers-win-cooperative-hawkeye-ia-17893e57.json",
-   "farmers-win-cooperative-homeland-ia-cc64e095.json",
-   "farmers-win-cooperative-houston-mn-fd1292f8.json",
-   "farmers-win-cooperative-mabel-mn-bbdd0220.json",
-   "farmers-win-cooperative-poet-fairbank-ia-6e9f9654.json",
-   "farmers-win-cooperative-poet-shell-rock-ia-f0c164d6.json",
-   "farmers-win-cooperative-ridgeway-ia-d5871b19.json",
-   "farmers-win-cooperative-rushford-mn-ad85e3ca.json",
-   "farmers-win-cooperative-spring-grove-mn-c6811cad.json",
-   "farmers-win-cooperative-srsp-ia-e9082aad.json",
-   "farmers-win-cooperative-sumner-ia-50f4ebd1.json",
-   "farmers-win-cooperative-valero-ia-1c4610e2.json",
-   "farmers-win-cooperative-viserion-ia-70452b8f.json",
    "heartland-feeds-west-mansfield-oh-41d4a862.json",
    "kalmbach-feeds-c-o-oh-3764aaeb.json",
-   "keystone-cooperative-columbia-city-in-8ebf27f9.json",
    "keystone-cooperative-fremont-mi-in-b41f25ab.json",
    "keystone-cooperative-hamilton-in-29597fad.json",
    "keystone-cooperative-holland-in-b6d225ab.json",
    "keystone-cooperative-legacy-feed-in-dc3cdedf.json",
    "keystone-cooperative-scircleville-grain-in-f57312b7.json",
-   "keystone-cooperative-union-mills-in-e3b526e3.json",
    "keystone-cooperative-white-cloud-in-313d3fa2.json",
    "niewohner-farms-albion-ne-84713a82.json",
    "niewohner-farms-elgin-ne-119906ac.json",
    "niewohner-farms-spalding-ne-2fb97ccc.json",
-   "osage-co-op-elevator-osage-coop-ia-96f3c1f8.json",
    "riceland-foods-corning-ar-4dbcc084.json",
+   "riceland-foods-des-arc-ar-5be14baa.json",
    "riceland-foods-hazen-ar-edca3307.json",
    "riceland-foods-hickory-ridge-ar-4f2b0f1e.json",
    "riceland-foods-newport-ar-b93f44d1.json",
    "riceland-foods-pendleton-ar-d23e9e70.json",
    "riceland-foods-tuckerman-ar-49bc1445.json",
    "riceland-foods-weiner-ar-f00b0420.json",
+   "valley-springs-farmers-coop-valley-springs-sd-c62f8082.json",
    "wanstead-farmers-cooperative-any-wanstead-branch-on-0da22e3b.json"
   ]
  },
@@ -1520,6 +1487,50 @@
    },
    "pricedAt": "2026-09-05T12:20:15.289Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
+  },
+  {
+   "place": "Agassiz Valley Grain||AVG Barnesville|MN",
+   "shard": "merged/agassiz-valley-grain-avg-barnesville-mn-a11f7062.json",
+   "operator": "Agassiz Valley Grain",
+   "branch": null,
+   "city": "AVG Barnesville",
+   "state": "MN",
+   "lat": 46.6522,
+   "lon": -96.4198,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "agassizvalleygrain-avgbarnesville",
+   "bids": 6,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.92,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "January"
+    },
+    "soybeans": {
+     "cash": 12.62,
+     "basis": -0.63,
+     "basisCents": -63,
+     "period": "2026-12",
+     "commodity": "Soybeans",
+     "delivery": "December"
+    }
+   },
+   "pricedAt": "2026-09-07T23:20:44.367Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "AgMark LLC.||Beloit|KS",
@@ -6728,6 +6739,39 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Boswell Chase Grain, Inc.||Boswell|IN",
+   "shard": "merged/boswell-chase-grain-inc-boswell-in-bc84718d.json",
+   "operator": "Boswell Chase Grain, Inc.",
+   "branch": null,
+   "city": "Boswell",
+   "state": "IN",
+   "lat": 40.51927,
+   "lon": -87.38252,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "boswellchasegrain-boswell",
+   "bids": 1,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.87,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-07",
+     "commodity": "Corn",
+     "delivery": "02 Jul 2026 to 31 Jul 2026"
+    }
+   },
+   "pricedAt": "2026-09-04T15:32:07.141Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Buckeye Feed and Grain||Versailles|OH",
    "shard": "merged/buckeye-feed-and-grain-versailles-oh-20685306.json",
    "operator": "Buckeye Feed and Grain",
@@ -8274,6 +8318,56 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Central United Coop||Bird Island|MN",
+   "shard": "merged/central-united-coop-bird-island-mn-5bd88457.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Bird Island",
+   "state": "MN",
+   "lat": 44.76909,
+   "lon": -94.89484,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-birdisland",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5,
+     "basis": -0.62,
+     "basisCents": -62,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.52,
+     "basis": -0.83,
+     "basisCents": -83,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Central United Coop||Brownton|MN",
    "shard": "merged/central-united-coop-brownton-mn-1e782357.json",
    "operator": "Central United Coop",
@@ -8322,6 +8416,195 @@
    },
    "pricedAt": "2026-09-04T18:31:56.039Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
+  },
+  {
+   "place": "Central United Coop||Buffalo Lake|MN",
+   "shard": "merged/central-united-coop-buffalo-lake-mn-c23086e2.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Buffalo Lake",
+   "state": "MN",
+   "lat": 44.73751,
+   "lon": -94.62224,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-buffalolake",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.02,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||Cobden|MN",
+   "shard": "merged/central-united-coop-cobden-mn-b7567752.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Cobden",
+   "state": "MN",
+   "lat": 44.2821,
+   "lon": -94.7273,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-cobden",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.98,
+     "basis": -0.64,
+     "basisCents": -64,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||Cologne|MN",
+   "shard": "merged/central-united-coop-cologne-mn-7c34ca60.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Cologne",
+   "state": "MN",
+   "lat": 44.76859,
+   "lon": -93.78085,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-cologne",
+   "bids": 7,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.96,
+     "basis": -0.66,
+     "basisCents": -66,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||Fairfax|MN",
+   "shard": "merged/central-united-coop-fairfax-mn-dfdfdca5.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Fairfax",
+   "state": "MN",
+   "lat": 44.5329,
+   "lon": -94.7256,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-fairfax",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.02,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Central United Coop||Gibbon|MN",
@@ -8374,6 +8657,56 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Central United Coop||Hector|MN",
+   "shard": "merged/central-united-coop-hector-mn-867e81b7.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Hector",
+   "state": "MN",
+   "lat": 44.74499,
+   "lon": -94.7128,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-hector",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.99,
+     "basis": -0.63,
+     "basisCents": -63,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.52,
+     "basis": -0.83,
+     "basisCents": -83,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Central United Coop||Klossner|MN",
    "shard": "merged/central-united-coop-klossner-mn-8fcb647c.json",
    "operator": "Central United Coop",
@@ -8424,6 +8757,206 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Central United Coop||Le Sueur|MN",
+   "shard": "merged/central-united-coop-le-sueur-mn-335ecb2f.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Le Sueur",
+   "state": "MN",
+   "lat": 44.46284,
+   "lon": -93.91435,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-lesueur",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.02,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.58,
+     "basis": -0.77,
+     "basisCents": -77,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||Litchfield|MN",
+   "shard": "merged/central-united-coop-litchfield-mn-8aa8e7aa.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Litchfield",
+   "state": "MN",
+   "lat": 45.12601,
+   "lon": -94.5265,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-litchfield",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.9,
+     "basis": -0.72,
+     "basisCents": -72,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.43,
+     "basis": -0.92,
+     "basisCents": -92,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||New Ulm|MN",
+   "shard": "merged/central-united-coop-new-ulm-mn-f791082b.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "New Ulm",
+   "state": "MN",
+   "lat": 44.31914,
+   "lon": -94.45492,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-newulm",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5,
+     "basis": -0.62,
+     "basisCents": -62,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.58,
+     "basis": -0.77,
+     "basisCents": -77,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Central United Coop||Sleepy Eye|MN",
+   "shard": "merged/central-united-coop-sleepy-eye-mn-ebf3a3bc.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Sleepy Eye",
+   "state": "MN",
+   "lat": 44.29717,
+   "lon": -94.74489,
+   "precision": "street",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-sleepyeye",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.02,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Central United Coop||To Buy for HCP|MN",
    "shard": "merged/central-united-coop-to-buy-for-hcp-mn-681ceca2.json",
    "operator": "Central United Coop",
@@ -8459,6 +8992,56 @@
    },
    "pricedAt": "2026-09-04T18:31:56.039Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
+  },
+  {
+   "place": "Central United Coop||Winthrop|MN",
+   "shard": "merged/central-united-coop-winthrop-mn-9dea2aa5.json",
+   "operator": "Central United Coop",
+   "branch": null,
+   "city": "Winthrop",
+   "state": "MN",
+   "lat": 44.5436,
+   "lon": -94.3698,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "centralunitedcoop-winthrop",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01/2027-03",
+    "2027-02/2027-03",
+    "2027-04/2027-05",
+    "2027-06/2027-07",
+    "2027-10",
+    "2027-12/2028-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.02,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "Jun-Jul 27"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-04/2027-05",
+     "commodity": "Beans",
+     "delivery": "Apr-May 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Central Valley Ag||ADM Columbus|NE",
@@ -19150,55 +19733,57 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
-   "place": "Country Partners Cooperative||Spalding|NE",
-   "shard": "merged/country-partners-cooperative-spalding-ne-7225a54c.json",
-   "operator": "Country Partners Cooperative",
+   "place": "Country Grain Cooperative||Eldridge|ND",
+   "shard": "merged/country-grain-cooperative-eldridge-nd-952269dc.json",
+   "operator": "Country Grain Cooperative",
    "branch": null,
-   "city": "Spalding",
-   "state": "NE",
-   "lat": 41.6874,
-   "lon": -98.3715,
+   "city": "Eldridge",
+   "state": "ND",
+   "lat": 46.921,
+   "lon": -98.7455,
    "precision": "town",
    "mappable": true,
    "via": "scrape",
-   "source": "countrypartnerscooperative-spalding",
-   "bids": 15,
+   "source": "countrygraincooperative-eldridge",
+   "bids": 7,
    "crops": [
     "corn",
-    "soybeans"
+    "soybeans",
+    "wheat"
    ],
    "periods": [
     "2026-09",
-    "2026-10/2026-11",
-    "2027-01",
-    "2027-02",
-    "2027-03",
-    "2027-04",
-    "2027-05",
-    "2027-06",
-    "2027-07",
-    "2027-10/2027-11"
+    "2026-10",
+    "2026-11"
    ],
    "best": {
-    "corn": {
-     "cash": 5.2,
-     "basis": -0.42,
-     "basisCents": -42,
-     "period": "2027-07",
-     "commodity": "Corn",
-     "delivery": "Jul 27"
-    },
     "soybeans": {
-     "cash": 12.5,
-     "basis": -0.75,
-     "basisCents": -75,
-     "period": "2027-01",
-     "commodity": "Beans",
-     "delivery": "Jan 27"
+     "cash": 12.74,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "By Sept 15th"
+    },
+    "corn": {
+     "cash": 4.66,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "2026-09",
+     "commodity": "Corn",
+     "delivery": "09/30/2026"
+    },
+    "wheat": {
+     "cash": 6.75,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "2026-09",
+     "commodity": "Spring Wheat 14%",
+     "delivery": "09/30/2026"
     }
    },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T23:02:42.113Z"
+   "pricedAt": "2026-09-07T23:20:44.367Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Country Visions Cooperative||CENTER VALLEY|WI",
@@ -21035,6 +21620,49 @@
    },
    "pricedAt": "2026-09-06T00:21:07.245Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
+  },
+  {
+   "place": "Faas Feed & Grain||Webster/Keswick|IA",
+   "shard": "merged/faas-feed-grain-webster-keswick-ia-239eb61a.json",
+   "operator": "Faas Feed & Grain",
+   "branch": null,
+   "city": "Webster/Keswick",
+   "state": "IA",
+   "lat": 41.4364,
+   "lon": -92.1765,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "faasfeed-websterkeswick",
+   "bids": 4,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.69,
+     "basis": -0.68,
+     "basisCents": -68,
+     "period": "2026-09",
+     "commodity": "Corn",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.8,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "09/01/2026"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Falmouth Farm Supply||Falmouth|IN",
@@ -24690,6 +25318,815 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Farmers Win Cooperative||AGP - Mason City|IA",
+   "shard": "merged/farmers-win-cooperative-agp-mason-city-ia-d4a126c6.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "AGP - Mason City",
+   "state": "IA",
+   "lat": 43.1499,
+   "lon": -93.1954,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-agpmasoncity",
+   "bids": 5,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.9,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2026-12",
+     "commodity": "Soybeans",
+     "delivery": "12/01/2026"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Bremer|IA",
+   "shard": "merged/farmers-win-cooperative-bremer-ia-29d5b425.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Bremer",
+   "state": "IA",
+   "lat": 42.7748,
+   "lon": -92.404,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-bremer",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.04,
+     "basis": -0.48,
+     "basisCents": -48,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.66,
+     "basis": -0.59,
+     "basisCents": -59,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Cresco East|IA",
+   "shard": "merged/farmers-win-cooperative-cresco-east-ia-55b8d48a.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Cresco East",
+   "state": "IA",
+   "lat": 43.363,
+   "lon": -92.126,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-crescoeast",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.01,
+     "basis": -0.51,
+     "basisCents": -51,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.49,
+     "basis": -0.76,
+     "basisCents": -76,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Cresco|IA",
+   "shard": "merged/farmers-win-cooperative-cresco-ia-9e313dd6.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Cresco",
+   "state": "IA",
+   "lat": 43.363,
+   "lon": -92.126,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-cresco",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.01,
+     "basis": -0.51,
+     "basisCents": -51,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.49,
+     "basis": -0.76,
+     "basisCents": -76,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||F'Burg|IA",
+   "shard": "merged/farmers-win-cooperative-f-burg-ia-17b0f177.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "F'Burg",
+   "state": "IA",
+   "lat": 42.9593,
+   "lon": -92.1983,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-fburg",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.06,
+     "basis": -0.46,
+     "basisCents": -46,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.56,
+     "basis": -0.69,
+     "basisCents": -69,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Granger|IA",
+   "shard": "merged/farmers-win-cooperative-granger-ia-ba23213a.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Granger",
+   "state": "IA",
+   "lat": 43.363,
+   "lon": -92.126,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-granger",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.96,
+     "basis": -0.56,
+     "basisCents": -56,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.45,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Hawkeye|IA",
+   "shard": "merged/farmers-win-cooperative-hawkeye-ia-17893e57.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Hawkeye",
+   "state": "IA",
+   "lat": 42.9487,
+   "lon": -91.9578,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-hawkeye",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.04,
+     "basis": -0.48,
+     "basisCents": -48,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.55,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Homeland|IA",
+   "shard": "merged/farmers-win-cooperative-homeland-ia-cc64e095.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Homeland",
+   "state": "IA",
+   "lat": 43.0932,
+   "lon": -92.144,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-homeland",
+   "bids": 5,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.22,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Houston|MN",
+   "shard": "merged/farmers-win-cooperative-houston-mn-fd1292f8.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Houston",
+   "state": "MN",
+   "lat": 43.7929,
+   "lon": -91.5626,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-houston",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.79,
+     "basis": -0.73,
+     "basisCents": -73,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.31,
+     "basis": -0.94,
+     "basisCents": -94,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Mabel|MN",
+   "shard": "merged/farmers-win-cooperative-mabel-mn-bbdd0220.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Mabel",
+   "state": "MN",
+   "lat": 43.5446,
+   "lon": -91.7806,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-mabel",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.86,
+     "basis": -0.66,
+     "basisCents": -66,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.43,
+     "basis": -0.82,
+     "basisCents": -82,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Poet Fairbank|IA",
+   "shard": "merged/farmers-win-cooperative-poet-fairbank-ia-6e9f9654.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Poet Fairbank",
+   "state": "IA",
+   "lat": 42.6162,
+   "lon": -92.0326,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-poetfairbank",
+   "bids": 5,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.22,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Poet Shell Rock|IA",
+   "shard": "merged/farmers-win-cooperative-poet-shell-rock-ia-f0c164d6.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Poet Shell Rock",
+   "state": "IA",
+   "lat": 42.7061,
+   "lon": -92.5888,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-poetshellrock",
+   "bids": 5,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.22,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Ridgeway|IA",
+   "shard": "merged/farmers-win-cooperative-ridgeway-ia-d5871b19.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Ridgeway",
+   "state": "IA",
+   "lat": 43.2979,
+   "lon": -92.0034,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-ridgeway",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.01,
+     "basis": -0.51,
+     "basisCents": -51,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.49,
+     "basis": -0.76,
+     "basisCents": -76,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Rushford|MN",
+   "shard": "merged/farmers-win-cooperative-rushford-mn-ad85e3ca.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Rushford",
+   "state": "MN",
+   "lat": 43.8216,
+   "lon": -91.7536,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-rushford",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.82,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.34,
+     "basis": -0.91,
+     "basisCents": -91,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Spring Grove|MN",
+   "shard": "merged/farmers-win-cooperative-spring-grove-mn-c6811cad.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Spring Grove",
+   "state": "MN",
+   "lat": 43.5623,
+   "lon": -91.6368,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-springgrove",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.83,
+     "basis": -0.69,
+     "basisCents": -69,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.4,
+     "basis": -0.85,
+     "basisCents": -85,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||SRSP|IA",
+   "shard": "merged/farmers-win-cooperative-srsp-ia-e9082aad.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "SRSP",
+   "state": "IA",
+   "lat": 42.7061,
+   "lon": -92.5888,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-srsp",
+   "bids": 5,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.9,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2026-12",
+     "commodity": "Soybeans",
+     "delivery": "12/01/2026"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Sumner|IA",
+   "shard": "merged/farmers-win-cooperative-sumner-ia-50f4ebd1.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Sumner",
+   "state": "IA",
+   "lat": 42.8419,
+   "lon": -92.1186,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-sumner",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.01,
+     "basis": -0.51,
+     "basisCents": -51,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    },
+    "soybeans": {
+     "cash": 12.6,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Valero|IA",
+   "shard": "merged/farmers-win-cooperative-valero-ia-1c4610e2.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Valero",
+   "state": "IA",
+   "lat": 43.0683,
+   "lon": -92.6761,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-valero",
+   "bids": 5,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.22,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "01/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Farmers Win Cooperative||Viserion|IA",
+   "shard": "merged/farmers-win-cooperative-viserion-ia-70452b8f.json",
+   "operator": "Farmers Win Cooperative",
+   "branch": null,
+   "city": "Viserion",
+   "state": "IA",
+   "lat": 43.0237,
+   "lon": -91.1887,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerswin-viserion",
+   "bids": 3,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 12.52,
+     "basis": -0.58,
+     "basisCents": -58,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "09/01/2026"
+    }
+   },
+   "pricedAt": "2026-09-06T00:21:07.245Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Farmward Cooperative||Farmward Cooperative - Comfrey|MN",
    "shard": "merged/farmward-cooperative-farmward-cooperative-comfrey-mn-219fa6ff.json",
    "operator": "Farmward Cooperative",
@@ -26659,6 +28096,42 @@
    },
    "pricedAt": "2026-09-04T18:31:56.039Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
+  },
+  {
+   "place": "Hillsdale Elevator Company||Clinton|IA",
+   "shard": "merged/hillsdale-elevator-company-clinton-ia-3769ef67.json",
+   "operator": "Hillsdale Elevator Company",
+   "branch": null,
+   "city": "Clinton",
+   "state": "IA",
+   "lat": 41.8517,
+   "lon": -90.2078,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "hillsdaleelevator-clinton",
+   "bids": 4,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.31,
+     "basis": -0.21,
+     "basisCents": -21,
+     "period": "2027-01",
+     "commodity": "#2 Yellow Corn",
+     "delivery": "January 2027"
+    }
+   },
+   "pricedAt": "2026-09-07T23:20:44.367Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Hoven Equity Exchange||AGP - Direct Ship|SD",
@@ -30375,6 +31848,85 @@
    },
    "pricedAt": "2026-09-06T03:20:46.377Z",
    "checkedAt": "2026-09-07T22:20:46.011Z"
+  },
+  {
+   "place": "Keystone Cooperative||Columbia City|IN",
+   "shard": "merged/keystone-cooperative-columbia-city-in-8ebf27f9.json",
+   "operator": "Keystone Cooperative",
+   "branch": null,
+   "city": "Columbia City",
+   "state": "IN",
+   "lat": 41.1619,
+   "lon": -85.4737,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "keystonecooperative-columbiacity",
+   "bids": 4,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.42,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "Jan 27"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
+   "place": "Keystone Cooperative||Union Mills|IN",
+   "shard": "merged/keystone-cooperative-union-mills-in-e3b526e3.json",
+   "operator": "Keystone Cooperative",
+   "branch": null,
+   "city": "Union Mills",
+   "state": "IN",
+   "lat": 41.4602,
+   "lon": -86.8355,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "keystonecooperative-unionmills",
+   "bids": 3,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2027-01",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.1725,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "January"
+    },
+    "soybeans": {
+     "cash": 12.9025,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "January"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
   },
   {
    "place": "Knightstown Elevator||Knightstown|IN",
@@ -35570,6 +37122,52 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
+   "place": "Osage Co-op Elevator||Osage Coop|IA",
+   "shard": "merged/osage-co-op-elevator-osage-coop-ia-96f3c1f8.json",
+   "operator": "Osage Co-op Elevator",
+   "branch": null,
+   "city": "Osage Coop",
+   "state": "IA",
+   "lat": null,
+   "lon": null,
+   "precision": null,
+   "mappable": false,
+   "via": "scrape",
+   "source": "osagecoopelevator-osagecoop",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2027-01",
+    "2027-03",
+    "2027-05"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-05",
+     "commodity": "Corn",
+     "delivery": "MAY  2027"
+    },
+    "soybeans": {
+     "cash": 12.7,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2027-05",
+     "commodity": "Soybeans",
+     "delivery": "MAY  2027"
+    }
+   },
+   "pricedAt": "2026-09-04T18:31:56.039Z",
+   "checkedAt": "2026-09-07T23:20:44.367Z"
+  },
+  {
    "place": "Pawnee Co. Cooperative Association||Larned|KS",
    "shard": "merged/pawnee-co-cooperative-association-larned-ks-cf99b0eb.json",
    "operator": "Pawnee Co. Cooperative Association",
@@ -38622,39 +40220,6 @@
    "checkedAt": "2026-09-07T23:02:42.113Z"
   },
   {
-   "place": "Riceland Foods||Des Arc|AR",
-   "shard": "merged/riceland-foods-des-arc-ar-5be14baa.json",
-   "operator": "Riceland Foods",
-   "branch": null,
-   "city": "Des Arc",
-   "state": "AR",
-   "lat": 34.9751,
-   "lon": -91.5113,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "riceland-desarc",
-   "bids": 1,
-   "crops": [
-    "soybeans"
-   ],
-   "periods": [
-    "2026-10/2026-11"
-   ],
-   "best": {
-    "soybeans": {
-     "cash": 12.85,
-     "basis": -0.25,
-     "basisCents": -25,
-     "period": "2026-10/2026-11",
-     "commodity": "2026 Soybeans",
-     "delivery": "OCT-NOV"
-    }
-   },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T23:02:42.113Z"
-  },
-  {
    "place": "Ridgeville Elevator||Ridgeville Elevator- Fayette Branch|OH",
    "shard": "merged/ridgeville-elevator-ridgeville-elevator-fayette-branch-oh-fce75e74.json",
    "operator": "Ridgeville Elevator",
@@ -40204,51 +41769,6 @@
    },
    "pricedAt": "2026-09-04T18:50:20.730Z",
    "checkedAt": "2026-09-07T23:02:42.113Z"
-  },
-  {
-   "place": "Valley Springs Farmers Coop||Valley Springs|SD",
-   "shard": "merged/valley-springs-farmers-coop-valley-springs-sd-c62f8082.json",
-   "operator": "Valley Springs Farmers Coop",
-   "branch": null,
-   "city": "Valley Springs",
-   "state": "SD",
-   "lat": 43.5773,
-   "lon": -96.4956,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "valleyspringsfarmerscoopsd-valleysprings",
-   "bids": 7,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10",
-    "2026-11",
-    "2026-12"
-   ],
-   "best": {
-    "corn": {
-     "cash": 4.82,
-     "basis": -0.55,
-     "basisCents": -55,
-     "period": "2026-09",
-     "commodity": "Corn",
-     "delivery": "09/01/2026"
-    },
-    "soybeans": {
-     "cash": 12.53,
-     "basis": -0.57,
-     "basisCents": -57,
-     "period": "2026-09",
-     "commodity": "Soybeans",
-     "delivery": "09/01/2026"
-    }
-   },
-   "pricedAt": "2026-09-06T03:20:46.377Z",
-   "checkedAt": "2026-09-07T22:20:46.011Z"
   },
   {
    "place": "VERBIO North America LLC||Nevada|IA",
