@@ -304,7 +304,27 @@ test("the repository's own platforms.json yields the sites it claims", () => {
   assert.ok(got.length >= 38, `only ${got.length} unread sweepable sites`);
   const byPlatform = {};
   for (const s of got) byPlatform[s.platform] = (byPlatform[s.platform] || 0) + 1;
-  assert.equal(byPlatform.aghost, 38, "every aghost site is unread and must stay in the queue");
+  /* THIS ASSERTION WAS `=== 38` AND WAS FAILING ON MAIN — 2026-09-07.
+     The directory had grown to 40. An equality on "how many are still unread"
+     is a number that moves in BOTH directions by design: down when a site gets
+     read and a manifest written, up when the directory gains an entry. Neither
+     direction is a defect, and pinning it means the suite goes red for doing
+     the work rather than for breaking it.
+     The property the line was written to protect is that no aghost site is
+     quietly dropped from the queue, and that is asserted directly below
+     instead: every aghost site the directory carries and no manifest polls is
+     still in `got`. That cannot be satisfied by a stale number. */
+  const readHosts = readHostsOf(SOURCES);
+  const queued = new Set(got.filter((s) => s.platform === "aghost").map((s) => s.site));
+  const inDirectory = Object.entries(plat.sites ?? {})
+    .filter(([, rec]) => rec?.platform === "aghost");
+  assert.ok(queued.size > 0, "the aghost queue has emptied — good news, but say so deliberately");
+  for (const [site, rec] of inDirectory) {
+    if (queued.has(site)) continue;
+    const board = rec.boardPage || site;
+    assert.ok(readHosts.has(hostOf(board)) || readHosts.has(hostOf(site)),
+      `${site} is an aghost board nothing polls and it has fallen out of the queue`);
+  }
   assert.ok(!("bushel" in byPlatform), "bushel is bushel-probe's, not this sweep's");
   for (const s of got) {
     assert.ok(SWEEPABLE.includes(s.platform));

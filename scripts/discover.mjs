@@ -61,10 +61,28 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
  *      board. Every negative below this was possibly asked of a page nobody else
  *      is served.
  */
-export const PROBE_VERSION = 4;
+/* v5 — 2026-09-07. THE TEST GOT WIDER, SO THE NEGATIVES GET RE-ASKED.
+ *
+ * This file's own rule: "A VERDICT REACHED BY A WEAKER TEST IS NOT A VERDICT."
+ * Two things changed that make a v4 `no-platform` weaker than a v5 one.
+ *
+ *   1. aghost has a `family` now, so a page calling api.aghost.net can report a
+ *      near miss instead of a shrug. sunriseco-op.com called TWO aghost hosts
+ *      and its record reads "no known platform".
+ *   2. `--follow` exists. FALLBACK_PATHS has eleven conventional paths and a
+ *      bare `.slice(0, 2)` asked two of them. Measured across the 268 sites
+ *      filed no-platform: /cash-bids/ 180, /cashbids 172, /cash-bids 58, and
+ *      not one of the other eight anywhere. Those 268 verdicts were reached
+ *      without asking nine pages somebody had already written down.
+ *
+ * Bumping this is what makes them come round again, and it is the whole reason
+ * the field exists. It costs a re-ask of 268 sites at up to --patience seconds
+ * each, spread over the sweep's own budget; it does not touch a site already
+ * identified, because finding a board is not made wrong by looking harder. */
+export const PROBE_VERSION = 5;
 
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
-                             "--budget", "--list", "--ledger"]);
+                             "--budget", "--list", "--ledger", "--follow"]);
 
 export const SIGNATURES = [
   { platform: "dtn-cs", adapter: "lib/adapters/dtn-cs.mjs", family: /(^|\.)dtn\.com$/,
@@ -75,10 +93,25 @@ export const SIGNATURES = [
     test: (u) => /graindiscovery\.com$/.test(host(u)) && /\/api\/public-sites\//.test(path(u)),
     id: (u) => ({ slug: path(u).match(/\/api\/public-sites\/([^/]+)/)?.[1] ?? null }) },
 
-  { platform: "aghost", adapter: "lib/adapters/aghost.mjs",
+  /* `family` IS WHAT LETS A NEAR MISS BE REPORTED, and three signatures did not
+     have one — 2026-09-07. verdict() skips any signature without a family, so
+     aghost, cashbidssingle and fragment could never produce a LEAD however
+     plainly their vendor was on the page.
+     sunriseco-op.com is the case. It called api.aghost.net AND charts.aghost.net
+     and the 2026-08-28 run reported NO KNOWN PLATFORM, its only lead a dtn-cs
+     one from content-services.dtn.com. AgHost is also a co-op website CMS, so
+     the host does not prove a board is published there and this must NOT become
+     a classification — which is exactly what a lead is: a line in the log saying
+     which vendor they run, for a person to accept or dismiss in a glance. */
+  { platform: "aghost", adapter: "lib/adapters/aghost.mjs", family: /aghost\.net$/,
     test: (u) => /aghost\.net$/.test(host(u)) || /\/index\.cfm/i.test(path(u)),
     id: (u) => ({ cid: param(u, "cid"), sid: param(u, "sid"), mid: param(u, "mid") }) },
 
+  /* NO FAMILY, DELIBERATELY. A family is matched against a HOST, and this
+     signature is a PATH — bigriverbids.com/cashbidssingle-2121 — so there is no
+     vendor domain to lead on. Same for `fragment` below, whose signature is
+     /ajax/. Stating it here so the next reader does not read the absence as the
+     oversight it was for aghost. */
   { platform: "cashbidssingle", adapter: "lib/parse.mjs",
     test: (u) => /cashbidssingle/i.test(path(u)),
     id: (u) => ({ board: path(u).match(/cashbidssingle-?(\w+)?/i)?.[1] ?? null }) },
@@ -156,6 +189,102 @@ export const SIGNATURES = [
     test: (u) => /agricharts\.com$/.test(host(u)) || /\/markets\/cashgrid\.php/i.test(path(u)),
     id: () => ({}) },
 ];
+
+/* THE HOME PAGE IS NOT THE BOARD.
+ *
+ * The first live batch asked 45 operators and 28 "loaded but recognised
+ * nothing" — including adm.com, whose front page was never going to call a
+ * cash-bids API. Barchart's directory gives the operator's WEBSITE and nothing
+ * deeper, so probing that URL alone asks the wrong page of most of the list.
+ *
+ * Rather than guess at /cash-bids and a dozen spellings, use the site's own
+ * navigation: find the link it publishes to its own board and follow that one.
+ * A guessed path 404s silently; a link the operator wrote is the page they
+ * mean. Conventional paths are only tried when there is no such link.
+ *
+ * MOVED OUT OF main() AND EXPORTED — 2026-09-07. This is the most consequential
+ * decision in the file — which page gets asked at all — and it was sealed
+ * inside a 400-line function where no test could reach it. 268 sites are filed
+ * "no known platform" on the strength of it.
+ */
+const BID_LINK = /cash[\s_-]*bids?|grain[\s_-]*bids?|\bbids?\b|market[\s_-]*(?:prices|zone)/i;
+/* UNHYPHENATED FIRST. The list had /cash-bids and /cash-bids/ and not
+   /cashbids — the single most obvious spelling, and the one Assumption Coop
+   actually uses. Guessed paths are the fallback for sites that publish no
+   link; a fallback list missing the commonest spelling is barely a fallback. */
+export const FALLBACK_PATHS = ["/cashbids", "/cash-bids/", "/cashbids/", "/grain/cash-bids/",
+                        "/markets/cash-bids/", "/cash-bids", "/grainbids",
+                        "/grain-bids", "/bids", "/markets/", "/grain/"];
+
+/* HOW MANY PAGES ONE SITE IS WORTH, AND WHY IT IS NOW A KNOB.
+ *
+ * This was a bare `.slice(0, 2)` with no comment. ELEVEN conventional paths are
+ * written down above and only the first two were ever asked; measured across
+ * the 268 sites in data/platforms.json filed "no-platform", the tried paths are
+ * /cash-bids/ 180 times, /cashbids 172 and /cash-bids 58, and NOT ONE of the
+ * other eight appears. Nine paths somebody wrote down, discarded silently on
+ * every run since.
+ *
+ * There is a real cost behind the cap — each follow is a full browser page load
+ * of up to `--patience` seconds — but the run is ALREADY protected by
+ * `--budget`, which stops the loop on the clock and reports where it got to. A
+ * second, unstated cap on top of a working one is how nine paths go missing.
+ *
+ * Default stays 2, so no existing run changes. `--follow 11` asks the lot. */
+export const DEFAULT_FOLLOW = 2;
+
+const sameSite = (a, b) => {
+  try {
+    return new URL(a).hostname.replace(/^www\./, "")
+        === new URL(b).hostname.replace(/^www\./, "");
+  } catch { return false; }
+};
+
+export const bidLink = (result, pageUrl, follow = DEFAULT_FOLLOW) => {
+  const home = new URL(pageUrl);
+  /* THE MAIN DOCUMENT, PREFERRED BY URL. An arbitrary size floor here (500
+     bytes) skipped small pages entirely, and plenty of co-operative front
+     pages are small. Match the page we asked for; fall back to the first
+     HTML with anchors in it. */
+  /* Every same-site document, richest first — a redirect, a frameset or a
+     nav loaded separately all put the links somewhere other than the exact
+     URL we asked for. */
+  const html = (result?.responses ?? [])
+    .filter((r) => r.body && /html/i.test(r.mime || "") && sameSite(r.url, pageUrl))
+    .sort((a, b) => b.body.length - a.body.length);
+  const docs = html.filter((r) => /<a\b/i.test(r.body));
+  if (!docs.length) return [];
+  const out = [];
+  for (const m of docs.map((d) => d.body).join("\n").matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+    const [, href, text] = m;
+    const label = text.replace(/<[^>]+>/g, " ");
+    if (!BID_LINK.test(label) && !BID_LINK.test(href)) continue;
+    let u;
+    try { u = new URL(href, pageUrl); } catch { continue; }
+    /* SAME SITE ONLY. A "Cash Bids" link pointing at a third party is a
+       finding about somebody else's board, not this operator's. */
+    if (u.hostname.replace(/^www\./, "") !== home.hostname.replace(/^www\./, "")) continue;
+    if (u.href === pageUrl) continue;
+    /* An explicit "cash bids" beats a bare "bids" beats "markets". */
+    const rank = /cash[\s_-]*bids?/i.test(label + href) ? 0
+               : /grain[\s_-]*bids?/i.test(label + href) ? 1
+               : /\bbids?\b/i.test(label + href) ? 2 : 3;
+    out.push({ url: u.href, rank });
+  }
+  out.sort((a, b) => a.rank - b.rank);
+  return [...new Set(out.map((o) => o.url))].slice(0, follow);
+};
+
+/** Which pages to ask after the home page said nothing, and whether they are
+    the operator's own links or our guesses. Their links always win: a guessed
+    path 404s silently, a link they wrote is the page they mean. */
+export function boardPagesToTry(result, pageUrl, follow = DEFAULT_FOLLOW) {
+  const links = bidLink(result, pageUrl, follow);
+  if (links.length) return { pages: links, theirs: true, skipped: 0 };
+  const all = FALLBACK_PATHS.map((p) => { try { return new URL(p, pageUrl).href; } catch { return null; } })
+                            .filter(Boolean);
+  return { pages: all.slice(0, follow), theirs: false, skipped: Math.max(0, all.length - follow) };
+}
 
 export function fingerprint(url) {
   for (const s of SIGNATURES) {
@@ -800,70 +929,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     ledger.sites[url] = { ...(ledger.sites[url] || {}), ...rec, seenAt: new Date().toISOString() };
   };
 
-  /* THE HOME PAGE IS NOT THE BOARD.
-   *
-   * The first live batch asked 45 operators and 28 "loaded but recognised
-   * nothing" — including adm.com, whose front page was never going to call a
-   * cash-bids API. Barchart's directory gives the operator's WEBSITE and nothing
-   * deeper, so probing that URL alone asks the wrong page of most of the list.
-   *
-   * Rather than guess at /cash-bids and a dozen spellings, use the site's own
-   * navigation: find the link it publishes to its own board and follow that one.
-   * A guessed path 404s silently; a link the operator wrote is the page they
-   * mean. Conventional paths are only tried when there is no such link.
-   */
-  const BID_LINK = /cash[\s_-]*bids?|grain[\s_-]*bids?|\bbids?\b|market[\s_-]*(?:prices|zone)/i;
-  /* UNHYPHENATED FIRST. The list had /cash-bids and /cash-bids/ and not
-     /cashbids — the single most obvious spelling, and the one Assumption Coop
-     actually uses. Guessed paths are the fallback for sites that publish no
-     link; a fallback list missing the commonest spelling is barely a fallback. */
-  const FALLBACK_PATHS = ["/cashbids", "/cash-bids/", "/cashbids/", "/grain/cash-bids/",
-                          "/markets/cash-bids/", "/cash-bids", "/grainbids",
-                          "/grain-bids", "/bids", "/markets/", "/grain/"];
-
-  const sameSite = (a, b) => {
-    try {
-      return new URL(a).hostname.replace(/^www\./, "")
-          === new URL(b).hostname.replace(/^www\./, "");
-    } catch { return false; }
-  };
-
-  const bidLink = (result, pageUrl) => {
-    const home = new URL(pageUrl);
-    /* THE MAIN DOCUMENT, PREFERRED BY URL. An arbitrary size floor here (500
-       bytes) skipped small pages entirely, and plenty of co-operative front
-       pages are small. Match the page we asked for; fall back to the first
-       HTML with anchors in it. */
-    /* Every same-site document, richest first — a redirect, a frameset or a
-       nav loaded separately all put the links somewhere other than the exact
-       URL we asked for. */
-    const html = result.responses
-      .filter((r) => r.body && /html/i.test(r.mime || "") && sameSite(r.url, pageUrl))
-      .sort((a, b) => b.body.length - a.body.length);
-    const docs = html.filter((r) => /<a\b/i.test(r.body));
-    if (!docs.length) return [];
-    const out = [];
-    for (const m of docs.map((d) => d.body).join("\n").matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
-      const [, href, text] = m;
-      const label = text.replace(/<[^>]+>/g, " ");
-      if (!BID_LINK.test(label) && !BID_LINK.test(href)) continue;
-      let u;
-      try { u = new URL(href, pageUrl); } catch { continue; }
-      /* SAME SITE ONLY. A "Cash Bids" link pointing at a third party is a
-         finding about somebody else's board, not this operator's. */
-      if (u.hostname.replace(/^www\./, "") !== home.hostname.replace(/^www\./, "")) continue;
-      if (u.href === pageUrl) continue;
-      /* An explicit "cash bids" beats a bare "bids" beats "markets". */
-      const rank = /cash[\s_-]*bids?/i.test(label + href) ? 0
-                 : /grain[\s_-]*bids?/i.test(label + href) ? 1
-                 : /\bbids?\b/i.test(label + href) ? 2 : 3;
-      out.push({ url: u.href, rank });
-    }
-    out.sort((a, b) => a.rank - b.rank);
-    return [...new Set(out.map((o) => o.url))].slice(0, 2);
-  };
-
   const patienceS = Number(flagValue("patience", "45"));
+  /* HOW MANY PAGES ONE SITE IS WORTH. See DEFAULT_FOLLOW. */
+  const followN = Math.max(1, Number(flagValue("follow", String(DEFAULT_FOLLOW))) || DEFAULT_FOLLOW);
   for (const [i, pageUrl] of urls.entries()) {
     if (Date.now() - began > budgetMs) {
       stoppedEarly = true;
@@ -916,13 +984,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     /* NOTHING ON THE FRONT PAGE MEANS ASK THE BOARD'S PAGE, NOT GIVE UP. */
     let followed = null, triedPages = [];
     if (v.kind === "no-platform") {
-      const links = bidLink(result, pageUrl);
-      const tries = links.length ? links
-        : FALLBACK_PATHS.map((p) => new URL(p, pageUrl).href).slice(0, 2);
+      const { pages: tries, theirs, skipped } = boardPagesToTry(result, pageUrl, followN);
+      if (skipped)
+        console.log(`   ${skipped} more conventional path(s) not asked — raise --follow to try them`);
       for (const next of tries) {
         triedPages.push(next);
         if (Date.now() - began > budgetMs) break;
-        console.log(`   nothing here; following ${links.length ? "their own link" : "a conventional path"}: ${next}`);
+        console.log(`   nothing here; following ${theirs ? "their own link" : "a conventional path"}: ${next}`);
         const r2 = await captureAll({ pageUrl: next, timeoutMs: Math.max(5, patienceS) * 1000,
                                       quietMs: patienceS > 45 ? 5000 : 2500 });
         const f2 = findFeeds(r2);

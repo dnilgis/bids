@@ -141,16 +141,31 @@ test("a failure comes back as a value, not as a thrown error", () => {
 /* ---- Premier Cooperative rounds where Ag Partners floors ----------------- */
 
 test("a board that ROUNDS is named round-cent, and floor does not explain it", () => {
-  /* Found 2026-08-20 by running this probe against Premier Cooperative's own
-     page: 161 rows across 16 locations, `round 161/161`, `floor 89/161`,
-     residuals {-0.5, -0.25, 0, 0.25}. Two DTN customers on one platform round
-     their own cash cell two different ways, so the mode has to be measured per
-     source and can never be inherited from the platform. */
+  /* THE PROVENANCE OF THIS TEST WAS WRONG AND IS CORRECTED — 2026-09-07.
+     It used to say this came from Premier Cooperative: "161 rows across 16
+     locations, round 161/161, floor 89/161, residuals {-0.5,-0.25,0,0.25}".
+     Premier's boards post cash to more than two decimals and reconcile to the
+     last digit — Manchester 17 of 17, Ossian 16 of 16, Viserion McGregor 18 of
+     18, measured on 2026-09-07 from the live shards. Those four residual values
+     are what the OLD counter produced by rounding their cash to the cent before
+     measuring it; see lib/rounding.mjs. `round-cent` is still a real mode and
+     still needed — AgriCharts' cashgrid boards show it across 6,228 rows
+     measured through checkIdentity, which does not round — but it was never
+     Premier's, and a test citing a measurement that did not happen is worse
+     than a test with no comment.
+     The rows below are constructed, and say so. What they demonstrate is
+     unchanged: a cash cell rounded to the nearest cent is named round-cent, and
+     floor does not explain it. */
   const r = (cash, basis, futuresPrice) => ({ cash, basis, futuresPrice });
-  const premier = [r(4.29, -0.5, 479.25), r(4.29, -0.5, 478.5), r(4.29, -0.5, 479), r(4.30, -0.5, 479.75)];
-  const ev = roundingEvidence(premier);
+  const rounded = [r(4.29, -0.5, 479.25), r(4.29, -0.5, 478.5), r(4.29, -0.5, 479), r(4.30, -0.5, 479.75)];
+  const ev = roundingEvidence(rounded);
   assert.equal(ev.mode, "round-cent");
-  assert.deepEqual(ev.modes, ["round-cent"]);
+  /* round-cent IS round-cent-either with the top end open, so a board explained
+     by the first is always explained by the second. Both are listed; the
+     narrower one is the answer. Before round-cent-either existed this list read
+     ["round-cent"], and the change is the fourth mode being enumerated, not the
+     verdict moving. */
+  assert.deepEqual(ev.modes, ["round-cent", "round-cent-either"]);
   assert.equal(ev.round, 4);
   assert.equal(ev.floor, 2, "floor cannot explain a cash cell that rounded DOWN's neighbour up");
   assert.deepEqual(ev.residuals, [-0.5, -0.25, 0, 0.25]);
@@ -164,7 +179,11 @@ test("when two rules both explain every row it names neither, and says so", () =
   const r = (cash, basis, futuresPrice) => ({ cash, basis, futuresPrice });
   const both = [r(4.29, -0.5, 479), r(4.29, -0.5, 479.25)];
   const ev = roundingEvidence(both);
-  assert.deepEqual(ev.modes, ["floor-cent", "round-cent"]);
+  assert.deepEqual(ev.modes, ["floor-cent", "round-cent", "round-cent-either"]);
+  /* Still null, and for the same reason. floor-cent is not narrower than
+     round-cent and round-cent is not narrower than floor-cent -- neither
+     contains the other -- so no one of them is the answer. The presence of a
+     third, wider mode in the list does not change that. */
   assert.equal(ev.mode, null, "ambiguous is not a mode");
 });
 

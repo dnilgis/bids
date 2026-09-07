@@ -86,65 +86,35 @@ const arg = (name, dflt = null) => {
 };
 
 /* ---- the rounding question, asked of one location's rows ---------------- */
-/* Deliberately the same shape as dtn-probe's, so the two probes can be read
-   against each other. A quarter cent is the tick corn trades in, which is why
-   the residuals come out in quarters and why a board that displays to the
-   whole cent cannot reconcile exactly. */
-export function roundingEvidence(rows) {
-  const cents = (n) => Math.round(n * 100);
-  let exact = 0, round = 0, floor = 0, ceil = 0, testable = 0, otherUnit = 0;
-  const residuals = new Set();
-  for (const r of rows) {
-    /* A ROW QUOTED IN ANOTHER UNIT IS NOT EVIDENCE ABOUT ROUNDING.
-       Added 2026-08-29 evening, run 90133552278. Six CHS boards came back
-       "NO RULE EXPLAINS IT" with residuals of -69522c, -73537c, -66040c --
-       hundreds of dollars, on boards whose ordinary rows carry the clean
-       floor-cent signature {0, -0.25, -0.5, -0.75}. Every one of those boards
-       quotes CANOLA in USD/CWT against a futures contract in another unit, so
-       `cash === basis + futures` was never going to hold between the two
-       printed numbers, and testing it produced a verdict calling the whole
-       board unmeasurable when only the canola was.
-       The adapter already knows -- it folds the unit into the commodity name
-       so DEFAULT_BANDS cannot match it and board.mjs withholds the row. It now
-       says so in a field instead of only in a string. Rows from a source that
-       does not set it are tested exactly as before. */
-    if (r.identityCheckable === false) { otherUnit++; continue; }
-    /* `futures` IS THE SYMBOL, "ZCU26". The price is `futuresPrice`, and it is
-       already in CENTS -- 476.25 -- which is where the quarter comes from.
-       Reading r.futures as the number gave NaN on every row of the fixture and
-       reported "no rule explains it" for a board nothing had measured yet. */
-    if (r.cash == null || r.basis == null || r.futuresPrice == null) continue;
-    testable++;
-    const want = r.futuresPrice + (r.basisCents ?? cents(r.basis));
-    const got = cents(r.cash);
-    residuals.add(Math.round((got - want) * 100) / 100);
-    if (Math.abs(got - want) < 0.005) exact++;
-    if (Math.abs(got - Math.round(want)) < 0.005) round++;
-    if (Math.abs(got - Math.floor(want + 1e-9)) < 0.005) floor++;
-    if (Math.abs(got - Math.ceil(want - 1e-9)) < 0.005) ceil++;
-  }
-  return { testable, exact, round, floor, ceil, otherUnit,
-           residuals: [...residuals].sort((a, b) => a - b) };
-}
+
+/* IMPORTED, NOT REIMPLEMENTED — 2026-09-07.
+ *
+ * This file used to carry its own copy of the counter, "deliberately the same
+ * shape as dtn-probe's, so the two probes can be read against each other". They
+ * could not: dtn-probe measured `derived - cash` and this one measured
+ * `cash - want`, so the same board printed residuals of opposite sign in the two
+ * logs. Both copies also rounded the board's cash to the cent before measuring
+ * it, which invents a residual on any board posting cash below the cent.
+ *
+ * The counter now lives in lib/rounding.mjs, uses the sign convention the
+ * identity guard itself uses (`futures - (cash - basis) * 100`), and rounds
+ * nothing. So the floor-cent signature this file's canola comment describes as
+ * {0, -0.25, -0.5, -0.75} now prints as {0, +0.25, +0.5, +0.75} — the same
+ * boards, the same rule, stated the way the guard states it.
+ *
+ * THE `ceil` COUNT IS GONE and that is a fix, not a loss. `roundingRule()`
+ * throws Refused on any cashRounding it does not know and there is no
+ * ceil-cent, so "ceil-cent explains ALL 13" was this probe offering a verdict
+ * that would refuse at the first poll of the manifest somebody wrote from it.
+ * A ceiling board still shows plainly in the residuals, which are printed. */
+export { roundingEvidence } from "../lib/rounding.mjs";
+import { roundingEvidence, describeEvidence } from "../lib/rounding.mjs";
 
 /* SAY BOTH AND LET A PERSON LOOK. A probe that picked the winning rule itself
-   would be the same guess, made somewhere harder to see. */
-function verdict(e) {
-  /* SAY WHAT WAS SET ASIDE. A silent withholding is worse than a refusal
-     (rule 20): a reader told "floor-cent explains ALL 13" about a twenty-row
-     board has to be able to see where the other seven went. */
-  const aside = e.otherUnit
-    ? ` (${e.otherUnit} row(s) set aside -- quoted in another unit, identity not checkable)` : "";
-  if (!e.testable) return `no testable row -- nothing carried cash, basis and futures together${aside}`;
-  const best = [["exact", e.exact], ["floor-cent", e.floor],
-                ["round-cent", e.round], ["ceil-cent", e.ceil]]
-    .filter(([, n]) => n === e.testable).map(([k]) => k);
-  if (best.length) return `${best.join(" or ")} explains ALL ${e.testable}${aside}`;
-  return `NO RULE EXPLAINS IT: floor ${e.floor}, round ${e.round}, ceil ${e.ceil}, ` +
-         `exact ${e.exact} of ${e.testable}${aside}. Both displayed figures are probably ` +
-         `rounded independently -- see cashRoundingCents, and measure the maximum ` +
-         `residual rather than reaching for a round number.`;
-}
+   would be the same guess, made somewhere harder to see. `describeEvidence`
+   names the narrowest mode that explains every row and says so when two modes
+   neither of which contains the other both do. */
+const verdict = describeEvidence;
 
 /* RETURNS { body, from } ON EVERY PATH. A fixture has no address to report,
    and returning a bare string from this one branch is what broke the first
@@ -221,7 +191,6 @@ export async function probeOne(where, opts = {}) {
     console.log(`      locationId  ${id}`);
     console.log(`      rows        ${rs.length}   ${commodities}`);
     console.log(`      rounding    ${verdict(e)}`);
-    console.log(`      residuals   ${e.residuals.length ? e.residuals.join("c, ") + "c" : "none"}`);
     /* THE STATE IS NOT IN THIS PAYLOAD and must not be invented. Bushel's
        location object is {id, name, groups} -- the same shortcoming DTN's has.
        Read it off the operator's own locations page. Country Partners has a

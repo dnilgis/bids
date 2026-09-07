@@ -34,10 +34,18 @@
  * explains, and prints the residuals it actually saw. The manifest then states
  * what was observed. Ag Partners: floor 25 of 25, round 11 of 25, exact 4 of 25,
  * residuals {0, 0.25, 0.75} -- which is the eighths remainder and nothing else.
+ *
+ * THE COUNTING NOW LIVES IN lib/rounding.mjs AND IS SHARED WITH THE GUARD.
+ * The copy that used to be here rounded the board's cash to the cent before
+ * measuring it, which invented residuals on every board that posts cash to more
+ * than two decimals -- twenty-one live DTN boards, Premier Cooperative's among
+ * them -- and every one of the fifty-two sources held "ROUNDING UNRESOLVED" was
+ * judged by it. That file carries the measurement and the evidence.
  */
 import { readFileSync } from "node:fs";
 import { extract } from "../lib/adapters/dtn-cs.mjs";
 import { capture, captureAll } from "../lib/cdp.mjs";
+import { roundingEvidence, describeEvidence } from "../lib/rounding.mjs";
 import { destinationReason } from "../lib/place.mjs";
 
 const args = process.argv.slice(2);
@@ -48,88 +56,10 @@ const BASE = flag("base", "https://api.dtn.com/markets");
 
 /* ---- the measurement ----------------------------------------------------- */
 
-/** Which rule explains this board's cash cell? Counts, never a conclusion. */
-export function roundingEvidence(rows) {
-  const cents = (n) => Math.round(n * 100);
-  let exact = 0, round = 0, floor = 0, testable = 0;
-  const residuals = new Set();
-  for (const r of rows) {
-    if (r.cash == null || r.basis == null || r.futuresPrice == null) continue;
-    testable++;
-    const derived = cents(r.basis) + r.futuresPrice;
-    const cash = cents(r.cash);
-    if (Math.abs(derived - cash) < 1e-9) exact++;
-    if (Math.round(derived) === cash) round++;
-    if (Math.floor(derived + 1e-9) === cash) floor++;
-    residuals.add(Math.round((derived - cash) * 1000) / 1000);
-  }
-  /* Named only when a rule explains EVERY testable row. A rule that explains
-     most of them explains none of them: the rows it misses are the ones that
-     would have told us something.
-     AND ONLY WHEN EXACTLY ONE RULE DOES. A board whose residuals all sit in
-     [0, 0.5] is explained by floor-cent AND by round-cent, and the two are not
-     the same promise -- floor would go on to accept +0.9 and round would go on
-     to accept -0.4. Naming either one would be picking, and picking is what
-     this function exists not to do. Say both and let a person look. */
-  const explains = [];
-  if (testable && exact === testable) explains.push("exact");
-  if (testable && floor === testable) explains.push("floor-cent");
-  if (testable && round === testable) explains.push("round-cent");
-  /* `exact` subsumes the others by definition, so it is not an ambiguity. */
-  const modes = explains.includes("exact") ? ["exact"] : explains;
-  const named = modes.length === 1 ? modes[0] : null;
-
-  /* HOW HARD DID THE WINNER HAVE TO WORK?
-   *
-   * "Exactly one rule explains every row" is necessary and, on a small board,
-   * nowhere near sufficient. Country Partners' Arnold posts corn and nothing
-   * else: two testable rows, floor explained both, round explained one, and
-   * the probe printed "floor-cent" with the same confidence it printed it for
-   * Ag Partners' twenty-five. One of those is a measurement.
-   *
-   * The margin is the number of rows that ACTIVELY RULED OUT the runner-up.
-   * Below three, the rules simply have not been made to disagree often enough
-   * to tell them apart, and cashRounding is left off the manifest -- which
-   * keeps the identity guard strict and makes the board refuse loudly rather
-   * than publish under a mode nobody really established.
-   *
-   * This is not the guard being softened. It is the guard declining to be set
-   * from two rows. */
-  const rival = named === "exact" ? 0 : (named === "floor-cent" ? round : floor);
-  const margin = named ? testable - rival : 0;
-
-  /* TWO SEPARATE QUESTIONS, AND THE FIRST DRAFT ASKED THEM AS ONE.
-   *
-   * `mode` answers "which rule explains every row" — a fact about the rules,
-   * and the thing the rest of the test suite is about. `confident` answers
-   * "is that enough to write into a manifest that will publish prices", which
-   * is a higher bar, and folding it into `mode` quietly changed the meaning of
-   * assertions written about the first question.
-   *
-   * The bar is the MARGIN: how many rows actively ruled the runner-up out.
-   * Country Partners' Arnold posts corn and nothing else — two testable rows,
-   * floor explained both, round explained one — and the probe printed
-   * "floor-cent" with the same confidence it printed it for Ag Partners'
-   * twenty-five. One of those is a measurement.
-   *
-   * Two, because one disagreeing row can be a typo in somebody's board and
-   * two independent ones are not. Below it, cashRounding is left OFF the
-   * manifest, which keeps the identity guard exact and makes the board refuse
-   * loudly rather than publish under a mode nobody established. That is the
-   * guard declining to be set from one row, not the guard being softened. */
-  const MIN_MARGIN = 2;
-  const confident = named && (named === "exact" || margin >= MIN_MARGIN) ? named : null;
-
-  return {
-    testable, exact, round, floor,
-    modes,
-    mode: named,
-    margin,
-    confident,
-    weak: named && !confident ? { named, margin } : null,
-    residuals: [...residuals].sort((a, b) => a - b),
-  };
-}
+/* IMPORTED, NOT REIMPLEMENTED. Re-exported so `import { roundingEvidence } from
+   "../scripts/dtn-probe.mjs"` keeps working for every existing caller and test.
+   See lib/rounding.mjs for what the second copy got wrong and how. */
+export { roundingEvidence, describeEvidence };
 
 /** One manifest per location, with everything the feed knows and nothing else. */
 export function skeleton(rows, { siteId, url, page, operator }) {
@@ -334,14 +264,24 @@ async function probeOne({ site, page, fixture, operator }) {
     }
     console.log(`  against the previous run: ${agree} agree, ${differ} disagree, ${fresh} not seen before`);
   }
+  /* TWO QUESTIONS, TWO LINES — 2026-09-07.
+   *
+   * The rounding verdict and the not-a-town flag used to be printed as one
+   * sentence, and whoever wrote the held manifests pasted the sentence whole.
+   * Five sources now sit disabled under the headline "ROUNDING UNRESOLVED"
+   * whose own numbers, on the same line, say `exact` — they were held because
+   * the location is a processor, which is a different question with a different
+   * answer. A reader clearing the rounding backlog cannot tell them apart.
+   *
+   * The residuals go on the line too. The header of this file has claimed since
+   * the first version that the probe "prints the residuals it actually saw" and
+   * it never did. Had it, the sub-cent bug in the old counter would have been
+   * visible on day one: a board that balances exactly does not have residuals. */
   for (const sk of skels) {
     console.log(`\n--- ${sk.manifest.location} (${sk.manifest.locationId}) — ${sk._rows} row(s): ` +
-                `${sk._commodities.join(", ")} — ${sk._evidence.confident
-                    ?? (sk._evidence.weak
-                        ? `${sk._evidence.weak.named} but only by ${sk._evidence.weak.margin} row(s) — TOO FEW TO STATE`
-                        : "rounding UNRESOLVED")}` +
-                ` [${sk._evidence.testable} testable: exact ${sk._evidence.exact}, round ${sk._evidence.round}, floor ${sk._evidence.floor}]`);
-    if (sk._notATown) console.log(`    NOT A TOWN? ${sk._notATown}`);
+                `${sk._commodities.join(", ")}`);
+    console.log(`    ROUNDING  ${describeEvidence(sk._evidence)}`);
+    if (sk._notATown) console.log(`    NOT A TOWN?  ${sk._notATown} — a separate question from the rounding, and a separate reason to hold.`);
     console.log(JSON.stringify(sk.manifest, null, 2));
   }
   return { site, ok: true, rows: rows.length, locations: skels.length,

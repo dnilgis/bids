@@ -43,8 +43,40 @@ for (const e of known.elevators || []) {
   seen.set(h, (seen.get(h) ?? 0) + 1);
 }
 
+/* AN EMPTY LIST IS NOT A FINISHED SWEEP -- 2026-09-07.
+ *
+ * This script reads `e.url` off every record in data/known-elevators.json.
+ * That file is synced from agsist, its shape changed, and its records now carry
+ *
+ *     facility, branch, city, state, zip, phone, source
+ *
+ * and no url at all. The file SAYS SO in its own header: `counts.with_url` is
+ * 0. Nothing here asked, so this printed an empty list, exit 0, "0 host(s) to
+ * ask" on stderr where nobody reads it.
+ *
+ * discover-sweep.yml runs every three hours off that list. With an empty list
+ * `--resume` prints "nothing left to ask — the sweep is complete" and exits 0,
+ * so the workflow that exists because Sig said "I want every elevator in the
+ * country" has been GREEN AND IDLE, reporting completeness, for as long as the
+ * directory has been urlless. Verified 2026-09-07 by running it: 1804 records,
+ * 0 with a url, 249 hosts skipped as already read, 0 to ask.
+ *
+ * A run whose failure looks exactly like its success is not a run. If the
+ * directory carries no url on any record, that is a regression in the input and
+ * it is reported as one, loudly, with a non-zero exit. `--allow-empty` is there
+ * for the day the sweep genuinely finishes, and has to be typed by a person. */
+const withUrl = (known.elevators || []).filter((e) => e && e.url).length;
 const out = [...seen.keys()].sort();
 for (const h of out) console.log("https://" + h + "/");
 console.error(`${out.length} host(s) to ask, covering ` +
               `${[...seen.values()].reduce((a, b) => a + b, 0)} facilit(ies); ` +
               `${have.size} host(s) already read were skipped`);
+if (!withUrl && !process.argv.includes("--allow-empty")) {
+  console.error(`::error title=the directory carries no websites::` +
+    `data/known-elevators.json holds ${(known.elevators || []).length} record(s) and NOT ONE has a ` +
+    `url field, so this list is empty for a reason that has nothing to do with the sweep being ` +
+    `finished. Its own counts.with_url reads ${known.counts?.with_url ?? "absent"}. ` +
+    `The sync that writes it (sync_known.yml, from agsist) has changed shape. ` +
+    `Pass --allow-empty only when the emptiness is the answer.`);
+  process.exit(3);
+}

@@ -464,7 +464,7 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
        the grid their futures column is quoted on" — the guard diagnosing its
        own tolerance.
 
-       `round-cent` is the mode Premier Cooperative already needed and is not
+       `round-cent` is the mode this repository already had and is not
        widened for this: -0.5 <= r < 0.5, closed at the bottom, open at the
        top. It explains 4,275 of the 4,281 failures. The six it does not are
        one commodity on one board — CoMark's WHEAT HRW at Chisholm Trail and
