@@ -156,3 +156,30 @@ jobs:
           else
             bash scripts/commit-and-push.sh "agricharts: sources written by the sweep"
           fi
+
+      # THE WORKLIST OUTLIVES THE RUNNER, AND UNTIL NOW IT DID NOT.
+      #
+      # 2026-09-07, run at 20:48: the sweep read 154 boards and reported
+      #
+      #     13 manifest(s) WRITTEN  ·  534 skipped  ·  808 location(s) with no town
+      #     all 808 written to data/gaps/board-locations-with-no-town.csv
+      #
+      # and then committed fixtures/ and sources/ and nothing else. The file
+      # was written to a runner that was deleted eight minutes later. Eight
+      # hundred and eight elevators posting real prices, named, counted, and
+      # thrown away -- the same shape as the sibling worklist that board-sweep
+      # already carries a paragraph about, in the same repository, from two
+      # days earlier. That fix was applied to board-siblings.csv and not here.
+      #
+      # NOT gated on `write` or `capture`. A dry run that finds 808 placeable
+      # elevators has produced the most valuable thing in the run, and refusing
+      # to keep it because nothing was written is exactly backwards.
+      - name: Keep the gap lists
+        if: ${{ always() }}
+        run: |
+          git add -A data/gaps/ || true
+          if git diff --cached --quiet; then
+            echo "no change to the gap lists"
+          else
+            bash scripts/commit-and-push.sh "agricharts: the locations that still have no town [skip ci]"
+          fi
