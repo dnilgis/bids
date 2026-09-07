@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bidLink, boardPagesToTry, FALLBACK_PATHS, DEFAULT_FOLLOW, verdict, SIGNATURES,
          fingerprint } from "../scripts/discover.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 const page = (html, url = "https://coop.example.com/") =>
   ({ responses: [{ url, mime: "text/html", body: html, status: 200 }] });
@@ -152,4 +152,43 @@ test("the gradable probe list holds the pages that found it", () => {
   const urls = txt.split("\n").map((s) => s.trim()).filter((s) => s && !s.startsWith("#"));
   assert.equal(urls.length, 11, "ten POET plants and ADM");
   for (const u of urls) assert.match(u, /^https?:\/\//);
+});
+
+/* --- the Run workflow form ---------------------------------------------- */
+
+test("every list the dropdown offers has a case arm and a file behind it", () => {
+  /* A menu entry with no case arm is a run that fails after the checkout, and
+     a case arm pointing at a file that is not in the repository is the same
+     thing one step later. Both are only findable by pressing the button. */
+  const yml = readFileSync(new URL("../.github/workflows/discover.yml", import.meta.url), "utf8");
+  const opts = [...yml.matchAll(/^          - ([a-z0-9-]+)\s*(#.*)?$/gm)].map((m) => m[1]);
+  assert.ok(opts.length >= 8, `only ${opts.length} option(s) parsed out of the dropdown`);
+  const arms = new Map([...yml.matchAll(/^            ([a-z0-9-]+>?\)?)\s*\)?\s+(?:FILE=(\S+)|node )/gm)]
+    .map((m) => [m[1].replace(/\)$/, ""), m[2] ?? "(built at run time)"]));
+  for (const o of opts) {
+    assert.ok(arms.has(o), `the dropdown offers "${o}" and the case statement does not answer it`);
+    const file = arms.get(o);
+    if (file.startsWith("probe-lists/"))
+      assert.ok(existsSync(new URL("../" + file, import.meta.url)),
+        `"${o}" points at ${file}, which is not in the repository`);
+  }
+});
+
+test("no count is written into the form, because that is what went stale", () => {
+  /* "national — 487 pages" (it is 475), "sweep-2-wi-mn — 15 still unasked"
+     (34), "discover-candidates — the original 56, spent" (109 still owed).
+     scripts/list_report.mjs prints the real ones at the top of every run. */
+  const yml = readFileSync(new URL("../.github/workflows/discover.yml", import.meta.url), "utf8");
+  const listDesc = /^      list:\n        description: "([^"]*)"/m.exec(yml)?.[1];
+  assert.ok(listDesc, "the list input has no description");
+  /* Narrow on purpose. "Blank = 45" is a DEFAULT and stays true for ever; what
+     went stale was a count of what is IN a list, and every one of those lived
+     on this input. A default value in another box is not the same thing and is
+     not policed here. */
+  assert.ok(!/\d/.test(listDesc),
+    `the list input carries a number, and a number typed into a form is a number nobody updates: "${listDesc}"`);
+  for (const name of ["national", "sweep-2-wi-mn", "discover-candidates", "gd-candidates"])
+    assert.ok(!new RegExp(`${name}[^"]*\\d`).test(listDesc), `${name} has a count beside it again`);
+  assert.match(yml, /node scripts\/list_report\.mjs/,
+    "the counts have to be printed somewhere if they are not in the form");
 });
