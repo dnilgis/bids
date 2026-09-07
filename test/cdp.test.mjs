@@ -77,14 +77,22 @@ test("the browser is for platforms whose page fetches its own board", () => {
      own page makes at runtime, so a plain GET of the page returns a shell.
      A test that pins down how many there are, rather than which ones and why,
      goes red the day the answer is legitimately different. */
-  for (const p of ["dtn-cs", "bushel"])
+  /* Gradable joined 2026-09-07, and for a WEAKER reason than the other two,
+     which is worth saying rather than hiding in a list. Its board carries no
+     key and says offer_type=public, so a plain GET may well work — but their
+     bootstrap opens `while(1);`, their page also calls /api/effu/user, and the
+     sandbox cannot reach gradable.com to settle it. Browser costs a page load
+     and works either way; `fetch` on that reasoning would be a guess that fails
+     as "0 bids" at six in the morning. One run proving a plain GET returns the
+     same JSON moves it, and saves the load. */
+  for (const p of ["dtn-cs", "bushel", "gradable"])
     assert.equal(transportOf(p), "browser", p);
   for (const p of ["cashbidssingle", "aghost", "fragment", "graindesk", "first-party"])
     assert.equal(transportOf(p), "fetch", p);
   /* Still a closed set: a platform is on the browser deliberately or not at
      all, because the browser is slow and a page we do not need to run is a
      page we should not run. */
-  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs"]);
+  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs", "gradable"]);
 });
 
 /* ---- end to end, against a server that enforces DTN's own rule ----------- */
