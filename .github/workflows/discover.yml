@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which candidate list: unfinished (the 437 sites the ledger has not decided — 169 unreachable, 268 written off by an older probe), national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
+        description: "Which candidate list: unfinished (every site the ledger has not decided — the unreachable ones and any written off by an older probe), gradable (the eleven POET and ADM pages, pair with dump=bootstrap limit=1), national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
         required: false
         default: "national"
       urls:
@@ -132,13 +132,16 @@ jobs:
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
             sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
+            # The eleven pages measured calling gradable.com. Pair with
+            # dump=bootstrap and limit=1 to print one whole body.
+            gradable)            FILE=probe-lists/gradable-sites.txt ;;
             # THE LEDGER'S OWN BACKLOG. Every site data/platforms.json has not
             # decided: the unreachable ones, which it has promised since
             # 2026-08-30 would come round again, and the no-platform ones
             # written off by a probe older than this one.
             unfinished)          node scripts/unfinished_sites.mjs data/platforms.json > /tmp/unfinished.txt
                                  FILE=/tmp/unfinished.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use national, unfinished, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+            *) echo "::error title=unknown list::${LIST}. Use national, unfinished, gradable, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
           esac
           echo "asking $FILE"
           DUMPARG=""
