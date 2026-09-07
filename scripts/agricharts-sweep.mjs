@@ -448,7 +448,22 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
     url, locationId: loc.locationId,
     identityAlternative: kind === "cashgrid" ? CASHGRID_VERIFIED_BY : VERIFIED_BY,
     bands,
-    cadence: "grain-day", provenance: "scraped", enabled: true,
+    /* A COUNTY CENTROID IS NOT A PIN. 2026-09-07, run 34160812500: this sweep
+       wrote sources/kalmbachmarkets-co.json for a location called "C&O" —
+       which is a railroad, not a town — took the county centroid geocodes
+       already held for it, wrote "latPrecision": "county" and "lat/lon was NOT
+       derived here ... the state named a site, not a town" into the file's own
+       _pending, and set enabled: true anyway. test/geocodes.test.mjs caught it
+       ("latPrecision \"county\" is neither street nor town") and main went red.
+
+       An Ohio county centroid can be twenty miles from the elevator. A farmer
+       following that pin does not arrive. The manifest is still worth writing
+       — the board, the rows and the locationId are all real — but it must not
+       go live until somebody can name the town, so the pin is written and the
+       source is held. Same doctrine as the rounding holds: read it, keep it,
+       do not publish what cannot be stated. */
+    cadence: "grain-day", provenance: "scraped",
+    enabled: !(coord && dir.coord && dir.coord.precision === "county"),
     /* THEIR CASH CELL IS ROUNDED TO THE CENT, SO THE IDENTITY CAN ONLY EVER
        HOLD TO THE CENT. Measured 2026-09-04 across 6,228 testable rows on all
        45 captured cashgrid boards: checkIdentity's signedCents took exactly

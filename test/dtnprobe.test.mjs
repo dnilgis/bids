@@ -165,7 +165,11 @@ test("a board that ROUNDS is named round-cent, and floor does not explain it", (
      narrower one is the answer. Before round-cent-either existed this list read
      ["round-cent"], and the change is the fourth mode being enumerated, not the
      verdict moving. */
-  assert.deepEqual(ev.modes, ["round-cent", "round-cent-either"]);
+  /* And the fifth, `round-cent-both`, added 2026-09-07: it is wider than both
+     of these and therefore explains every row they do. Enumerated, not chosen
+     -- `ev.mode` below is still round-cent, the narrowest that explains
+     everything. */
+  assert.deepEqual(ev.modes, ["round-cent", "round-cent-either", "round-cent-both"]);
   assert.equal(ev.round, 4);
   assert.equal(ev.floor, 2, "floor cannot explain a cash cell that rounded DOWN's neighbour up");
   assert.deepEqual(ev.residuals, [-0.5, -0.25, 0, 0.25]);
@@ -179,7 +183,7 @@ test("when two rules both explain every row it names neither, and says so", () =
   const r = (cash, basis, futuresPrice) => ({ cash, basis, futuresPrice });
   const both = [r(4.29, -0.5, 479), r(4.29, -0.5, 479.25)];
   const ev = roundingEvidence(both);
-  assert.deepEqual(ev.modes, ["floor-cent", "round-cent", "round-cent-either"]);
+  assert.deepEqual(ev.modes, ["floor-cent", "round-cent", "round-cent-either", "round-cent-both"]);
   /* Still null, and for the same reason. floor-cent is not narrower than
      round-cent and round-cent is not narrower than floor-cent -- neither
      contains the other -- so no one of them is the answer. The presence of a

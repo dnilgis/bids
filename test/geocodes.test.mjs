@@ -132,8 +132,24 @@ test("A FILLED COORDINATE SAYS HOW PRECISE IT IS", () => {
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
     if (s.latPrecision === undefined) continue;
+    /* A HELD SOURCE MAY CARRY A PIN NOBODY WOULD DRAW.
+       2026-09-07: agricharts-sweep wrote kalmbachmarkets-co with a county
+       centroid for a location called "C&O" — a railroad, not a town — and
+       enabled it. This guard caught it and main went red, which is the guard
+       working. The manifest is worth keeping: the board, the 12 rows and the
+       locationId are real, and the sweep now refuses to enable a county pin.
+       So the rule is about what is DRAWN, not about what is stored. A source
+       that is not enabled is not on the map and may say "county"; an enabled
+       one may not, because a county centroid is a place a farmer drives to
+       and does not arrive. */
+    if (s.enabled === false && s.latPrecision === "county") {
+      assert.ok(typeof s._pending === "string" && /county/i.test(s._pending),
+        `${s.id}: held at county precision and does not say why in _pending`);
+      continue;
+    }
     assert.ok(["street", "town"].includes(s.latPrecision),
-      `${s.id}: latPrecision "${s.latPrecision}" is neither street nor town`);
+      `${s.id}: latPrecision "${s.latPrecision}" is neither street nor town` +
+      (s.enabled === false ? "" : " — and it is ENABLED, so it is on the map"));
     assert.ok(typeof s.lat === "number",
       `${s.id}: says how precise its coordinate is and does not have one`);
     if (s.latPrecision === "street") street++; else town++;

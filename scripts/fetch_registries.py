@@ -1832,6 +1832,62 @@ def scrape(src, pages, timeout, verbose, dump=None):
     return recs, diag
 
 
+def source_state(rec):
+    """WHICH STATE'S ROLL PRODUCED THIS RECORD -- not where the business sits.
+
+    A record's "state" is its location. Its "source" is the roster it came off,
+    written as registry-<code>. Wisconsin's roll of 210 carries businesses in
+    CO, GA, IA, IL, KS, MI, MN, MO, ND, NE, OH and VT: they hold a Wisconsin
+    licence and live elsewhere. Keying a merge on "state" would drop those
+    twelve states' worth of Wisconsin licensees the next time somebody ran
+    --states MN. Keying on "source" cannot: it says who published the row."""
+    src = (rec or {}).get("source") or ""
+    if not src.startswith("registry-"):
+        return None
+    return src[len("registry-"):].upper() or None
+
+
+def merge_with_committed(out, diags, want, path):
+    """--states NARROWED THE FILE INSTEAD OF UPDATING PART OF IT.
+
+    Measured 2026-09-07, run at 20:46. The workflow ran
+
+        python scripts/fetch_registries.py --pages 20 --states "WI"
+
+    and committed
+
+        [main 6fb1f95] registries: 210 businesses, plus the state survey
+         5 files changed, 40628 insertions(+), 173521 deletions(-)
+
+    One state was asked. The whole file was rewritten from that one state's
+    answer, and eleven states' rolls -- already harvested, already committed,
+    nothing wrong with them -- left the repository in that commit. Nothing
+    caught it, because every guard in this file asks whether a SOURCE came
+    back short. None of them asked whether the FILE came back short.
+
+    So: a run that asks for some states merges into the states it did not ask
+    for. A run that asks for all of them (want empty) is authoritative and
+    merges nothing. Returns (businesses, diagnostics, carried) where carried
+    is the number of records kept from the committed file.
+
+    A NAMED FUNCTION, not an `if` inside main(), so a test can call the code
+    that actually ships -- the same reason mark_incomplete_if_empty is one."""
+    if not want:
+        return out, diags, 0
+    try:
+        old = json.loads(Path(path).read_text())
+    except Exception:
+        # No committed file, or an unreadable one. Nothing to carry, and the
+        # run is not wrong -- but it is not a merge either, and saying zero is
+        # the honest answer.
+        return out, diags, 0
+    keep = [b for b in old.get("businesses") or []
+            if source_state(b) not in want]
+    keepdiag = [d for d in old.get("diagnostics") or []
+                if (d.get("state") or "").upper() not in want]
+    return out + keep, diags + keepdiag, len(keep)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pages", type=int, default=20, help="pagination attempts per paginated list")
@@ -1994,6 +2050,12 @@ def main():
     # Emptying the state on an out-of-state licensee was right; letting the
     # tally print {"null": 31} alongside real state codes was not. They are
     # counted apart, under a name that says what they are.
+    # CARRY THE STATES THIS RUN DID NOT ASK FOR. See merge_with_committed.
+    out, diags, carried = merge_with_committed(out, diags, want, OUT)
+    if carried:
+        print("\ncarried %d record(s) from %s for the %d state(s) this run did not ask"
+              % (carried, OUT, len({source_state(b) for b in out} - want - {None})))
+
     per_state, no_state = {}, 0
     for e in out:
         if not e.get("state"):
@@ -2001,6 +2063,10 @@ def main():
             continue
         per_state[e["state"]] = per_state.get(e["state"], 0) + 1
     counts = {"businesses": len(out),
+              # WHICH STATES THIS RUN ACTUALLY ASKED. A file rebuilt from one
+              # state used to look exactly like a file rebuilt from twenty.
+              "statesAsked": sorted(want) if want else "all",
+              "carriedFromCommitted": carried,
               # Licensed by a state, located somewhere else, and the state's own
               # list says so. Not in byState, because they are not in that state.
               "licensedButLocatedElsewhere": no_state,

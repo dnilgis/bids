@@ -616,6 +616,49 @@ test("both gap lists are rebuilt and committed wherever their inputs move", () =
   }
 });
 
+test("EVERY WORKFLOW THAT WRITES A GAP LIST ALSO COMMITS IT", () => {
+  /* 2026-09-07, run 20:48. agricharts-sweep finished with
+
+       13 manifest(s) WRITTEN  ·  534 skipped  ·  808 location(s) with no town
+       all 808 written to data/gaps/board-locations-with-no-town.csv
+
+     and then committed fixtures/ and sources/ and stopped. The file went to
+     the runner and the runner was deleted. 808 elevators posting real prices,
+     each one named with its operator, its location id and its row count, and
+     no copy of the list exists anywhere.
+
+     This is the SAME FAULT the sibling worklist already has a paragraph about
+     in board-sweep.yml, two days older, in this repository. That one was
+     fixed for board-siblings.csv. Nobody checked whether any other workflow
+     had it, so this test asks all of them at once: if the run writes into
+     data/gaps, the run commits data/gaps. */
+  const writers = ["agricharts-sweep.yml", "board-sweep.yml", "registries.yml",
+                   "discover-sweep.yml", "discover.yml"];
+  for (const f of writers) {
+    let y;
+    try { y = readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), "utf8"); }
+    catch { continue; }               /* a workflow that no longer exists is not a failure */
+    const scripts = /agricharts-sweep\.mjs|board-sweep\.mjs|gap_lists\.mjs|board-siblings\.mjs/.test(y);
+    if (!scripts) continue;
+    assert.match(y, /git add[^\n]*data\/gaps/,
+      `${f} runs something that writes into data/gaps and never commits it — ` +
+      `the worklist dies with the runner`);
+  }
+});
+
+test("and the agricharts gap list is kept even on a dry run", () => {
+  /* The two existing commit steps are gated on inputs.write and inputs.capture.
+     A dry run that finds 808 placeable elevators has produced the most useful
+     thing in the run; throwing it away because nothing was written is exactly
+     backwards. */
+  const y = readFileSync(new URL("../.github/workflows/agricharts-sweep.yml", import.meta.url), "utf8");
+  const step = y.slice(y.indexOf("Keep the gap lists"));
+  assert.ok(step.length > 0, "there is no step that keeps the gap lists");
+  const guard = /if:\s*\$\{\{\s*always\(\)\s*\}\}/.exec(step);
+  assert.ok(guard && guard.index < step.indexOf("git add"),
+    "the gap-list step must run always(), not only when inputs.write is set");
+});
+
 test("an unreachable page is not filed as an elevator that publishes no bids", () => {
   const g = readFileSync(new URL("../scripts/gap_lists.mjs", import.meta.url), "utf8");
   assert.match(g, /if \(v\.status !== "no-platform"\) continue;/,

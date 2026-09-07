@@ -167,3 +167,72 @@ test("the description carries the residuals, which is how the last bug was found
                                { cash: 4.29, basis: -0.5, futuresPrice: 479 }]);
   assert.match(describeEvidence(ev), /residuals 0c, 0\.75c/);
 });
+
+/* WHICH MODE CONTAINS WHICH IS DERIVED, NOT TYPED -- 2026-09-07.
+ *
+ * NARROWER_THAN was a hand-written table, and adding `round-cent-both` to
+ * CASH_ROUNDING without adding a fifth line to it made every board that mode
+ * explains come out AMBIGUOUS. The table is now computed from the predicates.
+ * These tests pin the derivation, not the answers: a sixth mode must be placed
+ * correctly with no edit here at all.
+ */
+test("the containment table is what the predicates actually say", async () => {
+  const { containment, NARROWER_THAN, RESIDUAL_GRID } = await import("../lib/rounding.mjs");
+  const { CASH_ROUNDING } = await import("../lib/board.mjs");
+
+  /* The two entries that were typed by hand before this was derived. If the
+     derivation ever stops reproducing them, it is wrong and not they. */
+  assert.deepEqual(NARROWER_THAN["exact"].sort(),
+    ["floor-cent", "round-cent", "round-cent-both", "round-cent-either"]);
+  assert.ok(NARROWER_THAN["round-cent"].includes("round-cent-either"));
+
+  /* AND THE NON-CONTAINMENT THIS FILE EXISTS TO PROTECT. floor-cent covers
+     +0.75 and round-cent covers -0.5, so neither is inside the other and a
+     board explained by both gets no name. */
+  assert.ok(!NARROWER_THAN["floor-cent"].includes("round-cent"));
+  assert.ok(!NARROWER_THAN["round-cent"].includes("floor-cent"));
+
+  /* NOTHING IS NARROWER THAN ITSELF, and two modes cannot each contain the
+     other -- that would be one rule under two names. */
+  for (const [a, list] of Object.entries(NARROWER_THAN)) {
+    assert.ok(!list.includes(a), `${a} cannot be narrower than itself`);
+    for (const b of list)
+      assert.ok(!(NARROWER_THAN[b] ?? []).includes(a),
+        `${a} and ${b} each claim to contain the other`);
+  }
+
+  /* EVERY MODE IS ON THE TABLE. A mode CASH_ROUNDING has and this does not is
+     exactly the bug that was here. */
+  assert.deepEqual(Object.keys(NARROWER_THAN).sort(), Object.keys(CASH_ROUNDING).sort());
+
+  /* THE GRID IS THE DOMAIN, NOT A SAMPLE. Residuals live on eighths of a cent
+     because futures are quoted in eighths, and no mode may reach past the walk
+     -- one that did would be a tolerance, not a rounding, and the containment
+     computed for it would be a guess. */
+  assert.equal(RESIDUAL_GRID[0], -2);
+  assert.equal(RESIDUAL_GRID[RESIDUAL_GRID.length - 1], 2);
+  for (const [name, rule] of Object.entries(CASH_ROUNDING)) {
+    if (!rule) continue;
+    assert.equal(rule(2.125), false, `${name} accepts a residual past the grid`);
+    assert.equal(rule(-2.125), false, `${name} accepts a residual past the grid`);
+  }
+
+  /* AND IT IS A FUNCTION OF ITS INPUT, so a new mode needs no edit here. */
+  const made = containment({
+    narrow: (s) => s === 0,
+    wide: (s) => Math.abs(s) < 1,
+  }, [-1, -0.5, 0, 0.5, 1]);
+  assert.deepEqual(made, { narrow: ["wide"], wide: [] });
+
+  /* TWO RULES THAT ACCEPT THE SAME RESIDUALS CONTAIN EACH OTHER, and that is
+     not a containment -- it is one rule under two names, and letting either
+     "win" would make the verdict depend on the order Object.keys returned.
+     Dropping the size test from `containment` passes every other assertion in
+     this file, because no two of the five real modes happen to be equal. */
+  const twins = containment({
+    a: (s) => Math.abs(s) < 1,
+    b: (s) => s > -1 && s < 1,
+  }, [-1, -0.5, 0, 0.5, 1]);
+  assert.deepEqual(twins, { a: [], b: [] },
+    "equal rules are not narrower than one another in either direction");
+});

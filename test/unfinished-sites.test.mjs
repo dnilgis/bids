@@ -95,3 +95,74 @@ test("--allow-empty is there for the day the sweep really is finished", () => {
     { cwd: ROOT, stdio: "pipe" });
   assert.equal(typeof out.toString(), "string", "it must exit 0 when a person says the empty list is the answer");
 });
+
+/* --- the order ------------------------------------------------------------ */
+
+test("THE LIST IS OLDEST FIRST, because alphabetical asked the same twenty twice", () => {
+  /* 2026-09-07. The discover run at 20:35 asked 45 sites and the run at 20:47
+     asked 20, and the first twenty of each were IDENTICAL, in order:
+     21stcoop, agheadquarters, altonterminal, aspinwallcoop, babgrain,
+     badgergrainsupply, bessie-cordellcoop, bids.themaschhoffs, bpsonsgrain,
+     brownmilling, and ten more. Fifty minutes of runner, 65 page loads, zero
+     sites decided.
+
+     A failed ask still stamps seenAt, so those twenty carried a stamp from
+     minutes earlier — and an alphabetical sort does not care how fresh a
+     record is. Sorting by seenAt is what makes "it comes round again" true. */
+  const ledger = {
+    sites: {
+      "https://aaa-asked-just-now.com/":   { status: "unreachable", seenAt: "2026-09-07T20:36:34.823Z" },
+      "https://zzz-asked-ten-days-ago.com/": { status: "unreachable", seenAt: "2026-08-28T23:17:12.161Z" },
+    },
+  };
+  const rows = unfinished(ledger, PROBE_VERSION);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].url, "https://zzz-asked-ten-days-ago.com/",
+    "the ten-day-old site is asked before the one asked minutes ago");
+});
+
+test("a site never asked at all outranks one asked once", () => {
+  const rows = unfinished({
+    sites: {
+      "https://asked-once.com/": { status: "unreachable", seenAt: "2026-08-01T00:00:00.000Z" },
+      "https://never-asked.com/": { status: "unreachable" },
+    },
+  }, PROBE_VERSION);
+  assert.equal(rows[0].url, "https://never-asked.com/",
+    "no stamp at all sorts first — never-asked beats asked-and-failed");
+});
+
+test("the order is deterministic when two records carry the same stamp", () => {
+  const same = "2026-09-01T00:00:00.000Z";
+  const rows = unfinished({
+    sites: {
+      "https://b.com/": { status: "unreachable", seenAt: same },
+      "https://a.com/": { status: "unreachable", seenAt: same },
+    },
+  }, PROBE_VERSION);
+  assert.deepEqual(rows.map((r) => r.url), ["https://a.com/", "https://b.com/"],
+    "the url is the tiebreak, so two runs of the same ledger ask the same order");
+});
+
+test("EVERY ROW CARRIES ITS STAMP, or the sort has nothing to sort on", () => {
+  const rows = unfinished(JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8")),
+    PROBE_VERSION);
+  assert.ok(rows.length > 0, "the shipped ledger owes some asks");
+  assert.ok(Object.hasOwn(rows[0], "seenAt"), "the row exposes seenAt");
+});
+
+test("and against the SHIPPED ledger the head is genuinely the oldest", () => {
+  /* Not a synthetic two-record case: the real 893-site ledger. On the day this
+     was written 233 of the 350 owed had not been asked since 2026-08-28 while
+     45 had been asked that day, and the alphabetical head was the 45. */
+  const rows = unfinished(JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8")),
+    PROBE_VERSION);
+  const stamps = rows.map((r) => String(r.seenAt ?? ""));
+  for (let i = 1; i < stamps.length; i++) {
+    assert.ok(stamps[i - 1] <= stamps[i],
+      `row ${i} (${rows[i].seenAt}) is older than row ${i - 1} (${rows[i - 1].seenAt})`);
+  }
+  const alphabetical = [...rows].sort((a, b) => a.url.localeCompare(b.url));
+  assert.notEqual(rows[0].url, alphabetical[0].url,
+    "if these agree the fix is doing nothing on the real ledger");
+});

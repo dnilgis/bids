@@ -4,6 +4,8 @@
   "location": "Clinton",
   "state": "IA",
   "platform": "cashbidssingle",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
   "url": "https://hillsdaleelevator.com/",
   "locationId": "3635",
   "bands": {
@@ -23,7 +25,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 34160787154) from the board page discover recorded for this operator: https://hillsdaleelevator.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 4 row(s) in #2 Yellow Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 34160787154) from the board page discover recorded for this operator: https://hillsdaleelevator.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 4 row(s) in #2 Yellow Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.\n\nFUTURES UNITS, MEASURED 2026-09-07 from fixtures/board-sweep/cashbidssingle-hillsdaleelevatorcom.html: this board writes its futures column in DOLLARS per bushel to four places (e.g. \"5.3675s\"), not in cents or eighths of a cent the way bigriverbids.com writes \"459-4\". Read as cents every row is out by roughly a hundredfold and the board refuses; read as dollars the rows balance to within a cent, which is the whole slack two-decimal cash and basis columns can produce. Declared, not inferred, and self-checking: a wrong declaration is out by a hundred and the identity guard refuses.\n\nCASH ROUNDING, MEASURED 2026-09-07 across 216 testable rows on the eleven captured dollars-quoting cashbidssingle boards: residuals -0.50 (7), -0.25 (21), 0 (16), +0.25 (140), +0.50 (28), +0.75 (1) and nothing else except Berthold's per-tonne canola. This board posts cash and basis to two decimals and its quote on the quarter-cent grid, so the derived value is a whole number of cents and the quote is not. round-cent-both bounds that at strictly under a cent, which is what two cent-rounded columns can produce between them.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": "52732",

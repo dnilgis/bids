@@ -823,15 +823,33 @@ test("an --only that matches nothing names the hosts that ARE unread", async () 
   assert.match(out, /the unread hosts are:|nearest:/);
 });
 
-test("--only hillsdale finds the board the worklist names", async () => {
+test("--only hillsdale: the filter reached it, and now it is read", async () => {
   /* The instruction that started this: 18 Hillsdale locations posting real
-     prices, all still "location NNNN". This is the filter that reaches them. */
+     prices, all still "location NNNN". This asserted that the filter found
+     one UNREAD site.
+
+     It did, and the sweep of 2026-09-07 20:48 read it: 18 locations, 126
+     rows, one manifest written — sources/hillsdaleelevator-clinton.json,
+     Clinton IA — and seventeen locations refused with "NO DIRECTORY MATCH —
+     no town, so no manifest". So the site is no longer unread, sitesFor
+     returns nothing for it, and the old assertion went red BECAUSE THE WORK
+     SUCCEEDED.
+
+     Deleting the test would lose the point. What it should say now is the
+     honest state: the site is covered, and coverage at the SITE level is not
+     coverage at the LOCATION level. Seventeen of Hillsdale's eighteen are in
+     data/gaps/board-locations-with-no-town.csv, which is a different list
+     with a different fix — they need a town, not another ask. */
   const plat = JSON.parse(readFileSync(join(ROOT, "data/platforms.json"), "utf8"));
   const got = sitesFor(plat, SOURCES,
     { platform: null, only: ["hillsdale"], start: 0, limit: Infinity });
-  assert.equal(got.length, 1);
-  assert.match(got[0].site, /hillsdaleelevator\.com/);
-  assert.equal(got[0].platform, "cashbidssingle");
+  assert.equal(got.length, 0,
+    "hillsdale is read now; if it is unread again a source file has been lost");
+  const manifest = readdirSync(join(ROOT, "sources"))
+    .filter((f) => /^hillsdaleelevator-/.test(f));
+  assert.ok(manifest.length >= 1,
+    "the site counts as read only because a manifest exists — if none does, " +
+    "sitesFor is hiding an unread site rather than reporting a finished one");
 });
 
 /* ── the locations are a tab strip, and the tabs are not links ──────────── */

@@ -68,7 +68,7 @@ import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { normaliseLabel, US_STATES } from "../lib/place.mjs";
-import { bandFor } from "../lib/board.mjs";
+import { bandFor, measureFuturesUnits, scaleFutures } from "../lib/board.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DATA = join(ROOT, "data");
@@ -332,11 +332,23 @@ export function hostOf(u) {
   try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
 }
 
-export function manifestFor({ id, platform, operator, website, url, loc, dir, zipCoord, runId }) {
+export function manifestFor({ id, platform, operator, website, url, loc, dir, zipCoord, runId,
+                              units = null }) {
   const bands = { corn: [2.0, 12.0], soybean: [6.0, 32.0], wheat: [3.0, 20.0] };
   return {
     id, operator, location: dir.branch, state: dir.state,
     platform, url,
+    /* THE UNITS OF THE FUTURES COLUMN, MEASURED FROM THE BOARD THIS RUN READ.
+     *
+     * `futuresUnits` existed from 2026-08-20 and no manifest this sweep ever
+     * wrote carried it, because this function did not know the field was
+     * there. Twenty-nine of the thirty enabled cashbidssingle sources on
+     * 2026-09-07 were refused for that one omission -- they quote dollars,
+     * they were read as cents, and every row came out a hundredfold wrong.
+     *
+     * Only ever written when the board's own rows decide it. Nothing is
+     * written for a cents board, so this changes not one existing manifest. */
+    ...(units?.units && units.units !== "cents" ? { futuresUnits: units.units } : {}),
     ...(loc.locationId != null ? { locationId: String(loc.locationId) } : {}),
     bands,
     cadence: "grain-day", provenance: "scraped", enabled: true,
@@ -367,7 +379,20 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
     inMerge: true,
     _pending: "cashRounding is NOT set and must not be guessed; it is measured from a real "
       + "board against real futures. lat/lon is the centroid of the town's ZIP and can be "
-      + "miles from the yard.",
+      + "miles from the yard."
+      /* THE MEASUREMENT, NOT THE DECISION. The units above can be read off two
+         rows because the two answers are a hundred apart. A rounding MODE
+         cannot: floor-cent, round-cent, round-cent-either and round-cent-both
+         differ only at their boundaries, and a four-row board lands on none of
+         them. So this hands over the residuals it actually saw and leaves the
+         mode to somebody who has looked at enough of them. Guessing it here is
+         exactly what the sentence above forbids. */
+      + (units?.residuals
+          ? `\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as `
+            + `${units.units}: ${units.residuals}. That is the evidence for cashRounding and `
+            + `it is NOT a declaration -- the modes differ at their boundaries and this many `
+            + `rows cannot tell them apart.`
+          : ""),
   };
 }
 
@@ -545,6 +570,26 @@ export function operatorAddress(html) {
   return { ...hits[0], seen: hits.length };
 }
 
+/* WHAT THE BOARD SAYS ITS OWN FUTURES COLUMN IS IN, AND WHAT IS LEFT OVER.
+ *
+ * `measureFuturesUnits` answers the first. The second is the residual spread
+ * once that answer is applied, written out as a count per value so a manifest
+ * carries the evidence for its cashRounding rather than a guess at it. */
+export function boardUnits(rows) {
+  const u = measureFuturesUnits(rows);
+  if (!u.units) return u;
+  const scaled = scaleFutures(rows, { futuresUnits: u.units });
+  const hist = new Map();
+  for (const r of scaled) {
+    if (r.cash == null || r.basis == null || r.futuresPrice == null) continue;
+    const d = Number((r.futuresPrice - (r.cash - r.basis) * 100).toFixed(4));
+    hist.set(d, (hist.get(d) ?? 0) + 1);
+  }
+  const residuals = [...hist.entries()].sort((a, b) => a[0] - b[0])
+    .map(([v, n]) => `${v > 0 ? "+" : ""}${v}c x${n}`).join(", ");
+  return { ...u, residuals };
+}
+
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
                            have = new Set(), runId = null }) {
   const homeAddress = operatorAddress(html);
@@ -567,6 +612,12 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
     if (!e.label && r.location) e.label = r.location;
     byLoc.set(k, e);
   }
+
+  /* MEASURED ON THE WHOLE SITE, NOT PER LOCATION. A page's futures column is
+     one column; Hillsdale's 126 rows over sixteen towns are quoted the same
+     way. Measuring per location would ask the question of two-row boards that
+     cannot answer it, on a page whose other 124 rows can. */
+  const units = boardUnits(rows);
 
   const write = [], skip = [], unmatched = [];
   const seen = new Set(existingIds);
@@ -604,7 +655,7 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
       continue;
     }
     const m = manifestFor({ id, platform, operator, website: site, url, loc, dir,
-                            zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId });
+                            zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId, units });
     const bad = validateSource(m, new Set());
     if (bad.length) { skip.push({ id, why: bad.join("; ") }); continue; }
     const nb = unbandable(m, loc.byCommodity);

@@ -53,9 +53,31 @@ export function unfinished(ledger, probeVersion) {
   const out = [];
   for (const [url, rec] of Object.entries(ledger?.sites ?? {})) {
     const why = owedAnAsk(rec, probeVersion);
-    if (why) out.push({ url, why, status: rec?.status ?? null });
+    if (why) out.push({ url, why, status: rec?.status ?? null, seenAt: rec?.seenAt ?? null });
   }
-  out.sort((a, b) => a.url.localeCompare(b.url));
+  /* OLDEST FIRST, NOT ALPHABETICAL.
+   *
+   * This sorted by url, and the effect was measured on 2026-09-07: the two
+   * discover runs of that hour asked the SAME TWENTY SITES. Run 20:35 asked
+   * 21stcoop, agheadquarters, altonterminal, aspinwallcoop, babgrain and
+   * fifteen more; run 20:47 asked the same twenty in the same order. Fifty
+   * minutes of runner time, sixty-five page loads, nothing learned.
+   *
+   * The reason is that a failed ask still stamps seenAt, and an alphabetical
+   * list does not care. Of the 350 sites the ledger owed that hour, 45 had
+   * been asked THAT DAY and 233 had not been asked since 2026-08-28 -- and
+   * the alphabetical head was the 45, so the ten-day-old ones were never
+   * reached. Each run re-asked the front of the graveyard.
+   *
+   * seenAt is on every one of the 893 records, so oldest-first is available
+   * and free. A site asked ten minutes ago now sorts BEHIND one asked ten
+   * days ago, which is what "comes round again" was always supposed to mean.
+   * The url is the tiebreak so the order stays deterministic when two records
+   * carry the same stamp, and a record with no seenAt at all sorts first,
+   * because never-asked outranks asked-once. */
+  out.sort((a, b) =>
+    String(a.seenAt ?? "").localeCompare(String(b.seenAt ?? "")) ||
+    a.url.localeCompare(b.url));
   return out;
 }
 

@@ -418,8 +418,14 @@ test("round-cent takes half a cent EITHER way, and is not a wider floor-cent", (
   assert.equal(floor(-0.25), false, "floor never sees a negative residual");
   assert.equal(floor(0.75), true);
   assert.equal(round(0.75), false, "and round never sees three quarters");
+  /* The roll call. `round-cent-both` joined on 2026-09-07 for the
+     dollars-quoting cashbidssingle boards, whose cash AND basis are each
+     displayed to the cent so their errors add; it is the widest mode and
+     contains all four of these. Its arrival changes nothing above: neither
+     floor-cent nor round-cent contains the other, which is the point of this
+     test. */
   assert.deepEqual(Object.keys(CASH_ROUNDING).sort(),
-    ["exact", "floor-cent", "round-cent", "round-cent-either"]);
+    ["exact", "floor-cent", "round-cent", "round-cent-both", "round-cent-either"]);
 });
 
 test("round-cent-either closes the top, and closes nothing else", () => {

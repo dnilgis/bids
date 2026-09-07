@@ -149,11 +149,39 @@ const NOT_CASHGRID = {
     + "elements, 8 rows across North English and Webster/Keswick, zero writeBidCell calls, and its "
     + "own form posts to prices.php. captureName() drops the path, so the prefix says which "
     + "operator, never which address answered. The other adapter reads it.",
+  "agricharts-cashgrid-antoncoop.html":
+    "THE SAME FAULT AS FAASFEED, captured 2026-09-07 by the sweep at 20:48. 14,354 bytes, two "
+    + "<table class=\"cashprices\"> elements, zero writeBidCell calls, form posts to prices.php. "
+    + "The sweep's own log for that site reads \"200, PRICES BUT NOT THE TABLE WE KNOW "
+    + "https://mobile.antoncoop.com/cash/prices.php\" and \"200 but no cash prices (1880B) "
+    + "https://antoncoop.agricharts.com/markets/cashgrid.php\" — the mobile address answered and "
+    + "the cashgrid address did not, and the file was named for the cashgrid prefix anyway. "
+    + "readBoard() reads it perfectly well as mobile.",
+  "agricharts-cashgrid-uvaldecoop.html":
+    "captured 2026-09-07 by the same run. 6,347 bytes whose own <title> says \"Cash Prices - "
+    + "Uvalde County Farmers Coop - Mobile\", and which carries NO board of either shape: zero "
+    + "writeBidCell calls and zero cashprices tables. Both adapters refuse it, which is why it is "
+    + "also named in the refused list in agricharts-sweep.test.mjs. The page renders its board "
+    + "from somewhere this capture did not follow.",
   "agricharts-cashgrid-heartlandcoop.html":
     "1,306 characters of page furniture and no board: the bids load from somewhere else",
 };
 
-test("45 of the 47 captured boards read, and the other two say why", () => {
+/* AND THE FAULT BEHIND THREE OF THE FOUR HAS A COUNT.
+ *
+ * faasfeed, antoncoop and uvaldecoop are not four separate mysteries. They are
+ * one bug in scripts/agricharts-sweep.mjs: captureName() builds a filename from
+ * the operator and the requested prefix, never from the url that actually
+ * answered. Ask an operator's cashgrid address, get nothing, fall through to
+ * their mobile address, get a board — and the bytes are filed under "cashgrid".
+ *
+ * A list that merely names them would grow one entry per sweep and never say
+ * anything. This counts them, so the number is a debt with a size: when
+ * captureName() is fixed to name a capture for the shape that answered, this
+ * assertion fails and tells whoever fixed it to come back here. */
+const MISFILED_BY_CAPTURENAME = 3;
+
+test("45 of the 49 captured boards read, and the other four say why", () => {
   const refused = [];
   let rows = 0, unreconciled = 0;
   const locations = new Set();
@@ -168,6 +196,16 @@ test("45 of the 47 captured boards read, and the other two say why", () => {
   assert.deepEqual(refused.map((x) => x[0]).sort(), Object.keys(NOT_CASHGRID).sort(),
     `unexpected refusals: ${refused.map((x) => `${x[0]}: ${x[1].slice(0, 100)}`).join(" | ")}`);
   for (const [, why] of refused) assert.match(why, /not an AgriCharts cashgrid board/);
+
+  /* The misfiled ones are a naming bug with a size, not a list of exceptions. */
+  const misfiled = Object.keys(NOT_CASHGRID).filter((f) => {
+    const html = read(f);
+    return !/writeBidCell/.test(html) && /action="prices\.php"/.test(html);
+  });
+  assert.equal(misfiled.length, MISFILED_BY_CAPTURENAME,
+    `captureName() has filed ${misfiled.length} mobile page(s) under the cashgrid prefix, not ` +
+    `${MISFILED_BY_CAPTURENAME}: ${misfiled.join(", ")}. If that number went DOWN the naming ` +
+    `bug is fixed and this constant should follow it; if it went UP the sweep has done it again.`);
 
   assert.ok(rows > 6000, `only ${rows} rows`);
   assert.ok(locations.size > 500, `only ${locations.size} locations`);

@@ -7,6 +7,8 @@
   "currency": "USD",
   "countryVia": "state",
   "platform": "cashbidssingle",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
   "url": "https://bertholdfarmers.com/",
   "locationId": "2267",
   "bands": {
@@ -26,7 +28,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 33892264659) from the board page discover recorded for this operator: https://bertholdfarmers.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 18 row(s) in Wheat (Hrs), #2 Corn, Canola, Soybeans, Mill Durum, Flax, Wheat (Hrw), Yellow Peas.\n\nOperator, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. The operator name was read from the board's own title. COORDINATE filled 48.3064,-101.6866 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Berthold\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 33892264659) from the board page discover recorded for this operator: https://bertholdfarmers.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 18 row(s) in Wheat (Hrs), #2 Corn, Canola, Soybeans, Mill Durum, Flax, Wheat (Hrw), Yellow Peas.\n\nOperator, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. The operator name was read from the board's own title. COORDINATE filled 48.3064,-101.6866 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"Berthold\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.\n\nFUTURES UNITS, MEASURED 2026-09-07 from fixtures/board-sweep/cashbidssingle-bertholdfarmerscom.html: this board writes its futures column in DOLLARS per bushel to four places (e.g. \"5.3675s\"), not in cents or eighths of a cent the way bigriverbids.com writes \"459-4\". Read as cents every row is out by roughly a hundredfold and the board refuses; read as dollars the rows balance to within a cent, which is the whole slack two-decimal cash and basis columns can produce. Declared, not inferred, and self-checking: a wrong declaration is out by a hundred and the identity guard refuses.\n\nCASH ROUNDING, MEASURED 2026-09-07 across 216 testable rows on the eleven captured dollars-quoting cashbidssingle boards: residuals -0.50 (7), -0.25 (21), 0 (16), +0.25 (140), +0.50 (28), +0.75 (1) and nothing else except Berthold's per-tonne canola. This board posts cash and basis to two decimals and its quote on the quarter-cent grid, so the derived value is a whole number of cents and the quote is not. round-cent-both bounds that at strictly under a cent, which is what two cent-rounded columns can produce between them.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": "58718",

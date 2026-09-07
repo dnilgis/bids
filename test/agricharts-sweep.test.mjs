@@ -893,10 +893,14 @@ test("every fixture in the repository is read by one of the two, or refused by b
   assert.ok(by.cashgrid >= 45, `only ${by.cashgrid} cashgrid boards`);
   assert.ok(by.mobile >= 21, `only ${by.mobile} mobile boards`);
   /* The refusals are named, not counted. Butterfield and Westco publish no
-     basis at all; Heartland's cashgrid page has no board on it. */
+     basis at all; Heartland's cashgrid page has no board on it; Uvalde's
+     capture (2026-09-07, the 20:48 sweep) is 6,347 bytes with no board of
+     either shape — its own title says "Mobile" and it carries neither a
+     writeBidCell call nor a cashprices table. */
   assert.deepEqual(by.refused.sort(), [
     "agricharts-butterfieldgrain.html",
     "agricharts-cashgrid-heartlandcoop.html",
+    "agricharts-cashgrid-uvaldecoop.html",
     "agricharts-westco.html",
   ].sort());
 });
