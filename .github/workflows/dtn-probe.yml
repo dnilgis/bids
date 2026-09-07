@@ -35,7 +35,10 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Probe every site in probe-lists/dtn-sites.txt (8 of them). Leave the three boxes below blank."
+        # NO COUNT. It said "(8 of them)" and the file now parses to 33 — the
+        # same fault the discover form had on every input. The run prints the
+        # real number before it asks anything.
+        description: "Probe every site in probe-lists/dtn-sites.txt. Leave the three boxes below blank."
         type: boolean
         default: true
       site:
@@ -71,7 +74,20 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # FIVE MINUTES COULD NOT FINISH THIS RUN — 2026-09-07.
+    #
+    # probe-lists/dtn-sites.txt held eight entries when this number was written
+    # and now parses to 33. Each one is a real browser loading a customer's page
+    # and waiting for their widget, up to PROBE_MS (60s, default). Thirty-three
+    # of those is roughly half an hour of wall clock inside a job GitHub kills
+    # at five minutes, and a killed job is a red X with no tally and no VERDICTS
+    # lines — which is exactly what the list run can produce.
+    #
+    # Thirty, because the probe stops itself long before that on a single-site
+    # run and this ceiling is only for someone who turns the list box on and
+    # walks away. The arithmetic is stated so the next person to grow the list
+    # knows what to check.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -111,6 +127,10 @@ jobs:
             ARGS="--against /tmp/prior-verdicts.txt"
           fi
           if [ "$USE_LIST" = "true" ]; then
+            # SAY HOW BIG THE JOB IS BEFORE STARTING IT. The form used to carry
+            # this number and it went stale; printing it costs nothing and
+            # cannot.
+            echo "probe-lists/dtn-sites.txt: $(grep -cvE '^\s*#|^\s*$' probe-lists/dtn-sites.txt) entr(ies) to ask"
             node scripts/dtn-probe.mjs --list probe-lists/dtn-sites.txt $ARGS
           elif [ -n "$SITE" ]; then
             if [ -n "$OPERATOR" ]; then

@@ -20,15 +20,63 @@
 
 name: discover
 
+# THE FORM IS A FORM, NOT A PARAGRAPH — 2026-09-07.
+#
+# Sig, looking at the Run workflow dialog: "confusing to me". It was seven boxes
+# each carrying a sentence, and the sentences had gone stale:
+#
+#   claimed                                measured 2026-09-07
+#   national — 487 pages                   475, of which 396 undecided
+#   sweep-2-wi-mn — 15 still unasked       35, of which 34 undecided
+#   discover-candidates — the original     136, of which 109 undecided.
+#     56, spent                              Not spent. Nowhere near.
+#   limit — "the list is 56"               no list is 56
+#
+# And gd-candidates.txt — 237 undecided Grain Desk pages, the largest untouched
+# list in the repository — had no menu entry at all, so there was no way to ask
+# for it from this screen.
+#
+# So: `list` is a DROPDOWN, which needs no prose because the options are the
+# labels. NO COUNTS ARE WRITTEN INTO THE FORM — that is what went stale. The
+# first step of every run prints the counts instead, from the lists and the
+# ledger, where they cannot be wrong.
 on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which candidate list: unfinished (every site the ledger has not decided — the unreachable ones and any written off by an older probe), gradable (the eleven POET and ADM pages, pair with dump=bootstrap limit=1), national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
+        description: "Which list to ask"
+        type: choice
+        default: unfinished
+        options:
+          - unfinished           # everything the ledger has not decided
+          - gradable             # the POET and ADM pages; pair with dump=bootstrap, limit=1
+          - gd-candidates        # Grain Desk
+          - national             # the whole country
+          - discover-candidates
+          - everything-unasked
+          - sweep-2-wi-mn
+          - agricharts-uncovered
+          - bushel-candidates
+          - canada
+      follow:
+        description: "Board pages to try per site when it publishes no link of its own"
+        type: choice
+        default: "2"
+        options: ["2", "11"]
+      limit:
+        description: "How many sites this run (0 = all)"
         required: false
-        default: "national"
+        default: "20"
+      dump:
+        description: "Advanced. Print one whole body, e.g. bootstrap. Set limit=1 too."
+        required: false
+        default: ""
       urls:
-        description: "Space-separated pages to ask INSTEAD of the list (blank = the list)"
+        description: "Advanced. Pages to ask instead of the list, space separated."
+        required: false
+        default: ""
+      patience:
+        description: "Advanced. Seconds per page. Blank = 45."
         required: false
         default: ""
       budget:
@@ -36,32 +84,13 @@ on:
         # mid-page, ending with no tally and no resume line. discover now stops
         # itself between pages and prints both. Blank uses its own 45-minute
         # default; 0 turns it off.
-        description: "Minutes to spend before stopping cleanly (blank = 45, 0 = no limit)"
-        required: false
-        default: ""
-      dump:
-        description: "Print ONE matching feed's whole body, e.g. GetBidsList. Pair with limit=1. Leave blank normally."
-        required: false
-        default: ""
-      patience:
-        description: "Seconds to give ONE page before giving up (blank = 45). Raise it when a log says 'network never went quiet'."
+        description: "Advanced. Minutes before stopping cleanly. Blank = 45."
         required: false
         default: ""
       start:
-        description: "Skip this many entries of the candidate list (resume a batch)"
+        description: "Advanced. Skip this many entries of the list."
         required: false
         default: "0"
-      limit:
-        description: "Ask at most this many (0 = all of them; the list is 56 and takes a while)"
-        required: false
-        default: "20"
-      follow:
-        # Eleven conventional board paths are written down in discover.mjs and
-        # two were ever asked. Set 11 to ask the lot; it costs one page load
-        # each, which --budget already governs.
-        description: "Board pages to try per site when it publishes no link of its own (blank = 2, 11 = every conventional path)"
-        required: false
-        default: ""
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -92,6 +121,13 @@ jobs:
       # `run: echo "a $B: $C"` stopped both Emmert repositories building for
       # seventeen hours, because the `: ` inside it opened a YAML mapping and
       # the file stopped parsing. test/workflows.test.mjs now checks for it.
+      # WHAT EACH LIST IS WORTH, PRINTED RATHER THAN TYPED INTO THE FORM.
+      # Every number that used to be in an input description had gone stale.
+      # This reads the lists and the ledger and says what is actually there,
+      # at the top of every run, before anything is asked.
+      - name: What each list is worth today
+        run: node scripts/list_report.mjs
+
       - name: Ask
         env:
           URLS: ${{ inputs.urls }}
@@ -127,21 +163,26 @@ jobs:
           fi
           # The name is taken from a fixed set rather than pasted into a path.
           # An input that reaches a filename is an input that can reach ../.
-          case "${LIST:-national}" in
-            national)            FILE=probe-lists/national-2026-08-26.txt ;;
-            bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
-            discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
-            sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
-            # The eleven pages measured calling gradable.com. Pair with
-            # dump=bootstrap and limit=1 to print one whole body.
-            gradable)            FILE=probe-lists/gradable-sites.txt ;;
+          # EVERY OPTION THE DROPDOWN OFFERS MUST LAND HERE. A menu entry with
+          # no case arm is a run that fails after the checkout, and
+          # test/discover-boardpage.test.mjs asserts the two lists match.
+          case "${LIST:-unfinished}" in
             # THE LEDGER'S OWN BACKLOG. Every site data/platforms.json has not
             # decided: the unreachable ones, which it has promised since
             # 2026-08-30 would come round again, and the no-platform ones
             # written off by a probe older than this one.
             unfinished)          node scripts/unfinished_sites.mjs data/platforms.json > /tmp/unfinished.txt
                                  FILE=/tmp/unfinished.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use national, unfinished, gradable, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+            gradable)            FILE=probe-lists/gradable-sites.txt ;;
+            gd-candidates)       FILE=probe-lists/gd-candidates.txt ;;
+            national)            FILE=probe-lists/national-2026-08-26.txt ;;
+            discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
+            everything-unasked)  FILE=probe-lists/everything-unasked-20260829.txt ;;
+            sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
+            agricharts-uncovered) FILE=probe-lists/agricharts-uncovered-2026-09-03.txt ;;
+            bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
+            canada)              FILE=probe-lists/canada-hosts.txt ;;
+            *) echo "::error title=unknown list::${LIST} is not one of the menu options."; exit 2 ;;
           esac
           echo "asking $FILE"
           DUMPARG=""
