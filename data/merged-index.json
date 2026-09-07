@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-07T13:07:07Z",
+ "generated": "2026-09-07T13:17:09Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 9645,
-   "boards": 843,
-   "generated": "2026-09-07T13:01:30.880Z"
+   "rows": 9643,
+   "boards": 819,
+   "generated": "2026-09-07T13:10:52.312Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,18 +15,18 @@
   }
  },
  "counts": {
-  "rows": 9645,
-  "places": 832,
+  "rows": 9643,
+  "places": 830,
   "byCrop": {
    "wheat": 1724,
-   "soybeans": 3259,
+   "soybeans": 3257,
    "sorghum": 525,
    "corn": 4108,
    "oats": 10,
    "other": 19
   },
   "byVia": {
-   "scrape": 9645
+   "scrape": 9643
   },
   "byState": {
    "KS": 1476,
@@ -51,7 +51,7 @@
    "MI": 142,
    "TX": 14,
    "WY": 8,
-   "AR": 3
+   "AR": 1
   },
   "byPeriodVia": {
    "explicit-range": 338,
@@ -65,34 +65,31 @@
    "month-pair": 198,
    "day-range-inferred-year": 15,
    "quarter": 7,
-   "month-pair-inferred-year": 8,
+   "month-pair-inferred-year": 6,
    "spot-word": 174,
    "iso-date": 66
   },
   "byCurrency": {
-   "USD": 9635,
+   "USD": 9633,
    "CAD": 10
   },
   "byCurrencyVia": {
    "declared": 6592,
-   "payload": 3053
+   "payload": 3051
   },
   "collisionsBetweenFeeds": 0,
-  "unmappable": 265,
-  "unmappableNoCoordinate": 257,
+  "unmappable": 264,
+  "unmappableNoCoordinate": 256,
   "unmappableNoState": 111
  },
  "dropped": {
   "scrape": {
-   "board file with no entry in index.json": 17,
+   "board file with no entry in index.json": 27,
    "inMerge is false on the source": 1,
-   "refused: price is 96.1h old, past the 14h withdrawal": 1,
-   "refused: price is 152.8h old, past the 14h withdrawal": 1,
-   "refused: price is 67.1h old, past the 14h withdrawal": 10,
-   "refused: price is 73.8h old, past the 14h withdrawal": 3,
-   "refused: price is 68.9h old, past the 14h withdrawal": 2,
-   "broken: price is 156.8h old, past the 14h withdrawal": 3,
-   "refused: price is 21.8h old, past the 14h withdrawal": 1
+   "refused: price is 96.3h old, past the 14h withdrawal": 1,
+   "refused: price is 152.9h old, past the 14h withdrawal": 1,
+   "refused: price is 67.3h old, past the 14h withdrawal": 10,
+   "refused: price is 21.9h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
@@ -105,7 +102,7 @@
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 832,
+  "written": 830,
   "unchanged": 0,
   "orphaned": [
    "agmark-llc-gaylord-mn-cf9f8b79.json",
@@ -130,6 +127,8 @@
    "riceland-foods-hazen-ar-edca3307.json",
    "riceland-foods-hickory-ridge-ar-4f2b0f1e.json",
    "riceland-foods-newport-ar-b93f44d1.json",
+   "riceland-foods-pendleton-ar-d23e9e70.json",
+   "riceland-foods-tuckerman-ar-49bc1445.json",
    "riceland-foods-weiner-ar-f00b0420.json",
    "wanstead-farmers-cooperative-any-wanstead-branch-on-0da22e3b.json"
   ]
@@ -39346,72 +39345,6 @@
    },
    "pricedAt": "2026-09-04T18:31:56.039Z",
    "checkedAt": "2026-09-07T12:40:52.852Z"
-  },
-  {
-   "place": "Riceland Foods||Pendleton|AR",
-   "shard": "merged/riceland-foods-pendleton-ar-d23e9e70.json",
-   "operator": "Riceland Foods",
-   "branch": null,
-   "city": "Pendleton",
-   "state": "AR",
-   "lat": null,
-   "lon": null,
-   "precision": null,
-   "mappable": false,
-   "via": "scrape",
-   "source": "riceland-pendleton",
-   "bids": 1,
-   "crops": [
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09/2026-11"
-   ],
-   "best": {
-    "soybeans": {
-     "cash": 13,
-     "basis": -0.1,
-     "basisCents": -10,
-     "period": "2026-09/2026-11",
-     "commodity": "2026 Soybeans",
-     "delivery": "SEP-NOV"
-    }
-   },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T13:01:30.880Z"
-  },
-  {
-   "place": "Riceland Foods||Tuckerman|AR",
-   "shard": "merged/riceland-foods-tuckerman-ar-49bc1445.json",
-   "operator": "Riceland Foods",
-   "branch": null,
-   "city": "Tuckerman",
-   "state": "AR",
-   "lat": 35.7307,
-   "lon": -91.2003,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "riceland-tuckerman",
-   "bids": 1,
-   "crops": [
-    "soybeans"
-   ],
-   "periods": [
-    "2026-10/2026-11"
-   ],
-   "best": {
-    "soybeans": {
-     "cash": 12.76,
-     "basis": -0.34,
-     "basisCents": -34,
-     "period": "2026-10/2026-11",
-     "commodity": "2026 Soybeans",
-     "delivery": "OCT-NOV"
-    }
-   },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T13:01:30.880Z"
   },
   {
    "place": "Ridgeville Elevator||Ridgeville Elevator- Fayette Branch|OH",
