@@ -136,6 +136,25 @@ jobs:
           python test/registry-merge.test.py
           python test/unplaced-reason.test.py
           python test/geocode-precision.test.py
+          # THIS JOB'S OWN READER, CHECKED BY THIS JOB — added 2026-09-07.
+          # test/registry-denominator.test.py checks survey_registries.py: that
+          # the thirty regulated states are each in a bucket, and that the
+          # survey's summary is derived rather than hand-typed. The glob in
+          # test.yml has always run it, so it was never unrun — but it was only
+          # ever run somewhere ELSE, on a push, and this is the job that runs
+          # the survey. The hand-picked list exists so a job about to spend an
+          # hour on the network fails in two seconds on its own readers first.
+          python test/registry-denominator.test.py
+          # AND THE RULE ABOUT THE GUARDS THEMSELVES. Runs last, and runs every
+          # guard above it a second time against a tree with no
+          # data/registries.json in it — see test/prefetch-guards.test.py. A
+          # guard that needs the fetch's output can bolt the door on the fetch,
+          # and one did: 2026-09-07, eleven states unrecoverable until this.
+          python test/prefetch-guards.test.py
+          # AND THE SMOKE ALARM FOR THE DELETION ITSELF. Pure functions, so it
+          # belongs up here where it costs nothing; the SCRIPT it tests runs
+          # after the fetch, which is a different thing entirely.
+          python test/registries-not-shrunk.test.py
 
       # DID THE FETCH ACTUALLY RUN? Everything below carries `if: always()`
       # so that a partial run still reports and still commits — which is right,
@@ -318,6 +337,29 @@ jobs:
       # summary that said it had succeeded.
       # THE TWO LISTS OF WHAT WE DO NOT HAVE — regenerated whenever the inputs
       # move, because a worklist that goes stale gets phoned twice.
+      # ══════════════════════════════════════════════════════════════════
+      #  DID THIS RUN TAKE RECORDS AWAY?
+      # ══════════════════════════════════════════════════════════════════
+      #  On 2026-09-07 at 20:46 a `--states WI` run rewrote the whole file from
+      #  its filtered result: `5 files changed, 40628 insertions(+), 173521
+      #  deletions(-)`. Eleven states gone in one commit. Nothing caught it,
+      #  because every guard asked whether a SOURCE came back short and none
+      #  asked whether the FILE did.
+      #
+      #  merge_with_committed() in fetch_registries.py is the fix and it is
+      #  tested. This is the check that the fix is working, on the real file,
+      #  every run — and it is deliberately HERE rather than up with the
+      #  pre-fetch guards. Up there it would be reading the fetch's own output
+      #  before the fetch runs, which is the latch this workflow just spent a
+      #  day stuck in. Down here the fetch has already happened, so a red leaves
+      #  the GOOD file on main and blocks only the commit of a worse one.
+      #
+      #  Not `if: always()`. A skipped fetch must not fail this, because a
+      #  skipped fetch has taken nothing away.
+      - name: Did this run take records away
+        if: steps.fetch.outcome == 'success'
+        run: python scripts/registries_not_shrunk.py
+
       - name: Rebuild the gap lists
         if: always()
         continue-on-error: true
