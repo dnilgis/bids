@@ -893,3 +893,57 @@ test("CLOUDFLARE: the ROUTES keys are the exact strings wrangler.toml declares",
     assert.ok(declared.includes(c),
       `ROUTES has a key "${c}" that wrangler.toml never fires — dead route`);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * THE LATCH, AND THE STEP THAT MUST NOT BECOME ONE.
+ *
+ * 2026-09-07: a pre-fetch guard required 1500 records in the fetch's own
+ * output file, a partial run narrowed that file to 210, and the fetch was
+ * skipped from then on. `test/prefetch-guards.test.py` is the rule; these two
+ * assert that it runs, and that the shrink check it replaced sits AFTER the
+ * fetch where it cannot bolt the same door.
+ * ───────────────────────────────────────────────────────────────────────── */
+test("the pre-fetch guards are themselves guarded, before the fetch", () => {
+  const y = readFileSync(join(DIR, "registries.yml"), "utf8");
+  const guard = y.indexOf("python test/prefetch-guards.test.py");
+  const fetch = y.search(/^\s*id:\s*fetch\s*$/m);
+  assert.ok(guard > 0, "registries.yml must run test/prefetch-guards.test.py");
+  assert.ok(fetch > 0, "registries.yml must still have a step with id: fetch");
+  assert.ok(guard < fetch, "the rule has to run before the fetch, with the guards it is about");
+});
+
+test("the shrink check runs AFTER the fetch, and only when the fetch ran", () => {
+  const y = readFileSync(join(DIR, "registries.yml"), "utf8");
+  const step = y.indexOf("- name: Did this run take records away");
+  const fetch = y.search(/^\s*id:\s*fetch\s*$/m);
+  assert.ok(step > 0, "registries.yml must check whether a run deleted records");
+  assert.ok(step > fetch,
+    "it reads data/registries.json, which the fetch writes. Above the fetch it " +
+    "would be the 2026-09-07 latch again: a bad file forever blocking the run " +
+    "that would fix it.");
+
+  const commit = y.indexOf("- name: Commit");
+  assert.ok(step < commit, "and before the commit, or it cannot stop a bad one");
+
+  /* NOT `if: always()`. Every other step down here carries it so a partial run
+     still reports — which is right for a report and wrong for this: a fetch
+     that was skipped has taken nothing away, and failing the job for it would
+     turn a skip into a red herring. */
+  /* THE STEP, AND ONLY THE STEP. Sliced to the next `- name:` rather than a
+     character count — the first version used `step + 200`, the step shrank to
+     three lines when its python moved into a script, and the window ran into
+     the `if: always()` on "Rebuild the gap lists" below it. A guard whose
+     boundary is a magic number is a guard that reports on its neighbour. */
+  const after = y.slice(step + 10);
+  const next = after.search(/^\s*- name:/m);
+  const body = next < 0 ? after : after.slice(0, next);
+  assert.match(body, /if:\s*steps\.fetch\.outcome == 'success'/,
+    "gated on the fetch actually having succeeded");
+  assert.ok(!/if:\s*always\(\)/.test(body),
+    "a skipped fetch must not fail this step");
+
+  /* AND IT CALLS THE SHIPPED SCRIPT. An inline heredoc is a copy of the
+     comparison that no test can reach. */
+  assert.match(body, /python scripts\/registries_not_shrunk\.py/);
+  assert.ok(!body.includes("<<'PY'"), "no second copy of the arithmetic in the yaml");
+});

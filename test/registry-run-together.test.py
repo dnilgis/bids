@@ -42,6 +42,38 @@ def check(ok, name, detail=""):
         FAILED.append(name)
 
 
+def fixture_names(R):
+    """Every real licensee name the committed fixtures hold, read by the
+    shipped readers — never by a copy of them written for this test.
+
+    Wisconsin's workbook goes through read_xls() and the three licence books
+    through pdf_text()/pdf_records(), each with the SOURCE ENTRY that names
+    them, so a change to a source's pattern or column map shows up here."""
+    out = set()
+
+    xls = os.path.join(ROOT, "fixtures", "registry-wi-datcp.xls")
+    wi = next((s for s in R.SOURCES if s.get("state") == "WI"), None)
+    if wi and os.path.exists(xls):
+        recs, _ = R.read_xls(open(xls, "rb").read(), {}, wi.get("columns"))
+        out |= {r["name"] for r in recs if r.get("name")}
+
+    for fx, state in (("registry-wa-licence-book.pdf", "WA"),
+                      ("registry-id-dealers.pdf", "ID"),
+                      ("registry-id-wa-coops.pdf", "ID")):
+        path = os.path.join(HERE, "fixtures", fx)
+        if not os.path.exists(path):
+            continue
+        text = R.pdf_text(open(path, "rb").read(), {})
+        for src in [s for s in R.SOURCES if s.get("state") == state]:
+            try:
+                recs = R.pdf_records(text, {}, src.get("pattern"), src.get("continuation"),
+                                     src.get("cityStrip"), src.get("carry"))
+            except Exception:
+                continue
+            out |= {r["name"] for r in recs if r.get("name")}
+    return out
+
+
 def main():
     import fetch_registries as R
 
@@ -53,11 +85,41 @@ def main():
     check(not missed, "every one is refused by _run_together",
           "%d slipped through, e.g. %s" % (len(missed), (missed[:1] or [""])[0][:70]))
 
+    # ── WHERE THE REAL NAMES COME FROM, AND WHY IT IS NOT data/registries.json ──
+    #
+    # THIS TEST LATCHED THE PIPELINE SHUT — 2026-09-07, run 91957... .
+    #
+    # It used to read `data/registries.json` and require `len(good) > 1500`.
+    # That file is the FETCH'S OWN OUTPUT, and this suite runs in the workflow
+    # step named "Test the readers this run is about to use" — which sits
+    # BEFORE the fetch, on purpose, so a regression is caught before an hour of
+    # geocoding is spent on data it would mangle. Right principle. But it means
+    # a guard reading the fetch's output is a LATCH: the 2026-09-07 20:46 run
+    # narrowed that file to 210 records, this check went red at 210, the step
+    # is `bash -e`, and the fetch step was therefore SKIPPED. The one action
+    # that would have restored the file could no longer run, and the 22:42 run
+    # proved it: exit 1 here, `steps.fetch.outcome == skipped`, eleven states
+    # still gone. A test that can prevent its own cure is not a guard.
+    #
+    # And the threshold was never a property of `_run_together` anyway. It was
+    # a property of how much had been harvested that week — the same mistake
+    # test/registry-readers.test.py already has a paragraph about, where exact
+    # PDF row counts turned out to be asserting a property of pypdf's version.
+    #
+    # So the corpus is built from COMMITTED BYTES, through the SHIPPED readers:
+    # Wisconsin's workbook and the three licence-book PDFs. Three states, two
+    # file formats, and not one byte of it moves when the pipeline runs.
     print("\nand no real licensee name is")
-    reg = json.load(open(os.path.join(ROOT, "data", "registries.json")))["businesses"]
-    good = [b["name"] for b in reg if b.get("name") and b["name"] not in names]
+    good = sorted(fixture_names(R) - set(names))
     caught = [n for n in good if R._run_together(n)]
-    check(len(good) > 1500, "there are real names to test against", "%d" % len(good))
+    # A BAND, NOT A NUMBER. The PDF share of this corpus is extracted by pypdf,
+    # which is installed unpinned, and a newer release reads a few more rows
+    # than an older one — measured 2026-09-07 at 280 (210 Wisconsin + 70 from
+    # the books). The floor is what makes the check mean something; the ceiling
+    # catches a reader that started inventing records.
+    check(200 <= len(good) <= 400,
+          "200-400 real licensee names to test against, from committed fixtures",
+          "%d" % len(good))
     check(not caught, "no ordinary licensee trips the test",
           "%d would be thrown away, e.g. %s" % (len(caught), (caught[:1] or [""])[0][:70]))
 
