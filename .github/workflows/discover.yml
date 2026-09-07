@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which candidate list: national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
+        description: "Which candidate list: unfinished (the 437 sites the ledger has not decided — 169 unreachable, 268 written off by an older probe), national (487 pages, the whole country, ordered so the adapters we already have come first), sweep-2-wi-mn (the WI/MN tranche, 15 still unasked), bushel-candidates, or discover-candidates (the original 56, spent)"
         required: false
         default: "national"
       urls:
@@ -55,6 +55,13 @@ on:
         description: "Ask at most this many (0 = all of them; the list is 56 and takes a while)"
         required: false
         default: "20"
+      follow:
+        # Eleven conventional board paths are written down in discover.mjs and
+        # two were ever asked. Set 11 to ask the lot; it costs one page load
+        # each, which --budget already governs.
+        description: "Board pages to try per site when it publishes no link of its own (blank = 2, 11 = every conventional path)"
+        required: false
+        default: ""
 
 permissions:
   contents: read          # it writes nothing, so it may not write anything
@@ -94,6 +101,7 @@ jobs:
           DUMP: ${{ inputs.dump }}
           PATIENCE: ${{ inputs.patience }}
           BUDGET: ${{ inputs.budget }}
+          FOLLOW: ${{ inputs.follow }}
         run: |
           # SAY WHEN ONE BOX IS OVERRIDING THE OTHER.
           # 2026-08-21: a stray "s" left in this box silently beat a `list`
@@ -124,7 +132,13 @@ jobs:
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
             sweep-2-wi-mn)       FILE=probe-lists/sweep-2-wi-mn.txt ;;
-            *) echo "::error title=unknown list::${LIST}. Use national, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
+            # THE LEDGER'S OWN BACKLOG. Every site data/platforms.json has not
+            # decided: the unreachable ones, which it has promised since
+            # 2026-08-30 would come round again, and the no-platform ones
+            # written off by a probe older than this one.
+            unfinished)          node scripts/unfinished_sites.mjs data/platforms.json > /tmp/unfinished.txt
+                                 FILE=/tmp/unfinished.txt ;;
+            *) echo "::error title=unknown list::${LIST}. Use national, unfinished, sweep-2-wi-mn, bushel-candidates or discover-candidates."; exit 2 ;;
           esac
           echo "asking $FILE"
           DUMPARG=""
@@ -133,4 +147,6 @@ jobs:
           if [ -n "$BUDGET" ]; then BUDGETARG="--budget $BUDGET"; fi
           PATIENCEARG=""
           if [ -n "$PATIENCE" ]; then PATIENCEARG="--patience $PATIENCE"; fi
-          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG $BUDGETARG $PATIENCEARG
+          FOLLOWARG=""
+          if [ -n "$FOLLOW" ]; then FOLLOWARG="--follow $FOLLOW"; fi
+          node scripts/discover.mjs --list "$FILE" --start "${START:-0}" --limit "${LIMIT:-20}" $DUMPARG $BUDGETARG $PATIENCEARG $FOLLOWARG

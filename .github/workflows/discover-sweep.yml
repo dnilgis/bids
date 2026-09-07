@@ -44,6 +44,13 @@ on:
       patience:
         description: "Seconds to wait on one page"
         default: "45"
+      follow:
+        # FALLBACK_PATHS holds eleven conventional board paths and the sweep
+        # asked two of them. The other nine were discarded silently on every
+        # run. 11 asks the lot and is the right setting for clearing the
+        # backlog; 2 is the old behaviour and the default.
+        description: "Board pages to try per site when it publishes no link of its own (2 = as before, 11 = every conventional path)"
+        default: "2"
 
 permissions:
   contents: write
@@ -65,19 +72,44 @@ jobs:
       # The list is REGENERATED, not trusted. known-elevators.json is synced
       # from agsist and sources/ grows every week, so a stale list would keep
       # asking hosts we have since started reading.
+      #
+      # AND IT IS TWO LISTS, BECAUSE ONE OF THEM WENT EMPTY AND NOTHING SAID SO.
+      # known-elevators.json stopped carrying a url field, so barchart_sites.mjs
+      # produced nothing, so --resume printed "nothing left to ask — the sweep
+      # is complete" and this workflow ran green and idle every three hours.
+      # barchart_sites.mjs now exits 3 and annotates when the directory has no
+      # websites in it at all; this step keeps going, because the ledger's own
+      # backlog is askable whatever the directory is doing, and the annotation
+      # is on the run either way.
       - name: Rebuild the list of hosts still to ask
-        run: node scripts/barchart_sites.mjs > probe-lists/barchart-sites.txt
+        run: |
+          node scripts/barchart_sites.mjs > probe-lists/barchart-sites.txt || \
+            echo "::warning title=barchart list is empty::continuing on the ledger's own backlog"
+          node scripts/unfinished_sites.mjs data/platforms.json > /tmp/unfinished.txt
+          # The ledger's undecided sites first — they are the ones a person has
+          # been waiting on — then anything the directory still offers.
+          cat /tmp/unfinished.txt probe-lists/barchart-sites.txt | awk 'NF && !seen[$0]++' > /tmp/asklist.txt
+          # ONE LINE. A backslash continuation inside a `run: |` block starts the
+          # next line at column 0, which ENDS the block scalar and leaves the
+          # rest of it as YAML. Same family as the `: ` fault this repository
+          # already lost seventeen hours to; test/workflows.test.mjs checks for it.
+          echo "asking $(wc -l < /tmp/asklist.txt) site(s): $(wc -l < /tmp/unfinished.txt) owed by the ledger plus $(wc -l < probe-lists/barchart-sites.txt) from the directory, deduplicated"
+          if [ ! -s /tmp/asklist.txt ]; then
+            echo "::error title=nothing to ask::both lists are empty. That is a broken input, not a finished sweep."
+            exit 1
+          fi
 
       - name: Ask them
         continue-on-error: true
         run: |
           node scripts/discover.mjs \
-            --list probe-lists/barchart-sites.txt \
+            --list /tmp/asklist.txt \
             --ledger data/platforms.json \
             --resume \
             --limit "${{ inputs.limit || '45' }}" \
             --budget "${{ inputs.budget || '40' }}" \
             --patience "${{ inputs.patience || '45' }}" \
+            --follow "${{ inputs.follow || '2' }}" \
             | tee /tmp/sweep.txt
           tail -40 /tmp/sweep.txt >> "$GITHUB_STEP_SUMMARY"
 
