@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-07T12:08:18Z",
+ "generated": "2026-09-07T12:17:21Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 9501,
-   "boards": 814,
-   "generated": "2026-09-07T12:01:25.973Z"
+   "rows": 9485,
+   "boards": 808,
+   "generated": "2026-09-07T12:11:00.294Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,18 +15,18 @@
   }
  },
  "counts": {
-  "rows": 9501,
-  "places": 819,
+  "rows": 9485,
+  "places": 817,
   "byCrop": {
    "wheat": 1718,
-   "soybeans": 3213,
+   "soybeans": 3207,
    "sorghum": 522,
-   "corn": 4019,
+   "corn": 4009,
    "oats": 10,
    "other": 19
   },
   "byVia": {
-   "scrape": 9501
+   "scrape": 9485
   },
   "byState": {
    "KS": 1476,
@@ -39,7 +39,7 @@
    "IA": 1334,
    "SD": 1127,
    "WI": 254,
-   "NE": 1271,
+   "NE": 1256,
    "null": 111,
    "ND": 433,
    "OH": 346,
@@ -50,32 +50,31 @@
    "WA": 52,
    "MI": 142,
    "TX": 14,
-   "WY": 8,
-   "AR": 1
+   "WY": 8
   },
   "byPeriodVia": {
    "explicit-range": 338,
    "us-date": 6100,
-   "month-year": 2043,
+   "month-year": 2032,
    "deadline-inferred-year": 5,
    "month-inferred-year": 138,
    "season": 297,
-   "contract-pair": 107,
+   "contract-pair": 103,
    "month-day-year": 7,
    "month-pair": 198,
    "day-range-inferred-year": 15,
    "quarter": 7,
-   "month-pair-inferred-year": 6,
+   "month-pair-inferred-year": 5,
    "spot-word": 174,
    "iso-date": 66
   },
   "byCurrency": {
-   "USD": 9491,
+   "USD": 9475,
    "CAD": 10
   },
   "byCurrencyVia": {
    "declared": 6592,
-   "payload": 2909
+   "payload": 2893
   },
   "collisionsBetweenFeeds": 0,
   "unmappable": 241,
@@ -84,14 +83,11 @@
  },
  "dropped": {
   "scrape": {
-   "board file with no entry in index.json": 36,
+   "board file with no entry in index.json": 41,
    "inMerge is false on the source": 1,
-   "refused: price is 95.1h old, past the 14h withdrawal": 1,
-   "refused: price is 151.8h old, past the 14h withdrawal": 1,
-   "refused: price is 66.1h old, past the 14h withdrawal": 10,
-   "refused: price is 68.0h old, past the 14h withdrawal": 1,
-   "broken: price is 155.8h old, past the 14h withdrawal": 1,
-   "refused: price is 20.8h old, past the 14h withdrawal": 1
+   "refused: price is 95.3h old, past the 14h withdrawal": 1,
+   "refused: price is 66.3h old, past the 14h withdrawal": 10,
+   "refused: price is 20.9h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
@@ -104,7 +100,7 @@
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 819,
+  "written": 817,
   "unchanged": 0,
   "orphaned": [
    "agmark-llc-gaylord-mn-cf9f8b79.json",
@@ -125,6 +121,7 @@
    "country-partners-cooperative-merna-ne-1aae2bf2.json",
    "country-partners-cooperative-north-loup-ne-25af68bb.json",
    "country-partners-cooperative-ord-ne-95d1ae87.json",
+   "country-partners-cooperative-spalding-ne-7225a54c.json",
    "farmers-pride-coop-neligh-oakdale-4762ca83.json",
    "heartland-feeds-west-mansfield-oh-41d4a862.json",
    "keystone-cooperative-fremont-mi-in-b41f25ab.json",
@@ -137,6 +134,7 @@
    "niewohner-farms-elgin-ne-119906ac.json",
    "niewohner-farms-spalding-ne-2fb97ccc.json",
    "riceland-foods-corning-ar-4dbcc084.json",
+   "riceland-foods-des-arc-ar-5be14baa.json",
    "riceland-foods-hazen-ar-edca3307.json",
    "riceland-foods-hickory-ridge-ar-4f2b0f1e.json",
    "riceland-foods-newport-ar-b93f44d1.json",
@@ -19148,57 +19146,6 @@
    "checkedAt": "2026-09-07T12:01:25.973Z"
   },
   {
-   "place": "Country Partners Cooperative||Spalding|NE",
-   "shard": "merged/country-partners-cooperative-spalding-ne-7225a54c.json",
-   "operator": "Country Partners Cooperative",
-   "branch": null,
-   "city": "Spalding",
-   "state": "NE",
-   "lat": 41.6874,
-   "lon": -98.3715,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "countrypartnerscooperative-spalding",
-   "bids": 15,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10/2026-11",
-    "2027-01",
-    "2027-02",
-    "2027-03",
-    "2027-04",
-    "2027-05",
-    "2027-06",
-    "2027-07",
-    "2027-10/2027-11"
-   ],
-   "best": {
-    "corn": {
-     "cash": 5.2,
-     "basis": -0.42,
-     "basisCents": -42,
-     "period": "2027-07",
-     "commodity": "Corn",
-     "delivery": "Jul 27"
-    },
-    "soybeans": {
-     "cash": 12.5,
-     "basis": -0.75,
-     "basisCents": -75,
-     "period": "2027-01",
-     "commodity": "Beans",
-     "delivery": "Jan 27"
-    }
-   },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T12:01:25.973Z"
-  },
-  {
    "place": "Country Visions Cooperative||CENTER VALLEY|WI",
    "shard": "merged/country-visions-cooperative-center-valley-wi-030974c5.json",
    "operator": "Country Visions Cooperative",
@@ -31224,7 +31171,7 @@
     }
    },
    "pricedAt": "2026-09-06T03:20:46.377Z",
-   "checkedAt": "2026-09-07T10:33:19.023Z"
+   "checkedAt": "2026-09-07T12:11:00.294Z"
   },
   {
    "place": "Keystone Cooperative||Columbia City|IN",
@@ -36651,7 +36598,7 @@
     }
    },
    "pricedAt": "2026-09-06T00:21:07.245Z",
-   "checkedAt": "2026-09-07T10:33:19.023Z"
+   "checkedAt": "2026-09-07T12:11:00.294Z"
   },
   {
    "place": "PineBluffs Feed & Grain||PineBluffs Feed|WY",
@@ -38789,39 +38736,6 @@
    "checkedAt": "2026-09-07T12:01:25.973Z"
   },
   {
-   "place": "Riceland Foods||Des Arc|AR",
-   "shard": "merged/riceland-foods-des-arc-ar-5be14baa.json",
-   "operator": "Riceland Foods",
-   "branch": null,
-   "city": "Des Arc",
-   "state": "AR",
-   "lat": 34.9751,
-   "lon": -91.5113,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "riceland-desarc",
-   "bids": 1,
-   "crops": [
-    "soybeans"
-   ],
-   "periods": [
-    "2026-10/2026-11"
-   ],
-   "best": {
-    "soybeans": {
-     "cash": 12.85,
-     "basis": -0.25,
-     "basisCents": -25,
-     "period": "2026-10/2026-11",
-     "commodity": "2026 Soybeans",
-     "delivery": "OCT-NOV"
-    }
-   },
-   "pricedAt": "2026-09-04T18:31:56.039Z",
-   "checkedAt": "2026-09-07T12:01:25.973Z"
-  },
-  {
    "place": "Ridgeville Elevator||Ridgeville Elevator- Fayette Branch|OH",
    "shard": "merged/ridgeville-elevator-ridgeville-elevator-fayette-branch-oh-fce75e74.json",
    "operator": "Ridgeville Elevator",
@@ -40139,7 +40053,7 @@
     }
    },
    "pricedAt": "2026-09-04T19:58:02.059Z",
-   "checkedAt": "2026-09-07T10:33:19.023Z"
+   "checkedAt": "2026-09-07T12:11:00.294Z"
   },
   {
    "place": "The Mill, Inc.||Colwell|IA",
