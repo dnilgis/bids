@@ -22,6 +22,7 @@ import {
 import {
   askBusiness, rootDisallowed, parseCsv, keyOf, decided, getText,
   PROBE_VERSION, foundList, worklist,
+  NEVER_CRAWL, isDenied, hostOf, keep, record,
 } from "../scripts/urlfinder.mjs";
 
 const BIZ = { name: "Ursa Farmers Cooperative Co", city: "Ursa", state: "IL", phone: "217-964-2131" };
@@ -436,4 +437,214 @@ test("one unreachable candidate is enough to hold the whole business open", asyn
     : { status: 0, body: "", url, code: "ENOTFOUND", why: "no such host" };
   const rec = await askBusiness(BIZ, { get, robotsCache: new Map(), pageCache: new Map() });
   assert.equal(rec.status, "unreachable");
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * A PROOF IS NOT THROWN AWAY BECAUSE OF ONE BAD MORNING
+ *
+ * Measured 2026-09-08: Central Farm Service was `found`, proved by phone on
+ * cfscoop.com, in two rows. Both came back `unreachable` after
+ * centralfarmservice.com answered ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR once, and
+ * cfscoop.com left probe-lists/urlfinder-found.txt.
+ *
+ * The rule was already written down. It lived in decided(), which filters the
+ * QUEUE and only when --resume is passed; the write itself was unconditional.
+ * These tests are against the WRITE, because that is the thing that was wrong.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+const PROVEN = { status: "found", provedBy: "phone", website: "https://cfscoop.com/",
+                 host: "cfscoop.com", probeVersion: PROBE_VERSION };
+const BAD_DAY = { status: "unreachable", provedBy: null, website: null, host: null,
+                  probeVersion: PROBE_VERSION };
+
+test("a proved row survives a run that could not reach the host", () => {
+  assert.equal(keep(PROVEN, BAD_DAY), PROVEN);
+  assert.equal(keep(PROVEN, { ...BAD_DAY, status: "exhausted" }), PROVEN);
+  assert.equal(keep(PROVEN, { ...BAD_DAY, status: "town-only" }), PROVEN);
+});
+
+test("a new proof still replaces an older one", () => {
+  const better = { ...PROVEN, website: "https://www.cfscoop.com/markets", provedBy: "address" };
+  assert.equal(keep(PROVEN, better), better);
+});
+
+test("a row that was never proved is simply overwritten", () => {
+  assert.equal(keep(undefined, BAD_DAY), BAD_DAY);
+  assert.equal(keep({ status: "exhausted" }, BAD_DAY), BAD_DAY);
+});
+
+test("a proof standing on a denied host is not a proof and does not survive", () => {
+  const onDenied = { ...PROVEN, website: "https://www.bigriverbids.com/", host: "bigriverbids.com" };
+  assert.equal(keep(onDenied, BAD_DAY), BAD_DAY, "a row we should never have read is not defended");
+  assert.equal(decided(onDenied), false, "--resume would skip it forever and it would never correct");
+  assert.equal(decided(PROVEN), true, "an ordinary proof is still permanent");
+});
+
+test("record() is how a row reaches the ledger, and it keeps the proof", () => {
+  const ledger = { businesses: { k: PROVEN } };
+  const kept = record(ledger, "k", BAD_DAY);
+  assert.equal(kept, PROVEN);
+  assert.equal(ledger.businesses.k, PROVEN);
+  record(ledger, "new", BAD_DAY);
+  assert.equal(ledger.businesses.new, BAD_DAY);
+});
+
+/* COUNT THE COPIES. The bug was one unguarded assignment. A second one added
+   later would restore it while every test above still passed. */
+test("there is exactly one writer into the ledger", () => {
+  const src = readFileSync(new URL("../scripts/urlfinder.mjs", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const writes = src.match(/ledger\.businesses\[[^\]]*\]\s*=/g) || [];
+  assert.equal(writes.length, 1,
+    "ledger.businesses is assigned in " + writes.length + " places; keep() guards one of them");
+  assert.match(src, /export function record\(ledger, key, rec\) \{[\s\S]{0,200}keep\(/,
+    "the one writer does not go through keep()");
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * A HOST THIS PROJECT DOES NOT FETCH IS NOT FETCHED, BY ANY ROUTE
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+test("the standing no-crawl decisions are actually in the list", () => {
+  assert.ok(NEVER_CRAWL.has("bigriverbids.com"));
+  assert.ok(NEVER_CRAWL.has("apps.agr.illinois.gov"));
+});
+
+/* THE LIST MUST NOT ESCAPE THIS PROBE.
+   sources/boyceville.json reads https://bigriverbids.com/cashbidssingle-2121
+   on every poll pass, by arrangement, and data/boyceville.json is what both
+   Emmert sites consume. This list is about a crawler guessing at hosts, not
+   about that one arranged URL. If it is ever imported by the reader, Boyceville
+   stops and two customer sites go quiet with nothing red to show it. */
+test("the no-crawl list is urlfinder's alone, and the arranged board still stands", () => {
+  const root = new URL("../", import.meta.url);
+  const src = readFileSync(new URL("sources/boyceville.json", root), "utf8");
+  const boyceville = JSON.parse(src);
+  assert.equal(boyceville.enabled, true, "the arranged board has been disabled");
+  assert.ok(isDenied(hostOf(boyceville.url)),
+    "this test is only meaningful while the arranged board is on a listed host");
+
+  const readers = ["scripts/poll.mjs", "scripts/one-pass.sh", "scripts/merge_bids.mjs",
+                   "scripts/discover.mjs", "scripts/board-sweep.mjs", "scripts/build_directory.mjs"];
+  let looked = 0;
+  for (const f of readers) {
+    let body;
+    try { body = readFileSync(new URL(f, root), "utf8"); } catch { continue; }
+    looked++;
+    assert.ok(!/NEVER_CRAWL|isDenied/.test(body),
+      f + " imports urlfinder's no-crawl list; that would stop the arranged Boyceville read");
+  }
+  assert.ok(looked >= 4, "this check looked at " + looked + " files and is not searching");
+});
+
+test("the denylist matches a host and its subdomains, and nothing that merely ends the same way", () => {
+  assert.ok(isDenied("bigriverbids.com"));
+  assert.ok(isDenied("www.bigriverbids.com"));
+  assert.ok(isDenied("cash.bigriverbids.com"));
+  assert.ok(!isDenied("notbigriverbids.com"), "a suffix test without the dot matches the wrong hosts");
+  assert.ok(!isDenied("bigriverunitedenergy.com"), "the host we are allowed to ask is not denied");
+  assert.ok(!isDenied(""), "an unparseable URL is not silently permitted by being empty");
+});
+
+test("getText refuses a denied host without making a request", async () => {
+  let called = 0;
+  const fetchImpl = async () => { called++; throw new Error("should never be called"); };
+  const r = await getText("https://www.bigriverbids.com/", { fetchImpl });
+  assert.equal(called, 0, "the request was made anyway");
+  assert.equal(r.body, "");
+  assert.equal(r.denied, true);
+});
+
+test("getText throws away a body that arrived from a denied host by redirect", async () => {
+  /* THE CASE THAT BROKE IT. The host asked is allowed; the host that answered
+     is not, and 283 KB of it came back. */
+  const fetchImpl = async () => ({
+    ok: true, status: 200, url: "https://www.bigriverbids.com/",
+    headers: { get: () => "text/html" },
+    text: async () => "<p>217-964-2131</p>",
+  });
+  const r = await getText("https://bigriverunitedenergy.com/", { fetchImpl });
+  assert.equal(r.body, "", "the denied page was read");
+  assert.equal(r.denied, true);
+  assert.match(r.why, /redirected to bigriverbids\.com/);
+});
+
+test("a guess that redirects to a denied host is refused, not proved", async () => {
+  /* The page carries the phone. Without the refusal this is a FOUND row, which
+     is exactly what shipped on 2026-09-08. */
+  const get = async (url) => {
+    if (url.endsWith("/robots.txt")) return { status: 404, body: "", url };
+    return { status: 200, url: "https://www.bigriverbids.com/",
+             body: "<h1>Ursa Farmers Cooperative</h1><p>Ursa, IL</p><p>(217) 964-2131</p>" };
+  };
+  const rec = await askBusiness(BIZ, { get, robotsCache: new Map(), pageCache: new Map() });
+  assert.notEqual(rec.status, "found", "a denied host was filed as this business's website");
+  assert.ok(rec.tried.some((x) => x.verdict === "denied"), "the refusal is not recorded");
+  assert.ok(!JSON.stringify(rec).includes("bigriverbids.com/") || rec.status !== "found");
+});
+
+test("a guess that redirects to a host disallowing everyone is refused", async () => {
+  /* The destination's robots.txt had never been asked, because robots was
+     asked of the host we GUESSED. */
+  let askedRobotsFor = [];
+  const get = async (url) => {
+    if (url.endsWith("/robots.txt")) {
+      askedRobotsFor.push(hostOf(url));
+      if (url.includes("elsewhere.example"))
+        return { status: 200, body: "User-agent: *\nDisallow: /", url };
+      return { status: 404, body: "", url };
+    }
+    return { status: 200, url: "https://elsewhere.example/",
+             body: "<h1>Ursa Farmers Cooperative</h1><p>Ursa, IL</p><p>(217) 964-2131</p>" };
+  };
+  const rec = await askBusiness(BIZ, { get, robotsCache: new Map(), pageCache: new Map() });
+  assert.ok(askedRobotsFor.includes("elsewhere.example"),
+    "the host that actually answered was never asked whether it permits this");
+  assert.notEqual(rec.status, "found");
+  assert.ok(rec.tried.some((x) => x.verdict === "robots" && /redirects to/.test(x.why)));
+});
+
+test("an ordinary redirect is still fine — this refuses denials, not rebrands", async () => {
+  /* 16 of the 165 found rows are redirect landings and 15 of them are correct:
+     agvantagefs -> fscooperatives, coshoctongrain -> centerracoop. Recording
+     the final URL is the right behaviour and must not be broken by the above. */
+  const get = async (url) => {
+    if (url.endsWith("/robots.txt")) return { status: 404, body: "", url };
+    return { status: 200, url: "https://www.newname.example/",
+             body: "<h1>Ursa Farmers Cooperative</h1><p>Ursa, IL</p><p>(217) 964-2131</p>" };
+  };
+  const rec = await askBusiness(BIZ, { get, robotsCache: new Map(), pageCache: new Map() });
+  assert.equal(rec.status, "found");
+  assert.equal(rec.website, "https://www.newname.example/");
+});
+
+test("a denied host is not asked at all, not even for its robots.txt", async () => {
+  /* ADDED AFTER A MUTATION LEFT THE SUITE GREEN. Deleting the denied-candidate
+     branch in askBusiness changed nothing, because every other test reached
+     the denial by redirect. "Big River Bids" is a name whose FIRST candidate
+     hostname is the denied host itself, so this is the only path that covers
+     it. Rule 47. */
+  const asked = [];
+  const get = async (url) => { asked.push(url); return { status: 404, body: "", url }; };
+  const rec = await askBusiness(
+    { name: "Big River Bids LLC", city: "Dyersville", state: "IA", phone: "319-753-1100" },
+    { get, robotsCache: new Map(), pageCache: new Map() });
+  assert.ok(!asked.some((u) => u.includes("bigriverbids.com")),
+    "the denied host was requested: " + asked.filter((u) => u.includes("bigriverbids.com")).join(", "));
+  assert.ok(rec.tried.some((t) => t.host === "bigriverbids.com" && t.verdict === "denied"),
+    "the refusal is not written down, so a reader cannot tell it from never-asked");
+  assert.notEqual(rec.status, "found");
+});
+
+/* THE SHIPPED FILE, not the code that writes it. probe-lists/urlfinder-found.txt
+   is the input to scripts/discover.mjs, so a denied host in it is a denied host
+   queued to be probed. With the changes above this cannot happen; if this ever
+   fires, the denylist has been routed around and that is a defect, not drift. */
+test("no denied host is sitting in the committed found list", () => {
+  const list = readFileSync(new URL("../probe-lists/urlfinder-found.txt", import.meta.url), "utf8");
+  const bad = list.split("\n")
+    .filter((l) => l.trim() && !l.trim().startsWith("#"))
+    .map((l) => l.trim().split(/\s+/)[0])
+    .filter((u) => isDenied(hostOf(u)));
+  assert.deepEqual(bad, [], "denied host(s) in the probe list: " + bad.join(", "));
 });
