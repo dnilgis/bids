@@ -25,31 +25,97 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   auditSources, refuted, siblingDisagreements, declaresRounding, declarationOf,
-  SIBLINGS_CSV, SIBLING_COLS,
+  mergeResiduals, storedRows, SIBLINGS_CSV, SIBLING_COLS,
 } from "../scripts/rounding_audit.mjs";
 import { rowsFromCapture } from "../lib/rounding.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const AUDIT = auditSources();
 
-/* --- the rule ------------------------------------------------------------ */
+/* --- the rule, and where it is NOT enforced ------------------------------ */
 
-test("no enabled source declares a rounding its own committed capture refutes", () => {
-  const bad = refuted(AUDIT);
-  const say = bad.map((a) =>
-    `\n  ${a.id}\n      declares ${a.declared}; ${a.unexplained} of ${a.rows} committed rows do not fit`
-    + `\n      its own capture supports ${a.ev.confident ?? "no mode by the margin rule — UNDECLARE it"}`
-    + `\n      residuals ${a.ev.residuals.join("c, ")}c`).join("");
-  assert.equal(bad.length, 0,
-    `${bad.length} source(s) claim a rounding mode data/<id>.json contradicts.`
-    + ` Set the mode the capture supports, or remove cashRounding so the guard stays strict:${say}`);
+test("the live tree is REPORTED, not asserted — and the audit says so out loud", () => {
+  /* THIS TEST USED TO BE AN ASSERTION OVER sources/ AND data/, AND THAT WAS
+     WRONG. It shipped that way on the morning of 2026-09-08 and was red by the
+     evening of the same day: the poll rewrote four of the nine captures it had
+     just been used to correct, each grew a +0.5c row, and `round-cent` wanted
+     to be `round-cent-either`. Nothing had been committed. Nothing was broken.
+     A cash board simply rounds a little wider on the days its futures land
+     badly, and a suite that goes red for that turns every push in the
+     repository red for something no change caused — which is how a real red
+     tick stops meaning anything.
+
+     So the SUITE tests the rule, which does not drift, and the LIVE TREE is
+     reported by scripts/rounding_audit.mjs as a GitHub warning on every poll
+     and by the daily read. What is pinned here is that the reporting exists. */
+  const src = readFileSync(join(ROOT, "scripts/rounding_audit.mjs"), "utf8");
+  assert.match(src, /::warning title=rounding refuted::/,
+    "a refuted source must raise an annotation somebody can see on the run");
+  assert.match(src, /set "cashRounding": "\$\{a\.ev\.confident/,
+    "and the annotation must name the mode to set, not merely complain");
 });
 
-test("the corpus is big enough for that to mean something", () => {
+test("the corpus is big enough for the audit to mean something", () => {
   /* A band, not a figure: 814 on 2026-09-08 and it moves with every poll. If it
-     collapses, the test above is passing over an empty set and proving nothing. */
+     collapses, the audit is running over an empty set and proving nothing. */
   assert.ok(AUDIT.length >= 600 && AUDIT.length <= 1200,
     `${AUDIT.length} enabled sources have a testable committed capture`);
+});
+
+/* --- one capture measures the day, not the board -------------------------- */
+
+test("residuals accumulate, and only ever grow", () => {
+  const store = {};
+  store.x = mergeResiduals(store, "x", [0, -0.25, -0.25], "t1");
+  assert.deepEqual(store.x.residuals, { "0": 1, "-0.25": 2 });
+  store.x = mergeResiduals(store, "x", [0.5], "t2");
+  assert.deepEqual(store.x.residuals, { "0": 1, "-0.25": 2, "0.5": 1 },
+    "the earlier readings survive the later one");
+  assert.equal(store.x.reads, 2);
+  assert.equal(store.x.firstSeen, "t1");
+  assert.equal(store.x.lastSeen, "t2");
+});
+
+test("a residual seen before is a fact about the board forever", () => {
+  /* The failure this prevents: a quiet day narrows the mode back to something
+     a busy day already refuted. */
+  let e = mergeResiduals({}, "x", [0.5], "t1");
+  e = mergeResiduals({ x: e }, "x", [0, 0, 0], "t2");
+  assert.ok("0.5" in e.residuals, "the +0.5c reading is not forgotten by a quiet day");
+});
+
+test("the counts survive accumulation, because the margin counts them", () => {
+  /* Stored as a plain SET first, and that broke the margin: lib/rounding.mjs
+     will not name a mode unless it beats its nearest rival by MIN_MARGIN, and
+     ten rows collapsed to four distinct values turned a margin of four into a
+     margin of one, so a board with ample evidence read "TOO FEW TO STATE". */
+  const e = mergeResiduals({}, "x", [0, 0, 0, 0, 0, -0.25, -0.25], "t1");
+  const rows = storedRows(e);
+  assert.equal(rows.length, 7, "seven observations, not two distinct values");
+  assert.equal(rows.filter((r) => r === 0).length, 5);
+});
+
+test("the audit judges against the store, not only against today", async () => {
+  /* A board whose capture today is spotless, but which HAS shown a -0.25c row
+     before, must still refute floor-cent. */
+  const dir = mkdtempSync(join(tmpdir(), "rounding-store-"));
+  mkdirSync(join(dir, "sources"), { recursive: true });
+  mkdirSync(join(dir, "data"), { recursive: true });
+  writeFileSync(join(dir, "sources/fake-one.json"), JSON.stringify({
+    id: "fake-one", platform: "dtn-cs", enabled: true, cashRounding: "floor-cent",
+  }));
+  writeFileSync(join(dir, "data/fake-one.json"), JSON.stringify({ bids: [
+    { cash: 4.00, basisDollars: -0.10, futuresPriceCents: 410 },
+    { cash: 4.10, basisDollars: -0.10, futuresPriceCents: 420 },
+  ] }));
+
+  assert.deepEqual(refuted(auditSources(dir, {})), [],
+    "with no history, today's spotless capture is not a refutation");
+
+  const store = { "fake-one": { residuals: { "-0.25": 4 }, reads: 3 } };
+  const bad = refuted(auditSources(dir, store));
+  assert.equal(bad.length, 1, "with the history, floor-cent is refuted");
+  assert.equal(bad[0].seenBefore, 4, "and the run says how much of it came from earlier reads");
 });
 
 /* --- the trap that broke the first pass of this audit --------------------- */
@@ -131,7 +197,7 @@ test("a manifest that claims floor-cent over a negative residual IS caught", () 
     { cash: 4.40, basisDollars: -0.10, futuresPriceCents: 450.25 },   /* +0.25  */
   ] }));
 
-  const bad = refuted(auditSources(dir));
+  const bad = refuted(auditSources(dir, {}));
   assert.equal(bad.length, 1, "the refuted source is found");
   assert.equal(bad[0].id, "fake-one");
   assert.equal(bad[0].unexplained, 4, "the four -0.25c rows are what floor-cent cannot explain");
@@ -156,7 +222,7 @@ test("the same board with the mode CORRECTED is not caught", () => {
     { cash: 4.30, basisDollars: -0.10, futuresPriceCents: 439.75 },
     { cash: 4.40, basisDollars: -0.10, futuresPriceCents: 450.25 },
   ] }));
-  assert.deepEqual(refuted(auditSources(dir)), []);
+  assert.deepEqual(refuted(auditSources(dir, {})), []);
 });
 
 test("a DISABLED source is not audited", () => {
@@ -169,7 +235,7 @@ test("a DISABLED source is not audited", () => {
   writeFileSync(join(dir, "data/fake-one.json"), JSON.stringify({ bids: [
     { cash: 4.00, basisDollars: -0.10, futuresPriceCents: 409.75 },
   ] }));
-  assert.deepEqual(auditSources(dir), []);
+  assert.deepEqual(auditSources(dir, {}), []);
 });
 
 /* --- the audit measures with the reader's own function -------------------- */

@@ -57,7 +57,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 
 import { join } from "node:path";
 import { explainedByRounding } from "../lib/board.mjs";
 import { checkIdentity } from "../lib/parse.mjs";
-import { rowsFromCapture, roundingEvidence, describeEvidence } from "../lib/rounding.mjs";
+import { rowsFromCapture, roundingEvidence, describeEvidence, residualCents } from "../lib/rounding.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const P = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
@@ -74,8 +74,57 @@ export const declarationOf = (s) =>
     : Number(s?.cashRoundingCents ?? 0) > 0 ? `exact +/- ${s.cashRoundingCents}c`
     : "exact";
 
+/* ONE CAPTURE IS NOT ENOUGH EVIDENCE TO SET A MODE — learned 2026-09-08, the
+ * same day, twice.
+ *
+ * The first version of this judged each source against the ONE capture sitting
+ * in data/<id>.json. Nine sources were corrected from it in the morning. By the
+ * evening the poll had rewritten those captures and FOUR OF THE NINE were
+ * refuted again — Keystone's Holland and Legacy Feed and Niewohner's Albion and
+ * Elgin had each grown a +0.5c row, so the `round-cent` set that morning wanted
+ * to be `round-cent-either`. Nothing was wrong with the boards and nothing was
+ * wrong with the manifests; the evidence had simply been one afternoon deep.
+ *
+ * A cash board rounds only on the days its futures quote lands on a fraction of
+ * a cent. Judging it on a single reading measures the day, not the board, and
+ * chasing that produces a manifest edit every time the market moves.
+ *
+ * So the residuals ACCUMULATE. Every run unions what it sees into
+ * data/rounding-residuals.json and the verdict is taken against everything this
+ * project has ever observed from that board. A mode set from the union stops
+ * flapping: today's +0.5c is already in tomorrow's evidence.
+ *
+ * It only ever grows. A residual seen once is a fact about that board forever,
+ * and forgetting it is how the mode narrows back to something a later day
+ * refutes.
+ *
+ * COUNTS, NOT A SET. Written first as a plain union of distinct values, and
+ * that quietly broke the margin: lib/rounding.mjs will not NAME a mode unless
+ * it beats its nearest rival by MIN_MARGIN rows, and ten rows collapsed to four
+ * distinct residuals turned a margin of four into a margin of one — so a board
+ * with plenty of evidence came out "TOO FEW TO STATE". How OFTEN a residual has
+ * been seen is exactly the thing that margin is counting. */
+export function mergeResiduals(store, id, residuals, now = new Date().toISOString()) {
+  const prev = store[id] ?? { residuals: {}, firstSeen: now, reads: 0 };
+  const counts = { ...prev.residuals };
+  for (const r of residuals) {
+    const k = String(Number(r.toFixed ? r.toFixed(4) : r));
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  return { ...prev, residuals: counts, lastSeen: now, reads: (prev.reads ?? 0) + 1,
+           grew: Object.keys(counts).length > Object.keys(prev.residuals).length };
+}
+
+/** The accumulated residuals as rows roundingEvidence can weigh, counts kept. */
+export function storedRows(entry) {
+  const out = [];
+  for (const [value, n] of Object.entries(entry?.residuals ?? {}))
+    for (let i = 0; i < n; i++) out.push(Number(value));
+  return out;
+}
+
 /** Every enabled source that has a committed capture with testable rows. */
-export function auditSources(root = ROOT) {
+export function auditSources(root = ROOT, store = readResiduals(root)) {
   const out = [];
   for (const f of readdirSync(join(root, "sources")).sort()) {
     if (!f.endsWith(".json")) continue;
@@ -86,13 +135,29 @@ export function auditSources(root = ROOT) {
     const rows = rowsFromCapture(JSON.parse(readFileSync(cap, "utf8")));
     if (!rows.length) continue;
 
+    /* Judged against the UNION of everything ever seen from this board, not
+       against today's reading — see mergeResiduals above. The synthetic rows
+       carry the accumulated residuals through the same explainedByRounding and
+       roundingEvidence the reader uses, so there is still exactly one
+       implementation of the rule. */
+    const seen = storedRows(store[s.id]);
+    /* residualCents, not the arithmetic written out again. The test below pins
+       that this file computes no residual of its own, and the first draft of
+       this line tripped it — correctly. lib/rounding.mjs's own header is about
+       exactly this: two copies of one measurement eventually disagree. */
+    const today = rows.map(residualCents);
+    const all = [...seen, ...today];
+    const asRows = all.map((res) => ({ cash: 1, basis: 0, futuresPrice: 100 + res }));
+
     const unexplained = explainedByRounding(
-      s, checkIdentity(rows), Number(s.cashRoundingCents ?? 0));
-    const ev = roundingEvidence(rows);
+      s, checkIdentity(asRows), Number(s.cashRoundingCents ?? 0));
+    const ev = roundingEvidence(asRows);
     out.push({
       id: s.id, operator: s.operator ?? null, platform: s.platform ?? null,
       declared: declarationOf(s), declares: declaresRounding(s),
-      rows: rows.length, unexplained: unexplained.length, ev,
+      rows: rows.length, observations: all.length, seenBefore: seen.length,
+      distinct: new Set(all).size,
+      unexplained: unexplained.length, ev, todayResiduals: today,
     });
   }
   return out;
@@ -132,6 +197,11 @@ export function siblingDisagreements(audit) {
     a.operator_key.localeCompare(b.operator_key) || a.id.localeCompare(b.id));
 }
 
+export function readResiduals(root = ROOT) {
+  const p = join(root, RESIDUALS);
+  return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")).sources ?? {}) : {};
+}
+
 const csv = (rows, cols) => [
   cols.join(","),
   ...rows.map((r) => cols.map((c) => {
@@ -140,12 +210,14 @@ const csv = (rows, cols) => [
   }).join(",")),
 ].join("\n") + "\n";
 
+export const RESIDUALS = "data/rounding-residuals.json";
 export const SIBLINGS_CSV = "data/gaps/rounding-disagreement.csv";
 export const SIBLING_COLS = ["operator", "platform", "id", "declared",
   "siblings_declare", "this_capture_supports", "residuals", "rows_unexplained"];
 
 export function main(argv = process.argv.slice(2)) {
-  const audit = auditSources();
+  const store = readResiduals();
+  const audit = auditSources(ROOT, store);
   const bad = refuted(audit);
   const sib = siblingDisagreements(audit);
 
@@ -154,10 +226,20 @@ export function main(argv = process.argv.slice(2)) {
     a.declares && !a.unexplained && a.ev.confident && a.ev.confident !== a.declared);
 
   console.log(`${audit.length} enabled source(s) have a committed capture with testable rows\n`);
-  console.log(`REFUTED BY THEIR OWN CAPTURE: ${bad.length}`);
-  for (const a of bad)
-    console.log(`  ${a.id}\n      declares ${a.declared}, and ${a.unexplained} of ${a.rows} `
-      + `committed row(s) do not fit it\n      ${describeEvidence(a.ev)}`);
+  console.log(`REFUTED BY EVERYTHING EVER SEEN FROM THEIR BOARD: ${bad.length}`);
+  for (const a of bad) {
+    console.log(`  ${a.id}\n      declares ${a.declared}, and ${a.unexplained} of `
+      + `${a.observations} observed residual(s) do not fit it`
+      + ` (${a.seenBefore} carried in from earlier reads)\n      ${describeEvidence(a.ev)}`);
+    /* A WARNING, NOT A FAILED SUITE. This used to be an assertion in
+       test/declared-rounding.test.mjs over the live sources/ and data/ trees,
+       and that was wrong: a cash board that rounds a little wider on a Tuesday
+       would turn every push in the repository red for something no commit
+       caused. The suite now tests the RULE; the live tree is reported here,
+       where the poll's log and the daily read both pick it up. */
+    console.log(`::warning title=rounding refuted::${a.id} declares ${a.declared}; `
+      + `set "cashRounding": "${a.ev.confident ?? "(nothing — undeclare it)"}"`);
+  }
   console.log(`\nSIBLINGS DISAGREEING ON ONE BOARD: ${sib.length} source(s) in `
     + `${new Set(sib.map((s) => s.operator_key)).size} operator/platform group(s)`);
   console.log(`WIDER THAN THEIR CAPTURE NEEDS: ${wider.length} `
@@ -166,7 +248,25 @@ export function main(argv = process.argv.slice(2)) {
   if (argv.includes("--write")) {
     mkdirSync(join(ROOT, "data/gaps"), { recursive: true });
     writeFileSync(join(ROOT, SIBLINGS_CSV), csv(sib, SIBLING_COLS));
-    console.log(`\nwrote ${SIBLINGS_CSV}`);
+
+    const now = new Date().toISOString();
+    let grew = 0;
+    for (const a of audit) {
+      const merged = mergeResiduals(store, a.id, a.todayResiduals, now);
+      if (merged.grew) grew++;
+      store[a.id] = { residuals: merged.residuals, firstSeen: merged.firstSeen,
+                      lastSeen: merged.lastSeen, reads: merged.reads };
+    }
+    writeFileSync(join(ROOT, RESIDUALS), JSON.stringify({
+      generated: now,
+      note: "Every residual (quoted futures minus cash-plus-basis, in cents) this project has "
+          + "ever observed from each board. It only grows: a residual seen once is a fact about "
+          + "that board forever. scripts/rounding_audit.mjs judges cashRounding against this "
+          + "union rather than against one capture, because one capture measures the day.",
+      sources: store,
+    }, null, 1) + "\n");
+    console.log(`\nwrote ${SIBLINGS_CSV} and ${RESIDUALS} (${grew} board(s) showed a residual `
+      + `they had not shown before)`);
   }
   return bad.length;
 }

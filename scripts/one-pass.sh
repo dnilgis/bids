@@ -120,7 +120,11 @@ fi
 # and it costs 0.13s over 814 of them. Same fail-open rule as the three blocks
 # above: a worklist must never stop a price reaching the repo.
 if node scripts/rounding_audit.mjs --write; then
-  git add data/gaps/rounding-disagreement.csv 2>/dev/null || true
+  # The residual store too. It is what makes the verdict stable: one capture
+  # measures the day, not the board, and four of the nine manifests corrected
+  # from a single capture on the morning of 2026-09-08 were refuted again by
+  # the evening from captures this same loop had rewritten.
+  git add data/gaps/rounding-disagreement.csv data/rounding-residuals.json 2>/dev/null || true
 else
   echo "::warning title=rounding::the rounding worklist did not build; prices are unaffected"
 fi

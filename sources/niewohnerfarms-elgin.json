@@ -17,9 +17,9 @@
       12
     ]
   },
-  "cashRounding": "round-cent",
+  "cashRounding": "round-cent-either",
   "cashRoundingCents": 0,
-  "cashRoundingNote": "Was \"floor-cent\", and this board's own committed capture refutes that. Measured 2026-09-08 by scripts/rounding_audit.mjs over data/niewohnerfarms-elgin.json: 10 testable row(s), residuals {-0.25c, 0c, +0.25c}, of which 3 cannot be explained by \"floor-cent\". \"floor-cent\" is the claim that cash = FLOOR(basis + futures), so a residual is never negative, and this board carries a negative residual. \"round-cent\" explains every row and is the narrowest mode that does, by a margin of 3 row(s) over the nearest rival.",
+  "cashRoundingNote": "Was \"round-cent\". Set 2026-09-08 from the ACCUMULATED residuals in data/rounding-residuals.json, not from one capture: 30 observation(s) of this board, residuals {-0.25c, 0c, +0.25c, +0.5c}, of which 12 do not fit \"round-cent\". \"round-cent-either\" explains every one and is the narrowest mode that does, by a margin of 9 over the nearest rival. WHY IT MOVED AGAIN: this source was corrected earlier the same day from a single capture, and the poll rewrote that capture within hours with a +0.5c row in it. One reading measures the day, not the board. The residual store is what stops that.",
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
