@@ -1,1 +1,45 @@
+# WHICH FILES THE PIPELINE REWRITES, AND WHY THAT CHANGES WHAT A CONFLICT MEANS
+#
+# 2026-09-07, 23:40. The registries run read twelve state rolls, surveyed
+# sixty-seven candidate pages, geocoded 894 addresses and built a directory of
+# 4,696 elevators — thirty-six minutes — committed 2,111 businesses, and then:
+#
+#     ! [rejected]        main -> main (fetch first)
+#     somebody pushed first (attempt 1 of 4); rebasing
+#     Auto-merging data/directory.json
+#     CONFLICT (content): Merge conflict in data/directory.json
+#     ##[error]the work is committed locally and NOT on the remote
+#
+# The barchart job had pushed during those thirty-six minutes. Both jobs run
+# scripts/build_directory.mjs, both rewrite data/directory.json in full, and a
+# three-way merge of two independently regenerated JSON files conflicts every
+# time they overlap. Everything the run learned died on the runner.
+#
+# scripts/commit-and-push.sh already carries two paragraphs about this exact
+# shape of loss — a rejected push in August, an untracked file in August. Both
+# were fixed. Neither covered a CONTENT conflict, because until two workflows
+# regenerated the same derived file there had never been one.
+#
+# THE POINT. For a hand-written file a conflict is information: two people
+# changed the same line and somebody has to decide. For a file the pipeline
+# regenerates wholesale from its inputs, a conflict is NOISE — neither side is
+# "right", both are snapshots of a build, and the next run of either job
+# overwrites whatever is there. Merging them line by line produces something
+# neither build would ever have written.
+#
+# So these paths take the version being replayed, and the loss is stated rather
+# than pretended away: the other job's contribution to that derived file is
+# dropped until the next rebuild picks it up from its own committed inputs,
+# which are NOT in this list and are never resolved this way. A transient gap in
+# a derived file against thirty-six minutes of harvest is not a close call.
+#
+# sources/ IS DELIBERATELY ABSENT. A source manifest is edited, not
+# regenerated — geocode-fill fills a coordinate, stamp-country writes a country,
+# the sweeps add new files. Two jobs disagreeing about one manifest is a real
+# disagreement and it must still stop everything and ask.
+
+data/*.json            merge=generated
+data/gaps/*            merge=generated
+geocodes/*.json        merge=generated
+probe-lists/*.txt      merge=generated
 
