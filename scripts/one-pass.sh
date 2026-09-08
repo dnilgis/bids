@@ -100,6 +100,30 @@ if node scripts/coverage.mjs; then
 else
   echo "::warning title=coverage::the coverage figure did not compute; prices are unaffected"
 fi
+
+# WHAT EACH BOARD'S OWN ROWS SAY ABOUT HOW IT ROUNDS, EVERY PASS THAT COMMITS.
+#
+# `cashRounding` is a claim about somebody else's spreadsheet, written on the
+# day somebody looked, and until 2026-09-08 nothing ever went back to check it.
+# Nine enabled sources were found declaring a mode their own committed capture
+# refutes -- eight of them `floor-cent`, which is the claim that a residual is
+# never negative, on boards carrying -0.25c rows. Nothing was red: a MINORITY of
+# failing rows is classified `lagging`, the file publishes, and those rows carry
+# a futures quote whose identity was never proven.
+#
+# The hard half of that rule is test/declared-rounding.test.mjs and runs on every
+# push. This is the soft half: siblings of one operator, reading ONE board on ONE
+# platform, that declare DIFFERENT modes. That is a question and not a verdict --
+# a co-op can genuinely run two site configurations -- so it is a worklist row.
+#
+# It runs here because this is the job that rewrites the captures it measures,
+# and it costs 0.13s over 814 of them. Same fail-open rule as the three blocks
+# above: a worklist must never stop a price reaching the repo.
+if node scripts/rounding_audit.mjs --write; then
+  git add data/gaps/rounding-disagreement.csv 2>/dev/null || true
+else
+  echo "::warning title=rounding::the rounding worklist did not build; prices are unaffected"
+fi
 # THE MERGED FEED, REBUILT EVERY PASS THAT COMMITS — AND HERE IS WHY IT MOVED.
 #
 # It was built four times a weekday in barchart.yml, alongside the Barchart
