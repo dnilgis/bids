@@ -1,0 +1,118 @@
+# A NAME IS NOT A URL, AND 4,270 OF THEM HAVE NO URL.
+#
+# WHY THIS EXISTS
+#
+# Sig, repeatedly: "I want every elevator in the country." Measured 2026-09-08:
+# 4,982 elevators known, 887 with a board we read, and 4,270 with NO WEBSITE ON
+# FILE. That last number is the wall. It is bigger than every other obstacle in
+# this project put together, and no amount of state licence work touches it:
+# states publish LICENSEES, not URLs. The registries run of 2026-09-08 added
+# 2,247 rows to the directory and, by construction, zero readable boards.
+#
+# 2,385 of those rows carry a phone number. A ten-digit phone is the one thing
+# here that is IDENTITY rather than resemblance — scripts/build_directory.mjs
+# already decides on it. So this guesses hostnames from the business's own name
+# and accepts only the ones whose page carries that phone.
+#
+# WHAT IT WILL NOT DO. It will not file a website it cannot prove. A guessed
+# .com that answers 200 proves only that somebody owns it, and a parked page
+# will happily contain the word "grain". A page that names the town and the
+# business but carries no phone is written to a worklist for a person and is
+# NEVER written in as a website — build_directory.mjs already says why: "a town
+# match alone is not identity: a town can hold three elevators".
+#
+# IT WALKS THE LIST BY ITSELF, the way discover-sweep does. --resume skips
+# anything the ledger decided at this probe version, so four runs a day take the
+# 2,385 down in about a day and then say "nothing left to ask" until the list
+# grows. Bumping PROBE_VERSION in scripts/urlfinder.mjs re-opens every write-off
+# the old rule made.
+#
+# THE OUTPUT IS AN INPUT. probe-lists/urlfinder-found.txt is a probe list
+# scripts/discover.mjs reads with --list. Having a website is not having a
+# board; what each of these is running is discover's question, not this one's.
+#
+# MANNERS. robots.txt is fetched once per host and honoured, four hosts at a
+# time, a ten-second ceiling per request, and a hard budget in seconds so a cron
+# cannot run away on other people's servers.
+
+name: urlfinder — turn a name into a website, and prove it
+
+on:
+  schedule:
+    # Four times a day at a minute nothing else in this repository uses, and
+    # never inside the trading window (12-21 UTC) where the reader has priority
+    # on runners and on the push.
+    - cron: "18 2,5,8,11 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "How many businesses to ask in this run (0 = as many as the budget allows)"
+        default: "0"
+      budget:
+        description: "Seconds of wall clock this run may spend"
+        default: "1500"
+      concurrency:
+        description: "Hosts asked at once (max 8)"
+        default: "4"
+      resume:
+        description: "Skip anything the ledger already decided"
+        type: boolean
+        default: true
+
+concurrency:
+  group: urlfinder
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # THE GUARDS FIRST, BEFORE ANY REQUEST LEAVES THE RUNNER — 2026-09-07.
+      # A pre-fetch guard that needs the fetch's own output can bolt the door on
+      # the fetch, and one did: eleven states unrecoverable. These two need
+      # nothing but the checkout. The one that matters is the refusal rule: a
+      # finder that files an unproved website is worse than a finder that finds
+      # nothing, so it does not get to run before that is checked.
+      - name: The refusal rule, before anything is asked
+        run: |
+          node --test test/urlfinder.test.mjs
+          node --test test/declared-rounding.test.mjs
+
+      - name: Ask
+        id: find
+        env:
+          LIMIT: ${{ inputs.limit || '0' }}
+          BUDGET: ${{ inputs.budget || '1500' }}
+          CONC: ${{ inputs.concurrency || '4' }}
+          RESUME: ${{ inputs.resume == false && 'no' || 'yes' }}
+        run: |
+          set -uo pipefail
+          args="--budget $BUDGET --concurrency $CONC --limit $LIMIT --write"
+          [ "$RESUME" = "yes" ] && args="$args --resume"
+          node scripts/urlfinder.mjs $args | tee /tmp/urlfinder.txt
+          {
+            echo "### urlfinder"
+            echo ""
+            echo '```'
+            cat /tmp/urlfinder.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit what was proved
+        run: |
+          git config user.name  "agsist-bot"
+          git config user.email "bot@agsist.com"
+          git add data/urlfinder.json probe-lists/urlfinder-found.txt data/gaps/website-candidates.csv 2>/dev/null || true
+          git diff --cached --quiet && { echo "nothing new"; exit 0; }
+          n=$(node -e "try{const b=require('./data/urlfinder.json').businesses;process.stdout.write(String(Object.values(b).filter(r=>r.status==='found').length))}catch(e){process.stdout.write('0')}")
+          bash scripts/commit-and-push.sh "urlfinder: $n websites proved by phone [skip ci]"
