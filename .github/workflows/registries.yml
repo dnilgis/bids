@@ -155,6 +155,11 @@ jobs:
           # belongs up here where it costs nothing; the SCRIPT it tests runs
           # after the fetch, which is a different thing entirely.
           python test/registries-not-shrunk.test.py
+          # AND THE PUSH ITSELF. This job spends thirty-six minutes before it
+          # commits; on 2026-09-07 all of it died in a rebase conflict on
+          # data/directory.json, a file two workflows regenerate. Drives a real
+          # rebase in a throwaway repository — see test/commit-and-push.test.py.
+          python test/commit-and-push.test.py
 
       # DID THE FETCH ACTUALLY RUN? Everything below carries `if: always()`
       # so that a partial run still reports and still commits — which is right,
