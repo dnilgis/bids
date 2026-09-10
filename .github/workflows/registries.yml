@@ -134,6 +134,16 @@ jobs:
           python test/registry-readers.test.py
           python test/registry-zero-kept.test.py
           python test/registry-merge.test.py
+          # THE NATIONAL LIST, AND THE KEY THAT KEEPS IT FROM DOUBLING THE MAP.
+          # USDA's WCMD export is read from a committed file rather than
+          # fetched, so nothing in the fetch step can tell you it broke — the
+          # reader is the only thing between that document and 4,613 rows of
+          # the directory. And build_directory.mjs merges those rows on
+          # state-town-operator because they carry no phone; if that key stops
+          # working the directory gains about 1,900 duplicate elevators and the
+          # coverage percentage on /elevators silently divides by them.
+          python test/registry-wcmd.test.py
+          node --test test/registry-orgkey.test.mjs
           python test/unplaced-reason.test.py
           python test/geocode-precision.test.py
           # THIS JOB'S OWN READER, CHECKED BY THIS JOB — added 2026-09-07.
