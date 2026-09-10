@@ -411,6 +411,62 @@ SOURCES = [
                 r"\s*/\s*(?P<county>[A-Z][A-Za-z.']*(?:\s[A-Za-z.']+)?)\s+"
                 r"(?P<capacity>[\d,]{3,}).*$"},
 
+    # ── THE NATIONAL LIST. USDA's Warehouse Capacity Management Data. ──────
+    #
+    # Every source above it is one state's roll. This one is the country: 4,801
+    # grain warehouses in 38 states, each with a state, a county, a city, an
+    # operator and a warehouse name, ingested 2026-09-09. It carries STATE
+    # licensed warehouses as well as federal ones, so it is not merely the
+    # United States Warehouse Act subset.
+    #
+    # IT IS NOT THE WHOLE COUNTRY EITHER, and the two lists are complementary.
+    # A grain dealer who buys without storing holds no warehouse licence and is
+    # not in here; measured against data/directory.json as it stood on 2026-09-09,
+    # of the 3,011 state-and-city pairs this repository already had a row in,
+    # 1,112 hold nothing on USDA's list at all. Keep both.
+    #
+    # THERE IS NO FETCH URL, AND THAT IS THE SOURCE'S SHAPE, NOT A FALLBACK.
+    # The dashboard exports through a Tableau session download — "All Data"
+    # sheet, Download -> Crosstab — which no runner can drive. (The sibling
+    # sheet "WH Cap Summary" is the wrong one: commodity totals, no facilities.)
+    # So the document itself is committed, and `file` says so: this source never
+    # touches the network and never can. `snapshot` would be the wrong key —
+    # that one means "the live fetch failed"; this one has no live fetch.
+    #
+    # WHICH MEANS IT ONLY REFRESHES WHEN A PERSON PULLS IT AGAIN. The ingest
+    # date is read off the document's own columns and reported on every run, so
+    # the age of this roll is visible in the diagnostic rather than assumed.
+    #
+    # THE STATE CODE IS "WCMD", NOT A STATE. It is what source_state() reads
+    # back out of `registry-wcmd`, so `--states WI` carries these rows intact
+    # and `--states WCMD` refreshes them and nothing else. A row's own location
+    # comes from the file's State column, never from this field.
+    {"state": "WCMD", "kind": "warehouse", "route": "csv",
+     "note": "USDA WCMD per-warehouse export, committed",
+     "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard",
+     "file": "fixtures/registry-wcmd-grain.csv",
+     # A ROW IS A FUNCTIONAL UNIT, NOT A SITE. A licence numbers its units, as
+     # high as 197 on this export and 141 of them under one licence, and each
+     # unit carries its own town and its own bushels; 153 sites hold more than
+     # one unit in one town. Reading the first unit's capacity as the site's
+     # would understate 153 elevators, quietly. See roll_up_units().
+     "units": "functional",
+     # STATED, NOT INFERRED, and three of them have to be. "Capacities" does not
+     # match the header key "capacity"; "name" would land on Warehouse Name
+     # because it is the only header containing the word; and "license type"
+     # would lose to "[license number]", which is longer.
+     "columns": {"name": "business entity", "facility": "warehouse name",
+                 "city": "city", "county": "county", "st": "state",
+                 "capacity": "capacities", "licence": "license type",
+                 # SUSPENDED IS NOT ISSUED. Six warehouses on this export are
+                 # suspended, ten pending, one pending cancellation — Hansen-
+                 # Mueller at Duluth, Sioux City, Kansas City and Superior
+                 # among them, about 26 million bushels between the seventeen.
+                 # Reading only the licence TYPE published all of them as
+                 # current licensees. The status is carried as the document
+                 # printed it, and nothing here decides what it means.
+                 "status": "license status"}},
+
     {"state": "NE", "kind": "dealer", "note": "PSC dealer list", "route": "pdf",
      "url": "https://psc.nebraska.gov/grain", "discover": r"Grain[%20\s]*Dealer[%20\s]*List[^\"']*\.pdf",
      # THE TWO NEBRASKA LICENSEES THAT ARE NOT IN THE UNITED STATES.
@@ -668,6 +724,15 @@ CSV_KEYS = {
     "capacity": ("capacity", "bushel capacity", "licensed capacity", "storage capacity"),
     "licence": ("license", "licence", "license number", "license type", "license no",
                 "licence class", "type"),
+    # THE FACILITY'S OWN NAME, WHERE A SOURCE GIVES ONE BESIDE THE COMPANY'S.
+    # WCMD prints "ADM Processing Plant Elevator" under "Archer-Daniels-Midland
+    # Company", and neither is the other's spelling: the parent is what matches
+    # a board, the facility is what a farmer calls the yard. Keeping only one
+    # throws away the join key or the local name.
+    #
+    # ONLY THE EXACT HEADER. "facility name" is deliberately absent: it belongs
+    # to "name" already, and moving it here would silently rewrite Texas.
+    "facility": ("warehouse name",),
 }
 
 
@@ -814,6 +879,34 @@ def read_csv(body, diag, columns=None):
     if score(rows[head]) < 2:
         head = 0
     diag["headerRow"] = head
+    # A ROLL THAT ONLY A PERSON CAN REFRESH MUST SAY HOW OLD IT IS.
+    # WCMD stamps its export with the day it was drawn, in three columns, on
+    # every row. Read back rather than trusted to a filename or a comment, and
+    # printed by the run, because a national list with no fetch URL cannot go
+    # stale loudly on its own.
+    hdr = [re.sub(r"\s+", " ", (c or "").strip().lower()) for c in rows[head]]
+    part, spread = {}, {}
+    for i, h in enumerate(hdr):
+        for want in ("year", "month", "day"):
+            if h.startswith(want) and "ingest" in h:
+                vals = sorted({r[i].strip() for r in rows[head + 1:]
+                               if len(r) > i and r[i].strip()})
+                if len(vals) == 1:
+                    part[want] = vals[0]
+                elif vals:
+                    # AND IT MUST NOT FAIL OPEN. Written first as "record the
+                    # date only when all three columns agree", which on an
+                    # export drawn across two days would have recorded no date
+                    # at all — no key, no warning, and the one staleness signal
+                    # a hand-pulled roll has, gone in exactly the case where
+                    # the file is odd. The spread is reported instead.
+                    spread[want] = vals[:6]
+    if len(part) == 3:
+        diag["ingested"] = "%s %s %s" % (part["day"], part["month"], part["year"])
+    if spread:
+        diag["ingestSpans"] = spread
+        diag.setdefault("errors", []).append(
+            "the export does not carry one ingest date: %s" % spread)
     diag["csvColumns"] = rows[head][:14]
     diag["rowsSeen"] = len(rows) - head - 1
     return rows_to_records(rows[head], rows[head + 1:], diag, columns)
@@ -1182,6 +1275,34 @@ def fetch_file(src, timeout, diag, dump):
     trap that cost four blind runs on Iowa. So the extracted text is committed
     next to the run and the field mapping is written against the document."""
     url = src["url"]
+    # A COMMITTED DOCUMENT IS NOT A FALLBACK — see the WCMD row in SOURCES.
+    #
+    # `snapshot` means "the live fetch failed and this is the copy we kept", and
+    # it marks the run INCOMPLETE for exactly that reason. `file` means the
+    # document has no fetchable URL at all: USDA's WCMD export comes out of a
+    # Tableau session download that no runner can drive. Marking that INCOMPLETE
+    # every single run would make the word meaningless on the sources where it
+    # is a real alarm.
+    #
+    # What IS reported is the age of the roll: the file states its own ingest
+    # date and read_csv puts it in the diagnostic, so a stale national list is
+    # visible rather than assumed. `url` stays the dashboard the file came off,
+    # because a provenance nobody can follow is not a provenance.
+    local = src.get("file")
+    if local:
+        path = ROOT / local
+        if not path.exists():
+            diag.setdefault("errors", []).append("the committed file %s is missing" % local)
+            return []
+        raw = path.read_bytes()
+        diag["committedFile"] = {"path": local, "bytes": len(raw)}
+        diag["pages"] = [{"url": url, "status": None, "bytes": len(raw)}]
+        text = raw.decode("utf-8-sig", "replace")
+        recs = read_csv(text, diag, src.get("columns"))
+        recs = require_us_state(recs, diag)
+        if src.get("units") == "functional":
+            recs = roll_up_units(recs, diag)
+        return licence_from_row(recs, src, diag)
     if src.get("discover"):
         url = discover_pdf(url, src["discover"], timeout, diag) or ""
         if not url:
@@ -1279,6 +1400,148 @@ def fetch_file(src, timeout, diag, dump):
 # nobody called. It survived because test/registries.test.mjs asserted that
 # each route had TWO branches — a guard that required the duplication instead
 # of catching it. One fetcher now; test/xls-route.test.py counts the defs.
+
+
+def require_us_state(recs, diag):
+    """A row that does not say which state it is in is refused, not filed.
+
+    Every state roll above stamps its own code onto its records, so a blank
+    state there means "the state this list belongs to". The national list has no
+    such default: `src["state"]` is the string WCMD, and a row that reached
+    main() with an empty `st` would be filed in a state called WCMD and counted
+    as one. Measured on the committed export: 4,801 of 4,801 rows carry a valid
+    two-letter state, so this refuses nothing today and is the guard for the day
+    a re-pull changes that."""
+    keep, bad = [], []
+    for r in recs:
+        st = (r.get("st") or "").strip().upper()
+        if st in US_STATES:
+            r["st"] = st
+            keep.append(r)
+        else:
+            bad.append("%s / %s" % (r.get("name") or "?", r.get("city") or "?"))
+    if bad:
+        diag["refusedNoState"] = {"rows": len(bad), "examples": bad[:5]}
+        diag.setdefault("errors", []).append(
+            "%d row(s) carry no US state and were refused" % len(bad))
+    return keep
+
+
+# A capacity is printed "2,673,000" by every source that prints one at all, and
+# it is stored as the document wrote it. Summing has to go through digits and
+# come back in the same shape, or one source's capacities stop sorting with
+# another's.
+def _bushels(v):
+    d = re.sub(r"[^0-9]", "", str(v or ""))
+    return int(d) if d else None
+
+
+def roll_up_units(recs, diag):
+    """One row per functional unit becomes one row per site, capacity summed.
+
+    WCMD numbers the units inside a licence 1..63, and each unit carries its own
+    town and its own bushels:
+
+        River Country Co-op  Boyd WI        unit 2    493,000
+        River Country Co-op  Dorchester WI  unit 3  2,263,000
+        River Country Co-op  OWEN WI        unit 7    135,000
+
+    Different towns, so those are three sites and stay three rows. But 153 sites
+    hold MORE THAN ONE unit in the same town under the same operator, and there
+    the first unit's bushels are not the site's bushels. main() would have
+    merged those rows anyway and kept the first capacity it saw — a number that
+    is real, printed by USDA, and wrong about the yard it would be attached to.
+
+    THE KEY IS THE ONE main() MERGES ON, deliberately: state, then the name and
+    town under the same slugs. Anything this leaves behind, main() would collapse
+    a second time, and the sum would be lost. Measured on the committed export:
+    4,801 rows in, 4,613 sites out, 188 rows folded.
+
+    Where a site's units carry two different warehouse names — ten of them —
+    both names are kept, joined, because the document printed both and neither
+    is the other's spelling. Two of those ten are two SEPARATE federal licences
+    in one town (CHS at Winona MN holds 3-9545 and 3-6417); this file's record
+    grain is one business per town per state, set long before this source
+    existed, so they are one record whose capacity is the sum of both.
+
+    THE JOIN IS AMBIGUOUS AND THAT IS KNOWN. One USDA value already contains
+    " / " on its own — CARGILL OILSEED PROCESSING PLANT / ELEVATOR at
+    Guntersville, Alabama — so eleven records carry the separator and only ten
+    of them are joins. Nothing downstream splits on it."""
+    order, sites = [], {}
+    for r in recs:
+        k = ((r.get("st") or "").upper(),
+             re.sub(r"[^a-z0-9]", "", (r.get("name") or "").lower()),
+             re.sub(r"[^a-z]", "", (r.get("city") or "").lower()))
+        if k not in sites:
+            sites[k] = dict(r)
+            sites[k]["_units"] = 1
+            sites[k]["_bu"] = _bushels(r.get("capacity"))
+            sites[k]["_blank"] = 1 if _bushels(r.get("capacity")) is None else 0
+            sites[k]["_facilities"] = [r["facility"]] if r.get("facility") else []
+            order.append(k)
+            continue
+        e = sites[k]
+        e["_units"] += 1
+        bu = _bushels(r.get("capacity"))
+        if bu is None:
+            e["_blank"] += 1
+        else:
+            e["_bu"] = bu if e["_bu"] is None else e["_bu"] + bu
+        f = r.get("facility")
+        if f and f not in e["_facilities"]:
+            e["_facilities"].append(f)
+        for fld in ("county", "licence", "status", "phone", "address"):
+            if not e.get(fld) and r.get(fld):
+                e[fld] = r[fld]
+    out, folded, multi, partial = [], 0, 0, 0
+    for k in order:
+        e = sites[k]
+        if e["_units"] > 1:
+            multi += 1
+            folded += e["_units"] - 1
+            # A SUM THAT IS MISSING ONE OF ITS PARTS. Three sites — The Arthur
+            # Companies at Anamoose and Harvey, CenDak at Hamberg — hold a unit
+            # the export gives no capacity for. The sum of the rest is still
+            # the best figure available and it is still not the whole yard, so
+            # it is counted here rather than presented as complete.
+            if e["_blank"] and e["_bu"] is not None:
+                partial += 1
+        e["capacity"] = "{:,}".format(e["_bu"]) if e["_bu"] is not None else ""
+        if e["_facilities"]:
+            e["facility"] = " / ".join(e["_facilities"])
+        for tmp in ("_units", "_bu", "_facilities", "_blank"):
+            e.pop(tmp, None)
+        out.append(e)
+    diag["functionalUnits"] = {"rowsIn": len(recs), "sites": len(out),
+                               "rowsFolded": folded, "sitesWithSeveralUnits": multi,
+                               "sitesSummedOverABlankUnit": partial}
+    return out
+
+
+def licence_from_row(recs, src, diag):
+    """The kind of licence THIS ROW holds, where the document prints one.
+
+    USDA's export carries License Type per warehouse: Federal 2,387, State
+    2,362, and UNLICENSED 52 — the last with an empty licence number. A source
+    declares `kind` for the roll, which is right when a roll is one kind; here
+    it would have filed 50 unlicensed facilities as holding a warehouse
+    licence, which the document says in as many words that they do not.
+
+    They are kept. An unlicensed warehouse is still a building with grain in
+    it, and this is a directory of elevators rather than of licences. What it
+    may not do is claim a licence, so its `kind` is empty and nothing
+    downstream turns it into one."""
+    n = 0
+    for r in recs:
+        if (r.get("licence") or "").strip().lower() == "unlicensed":
+            r["kind"] = ""
+            n += 1
+        else:
+            r["kind"] = src["kind"]
+    if n:
+        diag["unlicensed"] = n
+    return recs
 
 
 def slug(url):
@@ -1751,7 +2014,14 @@ def scrape(src, pages, timeout, verbose, dump=None):
     if src.get("route") in ("csv", "pdf", "xls"):
         recs = fetch_file(src, timeout, diag, dump)
         for r in recs:
-            r["kind"] = src["kind"]
+            # A READER THAT READ THE LICENCE OFF THE ROW KEEPS WHAT IT READ.
+            # `kind` is the source's declaration — "this roll is warehouses" —
+            # and for every state roll that is the whole truth. USDA's list
+            # prints a licence type per row and 52 of them say Unlicensed;
+            # stamping the source's kind over that published a warehouse
+            # licence the document denies. Only set what is not already there.
+            if "kind" not in r:
+                r["kind"] = src["kind"]
             if r.get("county"):
                 r["county"] = clean_county(r["county"])
         mark_truncation(recs, diag)
@@ -1888,6 +2158,131 @@ def merge_with_committed(out, diags, want, path):
     return out + keep, diags + keepdiag, len(keep)
 
 
+def merge_records(allrecs):
+    """One record per business per town per state, and A TEST CAN CALL IT.
+
+    Lifted out of main() on 2026-09-09 for the reason merge_with_committed and
+    mark_incomplete_if_empty were: the national list made this key wrong — it
+    was (roll, name, town), and USDA's roll spans 38 states — and a rule that
+    can only be exercised by running main() against sixteen live hosts is a rule
+    nobody checks. Same code, same order, called from the same line.
+    """
+    # One record per business per town per state. A business appears once even
+    # when it holds both licences, and the licences it holds are remembered —
+    # that pairing is the closest thing these lists carry to "is this an
+    # elevator", short of going and looking.
+    merged = {}
+    for r in allrecs:
+        # THE ROW'S OWN STATE IS PART OF THE KEY, not just the roll it came off.
+        #
+        # This was (roll, name, town), which is one key per state roll and was
+        # therefore safe while every source was one state. The national list is
+        # not: its roll is "WCMD" and it spans 38 states, so CHS Inc. at Morris
+        # ILLINOIS and CHS Inc. at Morris MINNESOTA hashed to one record and one
+        # of the two elevators disappeared. FIVE real pairs do this in the
+        # committed export — CHS at Morris IL and MN, Bunge USA Grain at St
+        # Paul MN and St. Paul NE, Bunge North America at Decatur IN and AL,
+        # ADM at Columbus OH and NE, Bartlett at Kansas City KS and MO. The
+        # fifth was missed on the first count because the two towns are spelt
+        # "ST PAUL" and "ST. PAUL"; the key strips the stop, which is what it
+        # is for.
+        #
+        # Adding a field to a key can only SPLIT groups, never merge them, so no
+        # state roll's records move: within one roll the `st` is the same value
+        # it always was.
+        k = (r.get("state"),
+             (r.get("st") or "").upper(),
+             re.sub(r"[^a-z0-9]", "", (r.get("name") or "").lower()),
+             re.sub(r"[^a-z]", "", (r.get("city") or "").lower()))
+        e = merged.setdefault(k, {"name": r.get("name"), "city": r.get("city"),
+                                  "county": r.get("county"), "phone": r.get("phone"),
+                                  # A state that names its own state column beats
+                                  # the one we inferred from which list we asked.
+                                  # `or` fell through an empty st straight back to
+                                  # the licensing state, which is the thing being
+                                  # corrected. None means "we do not know", and it
+                                  # has to survive the chain.
+                                  "state": (None if r.get("outOfState")
+                                            else (r.get("st") or r.get("state") or "").upper()),
+                                  "address": r.get("address") or None,
+                                  "zip": (str(r.get("zip") or "")[:5] or None),
+                                  "capacity": r.get("capacity") or None,
+                                  "licenceClass": r.get("licence") or None,
+                                  "licenceStatus": r.get("status") or None,
+                                  "nameTruncated": bool(r.get("nameTruncated")) or None,
+                                  "nameRepaired": r.get("nameRepaired"),
+                                  # COMPUTED AND THEN DROPPED. cityAlt was being
+                                  # worked out correctly and left behind here, so
+                                  # every record reached the geocoder with alt=None
+                                  # and 42 elevators in two-word towns got no pin.
+                                  # The same shape of bug as nameTruncated: a field
+                                  # list that has to be edited in two places.
+                                  "outOfState": r.get("outOfState") or None,
+                                  "licensedBy": r.get("licensedBy"),
+                                  "cityAlt": r.get("cityAlt"),
+                                  "nameAlt": r.get("nameAlt"),
+                                  # The yard's own name where the source gives
+                                  # one. Computed by the reader and then dropped
+                                  # here is the bug nameTruncated and cityAlt
+                                  # have each had once already.
+                                  "facility": r.get("facility") or None,
+                                  "licences": [],
+                                  "source": "registry-%s" % (r.get("state") or "").lower()})
+        for lic in str(r.get("kind") or "").split("+"):
+            if lic and lic not in e["licences"]:
+                e["licences"].append(lic)
+        for f in ("phone", "county", "address", "capacity", "facility"):
+            if not e.get(f) and r.get(f):
+                e[f] = r[f]
+
+    out = sorted(merged.values(),
+                 key=lambda e: (e.get("state") or "", e.get("city") or "", e.get("name") or ""))
+    # ── A RUN-TOGETHER RECORD IS NOT A BUSINESS, AND IT IS NOT DROPPED EITHER
+    #
+    # The joiner fix above closes the way these were made — the eleven known
+    # mashed names all disappear at the source. This stays as a BACKSTOP,
+    # because a PDF that changes shape can make new ones and nothing downstream
+    # can tell a mashed name from a merely long one.
+    #
+    # THE THRESHOLD IS MEASURED, NOT PICKED. Operator-name length across the
+    # 1,832 geocoded registry records runs 24 at the median, 36 at the ninetieth
+    # and 61 at the ninety-ninth — and 395 at the top. Past ninety characters, or
+    # naming two states at once, is nowhere near an honest licensee name. On the
+    # committed South Dakota page it now catches nothing, which is what a
+    # backstop behind a working fix is supposed to do.
+    #
+    # They are REPORTED, not silently discarded: a quiet drop tells the next
+    # reader the registry is smaller than it is.
+    # AND IT IS SCOPED TO THE ROUTE THAT CAN PRODUCE ONE — 2026-09-09.
+    #
+    # The first WCMD run refused "HI LINE FARMERS UNION GRAIN CO" of Peak,
+    # North Dakota. A real licensee, one cell of one row of a CSV, thrown away
+    # because _run_together counts state abbreviations and this name contains
+    # two of them: HI at the front and CO at the end.
+    #
+    # The mashing this backstop exists for is done by pdf_records()'s
+    # continuation joiner, which decides for itself where one record ends
+    # because a PDF has no field boundaries. A CSV, an .xls and an HTML table
+    # all state their own: a cell is a cell. So a name from those routes cannot
+    # be two licensees run together, and a heuristic that says otherwise is
+    # guessing against evidence the file already gave us.
+    #
+    # The rule itself is unchanged and still tested against all eleven real
+    # mangled names — test/registry-run-together.test.py — and it still runs on
+    # every roll that is read line by line.
+    LINE_ROLLS = {s["state"] for s in SOURCES if s.get("route") == "pdf"}
+    mashable = lambda e: source_state(e) in LINE_ROLLS and _run_together(e.get("name"))
+    mashed = [e for e in out if mashable(e)]
+    if mashed:
+        out = [e for e in out if not mashable(e)]
+        print("\n%d REGISTRY ROWS ARRIVED WITH SEVERAL LICENSEES RUN TOGETHER "
+              "and were not written:" % len(mashed))
+        for e in mashed:
+            print("   %-4s %s…" % (e.get("licensedBy") or e.get("state") or "?",
+                                   (e.get("name") or "")[:88]))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pages", type=int, default=20, help="pagination attempts per paginated list")
@@ -1976,76 +2371,7 @@ def main():
             mark_out_of_state(r)
         allrecs += recs
 
-    # One record per business per town per state. A business appears once even
-    # when it holds both licences, and the licences it holds are remembered —
-    # that pairing is the closest thing these lists carry to "is this an
-    # elevator", short of going and looking.
-    merged = {}
-    for r in allrecs:
-        k = (r.get("state"),
-             re.sub(r"[^a-z0-9]", "", (r.get("name") or "").lower()),
-             re.sub(r"[^a-z]", "", (r.get("city") or "").lower()))
-        e = merged.setdefault(k, {"name": r.get("name"), "city": r.get("city"),
-                                  "county": r.get("county"), "phone": r.get("phone"),
-                                  # A state that names its own state column beats
-                                  # the one we inferred from which list we asked.
-                                  # `or` fell through an empty st straight back to
-                                  # the licensing state, which is the thing being
-                                  # corrected. None means "we do not know", and it
-                                  # has to survive the chain.
-                                  "state": (None if r.get("outOfState")
-                                            else (r.get("st") or r.get("state") or "").upper()),
-                                  "address": r.get("address") or None,
-                                  "zip": (str(r.get("zip") or "")[:5] or None),
-                                  "capacity": r.get("capacity") or None,
-                                  "licenceClass": r.get("licence") or None,
-                                  "nameTruncated": bool(r.get("nameTruncated")) or None,
-                                  "nameRepaired": r.get("nameRepaired"),
-                                  # COMPUTED AND THEN DROPPED. cityAlt was being
-                                  # worked out correctly and left behind here, so
-                                  # every record reached the geocoder with alt=None
-                                  # and 42 elevators in two-word towns got no pin.
-                                  # The same shape of bug as nameTruncated: a field
-                                  # list that has to be edited in two places.
-                                  "outOfState": r.get("outOfState") or None,
-                                  "licensedBy": r.get("licensedBy"),
-                                  "cityAlt": r.get("cityAlt"),
-                                  "nameAlt": r.get("nameAlt"),
-                                  "licences": [],
-                                  "source": "registry-%s" % (r.get("state") or "").lower()})
-        for lic in str(r.get("kind") or "").split("+"):
-            if lic and lic not in e["licences"]:
-                e["licences"].append(lic)
-        for f in ("phone", "county", "address", "capacity"):
-            if not e.get(f) and r.get(f):
-                e[f] = r[f]
-
-    out = sorted(merged.values(), key=lambda e: (e.get("state") or "", e.get("city") or "", e.get("name") or ""))
-    # ── A RUN-TOGETHER RECORD IS NOT A BUSINESS, AND IT IS NOT DROPPED EITHER
-    #
-    # The joiner fix above closes the way these were made — the eleven known
-    # mashed names all disappear at the source. This stays as a BACKSTOP,
-    # because a PDF that changes shape can make new ones and nothing downstream
-    # can tell a mashed name from a merely long one.
-    #
-    # THE THRESHOLD IS MEASURED, NOT PICKED. Operator-name length across the
-    # 1,832 geocoded registry records runs 24 at the median, 36 at the ninetieth
-    # and 61 at the ninety-ninth — and 395 at the top. Past ninety characters, or
-    # naming two states at once, is nowhere near an honest licensee name. On the
-    # committed South Dakota page it now catches nothing, which is what a
-    # backstop behind a working fix is supposed to do.
-    #
-    # They are REPORTED, not silently discarded: a quiet drop tells the next
-    # reader the registry is smaller than it is.
-    mashed = [e for e in out if _run_together(e.get("name"))]
-    if mashed:
-        out = [e for e in out if not _run_together(e.get("name"))]
-        print("\n%d REGISTRY ROWS ARRIVED WITH SEVERAL LICENSEES RUN TOGETHER "
-              "and were not written:" % len(mashed))
-        for e in mashed:
-            print("   %-4s %s…" % (e.get("licensedBy") or e.get("state") or "?",
-                                   (e.get("name") or "")[:88]))
-
+    out = merge_records(allrecs)
     # A COUNT WITH A KEY CALLED "null" IS A COUNT NOBODY CAN READ.
     # Emptying the state on an out-of-state licensee was right; letting the
     # tally print {"null": 31} alongside real state codes was not. They are

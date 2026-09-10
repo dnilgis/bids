@@ -621,7 +621,8 @@ def main():
                  kstats["unplaced"], kstats["rejected"]))
 
     # ── the state registries ───────────────────────────────────────────────
-    registry, rstats = {}, {"town": 0, "county": 0, "unplaced": 0, "rejected": 0}
+    registry, rstats = {}, {"town": 0, "county": 0, "unplaced": 0, "rejected": 0,
+                           "mergedSameKey": 0}
     if REGISTRIES.exists():
         try:
             rd = json.loads(REGISTRIES.read_text())
@@ -691,20 +692,72 @@ def main():
                 rstats["rejected"] += 1
                 continue
             hit = (lat, lon)
-            rstats[prec] = rstats.get(prec, 0) + 1
-            registry[rid] = {"lat": round(hit[0], 5), "lon": round(hit[1], 5),
+            entry = {"lat": round(hit[0], 5), "lon": round(hit[1], 5),
                              "precision": prec, "via": via,
                              "address": b_.get("address"), "capacity": b_.get("capacity"),
                              "operator": b_.get("name"), "location": b_.get("city"),
+                             # The yard's own name where the roll gives one
+                             # beside the company's. Computed by the reader and
+                             # dropped here is the bug cityAlt already had once.
+                             "facility": b_.get("facility"),
                              "state": st, "phone": b_.get("phone"),
                              "county": b_.get("county"), "licences": b_.get("licences"),
+                             # Federal / State / Unlicensed on USDA's list, a
+                             # licence number on most state rolls. Carried
+                             # because the directory's sentence about a row has
+                             # to say which, and without this it said "state"
+                             # about 2,387 federally licensed warehouses.
+                             "licenceClass": b_.get("licenceClass"),
+                             "licenceStatus": b_.get("licenceStatus"),
                              "nameTruncated": b_.get("nameTruncated") or None,
                              "nameRepaired": b_.get("nameRepaired") or None,
                              "source": b_.get("source") or ("registry-%s" % st.lower())}
+            # TWO ROLLS CAN NAME ONE YARD, AND THE SECOND USED TO WIN SILENTLY.
+            #
+            # The key is state|name|town, so a business on a state roll AND on
+            # USDA's national list lands on the same key twice. `registry[rid] =
+            # entry` simply overwrote, and which of the two survived was decided
+            # by where the record happened to sit in a sorted file. Measured on
+            # the 2026-09-09 run: 719 keys arrive more than once, 739 records
+            # in all, of which 736 get as far as this merge (the other three are
+            # unplaced or rejected first). Most are two rolls agreeing about a
+            # yard neither gives a phone for — but 163 have a phone on one side,
+            # and one has a different phone on each.
+            #
+            # A phone is the strongest key this project has, so losing one to
+            # sort order is not acceptable. They are merged instead: the finer
+            # coordinate keeps the pin, every empty field is filled from the
+            # other record, and both rolls are named so the provenance stays
+            # readable. Nothing is invented — every value written here was
+            # published by one of the two.
+            RANK = {"street": 3, "town": 2, "county": 1}
+            old = registry.get(rid)
+            # COUNT THE PIN, NOT THE RECORD. This incremented before the merge
+            # below, so street+town+county summed to the number of records read
+            # rather than the number of pins written, and the line overstated
+            # the map by every duplicate — 739 of them on 2026-09-09.
+            if not old:
+                rstats[prec] = rstats.get(prec, 0) + 1
+            if old:
+                rstats["mergedSameKey"] += 1
+                keep, other = ((entry, old)
+                               if RANK.get(prec, 0) > RANK.get(old.get("precision"), 0)
+                               else (old, entry))
+                for k, v in other.items():
+                    if keep.get(k) in (None, "", []) and v not in (None, "", []):
+                        keep[k] = v
+                srcs = [s for s in (old.get("source"), entry.get("source")) if s]
+                alt = sorted({s for s in srcs if s != keep.get("source")}
+                             | set(old.get("sourceAlt") or []))
+                if alt:
+                    keep["sourceAlt"] = alt
+                entry = keep
+            registry[rid] = entry
         print("\nstate registries: %d at a street point, %d at a ZIP or town centroid, "
-              "%d at a COUNTY centroid, %d unplaced, %d rejected"
+              "%d at a COUNTY centroid, %d unplaced, %d rejected, "
+              "%d the same yard on two rolls"
               % (rstats.get("street", 0), rstats.get("town", 0), rstats.get("county", 0),
-                 rstats["unplaced"], rstats["rejected"]))
+                 rstats["unplaced"], rstats["rejected"], rstats["mergedSameKey"]))
 
     if _census_state["calls"] or _census_state["skipped"]:
         print("\ngeocoder: %d addresses asked in %.0fs, %d skipped once the %.0fs budget was spent"

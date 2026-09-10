@@ -38,6 +38,12 @@ LOOKS_LIKE_ONE = ("elevator", "grain", "coop", "co-op", "cooperative", "ag ",
                   " ag", "agri", "farmers", "feed & grain", "warehouse")
 
 
+# The fifty, for the one line that says which of them nothing has reached yet.
+ALL_STATES = set(
+    "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO "
+    "MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split())
+
+
 def digits(p):
     d = re.sub(r"\D", "", str(p or ""))
     return d[-10:] if len(d) >= 10 else ""
@@ -126,11 +132,58 @@ def main():
         print("      %s" % b.get("name"))
     net = len(looks) - by_phone
     print("4. grey pins this would add, net of what we already hold: about %d" % max(0, net))
+    # AND "NET" MEANS NETTED BY PHONE, WHICH ONE ROLL CANNOT ANSWER.
+    # by_phone is the only thing subtracted above, and USDA's national roll
+    # carries no phone column at all — 0 of its 4,613 records have one — so its
+    # duplicates of what we already hold are all still in that figure. What
+    # actually decides them is the state-town-operator key in
+    # scripts/build_directory.mjs, and the answer is printed in
+    # data/directory.json under counts.registryMergedByName. This file counts
+    # licence rows; that one counts pins.
+    print("   \"net\" here means netted by TEN-DIGIT PHONE and nothing else. The rows with")
+    print("   no phone are netted by name and town in scripts/build_directory.mjs; read")
+    print("   counts.registryMergedByName and registryMergedByPhone in data/directory.json.")
     print()
-    per_state = max(0, net) / max(1, len(scraped))
-    print("   %d state%s scraped (%s), so about %d net new each."
-          % (len(scraped), "" if len(scraped) == 1 else "s", ", ".join(sorted(scraped)), per_state))
-    print("   Twenty more at that rate would be roughly %d new elevators." % int(per_state * 20))
+    # ── A NATIONAL ROLL IS NOT A STATE, AND IT ENDS THE EXTRAPOLATION ─────
+    #
+    # This printed "13 states scraped (…, WCMD, …), so about 351 net new each.
+    # Twenty more at that rate would be roughly 7,027 new elevators." Both
+    # figures were nonsense the day USDA's list landed. WCMD is ONE roll
+    # covering 38 states, so dividing the whole harvest by thirteen understates
+    # what a state roll adds, and then multiplying by "twenty more states"
+    # counts states the national list has already covered.
+    #
+    # The estimate existed to answer "is it worth writing nineteen more
+    # scrapers". That question is now largely answered by measurement rather
+    # than by extrapolation, so what is printed is what was measured: what the
+    # state rolls add between them, what the national roll adds, and which
+    # states are still covered by nothing at all.
+    NATIONAL = {"WCMD"}
+    national_rolls = scraped & NATIONAL
+    state_rolls = scraped - NATIONAL
+    src_of = lambda b: (b.get("source") or "")[len("registry-"):].upper()
+    nat_looks = [b for b in looks if src_of(b) in NATIONAL]
+    nat_net = len(nat_looks)          # NOT netted: see the note above — no phones
+    state_net = max(0, net - nat_net)
+    per_state = state_net / max(1, len(state_rolls))
+    print("   %d state roll%s scraped (%s), about %d net new each."
+          % (len(state_rolls), "" if len(state_rolls) == 1 else "s",
+             ", ".join(sorted(state_rolls)) or "none", per_state))
+    if national_rolls:
+        covers = sorted({(b.get("state") or "").upper() for b in biz
+                         if src_of(b) in NATIONAL and b.get("state")})
+        nat_all = sum(1 for b in biz if src_of(b) in NATIONAL)
+        print("   plus USDA's national roll: %d of its %d warehouses pass question 3, "
+              "across %d states.\n   NOT netted against the state rolls or against what we "
+              "read — it carries no phone to net\n   on, so its duplicates are still in both "
+              "figures." % (nat_net, nat_all, len(covers)))
+        reached = state_rolls | set(covers)
+        left = sorted(ALL_STATES - reached)
+        print("   states no roll of any kind has reached (%d): %s"
+              % (len(left), " ".join(left) or "none"))
+    else:
+        print("   Twenty more at that rate would be roughly %d new elevators."
+              % int(per_state * 20))
     print("   Question 3 is a name heuristic and nothing more; the real test is whether")
     print("   a sample of them actually post a bid anywhere, which is the next measurement.")
     return 0

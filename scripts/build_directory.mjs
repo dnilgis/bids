@@ -37,6 +37,7 @@
  * Node, no dependencies, reads only files already in the checkout.
  */
 import { stateOf as uiState } from "../lib/freshness.mjs";
+import { orgKey } from "../lib/orgkey.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -152,8 +153,45 @@ const digits = (p) => String(p || "").replace(/\D/g, "").slice(-10);
 const townKey = (st, town) => (st || "").toUpperCase() + "|" +
   String(town || "").toLowerCase().replace(/[^a-z]/g, "");
 
-const ourPhones = new Set(sources.map((s) => digits(s.phone)).filter((d) => d.length === 10));
-const ourTowns = new Set(sources.map((s) => townKey(s.state, s.location)));
+/* ── THE SET IS BUILT FROM THE SOURCES THAT ARE ACTUALLY ON THE MAP ──────
+   Found by reading this change adversarially, 2026-09-10, and it was already
+   true of the phone rule above: `elevators` is built from the sources with
+   `enabled !== false`, and these three sets were built from ALL of them. So a
+   registry row could be dropped as "we already read that yard" against a
+   manifest this build does not emit, and the elevator vanished from both
+   sides. Measured on the 2026-09-09 data: eleven rows, and five of them left
+   their operator with no pin in that town at all — Horizon Resources at
+   Williston, North Dakota, lost the only row in the town.
+
+   A disabled manifest is a board we have STOPPED reading. The licence roll
+   naming that yard is then the only evidence left that it exists, which is
+   exactly what a grey pin is for. */
+const active = sources.filter((s) => s.enabled !== false);
+const ourPhones = new Set(active.map((s) => digits(s.phone)).filter((d) => d.length === 10));
+const ourTowns = new Set(active.map((s) => townKey(s.state, s.location)));
+/* THE SAME BUSINESS IN THE SAME TOWN, WHERE THERE IS NO PHONE TO ASK.
+   See lib/orgkey.mjs. This set is the elevators we read; the known-elevator
+   rows are added to it below, once they exist. */
+/* A MAP, NOT A SET, AND THE VALUE IS THE PHONES.
+   The key merges on state, town and operator, and an operator can hold two
+   things in one town: The Andersons' head office at 1947 Briarfield Blvd,
+   Maumee, Ohio (419-482-5009) and The Andersons' elevator in Maumee
+   (419-893-5050). Same state, same town, same name — and two different phone
+   numbers, which is this project's strongest evidence that two rows are two
+   things. Sixteen rows on the 2026-09-09 data say that, and the first version
+   of this merge dropped every one of them.
+
+   So the name key never overrules a phone. Where both rows carry ten digits
+   and the digits differ, the row stays. */
+const ourOrgs = new Map();
+const addOrg = (state, location, operator, phone) => {
+  const k = orgKey(state, location, operator);
+  if (!k) return;
+  if (!ourOrgs.has(k)) ourOrgs.set(k, new Set());
+  const d = digits(phone);
+  if (d.length === 10) ourOrgs.get(k).add(d);
+};
+for (const s of active) addOrg(s.state, s.location, s.operator, s.phone);
 
 const knownRaw = geoFile.known || {};
 let merged = 0;
@@ -185,6 +223,11 @@ const known = Object.entries(knownRaw).map(([kid, k]) => {
   };
 });
 elevators.push(...known);
+/* A registry row must merge against the Barchart facilities too, not only
+   against the boards we read. Added after `known` is built, for the same reason
+   knownPhones is: these are the rows a phone match already covers, and the
+   national list has no phone. */
+for (const k of Object.values(knownRaw)) addOrg(k.state, k.location, k.operator, k.phone);
 
 /* ── state licence registries ─────────────────────────────────────────────
    These are the grey pins: a business the state says holds a grain dealer or
@@ -204,13 +247,67 @@ elevators.push(...known);
 const knownPhones = new Set(Object.values(knownRaw).map((k) => digits(k.phone))
                                   .filter((d) => d.length === 10));
 const regRaw = geoFile.registry || {};
-let regMergedPhone = 0, regSameTown = 0;
-const registry = Object.entries(regRaw).map(([rid, r]) => {
+let regMergedPhone = 0, regSameTown = 0, regMergedByName = 0, regMergedWithin = 0,
+    regPhoneDisagreed = 0;
+/* THE ROW WITH THE MOST EVIDENCE KEEPS THE PIN.
+   Two registries can name one yard — a state roll and USDA's national list —
+   and only one row should survive. Which one is not arbitrary: a phone is the
+   strongest key this project has and an address is the next, so a row carrying
+   either is placed first and the later duplicate is the one dropped. The tie is
+   broken on the id so the build is reproducible. */
+const regRank = (r) => (digits(r.phone).length === 10 ? 2 : 0) + (r.address ? 1 : 0);
+const regOrder = Object.entries(regRaw)
+  .sort((a, b) => regRank(b[1]) - regRank(a[1]) || a[0].localeCompare(b[0]));
+const regOrgs = new Map();
+const registry = regOrder.map(([rid, r]) => {
   const ph = digits(r.phone);
   if (ph.length === 10 && (ourPhones.has(ph) || knownPhones.has(ph))) { regMergedPhone++; return null; }
+  /* ── AND WHERE THERE IS NO PHONE TO ASK ────────────────────────────────
+     USDA's national warehouse list carries 4,613 sites and not one phone
+     number, so the rule above cannot see any of them. 1,346 of those sites are
+     elevators this directory already holds — measured 2026-09-09 — and keeping
+     them would put two pins on one yard and inflate the denominator that
+     /elevators divides by, which is the number this whole exercise exists to
+     get right.
+
+     THE TOWN IS WHAT MAKES THE NAME IDENTITY. On its own an operator name is
+     forbidden as a key and the paragraph above says why. In one town it is
+     evidence: two hundred CHS businesses, one CHS yard in Hennessey.
+
+     A row dropped here is COUNTED, never silently discarded, and it is dropped
+     rather than merged in: the surviving row already carries the better
+     provenance, and rewriting a read elevator's fields from a licence roll
+     would let a roster overwrite a board. */
+  const key = orgKey(r.state, r.location, r.operator);
+  if (key && ourOrgs.has(key)) {
+    const theirs = ourOrgs.get(key);
+    /* Two ten-digit numbers that are not the same number: keep the row and say
+       so, rather than let a name-and-town match overrule the identity key this
+       project trusts most. */
+    if (ph.length === 10 && theirs.size && !theirs.has(ph)) regPhoneDisagreed++;
+    else { regMergedByName++; return null; }
+  }
+  if (key && regOrgs.has(key)) {
+    /* TWO ROLLS, ONE YARD, AND THE SECOND ONE IS NOT WORTHLESS.
+       build_geocodes.py already merges these where the two rolls spell the
+       name identically; this key is looser, so it catches pairs that one
+       never saw — and the first version of it simply threw the loser away.
+       Measured 2026-09-09: that lost the ONLY capacity figure for 45 yards and
+       the only facility name for 53. The row is still dropped; what it knew is
+       not. Empty fields only — nothing here overwrites a published value. */
+    const keep = regOrgs.get(key);
+    for (const f of ["capacity", "facility", "county", "address", "phone",
+                     "licenceClass", "licenceStatus"])
+      if (keep && !keep[f] && r[f]) keep[f] = r[f];
+    if (keep && Array.isArray(r.licences))
+      for (const l of r.licences)
+        if (!(keep.licences || []).includes(l)) (keep.licences ||= []).push(l);
+    regMergedWithin++;
+    return null;
+  }
   const sameTown = ourTowns.has(townKey(r.state, r.location));
   if (sameTown) regSameTown++;
-  return {
+  const row = {
     id: "reg:" + rid,
     operator: r.operator || null,
     location: r.location || null,
@@ -225,6 +322,11 @@ const registry = Object.entries(regRaw).map(([rid, r]) => {
        this is a place a farmer can sell a load. Missouri publishes it; a name
        heuristic that mistook Landus and MFA for feed mills does not come close. */
     capacity: r.capacity || null,
+    /* The yard's own name where the source gives one beside the company's:
+       "ADM Processing Plant Elevator" under Archer-Daniels-Midland. Both are
+       kept because they answer different questions — the parent is what matches
+       a board, the facility is what a farmer calls the place. */
+    facility: r.facility || null,
     licences: r.licences || null,
     /* Missouri cuts its company names at forty characters, mid-word. Sixteen of
        twenty-six were completed from the city column; the rest carry the flag
@@ -232,13 +334,31 @@ const registry = Object.entries(regRaw).map(([rid, r]) => {
     nameTruncated: r.nameTruncated || undefined,
     nameRepaired: r.nameRepaired || undefined,
     knownFrom: r.source,
-    why: (r.licences && r.licences.length > 1
+    licenceClass: r.licenceClass || null,
+    licenceStatus: r.licenceStatus || null,
+    /* WHAT THIS ROW ACTUALLY CLAIMS.
+       This read `(r.licences || ["grain"])[0]` and called everything a STATE
+       licence. Two things arrived with the national list and broke both
+       halves: 2,387 of its warehouses are licensed FEDERALLY, and 50 of them
+       are printed "Unlicensed" and now carry no licence at all — where the old
+       sentence would have said "holds a state undefined licence". A row says
+       what its document says about it, or it says nothing. */
+    why: ((r.licences || []).length > 1
             ? "holds both a dealer and a warehouse licence"
-            : "holds a state " + ((r.licences || ["grain"])[0]) + " licence")
+            : (r.licences || []).length === 1
+              ? "holds a " + (r.licenceClass === "Federal" ? "federal" : "state")
+                + " " + r.licences[0] + " licence"
+              : "is listed as a grain warehouse and holds no licence on that list")
+         + (r.licenceStatus && !/issued/i.test(r.licenceStatus)
+              ? " — the list marks it " + r.licenceStatus.replace(/^\w\s*-\s*/, "") : "")
          + "; no bid feed found yet"
          + (sameTown ? " — and we already read an elevator in this town" : ""),
     duplicateSuspect: sameTown || undefined,
   };
+  /* The row itself, not the key alone: a later duplicate fills this one's
+     empty fields rather than being thrown away. */
+  if (key) regOrgs.set(key, row);
+  return row;
 }).filter(Boolean);
 elevators.push(...registry);
 elevators.sort((a, b) => (a.state || "").localeCompare(b.state || "") ||
@@ -255,6 +375,10 @@ const counts = {
   knownOnly: known.length,
   fromRegistries: registry.length,
   registryMergedByPhone: regMergedPhone,
+  registryMergedByName: regMergedByName,
+  registryMergedWithinRegistries: regMergedWithin,
+  /* Kept BECAUSE of a phone, against a name-and-town match. */
+  registryKeptOnADifferentPhone: regPhoneDisagreed,
   duplicateSuspects: merged + regSameTown,
   operators: new Set(elevators.map((e) => e.operator)).size,
 };
@@ -283,5 +407,9 @@ if (unknownHealth.size) {
 console.log("  precision:", JSON.stringify(counts.byPrecision));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);
-console.log("  registries: %d added, %d dropped as the same elevator by phone",
-  counts.fromRegistries, counts.registryMergedByPhone);
+console.log("  registries: %d added, %d dropped as the same elevator by phone, " +
+  "%d by name-and-town against what we already hold, %d against another registry",
+  counts.fromRegistries, counts.registryMergedByPhone,
+  counts.registryMergedByName, counts.registryMergedWithinRegistries);
+console.log("              %d kept in a town we already hold because the two rows " +
+  "publish different phone numbers", counts.registryKeptOnADifferentPhone);

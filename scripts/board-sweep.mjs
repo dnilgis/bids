@@ -426,7 +426,17 @@ export function alreadyHave(sources) {
  *     Country Grain  / "Eldridge"          known: —                 wide: Eldridge ND
  *     Dakota Midland / "Voltaire"          known: Volitaire ND      wide: Voltaire ND
  *
- * The third is why known goes first and why the wide set is not a replacement:
+ * THE SECOND LINE STOPPED BEING TRUE ON 2026-09-09, and for a good reason:
+ * build_directory.mjs now merges a registry row into the elevator we already
+ * read, and countrygraincooperative-eldridge is one of ours. The registry row
+ * for that yard is a second pin on a board we poll, so it is no longer in the
+ * directory and no longer here. 282 registry rows left the wide set that way;
+ * every one of them names an elevator this repository already reads, so what
+ * the sweep loses is the ability to place a board it would then have skipped as
+ * already-read. The wide set itself grew from 4,041 rows to 7,000, and the
+ * pairs it can place where Barchart cannot from 1,934 to 4,872.
+ *
+ * The third line is why known goes first and why the wide set is not a replacement:
  * Barchart spells that town "Volitaire" and the registry spells it Voltaire.
  * Two answers, and the one with the phone number attached is the one whose
  * branch names match these boards, so it is asked first and the wide set fills

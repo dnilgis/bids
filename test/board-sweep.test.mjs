@@ -540,12 +540,46 @@ test("both directories are asked, and the ones we wrote ourselves are excluded",
   /* Complementary, measured on run 91847384302's own captures. */
   assert.ok(joinDirectory(KNOWN, "Agassiz Valley Grain", "AVG Barnesville"),
             "Barchart carries the branch name");
-  assert.equal(joinDirectory(KNOWN, "Country Grain Cooperative", "Eldridge"), null,
-               "and does not carry Eldridge");
-  assert.ok(joinDirectory(wide, "Country Grain Cooperative", "Eldridge"),
-            "the registry does");
+  /* ── THE EXAMPLE MOVED ON 2026-09-09, AND SAYING SO IS THE POINT ────────
+   *
+   * This pair used to be Country Grain Cooperative / Eldridge: Barchart does
+   * not carry that town and the North Dakota roll does, which is the whole
+   * claim. It is no longer in the wide set, and NOT because anything about the
+   * registries changed.
+   *
+   * build_directory.mjs now merges a registry row into the elevator we already
+   * read, on state-town-operator, because USDA's national list carries no phone
+   * and the phone was the only merge key this project had. `sources/
+   * countrygraincooperative-eldridge.json` has read that board since long
+   * before this, so the registry row naming the same yard is a second pin on
+   * it, which is exactly what the merge exists to prevent. The row went where
+   * it should have gone. Asserted below rather than deleted.
+   *
+   * The claim itself is unchanged and is re-pointed to a pair that is still
+   * two answers about two towns: ADM's edible bean plant at Galesburg, North
+   * Dakota, on the state roll and not on Barchart's list. Measured 2026-09-09
+   * against both files, and it was equally true before this change. */
+  assert.equal(joinDirectory(KNOWN, "ADM Edible Bean Specialties, Inc.", "Galesburg"), null,
+               "and does not carry ADM's edible bean plant at Galesburg");
+  assert.ok(joinDirectory(wide, "ADM Edible Bean Specialties, Inc.", "Galesburg"),
+            "the North Dakota roll does");
+  /* AND THE PROPERTY THE PAIR STANDS IN FOR — rule 38, a pinned example is not
+     a test. How many operator-and-town pairs the wide set can place that
+     Barchart cannot: 1,934 before the national list landed, 4,872 after. The
+     floor is what makes this mean something; it is deliberately well below
+     either figure so that a better merge does not read as a regression. */
+  const onlyWide = wide.filter((r) => !joinDirectory(KNOWN, r.facility, r.branch));
+  assert.ok(onlyWide.length > 1500,
+    `the registries add only ${onlyWide.length} pairs Barchart cannot place`);
+  /* Eldridge, as the merge left it: gone from the wide set, still in the
+     directory, and still ours. */
+  assert.equal(joinDirectory(wide, "Country Grain Cooperative", "Eldridge"), null,
+    "the Eldridge registry row is back in the wide set — the merge has stopped working");
+  assert.ok(dir.elevators.some((e) => e.id === "countrygraincooperative-eldridge"
+                                      && e.status === "read"),
+    "and it is a board this repository reads, which is why its registry row merged away");
   for (const [op, l] of [["Agassiz Valley Grain", "AVG Barnesville"],
-                         ["Country Grain Cooperative", "Eldridge"],
+                         ["ADM Edible Bean Specialties, Inc.", "Galesburg"],
                          ["Berthold Farmers", "Berthold"],
                          ["Dakota Midland Grain", "Voltaire"]])
     assert.ok(joinDirectory(both, op, l), `${op} / ${l} places against neither directory`);
