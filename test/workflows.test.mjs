@@ -129,14 +129,14 @@ test("the trading-window cron asks a FEW times an hour, and each fire is short",
      minutes leaves no in-window wait longer than the old loop's own gap. */
   const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
   const crons = [...y.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1]);
-  const window_ = crons.find((c) => /12-21/.test(c));
-  assert.ok(window_, "the trading-window cron is gone");
-  const mins = window_.split(" ")[0].split(",").map(Number);
-  assert.ok(mins.length >= 6,
-    `the window cron asks ${mins.length} times an hour; Sig asked for a read every ten minutes`);
-  const gaps = mins.slice(1).map((m, i) => m - mins[i]);
-  assert.ok(Math.max(...gaps) <= 10,
-    `fires are ${Math.max(...gaps)} minutes apart; the ask is every ten`);
+  /* TEN MINUTES, EVERYWHERE, ALL WEEK. Sig, 2026-09-11: ten minutes 24/7 and
+     nothing else. Asserted as a property of the whole week rather than as the
+     presence of a particular window, because the windows are exactly what was
+     removed and a shape assertion would have failed the improvement. */
+  assert.ok(crons.length, "poll.yml has no schedule at all");
+  const gap = longestGapMinutes(crons);
+  assert.ok(gap <= 10,
+    `the longest the reader goes without looking is ${gap} minutes; the ask is ten, all week`);
   /* AND THE ASK IS NOT THE CADENCE. Measured 2026-08-18 to 08-26 with GitHub's
      own incidents excluded, this exact cron delivered 66 of 380 fires — 17.4%,
      a mean of 1.7 reads an hour. The workflow must say so where the next
@@ -144,6 +144,54 @@ test("the trading-window cron asks a FEW times an hour, and each fire is short",
   assert.match(y, /17\.4%|66 delivered/,
     "the cron does not record what GitHub actually delivers, so it reads as a promise");
 });
+
+/* ── HOW OFTEN DOES A SCHEDULE ACTUALLY READ? ─────────────────────────────
+ *
+ * Twice now this file has been red for days while the code was right, because
+ * it pinned the SHAPE of the schedule -- "there is a cron containing 12-21",
+ * "there is one containing 0-11,22-23" -- instead of the property those shapes
+ * were standing in for. On 2026-09-11 the three windows collapsed into one and
+ * every one of those assertions would have failed for a change that made the
+ * cadence strictly better.
+ *
+ * So this expands whatever crons it is given and answers the question the
+ * assertions actually care about: across a whole week, what is the longest the
+ * reader ever goes without looking? Any reshaping that keeps the cadence keeps
+ * this green, and a genuine gap fails it whatever shape it is written in.
+ */
+function longestGapMinutes(crons) {
+  const DOW = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+  const field = (spec, lo, hi, names = {}) => {
+    const out = new Set();
+    for (const part of spec.split(",")) {
+      const [range, stepRaw] = part.split("/");
+      const step = stepRaw ? Number(stepRaw) : 1;
+      let a, b;
+      if (range === "*") { a = lo; b = hi; }
+      else if (range.includes("-")) {
+        const [x, y] = range.split("-");
+        a = names[x.toUpperCase()] ?? Number(x);
+        b = names[y.toUpperCase()] ?? Number(y);
+      } else { a = b = names[range.toUpperCase()] ?? Number(range); }
+      for (let v = a; v <= b; v += step) out.add(v);
+    }
+    return out;
+  };
+  const fires = new Set();
+  for (const c of crons) {
+    const [mi, ho, , , dw] = c.trim().split(/\s+/);
+    const mins = field(mi, 0, 59), hours = field(ho, 0, 23);
+    let days = field(dw, 0, 7, DOW);
+    if (days.has(7)) days.add(0);                 // both spellings of Sunday
+    for (const d of days) for (const h of hours) for (const m of mins)
+      fires.add((d % 7) * 1440 + h * 60 + m);
+  }
+  if (!fires.size) return Infinity;
+  const t = [...fires].sort((a, b) => a - b);
+  let worst = t[0] + (10080 - t[t.length - 1]);   // the wrap across the week
+  for (let i = 1; i < t.length; i++) worst = Math.max(worst, t[i] - t[i - 1]);
+  return worst;
+}
 
 test("one pass of the reader is ONE THING, so it can be called in a loop", () => {
   const sh = readFileSync(new URL("../scripts/one-pass.sh", import.meta.url), "utf8");
@@ -221,16 +269,19 @@ test("THE TEN-MINUTE CADENCE HAS A SCHEDULER THAT CAN KEEP IT", () => {
      cron in poll.yml is what delivers the cadence. */
   const wt = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8");
   const crons = [...wt.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  const win = crons.find((c) => /12-21/.test(c));
-  assert.ok(win, "the external scheduler has no trading-window cron");
-  assert.match(win, /^\*\/10 |^(\d+,){5,}/, `the external trading cron is "${win}", not every ten minutes`);
-  assert.ok(crons.some((c) => /0-11,22-23/.test(c)), "no off-hours cron on the external scheduler");
-  /* Accepts either spelling. 6,0 was the original and is what GitHub wants;
-     Cloudflare rejected it outright (its weekday field is 1-7, no 0), so the
-     toml now says SAT,SUN. A test pinned to one spelling would have gone red
-     for the fix rather than for the fault. */
-  assert.ok(crons.some((c) => /\* \*\s+(?:6,0|6,7|SAT,SUN)$/i.test(c)),
-    "no weekend cron on the external scheduler");
+  /* The same whole-week property, on the scheduler that actually delivers it.
+     Only the entries that route to the reader count: the discovery sweep and
+     the nightly registry run share this file and are not reads of the board.
+     Anything in the toml that is not a five-field cron -- a quoted phrase in a
+     comment, a name, a date -- is filtered out rather than parsed. */
+  const CRON5 = /^(\S+\s+){4}\S+$/;
+  const js0 = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
+  const pollCrons = crons.filter((c) => CRON5.test(c.trim()))
+    .filter((c) => new RegExp(`"${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\s*:\\s*\\[[^\\]]*poll\\.yml`).test(js0));
+  assert.ok(pollCrons.length, "the external scheduler fires no cron that routes to the reader");
+  const wgap = longestGapMinutes(pollCrons);
+  assert.ok(wgap <= 10,
+    `the external scheduler's longest gap is ${wgap} minutes; the ask is ten, all week`);
 
   const js = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
   /* The path is built from constants, so assert the constant AND the shape —
@@ -777,7 +828,7 @@ test("a better browser identity re-asks every negative taken with the old one", 
  *
  *  Each of the three is therefore named and checked on its own.
  */
-test("EMMERT: all three price cadences route to the reader, not just one", () => {
+test("EMMERT: the reader is scheduled with no gap, not just in some windows", () => {
   const src = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
   /* Comments are not coverage. This file explains the cadences in prose and a
      regex over the prose would pass on a scheduler that routes none of them. */
@@ -786,44 +837,71 @@ test("EMMERT: all three price cadences route to the reader, not just one", () =>
   assert.ok(block, "ROUTES is not a literal object any more — this guard cannot read it");
   const routes = JSON.parse(block[1].replace(/,(\s*\})/g, "$1"));
 
-  /* The three price windows, by what each one protects. */
-  const PRICE_CADENCES = [
-    ["*/10 12-21 * * MON-FRI",    "the trading day"],
-    ["20 0-11,22-23 * * MON-FRI", "overnight, where a pre-dawn move is picked up"],
-    ["20 */3 * * SAT,SUN",        "the weekend, where 14h withdrawal is closest"],
-  ];
-  for (const [cron, what] of PRICE_CADENCES) {
-    assert.ok(routes[cron],
-      `no cron covers ${what} — poll.yml falls back to GitHub cron in that window`);
-    assert.ok(routes[cron].includes("poll.yml"),
-      `${what} is routed to ${routes[cron].join(", ")} and not to poll.yml — ` +
-      `the Emmert sites lose their reader for that whole window`);
-  }
+  /* THIS USED TO NAME THE THREE WINDOWS. It listed the exact cron strings for
+     the trading day, the weekday overnight and the weekend, and asserted each
+     one was present and routed to the reader. On 2026-09-11 all three collapsed
+     into a single ten-minute round-the-clock cron and this went red for a
+     change that removed the gaps it existed to protect.
+
+     That is the third time this file has been red while the code was right, and
+     all three have the same cause: a list of shapes standing in for a property.
+     The property is "the reader is never scheduled to go longer than ten
+     minutes without looking, at any hour of any day", so that is what is
+     asserted. Three windows satisfy it, one cron satisfies it, and a schedule
+     with a hole in it fails however it is spelled. */
+  const toReader = Object.entries(routes)
+    .filter(([, ws]) => ws.includes("poll.yml"))
+    .map(([cron]) => cron);
+  assert.ok(toReader.length, "no cron on the external scheduler routes to poll.yml at all");
+  const gap = longestGapMinutes(toReader);
+  assert.ok(gap <= 10,
+    `the scheduler leaves the reader idle for up to ${gap} minutes ` +
+    `(crons routed to poll.yml: ${toReader.join(" | ")}) — the ask is ten, all week`);
 
   /* The toml has to declare the same three, or the Worker is never woken for
      them however good its route table is. */
   const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8");
   const tomlCode = toml.replace(/^\s*#.*$/gm, "");
-  for (const [cron, what] of PRICE_CADENCES)
+  /* ROUTES and the toml must agree. A cron routed to the reader that the toml
+     never declares is a route that can never fire, and the README says every
+     cron in wrangler.toml must appear in ROUTES -- this is the other half. */
+  for (const cron of toReader)
     assert.ok(tomlCode.includes(`"${cron}"`),
-      `wrangler.toml does not declare the cron for ${what}, so it never fires`);
+      `ROUTES sends "${cron}" to the reader but wrangler.toml never declares it, ` +
+      `so that cadence never fires`);
 });
 
-test("EMMERT: the weekend cadence stays at three hours, never four", () => {
-  /* Four-hourly puts the natural weekend commit interval at exactly 8.00h,
-     which is the dashboard's own gap threshold, AND two dropped runs reach
-     15.95h against the 14h the Emmert sites withdraw at. Three-hourly is the
-     margin. Checked in both places that can set it. */
-  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8")
-    .replace(/^\s*#.*$/gm, "");
-  const poll = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8")
-    .replace(/^\s*#.*$/gm, "");
-  assert.doesNotMatch(toml, /"\d+ \*\/[4-9] \* \* (?:6,0|6,7|SAT,SUN)"/i,
-    "the scheduler's weekend cadence is 4-hourly or slower — two dropped runs " +
-    "reach 15.95h and the Emmert sites withdraw at 14h");
-  assert.doesNotMatch(poll, /cron:\s*"\d+ \*\/[4-9] \* \* 6,0"/,
-    "poll.yml's own weekend fallback is 4-hourly or slower — same 14h exposure " +
-    "when the scheduler is the thing that is down");
+test("EMMERT: the weekend never approaches the staleness thresholds", () => {
+  /* WHAT THIS PROTECTS, which is not a number of hours.
+     The Emmert sites withdraw a price at 14h stale and the dashboard flags a
+     gap at 8h. A 4-hourly weekend put the natural commit interval at exactly
+     8.00h -- on the threshold -- and two dropped runs reached 15.95h, which
+     pulls a good price off both customer sites. Three-hourly was the margin.
+
+     REWRITTEN 2026-09-11. The weekend cron is gone: the schedule is ten minutes
+     round the clock, so the margin is now enormous rather than careful. The old
+     test said "never four hours" and would have passed on a schedule with no
+     weekend entry at all -- vacuously, by finding nothing to object to. It
+     asserts the exposure instead, in both places that can set it, so it still
+     fails if a weekend hole is ever reintroduced in any shape. */
+  const CRON5 = /^(\S+\s+){4}\S+$/;
+  const toml = readFileSync(new URL("../worker-scheduler/wrangler.toml", import.meta.url), "utf8");
+  const js = readFileSync(new URL("../worker-scheduler/src/index.js", import.meta.url), "utf8");
+  const tomlCrons = [...toml.matchAll(/"([^"]+)"/g)].map((m) => m[1])
+    .filter((c) => CRON5.test(c.trim()))
+    .filter((c) => new RegExp(`"${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\s*:\\s*\\[[^\\]]*poll\\.yml`).test(js));
+  const poll = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
+  const pollCrons = [...poll.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1]);
+
+  const WITHDRAW_H = 14;
+  for (const [label, crons] of [["the external scheduler", tomlCrons],
+                                ["poll.yml's own fallback", pollCrons]]) {
+    assert.ok(crons.length, `${label} has no schedule for the reader`);
+    const gapH = longestGapMinutes(crons) / 60;
+    assert.ok(gapH * 2 < WITHDRAW_H,
+      `${label} leaves a ${gapH.toFixed(2)}h gap, so two dropped runs reach ` +
+      `${(gapH * 2).toFixed(2)}h against the ${WITHDRAW_H}h the Emmert sites withdraw at`);
+  }
 });
 
 

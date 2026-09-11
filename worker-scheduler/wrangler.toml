@@ -39,15 +39,20 @@ compatibility_date = "2026-08-27"
 # src/index.js routes each of these to a LIST of workflows, so five slots buys
 # five cadences, not five workflows.
 crons = [
-  # Every ten minutes through the trading day. 12:00-21:59 UTC is 7am-4pm
-  # Central in both CST and CDT, so the clocks changing cannot quietly shift
-  # the window out of market hours.                        -> poll.yml
-  "*/10 12-21 * * MON-FRI",
-  # Hourly the rest of the weekday, so an overnight move is picked up.
-  "20 0-11,22-23 * * MON-FRI",
-  # Weekends every three hours. The board does not move; this is a heartbeat,
-  # and three rather than four for the reason poll.yml documents at length.
-  "20 */3 * * SAT,SUN",
+  # TEN MINUTES, ROUND THE CLOCK, EVERY DAY.                -> poll.yml
+  #
+  # Sig, 2026-09-11, asking for ten minutes 24/7 and nothing else. This
+  # replaced three separate
+  # slots -- trading day, weekday overnight, weekend -- and so it gives a slot
+  # BACK: the account is on five Cron Triggers total and this Worker now spends
+  # three of them instead of five.
+  #
+  # The overnight window was the one that mattered. Over the five days to
+  # 2026-09-11, 31 of 59 price changes on the live site landed between 7pm and
+  # 8am Central, and the hourly poll found a different price on essentially
+  # every fire -- undersampling, not a quiet board.
+  "*/10 * * * *",
+
 
   # THE DISCOVERY SWEEP. Was six fixed hours; now every two, which is 12 fires
   # a day out of the same one slot.

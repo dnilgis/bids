@@ -19,6 +19,26 @@ import { cronsOf, rawCronsOf, loopOf, expandLoop, cronField, cronMatches, nextFi
 const WF = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
 const CRONS = cronsOf(WF);
 
+/* ── FIXTURES, BECAUSE A PARSER HAS NO STAKE IN TODAY'S CADENCE ────────────
+ *
+ * Five tests below used to index the LIVE schedule -- CRONS[0], CRONS[2] --
+ * and assert what each window did. On 2026-09-11 the three windows became one
+ * ten-minute cron covering the whole week and all five went red, none of them
+ * for a fault in the thing they test. cronMatches() and nextFire() are a cron
+ * parser; whether poll.yml currently asks for three windows or one is not
+ * their business.
+ *
+ * So the parser is exercised against these, which do not move. The LIVE
+ * schedule is still asserted -- harder than before -- but as its own property,
+ * in "the live schedule leaves no gap" at the foot of this file. */
+const FX = {
+  window:   "3,13,23,33,43,53 12-21 * * 1-5",   // a bounded weekday window
+  overnight:"25 0-11,22-23 * * 1-5",            // once an hour, split hours
+  weekend:  "25 */3 * * 6,0",                   // a step, weekend only
+  always:   "3,13,23,33,43,53 * * * *",         // what poll.yml asks for today
+};
+const FX_THREE = [FX.window, FX.overnight, FX.weekend];
+
 test("the schedule is read out of the workflow, not restated here", () => {
   /* UPDATED 2026-08-26 with the change that made the cron and the read stop
      being the same thing. The window job now fires ONCE an hour and reads
@@ -31,11 +51,13 @@ test("the schedule is read out of the workflow, not restated here", () => {
      thing again and cronsOf() has nothing to expand. The expansion machinery
      stays and is still tested below, because it is what this page will need
      the day the cadence is raised without raising the fire count. */
-  assert.deepEqual(CRONS, [
-    "3,13,23,33,43,53 12-21 * * 1-5",
-    "25 0-11,22-23 * * 1-5",
-    "25 */3 * * 6,0",
-  ]);
+  /* Not a copy of today's schedule. That is what this test was, and it had to
+     be edited every time the cadence changed, which is the definition of a
+     restatement. What it can honestly check is that reading the file yields
+     SOMETHING and that expansion is a no-op while nothing loops. */
+  assert.ok(CRONS.length >= 1, "no cron was read out of poll.yml at all");
+  for (const c of CRONS)
+    assert.match(c, /^(\S+\s+){4}\S+$/, `"${c}" is not a five-field cron`);
   assert.deepEqual(rawCronsOf(WF), CRONS,
     "with no loop, the expanded schedule and the raw schedule must be the same list");
   assert.deepEqual(cronsOf("no crons here"), []);
@@ -64,7 +86,7 @@ test("the trading-day cron fires on the tens past, on weekdays, in its own hours
   /* Back on the threes past, every ten minutes, 2026-08-27. The offset is
      deliberate and unchanged in spirit: :00 is the busiest minute on the
      platform, so nothing here asks for it. */
-  const at = (iso) => cronMatches(CRONS[0], new Date(iso));
+  const at = (iso) => cronMatches(FX.window, new Date(iso));
   assert.equal(at("2026-08-20T14:03:00Z"), true, "Thursday 14:03 UTC");
   assert.equal(at("2026-08-20T14:53:00Z"), true, "Thursday 14:53 UTC — the last read of the hour");
   assert.equal(at("2026-08-20T14:07:00Z"), false, "the sevens belong to the schedule this replaced");
@@ -75,7 +97,7 @@ test("the trading-day cron fires on the tens past, on weekdays, in its own hours
 });
 
 test("the weekend cron is three-hourly and only at the weekend", () => {
-  const at = (iso) => cronMatches(CRONS[2], new Date(iso));
+  const at = (iso) => cronMatches(FX.weekend, new Date(iso));
   assert.equal(at("2026-08-22T15:25:00Z"), true, "Saturday 15:25");
   assert.equal(at("2026-08-23T00:25:00Z"), true, "Sunday 00:25");
   assert.equal(at("2026-08-22T16:25:00Z"), false, "not on the off hours");
@@ -84,7 +106,7 @@ test("the weekend cron is three-hourly and only at the weekend", () => {
 
 test("the next run is found in each of the three windows", () => {
   const next = (iso) => {
-    const t = nextFire(CRONS, Date.parse(iso));
+    const t = nextFire(FX_THREE, Date.parse(iso));
     return { iso: new Date(t).toISOString(), inMins: Math.round((t - Date.parse(iso)) / 60000) };
   };
   /* Mid trading day: the loop reads on the sevens, so from 14:49 the next
@@ -263,17 +285,19 @@ test("ONLY the looping cron is expanded — the quiet hours stay quiet", () => {
      turned one polite hourly read at 3am into four, and the weekend's
      three-hourly read into four an hour, against other people's servers, for a
      board that does not move. */
-  assert.equal(CRONS[1], "25 0-11,22-23 * * 1-5", "the overnight cron was expanded");
-  assert.equal(CRONS[2], "25 */3 * * 6,0", "the weekend cron was expanded");
+  assert.equal(cronsOf(`on:\n  schedule:\n    - cron: "${FX.overnight}"`)[0], FX.overnight,
+    "the overnight cron was expanded");
+  assert.equal(cronsOf(`on:\n  schedule:\n    - cron: "${FX.weekend}"`)[0], FX.weekend,
+    "the weekend cron was expanded");
   const t = Date.parse("2026-08-26T03:30:00Z");
-  const next = nextFire(CRONS, t);
+  const next = nextFire(FX_THREE, t);
   assert.equal(new Date(next).toISOString(), "2026-08-26T04:25:00.000Z",
     "overnight, the next read must be the next HOUR, not ten minutes away");
 });
 
 test("inside the trading window the next read is minutes away, not the better part of an hour", () => {
   const t = Date.parse("2026-08-26T14:12:00Z");
-  const mins = Math.round((nextFire(CRONS, t) - t) / 60000);
+  const mins = Math.round((nextFire(FX_THREE, t) - t) / 60000);
   assert.equal(mins, 1, `the page would have said ${mins} minutes`);
   assert.ok(mins <= 10, "six fires an hour means no in-window wait may exceed ten minutes");
 });
@@ -287,4 +311,34 @@ test("expandLoop refuses to overstate a cadence it cannot vouch for", () => {
   assert.equal(expandLoop("55 12-21 * * 1-5", loop), "55 12-21 * * 1-5");
   assert.equal(expandLoop("7 12-21 * * 1-5", null), "7 12-21 * * 1-5");
   assert.equal(expandLoop("not a cron", loop), "not a cron");
+});
+
+
+/* ── AND THE LIVE SCHEDULE, AS ITS OWN PROPERTY ────────────────────────────
+ *
+ * The fixtures above test the parser. This tests poll.yml, and it is the only
+ * test in this file that reads it for its content. Asserted as a property of
+ * the whole week rather than as a list of windows, so a reshaping that keeps
+ * the cadence keeps it green and a hole fails it however it is spelled.
+ *
+ * Sig with Jesse and Kirst at the Emmerts, 2026-09-11: ten minutes, 24/7. */
+test("the live schedule leaves no gap longer than ten minutes, any hour, any day", () => {
+  assert.ok(CRONS.length, "poll.yml has no schedule");
+  const fires = [];
+  const start = Date.parse("2026-09-13T00:00:00Z");        // a Sunday, UTC
+  for (let t = start, n = 0; n < 7 * 24 * 60; t += 60000, n++)
+    if (CRONS.some((c) => cronMatches(c, new Date(t)))) fires.push(t);
+  assert.ok(fires.length, "nothing in poll.yml fires in a whole week");
+  let worst = 0, worstAt = null;
+  for (let i = 1; i < fires.length; i++) {
+    const gap = (fires[i] - fires[i - 1]) / 60000;
+    if (gap > worst) { worst = gap; worstAt = fires[i - 1]; }
+  }
+  const wrap = (fires[0] + 7 * 24 * 60 * 60000 - fires[fires.length - 1]) / 60000;
+  if (wrap > worst) { worst = wrap; worstAt = fires[fires.length - 1]; }
+  assert.ok(worst <= 10,
+    `the reader is scheduled to go ${worst} minutes without looking, starting ` +
+    `${new Date(worstAt).toISOString()} — the ask is ten, every hour of every day`);
+  assert.equal(fires.length, 7 * 24 * 6,
+    `a ten-minute week is ${7 * 24 * 6} fires; this schedule asks for ${fires.length}`);
 });
