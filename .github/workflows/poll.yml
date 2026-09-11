@@ -103,26 +103,46 @@ on:
     # from a scheduler that is not GitHub cron -- see worker-scheduler/ -- which
     # dispatches this same workflow and is not subject to any of the above.
     # Each fire is one short pass; nothing here holds a runner.
-    - cron: "3,13,23,33,43,53 12-21 * * 1-5"
-    # Hourly the rest of the weekday, so an overnight move is picked up and a
-    # reader that has quietly died gets noticed before morning.
-    - cron: "25 0-11,22-23 * * 1-5"
-    # Weekends, every 3 hours. Deliberately NOT hourly: the board does not move
-    # at the weekend, and the heartbeat only writes every 6 hours, so hourly
-    # polling would produce zero additional commits and zero additional
-    # information while making requests to someone else's server for nothing.
+    # TEN MINUTES, ROUND THE CLOCK, EVERY DAY.
     #
-    # THREE AND NOT FOUR, for two reasons found on 2026-08-17.
-    # At 4-hourly the 4h poll is inside the 6h heartbeat and the 8h poll writes,
-    # so the natural weekend commit interval is EXACTLY 8.00 hours -- which is
-    # exactly the dashboard's gap threshold (HEARTBEAT_H + SLACK_H). With the
-    # 10-20 minute scheduler drift this file documents nine lines up, that flags
-    # a false gap on essentially every weekend, and the one signal that is meant
-    # to mean "the reader has been down since Friday" becomes weekly noise.
-    # And two consecutive dropped weekend runs reached 15.95h of staleness
-    # against the Emmert side's 14h withdrawal, so a quiet Saturday could pull a
-    # perfectly good price off both sites.
-    - cron: "25 */3 * * 6,0"
+    # Sig with Jesse and Kirst at the Emmerts, 2026-09-11: "i want 10 min 24/7
+    # period." Three windows collapse to one. What that replaced, and the
+    # measurement that made the old overnight window indefensible:
+    #
+    #   day       6/hour, 12:00-21:59 UTC, Mon-Fri
+    #   overnight ONE an hour, 00:00-11:59 and 22:00-23:59 UTC, Mon-Fri
+    #   weekend   every three hours
+    #
+    # Big River's board moves overnight and the hourly poll was undersampling
+    # it badly. Counted over every price change on badgergrain.com in the five
+    # days to 2026-09-11: 59 changes, and 31 of them -- more than half --
+    # between 7pm and 8am Central. Overnight they landed at :27 or :28 past
+    # almost every single hour, which is this file's own hourly fire at :25
+    # arriving and finding a different number EVERY TIME it looked. A check
+    # that never once agrees with the previous check is not measuring the
+    # board, it is measuring its own clock.
+    #
+    # The weekend note this replaces said the board "does not move at the
+    # weekend" and that polling it more often would make "requests to someone
+    # else's server for nothing". The first half is still true. The second is
+    # the trade Sig has decided to make, and the cost is one request every ten
+    # minutes to one board -- 144 a day, against a source whose own footer says
+    # the page self-refreshes every five minutes and its prices are delayed
+    # ten. Ten minutes is matched to their stated cadence, not above it.
+    #
+    # A WEEKEND SIDE EFFECT THAT IS AN IMPROVEMENT. At three-hourly the natural
+    # weekend commit interval landed on almost exactly the dashboard's 8-hour
+    # gap threshold, so a quiet Saturday could flag a false "reader is down".
+    # At ten minutes nothing is ever near that threshold and the signal means
+    # what it says again.
+    #
+    # AND THE ASK IS STILL NOT THE CADENCE. Measured 2026-08-18 to 08-26 with
+    # GitHub's own incidents excluded, this minute list delivered 66 of 380
+    # fires -- 17.4%, a mean of 1.7 reads an hour. worker-scheduler/ is what
+    # actually delivers ten minutes; these crons are the fallback underneath
+    # it. Written out rather than as */10 to dodge :00, where every cron on the
+    # platform fires at once.
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
     inputs:
       ping_sites:
