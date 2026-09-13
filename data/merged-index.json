@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-13T08:38:18Z",
+ "generated": "2026-09-13T08:48:05Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 9968,
-   "boards": 861,
-   "generated": "2026-09-13T08:31:13.197Z"
+   "rows": 10031,
+   "boards": 880,
+   "generated": "2026-09-13T08:41:17.317Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,34 +15,34 @@
   }
  },
  "counts": {
-  "rows": 9968,
+  "rows": 10031,
   "places": 866,
   "byCrop": {
-   "wheat": 1660,
-   "soybeans": 3354,
-   "sorghum": 513,
-   "corn": 4412,
+   "wheat": 1718,
+   "soybeans": 3352,
+   "sorghum": 525,
+   "corn": 4407,
    "oats": 10,
    "other": 19
   },
   "byVia": {
-   "scrape": 9968
+   "scrape": 10031
   },
   "byState": {
-   "KS": 1380,
-   "IL": 920,
+   "KS": 1476,
+   "IL": 916,
    "ON": 10,
-   "MN": 1528,
+   "MN": 1512,
    "PA": 6,
-   "IN": 312,
+   "IN": 301,
    "GA": 10,
    "IA": 1529,
-   "SD": 1141,
+   "SD": 1133,
    "WI": 255,
    "NE": 1484,
    "null": 114,
    "ND": 449,
-   "OH": 364,
+   "OH": 370,
    "OK": 134,
    "MO": 23,
    "MT": 26,
@@ -54,14 +54,14 @@
   },
   "byPeriodVia": {
    "explicit-range": 346,
-   "us-date": 6135,
-   "month-inferred-year": 160,
-   "month-year": 2401,
+   "us-date": 6237,
+   "month-inferred-year": 158,
+   "month-year": 2377,
    "deadline-inferred-year": 6,
-   "season": 299,
+   "season": 298,
    "contract-pair": 137,
    "month-day-year": 7,
-   "month-pair": 204,
+   "month-pair": 192,
    "day-range-inferred-year": 19,
    "month-pair-inferred-year": 7,
    "quarter": 7,
@@ -69,34 +69,32 @@
    "iso-date": 66
   },
   "byCurrency": {
-   "USD": 9958,
+   "USD": 10021,
    "CAD": 10
   },
   "byCurrencyVia": {
-   "declared": 6534,
-   "payload": 3123,
+   "declared": 6636,
+   "payload": 3084,
    "province": 311
   },
   "collisionsBetweenFeeds": 0,
-  "unmappable": 293,
-  "unmappableNoCoordinate": 285,
+  "unmappable": 289,
+  "unmappableNoCoordinate": 281,
   "unmappableNoState": 114
  },
  "dropped": {
   "scrape": {
-   "refused: price is 39.4h old, past the 14h withdrawal": 1,
-   "board file with no entry in index.json": 34,
+   "board file with no entry in index.json": 37,
+   "refused: price is 39.5h old, past the 14h withdrawal": 1,
    "inMerge is false on the source": 1,
-   "refused: price is 235.6h old, past the 14h withdrawal": 1,
-   "refused: price is 43.3h old, past the 14h withdrawal": 1,
-   "refused: price is 38.9h old, past the 14h withdrawal": 2,
-   "broken: price is 296.3h old, past the 14h withdrawal": 1,
-   "refused: price is 161.3h old, past the 14h withdrawal": 1
+   "refused: price is 235.8h old, past the 14h withdrawal": 1,
+   "refused: price is 43.4h old, past the 14h withdrawal": 1,
+   "refused: price is 161.5h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
    "basis more than $3.00 from the board — a unit error, not a market": 2,
-   "delivery unreadable (unreadable-season-no-year)": 16,
+   "delivery unreadable (unreadable-season-no-year)": 15,
    "delivery unreadable (unreadable)": 16
   }
  },
@@ -107,6 +105,7 @@
   "written": 866,
   "unchanged": 0,
   "orphaned": [
+   "ag-land-fs-alto-il-2fd35ecf.json",
    "ag-land-fs-green-valley-il-8239ead5.json",
    "agmark-llc-gaylord-mn-cf9f8b79.json",
    "aurora-cooperative-aurora-south-c77c998c.json",
@@ -114,15 +113,14 @@
    "aurora-cooperative-murphy-a96644d8.json",
    "aurora-cooperative-sedan-bc8529b4.json",
    "central-united-coop-cosmos-mn-d17a86d1.json",
+   "central-united-coop-fairfax-mn-dfdfdca5.json",
+   "central-united-coop-new-ulm-mn-f791082b.json",
    "chs-river-terminals-processing-plants-absolute-energy-c177c53f.json",
-   "farmers-coop-columbus-baxter-springs-ks-4744f59a.json",
-   "farmers-coop-columbus-columbus-east-ks-5e29bc93.json",
-   "farmers-coop-columbus-columbus-ks-72a3310d.json",
-   "farmers-coop-columbus-faulkner-ks-d75a1474.json",
    "farmers-pride-coop-neligh-oakdale-4762ca83.json",
    "kalmbach-feeds-c-o-oh-3764aaeb.json",
-   "kbq-inc-kbq-inc-mn-fccf4156.json",
+   "keystone-cooperative-hamilton-in-29597fad.json",
    "keystone-cooperative-scircleville-grain-in-f57312b7.json",
+   "keystone-cooperative-union-mills-in-e3b526e3.json",
    "riceland-foods-corning-ar-4dbcc084.json",
    "riceland-foods-des-arc-ar-5be14baa.json",
    "riceland-foods-hazen-ar-edca3307.json",
@@ -131,7 +129,7 @@
    "riceland-foods-pendleton-ar-d23e9e70.json",
    "riceland-foods-tuckerman-ar-49bc1445.json",
    "riceland-foods-weiner-ar-f00b0420.json",
-   "the-jewell-grain-co-the-jewell-grain-co-oh-720dfee3.json",
+   "valley-springs-farmers-coop-valley-springs-sd-c62f8082.json",
    "wanstead-farmers-cooperative-any-wanstead-branch-on-0da22e3b.json"
   ]
  },
@@ -198,7 +196,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Addis Grain||Addis Grain Ltd.|ON",
@@ -301,7 +299,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Ag Partners Cooperative||Bellechester|MN",
@@ -1201,42 +1199,6 @@
    "checkedAt": "2026-09-13T08:31:13.197Z"
   },
   {
-   "place": "Ag-Land FS||Alto|IL",
-   "shard": "merged/ag-land-fs-alto-il-2fd35ecf.json",
-   "operator": "Ag-Land FS",
-   "branch": null,
-   "city": "Alto",
-   "state": "IL",
-   "lat": null,
-   "lon": null,
-   "precision": null,
-   "mappable": false,
-   "via": "scrape",
-   "source": "aglandfs-alto",
-   "bids": 4,
-   "crops": [
-    "corn"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10",
-    "2026-11",
-    "2026-12"
-   ],
-   "best": {
-    "corn": {
-     "cash": 5.33,
-     "basis": 0.03,
-     "basisCents": 3,
-     "period": "2026-12",
-     "commodity": "Corn",
-     "delivery": "Dec 2026 (Z)"
-    }
-   },
-   "pricedAt": "2026-09-11T17:15:47.477Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
-  },
-  {
    "place": "Ag-Land FS||Dunlap|IL",
    "shard": "merged/ag-land-fs-dunlap-il-c35a4f4f.json",
    "operator": "Ag-Land FS",
@@ -1369,7 +1331,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Ag-Land FS||Williamsfield|IL",
@@ -1458,7 +1420,7 @@
     }
    },
    "pricedAt": "2026-09-12T12:41:15.528Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "AgMark LLC.||Beloit|KS",
@@ -1749,7 +1711,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "AgMark LLC.||Gaylord|KS",
@@ -2058,7 +2020,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "AgMark LLC.||Meriden|KS",
@@ -2517,7 +2479,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Agtegra||AGP Aberdeen|SD",
@@ -2733,7 +2695,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Agtegra||Bristol|SD",
@@ -3028,7 +2990,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Agtegra||Hecla|SD",
@@ -3186,7 +3148,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Agtegra||Java|SD",
@@ -4032,7 +3994,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Agtegra||West Terminal|SD",
@@ -4296,7 +4258,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Allied Cooperative||ADAMS|WI",
@@ -4521,7 +4483,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Allied Cooperative||SEYMOUR|WI",
@@ -4564,7 +4526,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Allied Cooperative||STRATFORD|WI",
@@ -5035,7 +4997,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Assumption Coop||Westervelt Facility|IL",
@@ -5113,7 +5075,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Aurora Cooperative||Aurora South|NE",
@@ -6163,7 +6125,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Balk Grain and Trucking, Inc.||Savanna Depot/Area 51|IL",
@@ -6464,7 +6426,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Border Ag & Energy||Lansford|ND",
@@ -6574,7 +6536,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Border Ag & Energy||Souris|ND",
@@ -6742,7 +6704,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Cain Agra||Cain Agra- Marshallville, GA|GA",
@@ -6902,7 +6864,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Cash Bid JSI Site - Ag State||Ellsworth|IA",
@@ -6941,7 +6903,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Cash Bid JSI Site - Ag State||Emmetsburg|IA",
@@ -7037,7 +6999,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Cash Bid JSI Site - Ag State||Hartley|IA",
@@ -7787,7 +7749,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:40:50.329Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Central Farmers Cooperative||Viborg|SD",
@@ -8490,57 +8452,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
-  },
-  {
-   "place": "Central United Coop||Fairfax|MN",
-   "shard": "merged/central-united-coop-fairfax-mn-dfdfdca5.json",
-   "operator": "Central United Coop",
-   "branch": null,
-   "city": "Fairfax",
-   "state": "MN",
-   "lat": 44.5329,
-   "lon": -94.7256,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "centralunitedcoop-fairfax",
-   "bids": 12,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10",
-    "2026-12",
-    "2027-01/2027-03",
-    "2027-02/2027-03",
-    "2027-04/2027-05",
-    "2027-06/2027-07",
-    "2027-10",
-    "2027-12/2028-01"
-   ],
-   "best": {
-    "corn": {
-     "cash": 4.96,
-     "basis": -0.6,
-     "basisCents": -60,
-     "period": "2027-06/2027-07",
-     "commodity": "Corn",
-     "delivery": "Jun-Jul 27"
-    },
-    "soybeans": {
-     "cash": 12.45,
-     "basis": -0.8,
-     "basisCents": -80,
-     "period": "2027-04/2027-05",
-     "commodity": "Beans",
-     "delivery": "Apr-May 27"
-    }
-   },
-   "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Central United Coop||Gibbon|MN",
@@ -8793,56 +8705,6 @@
    "checkedAt": "2026-09-13T08:31:13.197Z"
   },
   {
-   "place": "Central United Coop||New Ulm|MN",
-   "shard": "merged/central-united-coop-new-ulm-mn-f791082b.json",
-   "operator": "Central United Coop",
-   "branch": null,
-   "city": "New Ulm",
-   "state": "MN",
-   "lat": 44.31914,
-   "lon": -94.45492,
-   "precision": "street",
-   "mappable": true,
-   "via": "scrape",
-   "source": "centralunitedcoop-newulm",
-   "bids": 12,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10",
-    "2026-12",
-    "2027-01/2027-03",
-    "2027-02/2027-03",
-    "2027-04/2027-05",
-    "2027-06/2027-07",
-    "2027-10",
-    "2027-12/2028-01"
-   ],
-   "best": {
-    "corn": {
-     "cash": 4.94,
-     "basis": -0.62,
-     "basisCents": -62,
-     "period": "2027-06/2027-07",
-     "commodity": "Corn",
-     "delivery": "Jun-Jul 27"
-    },
-    "soybeans": {
-     "cash": 12.48,
-     "basis": -0.77,
-     "basisCents": -77,
-     "period": "2027-04/2027-05",
-     "commodity": "Beans",
-     "delivery": "Apr-May 27"
-    }
-   },
-   "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
-  },
-  {
    "place": "Central United Coop||Sleepy Eye|MN",
    "shard": "merged/central-united-coop-sleepy-eye-mn-ebf3a3bc.json",
    "operator": "Central United Coop",
@@ -8890,7 +8752,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Central United Coop||To Buy for HCP|MN",
@@ -9661,7 +9523,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Central Valley Ag||Gresham|NE",
@@ -9786,7 +9648,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Central Valley Ag||Polk|NE",
@@ -10587,7 +10449,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Ag Services||Greenbush|MN",
@@ -12162,7 +12024,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Drayton||Drayton|ND",
@@ -12400,7 +12262,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Farmers Alliance||Mitchell|SD",
@@ -13995,7 +13857,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Holdrege||Elm Creek|NE",
@@ -14152,7 +14014,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Holdrege||Overton|NE",
@@ -14569,7 +14431,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Illinois||Seneca|IL",
@@ -14665,7 +14527,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Illinois||Steward|IL",
@@ -14749,7 +14611,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS River Plains||Ashley|ND",
@@ -14807,7 +14669,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS River Plains||Blunt|SD",
@@ -15360,7 +15222,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS River Plains||Winner|SD",
@@ -15514,7 +15376,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS River Terminals & Processing Plants||Kasson|MN",
@@ -15747,7 +15609,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS River Terminals & Processing Plants||Wykoff|MN",
@@ -15961,7 +15823,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS Sun Basin Growers||Connell|WA",
@@ -16326,7 +16188,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS United Plains Ag||Leoti|KS",
@@ -16485,7 +16347,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CHS United Plains Ag||Wallace|KS",
@@ -16865,7 +16727,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||APACHE|OK",
@@ -17842,7 +17704,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||CLYDE|KS",
@@ -18106,7 +17968,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||FORT COBB|OK",
@@ -18484,7 +18346,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||KELLOGG|KS",
@@ -18673,7 +18535,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||MCCUNE|KS",
@@ -19165,7 +19027,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||SMOKY HILL TERMINAL|KS",
@@ -19231,7 +19093,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||SPRING|KS",
@@ -19309,7 +19171,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||UDALL|KS",
@@ -19423,7 +19285,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||WELLINGTON GRAIN TERMINAL|KS",
@@ -19489,7 +19351,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "CoMark Equity Alliance LLC||WELLINGTON TERM-CEA|KS",
@@ -19678,7 +19540,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Country Grain Cooperative||Eldridge|ND",
@@ -19731,7 +19593,7 @@
     }
    },
    "pricedAt": "2026-09-12T12:41:15.528Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Country Partners Cooperative||AGP-David City|NE",
@@ -19809,7 +19671,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Country Partners Cooperative||Anselmo|NE",
@@ -21257,7 +21119,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Earlville Farmers Coop Elevator Co||ELEVATOR|IL",
@@ -21502,7 +21364,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Eastland Feed & Grain, Inc||Area 51|IL",
@@ -21932,7 +21794,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Eastland Feed & Grain, Inc||CGB Mt. Carroll|IL",
@@ -22037,7 +21899,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Eastland Feed & Grain, Inc||Honey Creek Mill|WI",
@@ -22111,7 +21973,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Eastland Feed & Grain, Inc||Pearl Valley Egg|IL",
@@ -22408,7 +22270,262 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
+  },
+  {
+   "place": "Farmers Coop Columbus||BAXTER SPRINGS|KS",
+   "shard": "merged/farmers-coop-columbus-baxter-springs-ks-4744f59a.json",
+   "operator": "Farmers Coop Columbus",
+   "branch": null,
+   "city": "BAXTER SPRINGS",
+   "state": "KS",
+   "lat": 37.0281,
+   "lon": -94.7393,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerscoop-baxtersprings",
+   "bids": 25,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.05,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-09",
+     "commodity": "CORN",
+     "delivery": "09/01/2026"
+    },
+    "sorghum": {
+     "cash": 4.2,
+     "basis": -1.1,
+     "basisCents": -110,
+     "period": "2026-09",
+     "commodity": "MILO",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.32,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2026-09",
+     "commodity": "SOYBEANS",
+     "delivery": "09/01/2026"
+    },
+    "wheat": {
+     "cash": 7.26,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-05",
+     "commodity": "WHEAT HRW",
+     "delivery": "05/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
+  },
+  {
+   "place": "Farmers Coop Columbus||COLUMBUS EAST|KS",
+   "shard": "merged/farmers-coop-columbus-columbus-east-ks-5e29bc93.json",
+   "operator": "Farmers Coop Columbus",
+   "branch": null,
+   "city": "COLUMBUS EAST",
+   "state": "KS",
+   "lat": 37.1699,
+   "lon": -94.8899,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerscoop-columbuseast",
+   "bids": 21,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.05,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-09",
+     "commodity": "CORN",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.32,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2026-09",
+     "commodity": "SOYBEANS",
+     "delivery": "09/01/2026"
+    },
+    "wheat": {
+     "cash": 7.26,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-05",
+     "commodity": "WHEAT HRW",
+     "delivery": "05/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
+  },
+  {
+   "place": "Farmers Coop Columbus||COLUMBUS|KS",
+   "shard": "merged/farmers-coop-columbus-columbus-ks-72a3310d.json",
+   "operator": "Farmers Coop Columbus",
+   "branch": null,
+   "city": "COLUMBUS",
+   "state": "KS",
+   "lat": 37.1699,
+   "lon": -94.8899,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerscoop-columbus",
+   "bids": 25,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.05,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-09",
+     "commodity": "CORN",
+     "delivery": "09/01/2026"
+    },
+    "sorghum": {
+     "cash": 4.2,
+     "basis": -1.1,
+     "basisCents": -110,
+     "period": "2026-09",
+     "commodity": "MILO",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.32,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2026-09",
+     "commodity": "SOYBEANS",
+     "delivery": "09/01/2026"
+    },
+    "wheat": {
+     "cash": 7.26,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-05",
+     "commodity": "WHEAT HRW",
+     "delivery": "05/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
+  },
+  {
+   "place": "Farmers Coop Columbus||FAULKNER|KS",
+   "shard": "merged/farmers-coop-columbus-faulkner-ks-d75a1474.json",
+   "operator": "Farmers Coop Columbus",
+   "branch": null,
+   "city": "FAULKNER",
+   "state": "KS",
+   "lat": 37.0418,
+   "lon": -95.0796,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "farmerscoop-faulkner",
+   "bids": 25,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.05,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-09",
+     "commodity": "CORN",
+     "delivery": "09/01/2026"
+    },
+    "sorghum": {
+     "cash": 4.2,
+     "basis": -1.1,
+     "basisCents": -110,
+     "period": "2026-09",
+     "commodity": "MILO",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.32,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2026-09",
+     "commodity": "SOYBEANS",
+     "delivery": "09/01/2026"
+    },
+    "wheat": {
+     "cash": 7.26,
+     "basis": -0.8,
+     "basisCents": -80,
+     "period": "2027-05",
+     "commodity": "WHEAT HRW",
+     "delivery": "05/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Coop Elevator - Morganville Coop||Morganville|KS",
@@ -23090,7 +23207,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Cooperative Dorchester||BLUE RAPIDS|KS",
@@ -24002,7 +24119,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Cooperative Dorchester||JANSEN|NE",
@@ -24397,7 +24514,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Cooperative Dorchester||ODELL|NE",
@@ -24632,7 +24749,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Cooperative Dorchester||PLEASANT DALE|NE",
@@ -25408,7 +25525,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Pride Coop||Bloomfield|NE",
@@ -25675,7 +25792,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Bremer|IA",
@@ -25721,7 +25838,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Cresco East|IA",
@@ -25767,7 +25884,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Cresco|IA",
@@ -25813,7 +25930,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||F'Burg|IA",
@@ -25859,7 +25976,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Granger|IA",
@@ -25905,7 +26022,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Hawkeye|IA",
@@ -25951,7 +26068,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Homeland|IA",
@@ -25988,7 +26105,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Houston|MN",
@@ -26034,7 +26151,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Mabel|MN",
@@ -26080,7 +26197,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Poet Fairbank|IA",
@@ -26117,7 +26234,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Poet Shell Rock|IA",
@@ -26154,7 +26271,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Ridgeway|IA",
@@ -26200,7 +26317,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Rushford|MN",
@@ -26246,7 +26363,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Spring Grove|MN",
@@ -26292,7 +26409,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||SRSP|IA",
@@ -26329,7 +26446,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Sumner|IA",
@@ -26375,7 +26492,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Valero|IA",
@@ -26412,7 +26529,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmers Win Cooperative||Viserion|IA",
@@ -26447,7 +26564,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Farmward Cooperative||Farmward Cooperative - Comfrey|MN",
@@ -27034,7 +27151,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Frontier Ag||Hill City|KS",
@@ -27087,7 +27204,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Frontier Ag||Kanorado|KS",
@@ -27211,7 +27328,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Frontier Ag||Mingo|KS",
@@ -27273,7 +27390,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Frontier Ag||Morland/Studley|KS",
@@ -27798,7 +27915,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "FS Grain||CGB - Hennepin|IL",
@@ -27989,7 +28106,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "FS Grain||McLean|IL",
@@ -28490,7 +28607,7 @@
     }
    },
    "pricedAt": "2026-09-12T12:41:15.528Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Hoven Equity Exchange||AGP - Direct Ship|SD",
@@ -28595,7 +28712,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Inco Grain||Inco Grain|IN",
@@ -28689,7 +28806,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:50:50.199Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||AGP Eagle|IA",
@@ -28728,7 +28845,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||AGP Mason|IA",
@@ -28768,7 +28885,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Alden|IA",
@@ -29183,7 +29300,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:50:50.199Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Cuba City|WI",
@@ -29226,7 +29343,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Elkader|IA",
@@ -29743,7 +29860,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:50:50.199Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Manchester|IA",
@@ -29892,7 +30009,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:50:50.199Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Monticello|IA",
@@ -30085,7 +30202,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Poet FBK|IA",
@@ -30426,7 +30543,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:50:50.199Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Innovative Ag Services||Waukon|IA",
@@ -30672,7 +30789,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "JBS Live Pork||Smithton, MO Feed Mill|MO",
@@ -30905,7 +31022,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kanza Cooperative||ANTRIM|KS",
@@ -31259,7 +31376,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kanza Cooperative||Coats|KS",
@@ -31856,7 +31973,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kanza Cooperative||Sedgwick|KS",
@@ -32104,7 +32221,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kanza Cooperative||ZENITH|KS",
@@ -32167,6 +32284,46 @@
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
    "checkedAt": "2026-09-13T08:21:10.313Z"
+  },
+  {
+   "place": "KBQ Inc.||KBQ Inc.|MN",
+   "shard": "merged/kbq-inc-kbq-inc-mn-fccf4156.json",
+   "operator": "KBQ Inc.",
+   "branch": null,
+   "city": "KBQ Inc.",
+   "state": "MN",
+   "lat": 43.939,
+   "lon": -94.9273,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "kbqinc-kbqinc",
+   "bids": 8,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.13,
+     "basis": -0.43,
+     "basisCents": -43,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "07/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Keystone Cooperative||Columbia City|IN",
@@ -32236,46 +32393,6 @@
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
    "checkedAt": "2026-09-13T08:31:13.197Z"
-  },
-  {
-   "place": "Keystone Cooperative||Hamilton|IN",
-   "shard": "merged/keystone-cooperative-hamilton-in-29597fad.json",
-   "operator": "Keystone Cooperative",
-   "branch": null,
-   "city": "Hamilton",
-   "state": "IN",
-   "lat": 41.5566,
-   "lon": -84.8951,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "keystonecooperative-hamilton",
-   "bids": 8,
-   "crops": [
-    "corn"
-   ],
-   "periods": [
-    "2026-10",
-    "2026-11",
-    "2026-12",
-    "2027-01",
-    "2027-02",
-    "2027-03",
-    "2027-04",
-    "2027-05"
-   ],
-   "best": {
-    "corn": {
-     "cash": 5.23,
-     "basis": -0.3,
-     "basisCents": -30,
-     "period": "2027-05",
-     "commodity": "Corn",
-     "delivery": "May '27"
-    }
-   },
-   "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
   },
   {
    "place": "Keystone Cooperative||Holland|IN",
@@ -32355,49 +32472,6 @@
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
    "checkedAt": "2026-09-13T08:31:13.197Z"
-  },
-  {
-   "place": "Keystone Cooperative||Union Mills|IN",
-   "shard": "merged/keystone-cooperative-union-mills-in-e3b526e3.json",
-   "operator": "Keystone Cooperative",
-   "branch": null,
-   "city": "Union Mills",
-   "state": "IN",
-   "lat": 41.4602,
-   "lon": -86.8355,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "keystonecooperative-unionmills",
-   "bids": 3,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2027-01",
-    "newcrop-2026"
-   ],
-   "best": {
-    "corn": {
-     "cash": 5.105,
-     "basis": -0.35,
-     "basisCents": -35,
-     "period": "2027-01",
-     "commodity": "Corn",
-     "delivery": "January"
-    },
-    "soybeans": {
-     "cash": 12.7875,
-     "basis": -0.4,
-     "basisCents": -40,
-     "period": "2027-01",
-     "commodity": "Soybeans",
-     "delivery": "January"
-    }
-   },
-   "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
   },
   {
    "place": "Keystone Cooperative||White Cloud|IN",
@@ -32634,7 +32708,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kokomo Grain Co.||Edinburgh|IN",
@@ -32808,7 +32882,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Kokomo Grain Co.||T-L Laf|IN",
@@ -33043,7 +33117,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Legacy Farmers Cooperative||East Findlay|OH",
@@ -33334,7 +33408,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Legacy Farmers Cooperative||West Findlay|OH",
@@ -33492,7 +33566,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Linn Coop Oil Company||Alburnett & Springville Elevator|IA",
@@ -33584,7 +33658,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:40:50.329Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Linn Coop Oil Company||Cargill (Starch)|IA",
@@ -33906,7 +33980,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mercer Landmark||Antwerp|OH",
@@ -34196,7 +34270,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mercer Landmark||Heartland Celina|OH",
@@ -34556,7 +34630,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Michigan Agricultural Commodities||Blissfield|MI",
@@ -35063,7 +35137,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||BUCKEYE|IA",
@@ -35144,7 +35218,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||CARGILL IA FALLS|IA",
@@ -35180,7 +35254,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||CARGILL STARCH|IA",
@@ -35387,7 +35461,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||HAVERHILL|IA",
@@ -35522,7 +35596,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||JEWELL|IA",
@@ -35648,7 +35722,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||LINCOLNWAY|IA",
@@ -36035,7 +36109,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Iowa Cooperative||STATE CENTER|IA",
@@ -36107,7 +36181,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Mid-Missouri Energy||Mid-Missouri Energy, LLC|MO",
@@ -36199,7 +36273,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Minn-Kota Ag Products, Inc.||Colfax|ND",
@@ -36442,7 +36516,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Minnesota Valley Grain||Le Center|MN",
@@ -36490,7 +36564,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Minnesota Valley Grain||Montgomery|MN",
@@ -36631,7 +36705,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "New Vision Co-op||ADM Mankato|MN",
@@ -36802,7 +36876,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "New Vision Co-op||CHS Mankato|MN",
@@ -37120,7 +37194,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "New Vision Co-op||READING|MN",
@@ -37172,7 +37246,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "New Vision Co-op||WILMONT|MN",
@@ -37276,7 +37350,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "New Vision Co-op||WORTHINGTON|MN",
@@ -37679,7 +37753,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Nutrition Service Co. LLC||Embarrass|WI",
@@ -37918,7 +37992,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "PineBluffs Feed & Grain||PineBluffs Feed|WY",
@@ -38155,7 +38229,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "POET Grain||Big Stone City|SD",
@@ -38713,7 +38787,7 @@
     }
    },
    "pricedAt": "2026-09-11T18:26:27.737Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "POET Grain||Menlo|IA",
@@ -38885,7 +38959,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Prairie Ag Partners||Badger|SD",
@@ -38939,7 +39013,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Prairie Ag Partners||Bancroft|SD",
@@ -39119,7 +39193,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Prairie Ag Partners||Oldham|SD",
@@ -39363,7 +39437,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Premier Cooperative||New Albin|IA",
@@ -40272,7 +40346,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Primient Grain||Parnell|IL",
@@ -40345,7 +40419,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Primient Grain||Wapella|IL",
@@ -40382,7 +40456,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Primient Grain||Watseka|IL",
@@ -40552,7 +40626,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:40:50.329Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Radcliffe Coop||Radcliffe|IA",
@@ -40778,7 +40852,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "RCM Co-op||Riverton|IL",
@@ -40914,7 +40988,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Ridgeville Elevator||Ridgeville Elevator- Ridgeville Corners|OH",
@@ -40958,7 +41032,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Schmadeke Feed Mill||Schmadeke Feed Mill-Clarksville|IA",
@@ -41219,7 +41293,7 @@
     }
    },
    "pricedAt": "2026-09-11T20:23:53.889Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Sorells Farm Supply||Raymond|IL",
@@ -41273,7 +41347,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Southwest Iowa Renewable Energy||SIRE|IA",
@@ -41533,7 +41607,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Tama Benton Cooperative||DS-CRG-CR|IA",
@@ -42140,6 +42214,59 @@
    "checkedAt": "2026-09-13T08:21:10.313Z"
   },
   {
+   "place": "The Jewell Grain Co.||The Jewell Grain Co.|OH",
+   "shard": "merged/the-jewell-grain-co-the-jewell-grain-co-oh-720dfee3.json",
+   "operator": "The Jewell Grain Co.",
+   "branch": null,
+   "city": "The Jewell Grain Co.",
+   "state": "OH",
+   "lat": 41.2799,
+   "lon": -84.3626,
+   "precision": "town",
+   "mappable": true,
+   "via": "scrape",
+   "source": "jewellgrain-thejewellgrainco",
+   "bids": 6,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.05,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2026-09",
+     "commodity": "Corn",
+     "delivery": "09/01/2026"
+    },
+    "soybeans": {
+     "cash": 12.87,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "09/01/2026"
+    },
+    "wheat": {
+     "cash": 7.06,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-07",
+     "commodity": "Wheat",
+     "delivery": "07/01/2027"
+    }
+   },
+   "pricedAt": "2026-09-11T19:06:28.274Z",
+   "checkedAt": "2026-09-13T08:41:17.317Z"
+  },
+  {
    "place": "The Mill, Inc.||Colwell|IA",
    "shard": "merged/the-mill-inc-colwell-ia-b138879b.json",
    "operator": "The Mill, Inc.",
@@ -42223,7 +42350,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Tri-Cities Grain, LLC.||TCG Bids|WA",
@@ -42372,51 +42499,6 @@
    "checkedAt": "2026-09-13T08:21:10.313Z"
   },
   {
-   "place": "Valley Springs Farmers Coop||Valley Springs|SD",
-   "shard": "merged/valley-springs-farmers-coop-valley-springs-sd-c62f8082.json",
-   "operator": "Valley Springs Farmers Coop",
-   "branch": null,
-   "city": "Valley Springs",
-   "state": "SD",
-   "lat": 43.5773,
-   "lon": -96.4956,
-   "precision": "town",
-   "mappable": true,
-   "via": "scrape",
-   "source": "valleyspringsfarmerscoopsd-valleysprings",
-   "bids": 8,
-   "crops": [
-    "corn",
-    "soybeans"
-   ],
-   "periods": [
-    "2026-09",
-    "2026-10",
-    "2026-11",
-    "2026-12"
-   ],
-   "best": {
-    "corn": {
-     "cash": 4.75,
-     "basis": -0.55,
-     "basisCents": -55,
-     "period": "2026-10",
-     "commodity": "Corn",
-     "delivery": "10/01/2026"
-    },
-    "soybeans": {
-     "cash": 12.42,
-     "basis": -0.55,
-     "basisCents": -55,
-     "period": "2026-09",
-     "commodity": "Soybeans",
-     "delivery": "09/01/2026"
-    }
-   },
-   "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:21:10.313Z"
-  },
-  {
    "place": "VERBIO North America LLC||Nevada|IA",
    "shard": "merged/verbio-north-america-llc-nevada-ia-f2c8db38.json",
    "operator": "VERBIO North America LLC",
@@ -42509,7 +42591,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Walsh Grain Farms, Inc.||Walsh Grain|WI",
@@ -42601,7 +42683,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:11:15.949Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   },
   {
    "place": "Wheatfield Grain||Crescent City|IL",
@@ -43051,7 +43133,7 @@
     }
    },
    "pricedAt": "2026-09-11T19:06:28.274Z",
-   "checkedAt": "2026-09-13T08:01:17.197Z"
+   "checkedAt": "2026-09-13T08:41:17.317Z"
   }
  ]
 }
