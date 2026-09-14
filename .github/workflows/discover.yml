@@ -58,6 +58,7 @@ on:
           - agricharts-uncovered
           - bushel-candidates
           - canada
+          - weather-only          # the 119 filed agricharts on a weather widget alone
       follow:
         description: "Board pages to try per site when it publishes no link of its own"
         type: choice
@@ -182,6 +183,14 @@ jobs:
             agricharts-uncovered) FILE=probe-lists/agricharts-uncovered-2026-09-03.txt ;;
             bushel-candidates)   FILE=probe-lists/bushel-candidates.txt ;;
             canada)              FILE=probe-lists/canada-hosts.txt ;;
+            # 119 SITES FILED agricharts ON A BARCHART *WEATHER* ENDPOINT AND
+            # NOTHING ELSE. Heartland Co-op was one of them and its board turned
+            # out to be a server-rendered matrix on a DIFFERENT HOST -- which is
+            # the link discover refused to follow until registrable() landed on
+            # 2026-09-13. Every sweep runs --resume and skips a site already
+            # called "platform", so nothing else will ever re-ask these. This
+            # workflow does not, and it writes nothing. See the list header.
+            weather-only)        FILE=probe-lists/weather-only-agricharts-2026-09-14.txt ;;
             *) echo "::error title=unknown list::${LIST} is not one of the menu options."; exit 2 ;;
           esac
           echo "asking $FILE"
