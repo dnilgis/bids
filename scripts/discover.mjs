@@ -280,10 +280,38 @@ export const FALLBACK_PATHS = ["/cashbids", "/cash-bids/", "/cashbids/", "/grain
  * Default stays 2, so no existing run changes. `--follow 11` asks the lot. */
 export const DEFAULT_FOLLOW = 2;
 
+/* THE OPERATOR'S OWN DOMAIN, NOT THE OPERATOR'S OWN HOSTNAME.
+ *
+ * This compared hostnames with only `www.` stripped, so a "Cash Bids" link from
+ * heartlandcoop.com to myaccount.heartlandcoop.com was rejected as "a third
+ * party". It is not a third party. It is the same co-op on its own portal, and
+ * the rejection was invisible: the sweep filed heartlandcoop.com as
+ * `platform: agricharts, adapter: null` off a Barchart WEATHER widget on the
+ * marketing page and never saw the board at all.
+ *
+ * Heartland Coop is 45 facilities — the single largest operator in the Barchart
+ * cut-over gap — and it was structurally unreachable for this one comparison.
+ * A co-op that puts its board on bids.<them> or myaccount.<them> or
+ * grain.<them> could never be found by a sweep that only walks one hostname.
+ *
+ * REGISTRABLE DOMAIN, AND DELIBERATELY THE CRUDE VERSION OF IT. The last two
+ * labels. That is exact for .com/.net/.coop/.ca, which is every host this
+ * project has met, and it is the WRONG answer for a multi-part suffix like
+ * .co.uk — where it would treat two unrelated British companies as one site.
+ * No elevator in scope sits on one, and when one does this needs a real public
+ * suffix list rather than a wider guess. Said here so the next reader knows it
+ * is a bounded shortcut and not an oversight.
+ *
+ * barchart.com, agricharts.com and dtn.com still fail this, which is the whole
+ * point of the check. */
+export const registrable = (h) => {
+  const parts = String(h || "").toLowerCase().replace(/^www\./, "").split(".");
+  return parts.length <= 2 ? parts.join(".") : parts.slice(-2).join(".");
+};
+
 const sameSite = (a, b) => {
   try {
-    return new URL(a).hostname.replace(/^www\./, "")
-        === new URL(b).hostname.replace(/^www\./, "");
+    return registrable(new URL(a).hostname) === registrable(new URL(b).hostname);
   } catch { return false; }
 };
 
@@ -310,7 +338,7 @@ export const bidLink = (result, pageUrl, follow = DEFAULT_FOLLOW) => {
     try { u = new URL(href, pageUrl); } catch { continue; }
     /* SAME SITE ONLY. A "Cash Bids" link pointing at a third party is a
        finding about somebody else's board, not this operator's. */
-    if (u.hostname.replace(/^www\./, "") !== home.hostname.replace(/^www\./, "")) continue;
+    if (registrable(u.hostname) !== registrable(home.hostname)) continue;
     if (u.href === pageUrl) continue;
     /* An explicit "cash bids" beats a bare "bids" beats "markets". */
     const rank = /cash[\s_-]*bids?/i.test(label + href) ? 0

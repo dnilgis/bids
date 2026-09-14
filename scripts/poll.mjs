@@ -202,13 +202,17 @@ const breaker = new Breaker({ strikes: BREAKER_STRIKES });
  *
  * Its own parse failure must not stop a pass: with no file every streak is zero
  * and the order is the hash, which is still uncorrelated with the fault. */
-const prevFails = new Map(), prevSeen = new Map();
+const prevFails = new Map(), prevSeen = new Map(), prevRow = new Map();
 try {
   const pi = JSON.parse(readFileSync(join(DATA, "index.json"), "utf8"));
   for (const p of pi.sources ?? []) {
     if (Number.isFinite(p.fails)) prevFails.set(p.id, p.fails);
     const t = Date.parse(p.attemptedAt ?? "");
     if (Number.isFinite(t)) prevSeen.set(p.id, t);
+    /* THE WHOLE ROW, NOT JUST THE TWO COUNTERS. A source the pass runs out of
+       time for used to vanish from the manifest, and merge_bids drops any board
+       file with no manifest row. See the carry-forward at the index write. */
+    if (p.id) prevRow.set(p.id, p);
   }
 } catch { /* first run, or an unreadable index: every streak is zero */ }
 
@@ -427,6 +431,15 @@ for (const s of todo) {
                  lat/lon cannot be placed, cannot be sorted, and never reaches
                  the page -- it would sit in the merged file looking published
                  while no farmer could ever see it. */
+              /* THE OPERATOR'S OWN NAME FOR THE FACILITY, WHICH THE MERGE
+                 NEEDS AND THIS PROJECTION USED TO DROP. merge_bids keys a place
+                 on operator|branch|location|state and had no branch to work
+                 with, so two CHS elevators in one town collided and one lost
+                 its rows with nothing counted. `labelInFeed` reads "Stateline",
+                 "Holyoke Shuttle", "Kanco" -- it was on the source file all
+                 along and stopped here. Carried now; the merge ignores it when
+                 it only repeats the town. */
+              labelInFeed: s.labelInFeed ?? null,
               zip: s.zip ?? null, lat: s.lat ?? null, lon: s.lon ?? null,
               phone: s.phone ?? null, email: s.email ?? null, website: s.website ?? null,
               /* Whether this source belongs on the AGSIST map. Boyceville is
@@ -548,6 +561,65 @@ if (skippedForTime) {
 }
 
 /* ---------- index ---------- */
+/* ── A SOURCE THE CLOCK RAN OUT ON IS NOT A SOURCE THAT STOPPED EXISTING ────
+ *
+ * The manifest was `results.map(...)` — only the sources this pass actually
+ * reached. A pass that hits the six-minute wall skips the rest with
+ * `skippedForTime++` and `continue`, so they never became results and never
+ * appeared in the file. merge_bids then drops every board file with no manifest
+ * row, under the reason "board file with no entry in index.json".
+ *
+ * Measured on the live tree, 2026-09-13: the manifest carried 666 rows against
+ * 935 enabled sources. 266 of those had a FRESH board file on disk — fetched,
+ * parsed, committed to git — holding 3,340 bid rows that the merge threw away.
+ * The feed published 6,940. There was another 48% sitting in the repository,
+ * already paid for in requests to other people's servers.
+ *
+ * Nothing was red. The poll reported its wall, the merge reported its drops,
+ * and neither said the two numbers were the same 266 sources.
+ *
+ * So an unreached source keeps its LAST row, marked `carried` with the pass
+ * that last read it. This does not publish a stale price: feedVerdict still
+ * applies the 14-hour withdrawal to whatever `checkedAt` that row carries, so a
+ * source that has genuinely gone quiet still leaves the feed — on age, which is
+ * the policy, instead of on which sources a given six minutes happened to fit. */
+function withCarried(rows) {
+  const seen = new Set(rows.map((r) => r.id));
+  const carried = [];
+  for (const s of todo) {
+    if (seen.has(s.id)) continue;
+    const prev = prevRow.get(s.id);
+    if (prev) { carried.push({ ...prev, carried: true, carriedAt: now }); continue; }
+    /* NO PREVIOUS ROW, BUT THERE MAY STILL BE A BOARD. Once a source has
+       fallen out of the manifest it can never climb back in on its own: the
+       carry above has nothing to copy, and the merge keeps dropping its board.
+       266 sources were in exactly that hole on 2026-09-13. The manifest row is
+       a projection of the source file and the board file, and both are on disk,
+       so it can be rebuilt rather than waited for. */
+    let b = null;
+    try { b = JSON.parse(readFileSync(join(DATA, `${s.id}.json`), "utf8")); }
+    catch { continue; }
+    if (!b || !b.checkedAt) continue;
+    carried.push({
+      id: s.id, operator: s.operator, location: s.location,
+      usState: s.state ?? null, labelInFeed: s.labelInFeed ?? null,
+      zip: s.zip ?? null, lat: s.lat ?? null, lon: s.lon ?? null,
+      phone: s.phone ?? null, email: s.email ?? null, website: s.website ?? null,
+      inMerge: s.inMerge !== false, platform: s.platform ?? null,
+      url: s.url ?? null,
+      status: b.status ?? "ok", health: b.status === "ok" ? "live" : (b.status ?? "unknown"),
+      checkedAt: b.checkedAt ?? null, pricedAt: b.pricedAt ?? null,
+      rows: b.count ?? (Array.isArray(b.bids) ? b.bids.length : null),
+      fails: prevFails.get(s.id) ?? 0, attemptedAt: null,
+      carried: true, carriedAt: now, carriedFrom: "board file",
+    });
+  }
+  if (carried.length)
+    console.log(`carried ${carried.length} source(s) the pass did not reach; `
+      + `their last board still faces the age rule at merge`);
+  return [...rows, ...carried];
+}
+
 const ok = results.filter((r) => r.health === "live");
 const index = {
   generated: now,
@@ -558,7 +630,7 @@ const index = {
     broken: results.filter((r) => r.health === "broken").length,
     skipped: results.filter((r) => r.health === "skipped").length,
   },
-  sources: results.map(({ wrote, ...keep }) => keep),
+  sources: withCarried(results.map(({ wrote, ...keep }) => keep)),
 };
 if (!dryRun) {
   mkdirSync(DATA, { recursive: true });

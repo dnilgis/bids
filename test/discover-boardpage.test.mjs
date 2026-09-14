@@ -9,11 +9,57 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bidLink, boardPagesToTry, FALLBACK_PATHS, DEFAULT_FOLLOW, verdict, SIGNATURES,
-         fingerprint } from "../scripts/discover.mjs";
+         fingerprint, registrable } from "../scripts/discover.mjs";
 import { readFileSync, existsSync } from "node:fs";
 
 const page = (html, url = "https://coop.example.com/") =>
   ({ responses: [{ url, mime: "text/html", body: html, status: 200 }] });
+
+/* --- the operator's own subdomain is not a third party ------------------- */
+
+test("a Cash Bids link to the operator's own subdomain is followed", () => {
+  /* WHY THIS EXISTS. This comparison was hostname-only with `www.` stripped,
+     so heartlandcoop.com -> myaccount.heartlandcoop.com was rejected as "a
+     third party" and the sweep never saw the board. It filed the operator as
+     `platform: agricharts, adapter: null` off a Barchart WEATHER widget on the
+     marketing page instead.
+
+     Heartland Coop is 45 facilities, the largest single operator in the
+     Barchart cut-over gap, and it was unreachable for this one line. */
+  const r = page(`<nav><a href="https://myaccount.heartlandcoop.com/bids.htm">Cash Bids</a></nav>`,
+                 "https://heartlandcoop.com/");
+  assert.deepEqual(bidLink(r, "https://heartlandcoop.com/"),
+                   ["https://myaccount.heartlandcoop.com/bids.htm"]);
+});
+
+test("...but a link to somebody else's platform is still refused", () => {
+  /* The check earns its keep here. A co-op linking to barchart.com is telling
+     us about Barchart's board, not theirs, and following it would file another
+     operator's platform under this one's name. */
+  for (const href of ["https://www.barchart.com/cash-bids",
+                      "https://ceagrain.agricharts.com/markets/cashgrid.php",
+                      "https://www.dtn.com/cash-bids/"]) {
+    const r = page(`<nav><a href="${href}">Cash Bids</a></nav>`, "https://heartlandcoop.com/");
+    /* MEMBERSHIP, NOT INEQUALITY. bidLink returns an ARRAY, and `notEqual` on
+       an array against a string passes for every input — including the one
+       this is meant to catch. The first version of this check was green
+       against code that followed every link on the internet. */
+    assert.ok(!bidLink(r, "https://heartlandcoop.com/").includes(href),
+      `${href} must not be taken as heartlandcoop.com's own board`);
+  }
+});
+
+test("registrable() is the last two labels, and says so", () => {
+  assert.equal(registrable("myaccount.heartlandcoop.com"), "heartlandcoop.com");
+  assert.equal(registrable("www.heartlandcoop.com"), "heartlandcoop.com");
+  assert.equal(registrable("heartlandcoop.com"), "heartlandcoop.com");
+  assert.equal(registrable("bids.grain.example.coop"), "example.coop");
+  /* The bounded shortcut, pinned so nobody discovers it by surprise: a
+     multi-part public suffix would collapse two unrelated companies into one
+     site. No elevator in scope sits on one; when one does, this needs a real
+     public suffix list. */
+  assert.equal(registrable("a.co.uk"), "co.uk");
+});
 
 /* --- their own link beats our guesses ------------------------------------ */
 

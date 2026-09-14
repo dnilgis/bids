@@ -235,8 +235,26 @@ function coordOf(s, places) {
   return { lat: null, lon: null, precision: null, via: null };
 }
 
+/* Ids whose source file says they are retired or switched off. Read here so
+   the drop above can tell a leftover file apart from a source the poll missed;
+   an unreadable sources/ simply means every orphan is reported as the bug,
+   which is the safe direction. */
+function retiredSourceIds() {
+  const dir = join(ROOT, "sources");
+  const out = new Set();
+  if (!existsSync(dir)) return out;
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".json"))) {
+    try {
+      const d = JSON.parse(readFileSync(join(dir, f), "utf8"));
+      if (d && d.id && (d.retired || d.enabled === false || d.inMerge === false)) out.add(d.id);
+    } catch { /* a malformed source file is validation's problem, not this one's */ }
+  }
+  return out;
+}
+
 function readScraped(index, places, tally, nowMs, withdrawn = []) {
   const byId = new Map(index.sources.map((s) => [s.id, s]));
+  const retiredIds = retiredSourceIds();
   const out = [];
   for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
     if (NOT_A_BOARD.has(f)) continue;
@@ -256,8 +274,18 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
       try { peek = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); } catch { /* not JSON */ }
       if (peek && peek.schema === SHARD_SCHEMA) {
         tally.drop("a merged shard filed in data/ instead of data/merged/ — move or delete it", f);
+      } else if (retiredIds.has(id)) {
+        /* TWO VERY DIFFERENT THINGS WERE WEARING ONE REASON.
+           A retired source leaves its last board file behind, and dropping
+           that is correct — nothing to fix, nothing to alarm on. A source the
+           POLLER DID NOT REACH also lands here, and that is a bug: its bids
+           were fetched and are being thrown away. On 2026-09-13 the tally read
+           286 under the single reason, 266 of them the second kind and 3,340
+           bid rows, and the count told nobody which. */
+        tally.drop("leftover board file from a retired or disabled source", id);
       } else {
-        tally.drop("board file with no entry in index.json", id);
+        tally.drop("board file with no entry in index.json — the poller did not "
+                   + "reach this source and its bids are being dropped", id);
       }
       continue;
     }
@@ -321,8 +349,8 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
     for (const b of j.bids || []) {
       out.push(row({
         currency: cur.currency, currencyVia: cur.currencyVia,
-        place: placeKey(s.operator, "", s.location, s.usState),
-        operator: s.operator, branch: null,
+        place: placeKey(s.operator, branchOf(s), s.location, s.usState),
+        operator: s.operator, branch: branchOf(s) || null,
         city: s.location, state: s.usState, zip: s.zip,
         lat: g.lat, lon: g.lon, precision: g.precision,
         commodity: b.commodity, delivery: b.delivery,
@@ -336,6 +364,40 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
   }
   return out;
 }
+
+/* ── THE BRANCH THE SOURCE FILE ALREADY KNEW ────────────────────────────────
+ *
+ * This used to pass "" as the branch for every scraped source, so two sources
+ * with the same operator and the same town collided on one place key and ONE
+ * OF THEM LOST ITS ROWS — silently, with no entry in `dropped` and `collisions`
+ * reading zero.
+ *
+ * Measured 2026-09-13 on the live tree: 16 sources collided that way. Nine were
+ * genuinely the same elevator filed twice (identical AgriCharts locationId) and
+ * dropping one of those is correct. The other SEVEN were different facilities in
+ * one town, and 23 bid rows that had been fetched cleanly were published
+ * nowhere:
+ *
+ *     CHS High Plains   Stateline + Holyoke Shuttle -> both lost to Holyoke
+ *     CHS Holdrege      Holdrege West               -> lost to Holdrege Shuttle
+ *     CHS United Plains Kanco                       -> lost to Tribune
+ *
+ * The name that tells them apart was in the source file the whole time.
+ * `labelInFeed` reads "Stateline", "Holyoke Shuttle", "Kanco" — CHS's own name
+ * for the facility — and nothing read it.
+ *
+ * ONLY WHEN IT SAYS SOMETHING THE TOWN DOES NOT. 93 of the 111 sources carrying
+ * a labelInFeed simply repeat their town ("Holyoke"/"Holyoke"), and one differs
+ * by case alone ("St. John"/"ST JOHN"). Those keep a null branch, so every place
+ * that works today keeps its key, its shard name and its URL. 17 sources gain a
+ * branch, all of them CHS, which is the operator that names its facilities
+ * separately from their towns. */
+const strongNorm = (x) => String(x ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const branchOf = (s) => {
+  const label = String(s.labelInFeed ?? "").trim();
+  if (!label) return "";
+  return strongNorm(label) === strongNorm(s.location) ? "" : label;
+};
 
 /* ── BARCHART ───────────────────────────────────────────────────────────────*/
 function readBarchart(bc, places, tally) {

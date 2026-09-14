@@ -580,10 +580,28 @@ test("the sweep keeps the page's own HTML, or it can never see the link", () => 
   assert.match(d, /import \{ captureAll, looksLikeData \}/);
 });
 
-test("a board link on another domain is not followed", () => {
+test("a board link on another domain is not followed", async () => {
   const d = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
-  assert.match(d, /u\.hostname\.replace\(\/\^www\\\.\/, ""\) !== home\.hostname/,
-    "a third party's Cash Bids link would be recorded as this operator's board");
+  /* THIS USED TO MATCH THE COMPARISON'S SOURCE TEXT, and that is a weaker test
+     than it looks: it pins ONE SPELLING of the rule rather than the rule. It
+     went red on 2026-09-14 for a change that made the check MORE correct —
+     following the operator's own subdomain, which the hostname-only version
+     rejected as a third party and which cost the sweep Heartland Coop's board,
+     45 facilities, entirely.
+     A regex over an implementation cannot tell "this changed" from "this
+     broke". So it asks the behaviour instead. */
+  const { bidLink } = await import("../scripts/discover.mjs");
+  const page = (html, url) => ({ responses: [{ url, mime: "text/html", body: html, status: 200 }] });
+  for (const href of ["https://www.barchart.com/cash-bids",
+                      "https://ceagrain.agricharts.com/markets/cashgrid.php"]) {
+    const r = page(`<nav><a href="${href}">Cash Bids</a></nav>`, "https://coop.example.com/");
+    assert.ok(!bidLink(r, "https://coop.example.com/").includes(href),
+      "a third party's Cash Bids link would be recorded as this operator's board");
+  }
+  const own = page(`<nav><a href="https://bids.coop.example.com/b.htm">Cash Bids</a></nav>`,
+                   "https://coop.example.com/");
+  assert.ok(bidLink(own, "https://coop.example.com/").includes("https://bids.coop.example.com/b.htm"),
+    "the operator's OWN subdomain must be followed — this is where a co-op's board often lives");
   assert.match(d, /FALLBACK_PATHS/, "there is no fallback when a site publishes no link");
   assert.match(d, /boardPage: followed \|\| pageUrl/,
     "the ledger must record WHICH page answered, or a source file points at the home page");
