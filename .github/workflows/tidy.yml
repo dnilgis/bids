@@ -22,13 +22,22 @@
 # copy. A board file is a price; nothing that is not provably redundant is
 # destroyed.
 
+# SECOND SPILL, 2026-09-13. agricharts-sweep.mjs run 33825545840 wrote its
+# source files into sources/ AND into the repository root: 102 files, 100 of
+# them duplicating an id in sources/ and every duplicate the poorer copy — no
+# coordinate, no country, no currency. Nothing reads them and nothing
+# enumerates the root, so they are inert. That is the problem:
+# agmarkllc-claycenter.json in the root says enabled:true for an elevator
+# sources/ retired as a duplicate. A file that looks like live config and is not
+# is worse than no file. Same button, same dry run first.
+
 name: tidy misplaced files
 
 on:
   workflow_dispatch:
     inputs:
       write:
-        description: "actually move them (leave unticked for a dry run first)"
+        description: "actually move/remove them (leave unticked for a dry run first)"
         type: boolean
         default: false
 

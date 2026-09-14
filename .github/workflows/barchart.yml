@@ -163,6 +163,19 @@ jobs:
       #  Now the directory is built from the fetch that just happened, the new
       #  facilities are placed, and the grid is rebuilt — so a facility found
       #  today is queried directly next time.
+      # ── HOW CLOSE IS THE CANCELLATION? ────────────────────────────────────
+      # The whole point of this repository is to stop paying Barchart. That is
+      # not a decision anybody can make from a feeling about coverage, and
+      # nothing here measured it — so the question kept being asked and never
+      # answered.
+      #
+      # Reads only committed files: the frozen Barchart roster in
+      # geocodes/places.json and the places the merge just published. No key, no
+      # network, no secret. It writes the number to drive to zero and a worklist
+      # ranked by the operator that would close the most facilities at once.
+      - name: How much of Barchart do we still need
+        run: node scripts/barchart_gap.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Rebuild the directory from our own fetch
         if: steps.key.outputs.have == 'yes'
         run: node scripts/build_known.mjs
