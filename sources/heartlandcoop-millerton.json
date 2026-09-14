@@ -1,0 +1,38 @@
+{
+  "id": "heartlandcoop-millerton",
+  "operator": "Heartland Co-op",
+  "location": "Millerton",
+  "labelInFeed": "MILLERTON",
+  "state": null,
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "operator",
+  "platform": "heartland",
+  "url": "https://myaccount.heartlandcoop.com/bids.htm",
+  "locationId": "MILLERTON",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ]
+  },
+  "identityAlternative": "heartland:columns-agree+quote-in-range",
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "HEARTLAND CO-OP PUBLISHES ITS WHOLE BOARD ON ONE PAGE, AND THIS IS ONE LOCATION ON IT. The page is https://myaccount.heartlandcoop.com/bids.htm, read on 2026-09-14 by scripts/probe.mjs (run 94223494234) with raw=400000. It answered 200, text/html, 50,890 bytes, Apache, and carries four tables -- CORN, PROCESSOR CORN, SOYBEANS, PROCESSOR SOYBEANS -- 129 body rows against five delivery columns each, dated 9/11/26 and headed \"Prices are as of close of open outcry @ 1:15 PM\". \n\nlocationId IS THE BOARD'S OWN dest-name STRING, VERBATIM AND IN ITS OWN CASE. filterLocation() in lib/parse.mjs compares by exact string equality with no trim and no case fold; anything else here would match zero rows and refuse the source.\n\nHOW THIS PLACE WAS PLACED: NOTHING IN THIS REPOSITORY PLACES IT. The Barchart roster does not carry it and the Iowa warehouse registry does not list a Heartland Co-op warehouse under this name. The board is the only evidence it exists, so the town is the board's own label and the state is left null rather than assumed from the operator's footprint. It publishes; it cannot be mapped until somebody places it. NO COORDINATE. No ZIP is carried for this branch by anything in this repository, and a centroid derived from a town name nobody has confirmed is not a coordinate.\n\nWHY identityAlternative. This board prints cash and basis and no futures price, so cash - basis = futures cannot run on it. lib/adapters/heartland.mjs checks two other things instead -- every cell in a column must imply the same futures price to the cent, and that price must sit within 300c of the contract the column heading names -- and stamps every row only after both pass on the whole board. See that file's header.\n\nbands are the DEFAULT_BANDS values from lib/board.mjs for the two grains this board posts. They are sanity floors, not a claim about what this location trades.",
+  "publicNote": "Heartland Co-op's own closing board, the same page their members read. Cash and basis are their commercial numbers, posted as of the close of open outcry at 1:15 PM. The futures contract is carried only so a consumer can re-check cash minus basis; no futures price is republished from here.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://www.heartlandcoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and is not measured here, because on this platform it cannot fire: explainedByRounding() in lib/board.mjs only ever runs on rows that carry a quoted future, and these rows carry none by design. If this board ever starts printing a futures column, that is the day to measure it.\n\nPLACEMENT IS OPEN. This source publishes prices and cannot be put on the distance-sorted map. It needs a ZIP or a street address from the operator before it counts toward Barchart coverage, which is measured by coordinate."
+}
