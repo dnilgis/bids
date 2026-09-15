@@ -7,7 +7,11 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf } from "../scripts/merge_bids.mjs";
+import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf,
+         isBoardFile } from "../scripts/merge_bids.mjs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 const ASOF = "2026-09-01T12:00:00Z";
 const base = {
@@ -316,4 +320,95 @@ test("a shard changes when its bids change, and only then", () => {
   const same = JSON.stringify(shardOf("p", [base()]));
   const moved = JSON.stringify(shardOf("p", [mk({ commodity: "Corn", delivery: "OCT 2026", cash: 4.25, basis: -0.25 })]));
   assert.notEqual(same, moved, "a price moved and the shard did not");
+});
+
+/* ── WHAT IN data/ IS AN ELEVATOR ───────────────────────────────────────────
+ *
+ * data/ holds the board files AND every other .json this repository writes. The
+ * rule used to be a hand-kept list of names to skip, and anything missing from
+ * it was reported as "the poller did not reach this source and its bids are
+ * being dropped" — the one tally that means bids were thrown away.
+ *
+ * On 2026-09-14 that tally had five entries and zero bids behind it, one of
+ * them a coverage report written by the step above the merge in the same job.
+ */
+
+test("a board file is a bids array and a checkedAt, and that is the whole rule", () => {
+  assert.equal(isBoardFile({ bids: [], checkedAt: "2026-09-14T01:00:00Z" }), true);
+  /* An empty board is still a board: a co-op that posts nothing today has not
+     stopped being an elevator, and its file must stay in the tally. */
+  assert.equal(isBoardFile({ schema: "heartland/1", status: "ok", count: 0,
+                             bids: [], checkedAt: "2026-09-14T01:00:00Z" }), true);
+  for (const not of [
+    null, undefined, 42, "a string", [], [{ bids: [], checkedAt: "x" }],
+    { bids: [] },                                   // no clock
+    { checkedAt: "2026-09-14T01:00:00Z" },          // no bids
+    { bids: {}, checkedAt: "2026-09-14T01:00:00Z" },// bids is not a list
+    { bids: [], checkedAt: "" },                    // empty clock is not a clock
+    { schema: "agsist-barchart-coverage/1", generated: "2026-09-14T02:07:00Z", gap: 983 },
+    { schema: "agsist-merged-index/1", places: [] },
+  ]) assert.equal(isBoardFile(not), false, JSON.stringify(not));
+});
+
+test("EVERY BOARD FILE ON DISK PASSES THE RULE — including refused and broken ones", () => {
+  /* The rule is only safe if no real board fails it. The poller does not write
+     a board file for a source it refused; it leaves the last good one and
+     records the status in data/index.json. So a file that exists is a file that
+     was read. Asserted against the tree rather than against that sentence. */
+  const ROOT = fileURLToPath(new URL("..", import.meta.url));
+  const idxPath = join(ROOT, "data", "index.json");
+  if (!existsSync(idxPath)) return;                 // a tree the fetch never ran in
+  const ids = new Set((JSON.parse(readFileSync(idxPath, "utf8")).sources ?? [])
+    .map((s) => s.id).filter(Boolean));
+  let checked = 0;
+  for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
+    const id = f.replace(/\.json$/, "");
+    if (!ids.has(id)) continue;
+    let j = null;
+    try { j = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); } catch { continue; }
+    assert.equal(isBoardFile(j), true, `${f} is a board the index names and the rule rejects it`);
+    checked++;
+  }
+  assert.ok(checked > 500, `only ${checked} board file(s) checked — the tree looks empty`);
+});
+
+test("AND NOTHING ELSE IN data/ DOES — the reports, indexes and registries", () => {
+  /* The other half. If one of these ever passed, the merge would report it as
+     an elevator whose bids were dropped, which is what this change fixes. */
+  const ROOT = fileURLToPath(new URL("..", import.meta.url));
+  const idxPath = join(ROOT, "data", "index.json");
+  if (!existsSync(idxPath)) return;
+  const ids = new Set((JSON.parse(readFileSync(idxPath, "utf8")).sources ?? [])
+    .map((s) => s.id).filter(Boolean));
+  const strays = [];
+  for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
+    const id = f.replace(/\.json$/, "");
+    if (ids.has(id)) continue;
+    let j = null;
+    try { j = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); } catch { continue; }
+    /* A leftover board from a retired or disabled source IS board-shaped, and
+       it is meant to be — merge_bids reports those separately and correctly. */
+    if (isBoardFile(j)) strays.push(f);
+  }
+  /* Whatever is left must be a board somebody retired, never a report. */
+  for (const f of strays)
+    assert.ok(!/coverage|grid|index|registr|directory|residual|urlfinder|states/i.test(f),
+      `${f} is not an elevator and the rule says it is`);
+});
+
+test("data/gaps/ IS WHERE A REPORT GOES, and barchart_gap.mjs writes it there", () => {
+  /* The one-line version of the whole bug: the coverage report was landing in
+     data/, next to the boards. Pinned on the source rather than on the output
+     so it holds in a tree where the report has not been generated. */
+  const ROOT = fileURLToPath(new URL("..", import.meta.url));
+  const src = readFileSync(join(ROOT, "scripts", "barchart_gap.mjs"), "utf8");
+  assert.match(src, /writeFileSync\(join\(gapsDir, "barchart-coverage\.json"\)/,
+    "the coverage report must be written into data/gaps/");
+  /* THE WRITE, NOT THE MENTION. The first version of this line forbade the
+     string anywhere in the file and went red on the cleanup that deletes the
+     old copy — which has to name that path to remove it. A test that cannot
+     tell a write from a delete would have blocked the fix for the bug it was
+     written to catch. */
+  assert.ok(!/writeFileSync\(join\(ROOT, "data", "barchart-coverage\.json"\)/.test(src),
+    "the coverage report is being written into data/, where the board files live");
 });

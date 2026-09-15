@@ -20,9 +20,28 @@
  *
  * sync_known.py's own header explains why it borrowed: "agsist writes the
  * directory, because that is where the Barchart key and the full national pull
- * live." That was true and is not any more — the key and the pull are here now.
- * So the directory is built from data/barchart.json, in the same job that
- * fetched it, and the grid grows on the next run rather than next month.
+ * live."
+ *
+ * THAT IS STILL TRUE. THIS FILE USED TO SAY IT WAS NOT.
+ *
+ * The line here read "the key and the pull are here now", and the key has never
+ * been added to this repository. Sig, 2026-09-14: "ive never added the barchart
+ * api key to the bids repo." Confirmed in run 33's own log, which printed
+ * `BARCHART_API_KEY:` empty and took the no-key branch.
+ *
+ * So nothing below has ever run. barchart.yml guards this step with
+ * `if: steps.key.outputs.have == 'yes'`, deliberately — an absent key skips the
+ * Barchart half and the job stays green — and data/barchart.json has never
+ * existed here. Run it by hand and it exits 1 looking for that file.
+ *
+ * data/known-elevators.json is still filled the long way round, by
+ * sync_known.py, from agsist's public directory over raw.githubusercontent. No
+ * key, no prices, and it works: the file's `generated` stamp moves daily.
+ *
+ * THE CODE IS KEPT AND THE CLAIM IS NOT. The day a key is added here this
+ * becomes true with no other change, which is exactly what it was written for.
+ * A comment asserting the opposite of the repository it sits in costs the next
+ * reader an hour, and cost one.
  *
  * IT REFUSES TO REPLACE GOOD DATA WITH BAD, exactly as sync_known.py does, and
  * for the same reason: a directory that quietly loses a third of its facilities

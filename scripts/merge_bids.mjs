@@ -89,11 +89,48 @@ const has = (name) => process.argv.includes(name);
  * author of a new file has to remember is a denylist that goes stale, so the
  * unexpected case below reports rather than assumes, and this list only keeps
  * the noise down for files we put there on purpose. */
+/* A LIST OF NAMES IS NOT A RULE, AND THIS ONE PROVED IT -- 2026-09-14.
+ *
+ * data/ holds the board files, data/<source-id>.json, and it also holds every
+ * other .json this repository generates. This set named the ones to skip, and
+ * a file not on it was reported as "board file with no entry in index.json --
+ * the poller did not reach this source and its bids are being dropped".
+ *
+ * Which is a real failure with a real cost -- 266 sources and 3,340 bid rows on
+ * 2026-09-13 -- and on 2026-09-14 the merge printed it about
+ * data/barchart-coverage.json, a COVERAGE REPORT written twenty seconds earlier
+ * by the step above it in the same job. Four more were already sitting in the
+ * tally under the same reason: coverage.json, grid-50.json,
+ * rounding-residuals.json and urlfinder.json. None of them is an elevator. The
+ * signal that says "bids are being thrown away" had five entries and zero bids
+ * behind it.
+ *
+ * That is what a denylist does: it has to be edited by whoever next writes a
+ * file into data/, and nobody will, because nothing tells them to.
+ *
+ * SO THE RULE IS NOW THE SHAPE, and it is asked of the file itself. A board
+ * file carries a `bids` ARRAY and a `checkedAt`; every one of the 974 on disk
+ * does, including the ones whose index row says refused or broken -- the poller
+ * leaves the last good board in place and records the status in the index, so
+ * there is no board file that lacks them. A file without both is not an
+ * elevator and never was, so it is skipped in silence rather than counted as a
+ * loss.
+ *
+ * THIS SET SURVIVES AS A CACHE, NOT AS THE RULE. Skipping directory.json and
+ * registries.json by name costs nothing; parsing 8.7 MB of them 144 times a day
+ * to reach the same answer costs something. A name missing from here now costs
+ * one parse, which is what it should always have cost -- not a wrong report. */
 const NOT_A_BOARD = new Set([
   "index.json", "directory.json", "platforms.json", "registries.json",
   "registry-ia.json", "registry-survey.json", "us-states.json",
   "known-elevators.json", "barchart-grid.json", "merged-index.json", "merged.json",
 ]);
+
+/** Is this parsed file a board? The only question that decides whether a file
+ *  in data/ can be an elevator we failed to publish. */
+export const isBoardFile = (j) =>
+  !!j && typeof j === "object" && !Array.isArray(j)
+  && Array.isArray(j.bids) && typeof j.checkedAt === "string" && j.checkedAt.length > 0;
 const norm = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 const r5 = (n) => (typeof n === "number" ? Math.round(n * 1e5) / 1e5 : null);
 
@@ -274,6 +311,13 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
       try { peek = JSON.parse(readFileSync(join(ROOT, "data", f), "utf8")); } catch { /* not JSON */ }
       if (peek && peek.schema === SHARD_SCHEMA) {
         tally.drop("a merged shard filed in data/ instead of data/merged/ — move or delete it", f);
+      } else if (!isBoardFile(peek)) {
+        /* NOT AN ELEVATOR. See the note on NOT_A_BOARD: a report, an index, a
+           registry or a grid that happens to live in data/ is not a board that
+           went unpolled, and calling it one puts noise in the one tally that
+           means bids were thrown away. Silent on purpose -- there is nothing
+           here for anyone to fix. */
+        continue;
       } else if (retiredIds.has(id)) {
         /* TWO VERY DIFFERENT THINGS WERE WEARING ONE REASON.
            A retired source leaves its last board file behind, and dropping

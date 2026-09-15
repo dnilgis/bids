@@ -38,7 +38,7 @@
  *
  * WHAT IT WRITES
  *
- *   data/barchart-coverage.json  the number to watch, with its caveat
+ *   data/gaps/barchart-coverage.json  the number to watch, with its caveat
  *   data/gaps/barchart-cutover.csv  every uncovered facility, ranked by the
  *                                   operator that would close the most at once
  *
@@ -49,7 +49,7 @@
  *   node scripts/barchart_gap.mjs
  *   node scripts/barchart_gap.mjs --selftest
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -127,11 +127,40 @@ function main() {
     singletonOperators: ranked.filter(([, n]) => n === 1).length,
     topOperators: ranked.slice(0, 25).map(([operator, facilities]) => ({ operator, facilities })),
   };
-  const outPath = join(ROOT, "data", "barchart-coverage.json");
-  writeFileSync(outPath, JSON.stringify(out, null, 1) + "\n");
-
+  /* data/gaps/, NOT data/ -- AND THE FIRST LIVE RUN IS WHY.
+   *
+   * This wrote data/barchart-coverage.json. Run 33 committed it at 02:07 on
+   * 2026-09-14, and the merge in the very next step reported:
+   *
+   *     5  board file with no entry in index.json -- the poller did not reach
+   *        this source and its bids are being dropped
+   *            e.g. barchart-coverage
+   *
+   * data/ is where the BOARD FILES live -- data/<source-id>.json, one per
+   * elevator -- and merge_bids.mjs reads every .json in it. A report dropped in
+   * there is read as an elevator nobody polled, counted against the orphan
+   * tally forever, and printed as the example of a failure that did not happen.
+   * It also counts toward the CEILING in test/manifest-covers-boards.test.py,
+   * which exists to catch the real version of that failure.
+   *
+   * The CSV beside it was already going to data/gaps/. The JSON belongs there
+   * too: it is a report about the feed, not a part of it. Nothing reads it by
+   * path -- checked across every .mjs, .py, .yml and .html in the repo before
+   * moving it. */
   const gapsDir = join(ROOT, "data", "gaps");
   if (!existsSync(gapsDir)) mkdirSync(gapsDir, { recursive: true });
+  writeFileSync(join(gapsDir, "barchart-coverage.json"), JSON.stringify(out, null, 1) + "\n");
+
+  /* AND TAKE THE OLD ONE OUT OF data/. Run 33 committed it there, and a zip
+     cannot delete a file — so the script that put it there removes it, once,
+     on the next run. Only this exact path and only when its schema says it is
+     ours: a file in data/ that is not this report is somebody else's board. */
+  const stale = join(ROOT, "data", "barchart-coverage.json");
+  if (existsSync(stale)) {
+    let mine = false;
+    try { mine = JSON.parse(readFileSync(stale, "utf8"))?.schema === out.schema; } catch { /* not ours */ }
+    if (mine) { rmSync(stale); console.log("  removed the old data/barchart-coverage.json"); }
+  }
   const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
   const rank = new Map(ranked.map(([op], i) => [op, i + 1]));
   gap.sort((a, b) => (byOperator.get(b.operator) - byOperator.get(a.operator))
@@ -154,7 +183,7 @@ function main() {
       + `cumulative ${String(cum).padStart(4)} (${((cum / gap.length) * 100).toFixed(1)}%)`);
   }
   console.log("");
-  console.log("  wrote data/barchart-coverage.json and data/gaps/barchart-cutover.csv");
+  console.log("  wrote data/gaps/barchart-coverage.json and data/gaps/barchart-cutover.csv");
   console.log("  NOTE: the roster is geocoded to towns, so `covered` is an over-count "
     + "and `gap` is a floor.");
   return 0;
