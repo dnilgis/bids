@@ -2,13 +2,40 @@
 # in discover run 92318597788, 2026-09-07. Every one of these was filed
 # "no known platform" until that run printed its candidates.
 #
-# Each POET page is one plant and asks for one market id. The 202 KB
-# /api/commodities/merchandising/bootstrap is byte-identical across all ten,
-# which is the thing to --dump first: if it enumerates POET's markets then one
-# body names every plant they run, and the same call on adm.gradable.com does
-# the same for ADM.
+# THE BOOTSTRAP IS NO LONGER WHAT THIS LIST IS FOR — 2026-09-15.
+#
+# The header used to end with
 #
 #   node scripts/discover.mjs --list probe-lists/gradable-sites.txt --dump bootstrap --limit 1
+#
+# and that instruction is now wrong twice over.
+#
+# POET's bootstrap is committed: fixtures/gradable-poet-bootstrap.json, 36
+# markets. Asking for it again learns nothing.
+#
+# ADM's does not fit in a log. Run 2026-09-15T02:04 followed the line above
+# with the print ceiling raised to a million and got back
+#
+#     200 application/json 400000B (TRUNCATED at the cap)
+#
+# because --dump-max governs printing and captureAll's own maxBodyBytes governs
+# what the browser hands over, and that one is 400,000. The body was cut before
+# anything decided whether to print it. What survived runs alphabetically from
+# "Abilene, KS" to a half-word in "Maidstone, ON" — about 71 markets at POET's
+# measured 5,619 bytes each, so ADM's whole payload is something over 700 KB.
+#
+# A bootstrap now goes through a job that writes it instead:
+#
+#   Actions -> gradable bootstrap -> partner: adm
+#
+# WHAT THIS LIST IS STILL FOR. The ten POET subdomains below each run one
+# plant's page, and a page is the only way to see what a market's board asks
+# for at runtime. Measured 2026-09-15: all ten returned
+# net::ERR_BLOCKED_BY_CLIENT and none of them loaded. They are NOT struck off —
+# discover's own rule is that an unreachable page is a retry and never a verdict
+# about an operator — but a run that asks this list today costs a minute and
+# decides nothing, and the reason is recorded here so the next person does not
+# have to rediscover it from a log.
 #
 http://big.poetgrain.com
 http://bin.poetgrain.com
