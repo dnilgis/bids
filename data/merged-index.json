@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-15T20:03:11Z",
+ "generated": "2026-09-15T20:31:18Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 10700,
-   "boards": 903,
-   "generated": "2026-09-15T19:56:12.352Z"
+   "rows": 11696,
+   "boards": 983,
+   "generated": "2026-09-15T20:23:54.975Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,67 +15,70 @@
   }
  },
  "counts": {
-  "rows": 10700,
-  "places": 936,
+  "rows": 11696,
+  "places": 1003,
   "byCrop": {
-   "wheat": 1731,
-   "soybeans": 3647,
-   "sorghum": 537,
-   "corn": 4755,
+   "wheat": 1805,
+   "soybeans": 4115,
+   "sorghum": 541,
+   "corn": 5205,
    "oats": 10,
    "other": 20
   },
   "byVia": {
-   "scrape": 10700
+   "scrape": 11696
   },
   "byState": {
-   "KS": 1478,
-   "IL": 939,
+   "KS": 1495,
+   "IL": 1257,
    "ON": 10,
-   "MN": 1534,
+   "IN": 554,
+   "IA": 2098,
+   "MO": 85,
+   "NE": 1588,
+   "OH": 400,
+   "OK": 135,
+   "MI": 170,
+   "AR": 17,
+   "TN": 25,
+   "KY": 50,
+   "MN": 1607,
+   "LA": 5,
    "PA": 5,
-   "IN": 317,
-   "IA": 2051,
    "SD": 1160,
    "WI": 253,
-   "NE": 1492,
    "null": 124,
    "ND": 443,
-   "OH": 370,
    "GA": 9,
-   "OK": 134,
-   "MO": 23,
    "MT": 26,
    "CO": 76,
    "WA": 52,
-   "MI": 146,
    "TX": 44,
-   "WY": 8,
-   "AR": 6
+   "WY": 8
   },
   "byPeriodVia": {
    "explicit-range": 342,
    "us-date": 6296,
-   "month-inferred-year": 160,
-   "month-year": 2749,
-   "deadline-inferred-year": 5,
-   "season": 301,
+   "month-year": 3237,
+   "month-pair": 444,
+   "season": 409,
+   "month-inferred-year": 517,
+   "day-range-inferred-year": 23,
+   "spot-word": 180,
+   "month-pair-inferred-year": 18,
+   "quarter": 9,
+   "deadline-inferred-year": 7,
    "contract-pair": 141,
    "month-day-year": 7,
-   "month-pair": 417,
-   "day-range-inferred-year": 20,
-   "month-pair-inferred-year": 13,
-   "quarter": 8,
-   "spot-word": 175,
    "iso-date": 66
   },
   "byCurrency": {
-   "USD": 10690,
+   "USD": 11686,
    "CAD": 10
   },
   "byCurrencyVia": {
    "declared": 7209,
-   "payload": 3372,
+   "payload": 4368,
    "province": 119
   },
   "collisionsBetweenFeeds": 0,
@@ -86,27 +89,27 @@
  "dropped": {
   "scrape": {
    "leftover board file from a retired or disabled source": 25,
-   "broken: price is 21.6h old, past the 14h withdrawal": 2,
-   "refused: price is 15.5h old, past the 14h withdrawal": 1,
+   "broken: price is 22.0h old, past the 14h withdrawal": 2,
+   "refused: price is 16.0h old, past the 14h withdrawal": 1,
    "inMerge is false on the source": 1,
-   "refused: price is 295.0h old, past the 14h withdrawal": 1,
-   "refused: price is 28.5h old, past the 14h withdrawal": 3,
-   "refused: price is 19.9h old, past the 14h withdrawal": 1,
-   "broken: price is 355.7h old, past the 14h withdrawal": 3,
-   "refused: price is 220.7h old, past the 14h withdrawal": 1
+   "refused: price is 295.5h old, past the 14h withdrawal": 1,
+   "refused: price is 29.0h old, past the 14h withdrawal": 3,
+   "refused: price is 20.3h old, past the 14h withdrawal": 1,
+   "broken: price is 356.2h old, past the 14h withdrawal": 3,
+   "refused: price is 221.2h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
    "basis more than $3.00 from the board — a unit error, not a market": 2,
-   "delivery unreadable (unreadable-season-no-year)": 15,
-   "delivery unreadable (unreadable)": 17
+   "delivery unreadable (unreadable)": 57,
+   "delivery unreadable (unreadable-season-no-year)": 15
   }
  },
  "collisions": [],
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 936,
+  "written": 1003,
   "unchanged": 0,
   "orphaned": [
    "agmark-llc-gaylord-mn-cf9f8b79.json",
@@ -250,6 +253,3460 @@
    },
    "pricedAt": "2026-09-15T19:01:12.191Z",
    "checkedAt": "2026-09-15T19:56:12.352Z"
+  },
+  {
+   "place": "ADM||Abilene|KS",
+   "shard": "merged/adm-abilene-ks-4ddd6c69.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Abilene",
+   "state": "KS",
+   "lat": 38.91711,
+   "lon": -97.21178,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-abileneks",
+   "bids": 2,
+   "crops": [
+    "wheat"
+   ],
+   "periods": [
+    "2026-10",
+    "2027-06/2027-07"
+   ],
+   "best": {
+    "wheat": {
+     "cash": 7.7075,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-06/2027-07",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "HRW June/July'27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Altamont|IL",
+   "shard": "merged/adm-altamont-il-e1683237.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Altamont",
+   "state": "IL",
+   "lat": 39.05876,
+   "lon": -88.75531,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-altamontil",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2025,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "Jan 27 corn (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.1625,
+     "basis": -0.19,
+     "basisCents": -19,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "Jan 27 beans (2027-01)"
+    },
+    "wheat": {
+     "cash": 6.995,
+     "basis": -0.45,
+     "basisCents": -45,
+     "period": "2027-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Jan 27 wheat (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Attica|IN",
+   "shard": "merged/adm-attica-in-41cc5a3f.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Attica",
+   "state": "IN",
+   "lat": 40.27598,
+   "lon": -87.25783,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-atticain",
+   "bids": 27,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-05",
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07",
+    "2027-08",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.485,
+     "basis": -0.11,
+     "basisCents": -11,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.2675,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 6.9625,
+     "basis": -0.58,
+     "basisCents": -58,
+     "period": "2027-08",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Aug 2027 (2027-09)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Beech Grove|IN",
+   "shard": "merged/adm-beech-grove-in-4d7e1752.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Beech Grove",
+   "state": "IN",
+   "lat": 39.73231,
+   "lon": -86.0918,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-beechgroveinwheatmilling",
+   "bids": 3,
+   "crops": [
+    "wheat"
+   ],
+   "periods": [
+    "2026-01",
+    "2026-12",
+    "2027-03"
+   ],
+   "best": {
+    "wheat": {
+     "cash": 7.445,
+     "basis": 0,
+     "basisCents": 0,
+     "period": "2026-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Jan 2026 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Burlington|IA",
+   "shard": "merged/adm-burlington-ia-dd3d10e2.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Burlington",
+   "state": "IA",
+   "lat": 40.82698,
+   "lon": -91.10585,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-burlingtonia",
+   "bids": 16,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4175,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "2027-05",
+     "commodity": "Corn",
+     "delivery": "May '27 (2027-05)"
+    },
+    "soybeans": {
+     "cash": 13.3675,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Carman|IL",
+   "shard": "merged/adm-carman-il-58670dea.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Carman",
+   "state": "IL",
+   "lat": 40.81369,
+   "lon": -91.08886,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-gulfportil",
+   "bids": 16,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4175,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "2027-05",
+     "commodity": "Corn",
+     "delivery": "May '27 (2027-05)"
+    },
+    "soybeans": {
+     "cash": 13.3675,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Cedar Rapids|IA",
+   "shard": "merged/adm-cedar-rapids-ia-e9378c5b.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Cedar Rapids",
+   "state": "IA",
+   "lat": 41.92137,
+   "lon": -91.68559,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-cedarrapidsia",
+   "bids": 9,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4375,
+     "basis": -0.13,
+     "basisCents": -13,
+     "period": "2027-05",
+     "commodity": "Corn",
+     "delivery": "May (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Charleston|MO",
+   "shard": "merged/adm-charleston-mo-b447eed3.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Charleston",
+   "state": "MO",
+   "lat": 36.91813,
+   "lon": -89.3495,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-charlestonmo",
+   "bids": 13,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-06/2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.5825,
+     "basis": 0.08,
+     "basisCents": 8,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "Mar (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.58,
+     "basis": 0.15,
+     "basisCents": 15,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "Feb (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.4075,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-06/2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Jun/Jul '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Clinton|IA",
+   "shard": "merged/adm-clinton-ia-31cca9a2.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Clinton",
+   "state": "IA",
+   "lat": 41.81743,
+   "lon": -90.21582,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-clintoniacornprocessing",
+   "bids": 10,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.465,
+     "basis": -0.13,
+     "basisCents": -13,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Columbus|NE",
+   "shard": "merged/adm-columbus-ne-131a12ef.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Columbus",
+   "state": "NE",
+   "lat": 41.42757,
+   "lon": -97.28925,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-columbusnecornprocessing",
+   "bids": 10,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2021-09",
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4275,
+     "basis": -0.14,
+     "basisCents": -14,
+     "period": "2027-05",
+     "commodity": "Corn",
+     "delivery": "May 2027 (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Columbus|OH",
+   "shard": "merged/adm-columbus-oh-3d1cf639.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Columbus",
+   "state": "OH",
+   "lat": 39.93071,
+   "lon": -82.88662,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-columbusoh",
+   "bids": 10,
+   "crops": [
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-07",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.4175,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "JULY 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.0075,
+     "basis": -0.5,
+     "basisCents": -50,
+     "period": "2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "JULY 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Copeland|KS",
+   "shard": "merged/adm-copeland-ks-8e5d6496.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Copeland",
+   "state": "KS",
+   "lat": 37.54293,
+   "lon": -100.62685,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-copelandks",
+   "bids": 3,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-11",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.6075,
+     "basis": 0.25,
+     "basisCents": 25,
+     "period": "newcrop-2026",
+     "commodity": "Corn",
+     "delivery": "New Crop Corn (2026-12)"
+    },
+    "soybeans": {
+     "cash": 12.2875,
+     "basis": -0.9,
+     "basisCents": -90,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "Nov26 Soybeans (2026-11)"
+    },
+    "sorghum": {
+     "cash": 4.6575,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "newcrop-2026",
+     "commodity": "Sorghum",
+     "delivery": "New Crop Milo (2026-12)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Decatur|IL",
+   "shard": "merged/adm-decatur-il-a984e436.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Decatur",
+   "state": "IL",
+   "lat": 39.86578,
+   "lon": -88.88778,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-decaturilcornprocessing",
+   "bids": 19,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2020-09",
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4925,
+     "basis": -0.01,
+     "basisCents": -1,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.6375,
+     "basis": 0.12,
+     "basisCents": 12,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Deerfield|MO",
+   "shard": "merged/adm-deerfield-mo-77e42a0b.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Deerfield",
+   "state": "MO",
+   "lat": 37.83443,
+   "lon": -94.57793,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-deerfieldmo",
+   "bids": 11,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.5675,
+     "basis": 0.05,
+     "basisCents": 5,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Des Moines|IA",
+   "shard": "merged/adm-des-moines-ia-a72b3851.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Des Moines",
+   "state": "IA",
+   "lat": 41.62745,
+   "lon": -93.58289,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-desmoinesia",
+   "bids": 12,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2020-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2027-11",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.3175,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Enid|OK",
+   "shard": "merged/adm-enid-ok-1a2c7eae.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Enid",
+   "state": "OK",
+   "lat": 36.42365,
+   "lon": -97.86654,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-enidokelevator",
+   "bids": 1,
+   "crops": [
+    "wheat"
+   ],
+   "periods": [
+    "newcrop-2027"
+   ],
+   "best": {
+    "wheat": {
+     "cash": 7.8575,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "newcrop-2027",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "2027 New Crop HRW (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Evansville|IN",
+   "shard": "merged/adm-evansville-in-5c5aaa02.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Evansville",
+   "state": "IN",
+   "lat": 37.99404,
+   "lon": -87.57618,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-evansvillein1stave",
+   "bids": 27,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 6.2025,
+     "basis": 0.7,
+     "basisCents": 70,
+     "period": "2027-03",
+     "commodity": "Corn (White)",
+     "delivery": "March '27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.64,
+     "basis": 0.21,
+     "basisCents": 21,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February 27 (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.495,
+     "basis": 0.05,
+     "basisCents": 5,
+     "period": "2027-03",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Mar '27 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Fostoria|OH",
+   "shard": "merged/adm-fostoria-oh-5d56cb37.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Fostoria",
+   "state": "OH",
+   "lat": 41.14906,
+   "lon": -83.43463,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-fostoriaoh",
+   "bids": 9,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2018-09",
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "newcrop-2026"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.5875,
+     "basis": 0.1,
+     "basisCents": 10,
+     "period": "2027-04",
+     "commodity": "Soybeans",
+     "delivery": "April (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Fowler|IN",
+   "shard": "merged/adm-fowler-in-acfa5549.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Fowler",
+   "state": "IN",
+   "lat": 40.58503,
+   "lon": -87.28023,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-swaningtonin",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.365,
+     "basis": -0.23,
+     "basisCents": -23,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.1975,
+     "basis": -0.32,
+     "basisCents": -32,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Frankfort|IN",
+   "shard": "merged/adm-frankfort-in-eb3d7fea.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Frankfort",
+   "state": "IN",
+   "lat": 40.28532,
+   "lon": -86.54832,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-frankfortin",
+   "bids": 9,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2019-09",
+    "2026-09",
+    "2026-10/2026-11",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2027"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.5,
+     "basis": 0.07,
+     "basisCents": 7,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "Mar 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Fremont|NE",
+   "shard": "merged/adm-fremont-ne-bb7ff271.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Fremont",
+   "state": "NE",
+   "lat": 41.44789,
+   "lon": -96.55386,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-fremontneelevator",
+   "bids": 23,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10/2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2027-10/2027-11",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.325,
+     "basis": -0.27,
+     "basisCents": -27,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "Jun '27 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.3675,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "Jun '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Fullerton|NE",
+   "shard": "merged/adm-fullerton-ne-e6ee9f30.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Fullerton",
+   "state": "NE",
+   "lat": 41.38771,
+   "lon": -97.97366,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-fullertonne",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10/2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.9725,
+     "basis": -0.53,
+     "basisCents": -53,
+     "period": "2027-02",
+     "commodity": "Corn",
+     "delivery": "Feb 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 12.7875,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "Sept (2026-11)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Grand Ledge|MI",
+   "shard": "merged/adm-grand-ledge-mi-5b8d4f0c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Grand Ledge",
+   "state": "MI",
+   "lat": 42.77037,
+   "lon": -84.73973,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-grandledgemi",
+   "bids": 13,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-07",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.3025,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "Mar 27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 12.8525,
+     "basis": -0.5,
+     "basisCents": -50,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "Jan 27 (2027-01)"
+    },
+    "wheat": {
+     "cash": 6.9575,
+     "basis": -0.55,
+     "basisCents": -55,
+     "period": "2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "July '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Helena|AR",
+   "shard": "merged/adm-helena-ar-5348c253.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Helena",
+   "state": "AR",
+   "lat": 34.49135,
+   "lon": -90.60171,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-helenaar",
+   "bids": 11,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-06"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.7325,
+     "basis": 0.23,
+     "basisCents": 23,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "Jan Corn (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.7525,
+     "basis": 0.4,
+     "basisCents": 40,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "Jan Beans (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.4575,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-06",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "June Wheat 27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Hennepin|IL",
+   "shard": "merged/adm-hennepin-il-c514a095.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Hennepin",
+   "state": "IL",
+   "lat": 41.22312,
+   "lon": -89.32055,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-hennepinil",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.565,
+     "basis": -0.03,
+     "basisCents": -3,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.4675,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Hoopeston|IL",
+   "shard": "merged/adm-hoopeston-il-1b0649ce.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Hoopeston",
+   "state": "IL",
+   "lat": 40.47851,
+   "lon": -87.66961,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-hoopestonil",
+   "bids": 26,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07",
+    "2027-08",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.465,
+     "basis": -0.13,
+     "basisCents": -13,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.2475,
+     "basis": -0.27,
+     "basisCents": -27,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.0125,
+     "basis": -0.53,
+     "basisCents": -53,
+     "period": "2027-08",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Aug 2027 (2027-09)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Hume|IL",
+   "shard": "merged/adm-hume-il-f7f57803.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Hume",
+   "state": "IL",
+   "lat": 39.78652,
+   "lon": -87.84515,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-humeil",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2725,
+     "basis": -0.23,
+     "basisCents": -23,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.14,
+     "basis": -0.29,
+     "basisCents": -29,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Jackson|TN",
+   "shard": "merged/adm-jackson-tn-d62775b4.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Jackson",
+   "state": "TN",
+   "lat": 35.62268,
+   "lon": -88.81174,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-jacksontn",
+   "bids": 14,
+   "crops": [
+    "corn"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03"
+   ],
+   "best": {
+    "corn": {
+     "cash": 6.2025,
+     "basis": 0.7,
+     "basisCents": 70,
+     "period": "2027-01",
+     "commodity": "Corn (White)",
+     "delivery": "WC Jan '27 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||LAOTTO|IN",
+   "shard": "merged/adm-laotto-in-0793ed7c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "LAOTTO",
+   "state": "IN",
+   "lat": 41.2888,
+   "lon": -85.19478,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-laottoin",
+   "bids": 24,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.315,
+     "basis": -0.28,
+     "basisCents": -28,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.2475,
+     "basis": -0.27,
+     "basisCents": -27,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Ledbetter|KY",
+   "shard": "merged/adm-ledbetter-ky-952fffaa.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Ledbetter",
+   "state": "KY",
+   "lat": 37.04981,
+   "lon": -88.53574,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-livingstonpointky",
+   "bids": 21,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-09/2026-10",
+    "2026-10",
+    "2026-10/2026-11",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-01/2027-03",
+    "2027-02",
+    "2027-03",
+    "2027-06/2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 6.0525,
+     "basis": 0.55,
+     "basisCents": 55,
+     "period": "2027-01/2027-03",
+     "commodity": "Corn (White)",
+     "delivery": "JFM 27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.61,
+     "basis": 0.18,
+     "basisCents": 18,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.355,
+     "basis": -0.09,
+     "basisCents": -9,
+     "period": "2027-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Jan (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Leoti|KS",
+   "shard": "merged/adm-leoti-ks-ceb5bf14.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Leoti",
+   "state": "KS",
+   "lat": 38.48619,
+   "lon": -101.35763,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-leotiks",
+   "bids": 8,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "newcrop-2026",
+    "newcrop-2027",
+    "spot"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2075,
+     "basis": -0.15,
+     "basisCents": -15,
+     "period": "spot",
+     "commodity": "Corn",
+     "delivery": "Cash Corn (2026-12)"
+    },
+    "soybeans": {
+     "cash": 12.1875,
+     "basis": -1,
+     "basisCents": -100,
+     "period": "spot",
+     "commodity": "Soybeans",
+     "delivery": "Cash Soybeans (2026-11)"
+    },
+    "wheat": {
+     "cash": 7.3575,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "newcrop-2027",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "N/C HRW (2027-07)"
+    },
+    "sorghum": {
+     "cash": 4.6575,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "spot",
+     "commodity": "Sorghum",
+     "delivery": "Cash Milo (2026-12)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Lincoln|NE",
+   "shard": "merged/adm-lincoln-ne-acb5197f.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Lincoln",
+   "state": "NE",
+   "lat": 40.83225,
+   "lon": -96.68583,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-lincolnneelevator",
+   "bids": 19,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10/2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2027-10/2027-11"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2125,
+     "basis": -0.29,
+     "basisCents": -29,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.4675,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.8075,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-07",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "July 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Logansport|IN",
+   "shard": "merged/adm-logansport-in-5093e4e9.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Logansport",
+   "state": "IN",
+   "lat": 40.72455,
+   "lon": -86.42722,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-logansportin",
+   "bids": 29,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07",
+    "2027-08",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.505,
+     "basis": -0.09,
+     "basisCents": -9,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.2975,
+     "basis": -0.22,
+     "basisCents": -22,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.195,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-03",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Mar 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Macon|IL",
+   "shard": "merged/adm-macon-il-f55cde3e.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Macon",
+   "state": "IL",
+   "lat": 39.71852,
+   "lon": -88.99745,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-maconil",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.3025,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.19,
+     "basis": -0.24,
+     "basisCents": -24,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Mankato|MN",
+   "shard": "merged/adm-mankato-mn-c0d81bc8.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Mankato",
+   "state": "MN",
+   "lat": 44.18652,
+   "lon": -93.99464,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-mankatomnsoyprocessing",
+   "bids": 13,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "2027-10",
+    "2028-01"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.2675,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Marshall|MN",
+   "shard": "merged/adm-marshall-mn-3e57c770.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Marshall",
+   "state": "MN",
+   "lat": 44.47159,
+   "lon": -95.77548,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-marshallmncornprocessing",
+   "bids": 15,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-10"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.115,
+     "basis": -0.48,
+     "basisCents": -48,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June (2027-07)"
+    },
+    "soybeans": {
+     "cash": 12.5025,
+     "basis": -0.85,
+     "basisCents": -85,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "JAN (2027-01)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Melbourne|KY",
+   "shard": "merged/adm-melbourne-ky-b59f573f.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Melbourne",
+   "state": "KY",
+   "lat": 39.03414,
+   "lon": -84.38222,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-silvergroveky",
+   "bids": 15,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.5025,
+     "basis": 0,
+     "basisCents": 0,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.48,
+     "basis": 0.05,
+     "basisCents": 5,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February '27 (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.1075,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-06/2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "June/July 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Memphis|TN",
+   "shard": "merged/adm-memphis-tn-8ec8841e.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Memphis",
+   "state": "TN",
+   "lat": 35.09655,
+   "lon": -90.10705,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-memphistn",
+   "bids": 11,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-06"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.7525,
+     "basis": 0.25,
+     "basisCents": 25,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "Jan Corn (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.7725,
+     "basis": 0.42,
+     "basisCents": 42,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "Jan Beans (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.4575,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-06",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "June Wheat 27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Mendota|IL",
+   "shard": "merged/adm-mendota-il-4d300b6c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Mendota",
+   "state": "IL",
+   "lat": 41.55602,
+   "lon": -89.10502,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-mendotailintown",
+   "bids": 18,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2025,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "January (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.1675,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.285,
+     "basis": 0,
+     "basisCents": 0,
+     "period": "2026-09",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "September (2026-12)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Mexico|MO",
+   "shard": "merged/adm-mexico-mo-14051b01.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Mexico",
+   "state": "MO",
+   "lat": 39.16951,
+   "lon": -91.8791,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-mexicomo",
+   "bids": 8,
+   "crops": [
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-03",
+    "2027-04",
+    "newcrop-2026"
+   ],
+   "best": {
+    "soybeans": {
+     "cash": 13.4975,
+     "basis": 0.01,
+     "basisCents": 1,
+     "period": "2027-04",
+     "commodity": "Soybeans",
+     "delivery": "April (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Montezuma|KS",
+   "shard": "merged/adm-montezuma-ks-f59c3ef3.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Montezuma",
+   "state": "KS",
+   "lat": 37.59706,
+   "lon": -100.45544,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-montezumaks",
+   "bids": 4,
+   "crops": [
+    "corn",
+    "sorghum",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-11",
+    "newcrop-2026",
+    "spot"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.5875,
+     "basis": 0.23,
+     "basisCents": 23,
+     "period": "newcrop-2026",
+     "commodity": "Corn",
+     "delivery": "New Crop Corn (2026-12)"
+    },
+    "soybeans": {
+     "cash": 12.2875,
+     "basis": -0.9,
+     "basisCents": -90,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "Nov26 Soybeans (2026-11)"
+    },
+    "wheat": {
+     "cash": 7.2125,
+     "basis": -0.75,
+     "basisCents": -75,
+     "period": "spot",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "Cash HRW (2026-12)"
+    },
+    "sorghum": {
+     "cash": 4.6575,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "newcrop-2026",
+     "commodity": "Sorghum",
+     "delivery": "New Crop Milo (2026-12)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Montpelier|IN",
+   "shard": "merged/adm-montpelier-in-9bb5105c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Montpelier",
+   "state": "IN",
+   "lat": 40.54616,
+   "lon": -85.29688,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-montpelierin",
+   "bids": 39,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07",
+    "2027-08",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.545,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.4475,
+     "basis": -0.07,
+     "basisCents": -7,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.245,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-03",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Mar 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Morris|IL",
+   "shard": "merged/adm-morris-il-9ddac708.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Morris",
+   "state": "IL",
+   "lat": 41.35467,
+   "lon": -88.4293,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-morrisil",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.545,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.4475,
+     "basis": -0.07,
+     "basisCents": -7,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||New Berlin|IL",
+   "shard": "merged/adm-new-berlin-il-a6aef6ef.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "New Berlin",
+   "state": "IL",
+   "lat": 39.7371,
+   "lon": -89.76003,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-curranil",
+   "bids": 9,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4025,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.3,
+     "basis": -0.13,
+     "basisCents": -13,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Newburgh|IN",
+   "shard": "merged/adm-newburgh-in-acbf14cb.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Newburgh",
+   "state": "IN",
+   "lat": 37.95495,
+   "lon": -87.44485,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-newburghin",
+   "bids": 15,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.6825,
+     "basis": 0.18,
+     "basisCents": 18,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.64,
+     "basis": 0.21,
+     "basisCents": 21,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February 27 (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.2575,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-06/2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "June / July 27' (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Newman Grove|NE",
+   "shard": "merged/adm-newman-grove-ne-0a39df5d.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Newman Grove",
+   "state": "NE",
+   "lat": 41.79316,
+   "lon": -97.80689,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-newmangrovene",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.1025,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-02",
+     "commodity": "Corn",
+     "delivery": "February (2027-03)"
+    },
+    "soybeans": {
+     "cash": 12.9,
+     "basis": -0.53,
+     "basisCents": -53,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Oakland|IL",
+   "shard": "merged/adm-oakland-il-101a980c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Oakland",
+   "state": "IL",
+   "lat": 39.65516,
+   "lon": -88.02131,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-oaklandil",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2725,
+     "basis": -0.23,
+     "basisCents": -23,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.14,
+     "basis": -0.29,
+     "basisCents": -29,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Ottawa Lake|MI",
+   "shard": "merged/adm-ottawa-lake-mi-2c45beba.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Ottawa Lake",
+   "state": "MI",
+   "lat": 41.73572,
+   "lon": -83.7218,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-ottawalakemi",
+   "bids": 11,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2025,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "January 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.0025,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "January 2027 (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.195,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "January 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Ottawa|IL",
+   "shard": "merged/adm-ottawa-il-00c45a04.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Ottawa",
+   "state": "IL",
+   "lat": 41.34634,
+   "lon": -88.79978,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-ottawailnorthside",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.565,
+     "basis": -0.03,
+     "basisCents": -3,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.4675,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Paducah|KY",
+   "shard": "merged/adm-paducah-ky-76ac4238.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Paducah",
+   "state": "KY",
+   "lat": 37.06255,
+   "lon": -88.57515,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-paducahky",
+   "bids": 14,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-10/2026-11",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.5925,
+     "basis": 0.09,
+     "basisCents": 9,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.61,
+     "basis": 0.18,
+     "basisCents": 18,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Patoka|IL",
+   "shard": "merged/adm-patoka-il-9d5b4ff7.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Patoka",
+   "state": "IL",
+   "lat": 38.7502,
+   "lon": -89.09679,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-patokail",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2525,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "JANUARY (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.1425,
+     "basis": -0.21,
+     "basisCents": -21,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "JANUARY (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.095,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "JANUARY (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Quincy|IL",
+   "shard": "merged/adm-quincy-il-7aac3ee8.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Quincy",
+   "state": "IL",
+   "lat": 39.90143,
+   "lon": -91.41026,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-quincyilbargedock",
+   "bids": 20,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-10/2026-11",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-07",
+    "2027-10/2027-11"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4525,
+     "basis": -0.14,
+     "basisCents": -14,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July 27 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.615,
+     "basis": 0.1,
+     "basisCents": 10,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July 27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Rensselaer|IN",
+   "shard": "merged/adm-rensselaer-in-d71897d8.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Rensselaer",
+   "state": "IN",
+   "lat": 41.02656,
+   "lon": -87.22229,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-parrin",
+   "bids": 27,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-06/2027-07",
+    "2027-07",
+    "2027-08",
+    "2028-01",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.385,
+     "basis": -0.21,
+     "basisCents": -21,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.1975,
+     "basis": -0.32,
+     "basisCents": -32,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "wheat": {
+     "cash": 6.9625,
+     "basis": -0.58,
+     "basisCents": -58,
+     "period": "2027-08",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "Aug 2027 (2027-09)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Rockport|IN",
+   "shard": "merged/adm-rockport-in-3c3b0a7e.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Rockport",
+   "state": "IN",
+   "lat": 37.89478,
+   "lon": -87.04579,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-rockportin",
+   "bids": 15,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.6925,
+     "basis": 0.19,
+     "basisCents": 19,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 27 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.65,
+     "basis": 0.22,
+     "basisCents": 22,
+     "period": "2027-02",
+     "commodity": "Soybeans",
+     "delivery": "February 27 (2027-03)"
+    },
+    "wheat": {
+     "cash": 7.2575,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-06/2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "June / July '27 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Sauget|IL",
+   "shard": "merged/adm-sauget-il-b609751d.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Sauget",
+   "state": "IL",
+   "lat": 38.60166,
+   "lon": -90.18015,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-saugetil",
+   "bids": 20,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.875,
+     "basis": 0.28,
+     "basisCents": 28,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.7675,
+     "basis": 0.28,
+     "basisCents": 28,
+     "period": "2027-05",
+     "commodity": "Soybeans",
+     "delivery": "May '27 (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Shobonier|IL",
+   "shard": "merged/adm-shobonier-il-3c5762b5.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Shobonier",
+   "state": "IL",
+   "lat": 38.85085,
+   "lon": -89.07199,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-shobonieril",
+   "bids": 10,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.2525,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "JANUARY (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.1425,
+     "basis": -0.21,
+     "basisCents": -21,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "JANUARY (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.095,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-01",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "JANUARY (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Spring Valley|IL",
+   "shard": "merged/adm-spring-valley-il-a2ef843c.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Spring Valley",
+   "state": "IL",
+   "lat": 41.35543,
+   "lon": -89.21876,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-springvalleyil",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.565,
+     "basis": -0.03,
+     "basisCents": -3,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.4675,
+     "basis": -0.05,
+     "basisCents": -5,
+     "period": "2027-07",
+     "commodity": "Soybeans",
+     "delivery": "July (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||St. Cloud|MN",
+   "shard": "merged/adm-st-cloud-mn-2cce640b.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "St. Cloud",
+   "state": "MN",
+   "lat": 45.53214,
+   "lon": -94.28117,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-stcloudmn",
+   "bids": 18,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-04/2027-05",
+    "2027-05",
+    "2027-06/2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 4.895,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "2027-06/2027-07",
+     "commodity": "Corn",
+     "delivery": "JUNE/JULY CORN (2027-07)"
+    },
+    "soybeans": {
+     "cash": 12.9175,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2027-06/2027-07",
+     "commodity": "Soybeans",
+     "delivery": "JUNE/JULY BEANS (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||St. Louis|MO",
+   "shard": "merged/adm-st-louis-mo-e5a3a87e.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "St. Louis",
+   "state": "MO",
+   "lat": 38.67459,
+   "lon": -90.20119,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-stlouismoelevator",
+   "bids": 30,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-10/2026-11",
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.875,
+     "basis": 0.28,
+     "basisCents": 28,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "June 2027 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.7675,
+     "basis": 0.28,
+     "basisCents": 28,
+     "period": "2027-05",
+     "commodity": "Soybeans",
+     "delivery": "May '27 (2027-05)"
+    },
+    "wheat": {
+     "cash": 7.645,
+     "basis": 0.12,
+     "basisCents": 12,
+     "period": "2027-04",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "April '27 (2027-05)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||St. Paul|MN",
+   "shard": "merged/adm-st-paul-mn-8f44b304.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "St. Paul",
+   "state": "MN",
+   "lat": 44.9239,
+   "lon": -93.12414,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-stpaulmnelevatord",
+   "bids": 13,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.245,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "JUNE 27 (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.1175,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June (2027-07)"
+    },
+    "wheat": {
+     "cash": 7.285,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2026-09",
+     "commodity": "Wheat (Hard Red Spring)",
+     "delivery": "September Spring Wheat (2026-12)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Sullivan|IL",
+   "shard": "merged/adm-sullivan-il-dc923f50.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Sullivan",
+   "state": "IL",
+   "lat": 39.59735,
+   "lon": -88.60351,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-sullivanil",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.3025,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.19,
+     "basis": -0.24,
+     "basisCents": -24,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Taylorville|IL",
+   "shard": "merged/adm-taylorville-il-eb0aef2f.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Taylorville",
+   "state": "IL",
+   "lat": 39.56286,
+   "lon": -89.27254,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-taylorvilleil",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.3325,
+     "basis": -0.17,
+     "basisCents": -17,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.23,
+     "basis": -0.2,
+     "basisCents": -20,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Toledo|OH",
+   "shard": "merged/adm-toledo-oh-09348d31.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Toledo",
+   "state": "OH",
+   "lat": 41.62662,
+   "lon": -83.53097,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-toledooh",
+   "bids": 11,
+   "crops": [
+    "corn",
+    "soybeans",
+    "wheat"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-07",
+    "newcrop-2026"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.4025,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "January 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.1025,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-01",
+     "commodity": "Soybeans",
+     "delivery": "January 2027 (2027-01)"
+    },
+    "wheat": {
+     "cash": 7.2575,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-07",
+     "commodity": "Wheat (Soft Red Winter)",
+     "delivery": "July 2027 (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Tuscola|IL",
+   "shard": "merged/adm-tuscola-il-ff0226e6.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Tuscola",
+   "state": "IL",
+   "lat": 39.7947,
+   "lon": -88.29735,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-tuscolail",
+   "bids": 12,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.3125,
+     "basis": -0.19,
+     "basisCents": -19,
+     "period": "2027-03",
+     "commodity": "Corn",
+     "delivery": "March 2027 (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.18,
+     "basis": -0.25,
+     "basisCents": -25,
+     "period": "2027-03",
+     "commodity": "Soybeans",
+     "delivery": "March 2027 (2027-03)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Vidalia|LA",
+   "shard": "merged/adm-vidalia-la-9bc4c299.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Vidalia",
+   "state": "LA",
+   "lat": 31.56544,
+   "lon": -91.42595,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-vidaliala",
+   "bids": 5,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-11",
+    "2026-12",
+    "2027-01"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.8025,
+     "basis": 0.3,
+     "basisCents": 30,
+     "period": "2027-01",
+     "commodity": "Corn",
+     "delivery": "Jan YC (2027-03)"
+    },
+    "soybeans": {
+     "cash": 13.6375,
+     "basis": 0.45,
+     "basisCents": 45,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "Nov YSB (2026-11)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Winona|MN",
+   "shard": "merged/adm-winona-mn-8d14fdd1.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Winona",
+   "state": "MN",
+   "lat": 44.05862,
+   "lon": -91.66366,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-winonamn",
+   "bids": 14,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.245,
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-06",
+     "commodity": "Corn",
+     "delivery": "JUNE (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.1175,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "JUNE (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
+  },
+  {
+   "place": "ADM||Wisner|NE",
+   "shard": "merged/adm-wisner-ne-610a9c13.json",
+   "operator": "ADM",
+   "branch": null,
+   "city": "Wisner",
+   "state": "NE",
+   "lat": 42.00594,
+   "lon": -96.80682,
+   "precision": null,
+   "mappable": true,
+   "via": "scrape",
+   "source": "adm-wisnerne",
+   "bids": 22,
+   "crops": [
+    "corn",
+    "soybeans"
+   ],
+   "periods": [
+    "2026-09",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03",
+    "2027-04",
+    "2027-05",
+    "2027-06",
+    "2027-07",
+    "newcrop-2026",
+    "newcrop-2027"
+   ],
+   "best": {
+    "corn": {
+     "cash": 5.145,
+     "basis": -0.45,
+     "basisCents": -45,
+     "period": "2027-07",
+     "commodity": "Corn",
+     "delivery": "July (2027-07)"
+    },
+    "soybeans": {
+     "cash": 13.0175,
+     "basis": -0.5,
+     "basisCents": -50,
+     "period": "2027-06",
+     "commodity": "Soybeans",
+     "delivery": "June (2027-07)"
+    }
+   },
+   "pricedAt": "2026-09-15T20:23:54.975Z",
+   "checkedAt": "2026-09-15T20:23:54.975Z"
   },
   {
    "place": "Ag Central||MT JACKSON|PA",
