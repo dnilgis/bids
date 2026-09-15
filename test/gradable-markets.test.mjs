@@ -167,7 +167,7 @@ test("THE SHIPPED POET MANIFESTS AGREE WITH THE READER, ALL 35 OF THEM", () => {
 import { fillFromReading, bandsFromReading, reportRefusal, readingsByMarket,
          MIN_TESTABLE_TO_ENABLE } from "../scripts/gradable-markets.mjs";
 import { validateSource, loadSources } from "../lib/sources.mjs";
-import { countryOfState } from "../lib/currency.mjs";
+import { countryOfState, CURRENCY_OF_COUNTRY } from "../lib/currency.mjs";
 
 const reading = (over = {}) => ({
   marketId: 371713182, rows: 12,
@@ -280,14 +280,67 @@ test("A CANADIAN MARKET GOES ON THE BOARD WHEN ITS OWN ROWS SAY CAD", () => {
   assert.deepEqual(validateSource({ ...f, id: "adm-ca", country: "CA", lat: 52.12, lon: -104.38 }), []);
 });
 
-test("and it is held when their rows state NO currency, wherever it is", () => {
-  for (const state of ["SK", "KS"]) {
-    const f = fillFromReading(skelFor(state),
-      reading({ currency: null, currenciesSeen: [] }), { enable: true });
-    assert.equal(f.enabled, false);
-    assert.equal("currency" in f, false, "a currency nobody stated reached the manifest");
-    assert.match(f._pending, /state no currency/);
-  }
+test("ROWS THAT STATE NOTHING FALL BACK TO THEIR OWN country_code", () => {
+  /* Blenheim, Maidstone and Alvinston, Ontario: `currenciesSeen: []`, in
+     bushels, posting Canadian corn, soybeans and wheat. An earlier version held
+     all three, which was STRICTER THAN THE REPOSITORY'S OWN RULE — the two
+     Canadian sources publishing today both declare their currency, and
+     sources/addisgrain-oromedonte.json publishes `currencyVia: "declared"`. */
+  const ca = fillFromReading(skelFor("ON"), reading({ currency: null, currenciesSeen: [] }), { enable: true });
+  assert.equal(ca.currency, "CAD");
+  assert.equal(ca.enabled, true, ca._pending);
+  assert.match(ca.note, /country_code \(CA\)/, "the note does not say where the currency came from");
+  const us = fillFromReading(skelFor("KS"), reading({ currency: null, currenciesSeen: [] }), { enable: true });
+  assert.equal(us.currency, "USD");
+  assert.equal(us.enabled, true);
+});
+
+test("and their ROWS outrank their country_code", () => {
+  const f = fillFromReading(skelFor("ON"), reading({ currency: "CAD", currenciesSeen: ["CAD"] }), { enable: true });
+  assert.match(f.note, /own rows/);
+  assert.doesNotMatch(f.note, /country_code/);
+});
+
+test("a market with neither a stated currency nor a country is held", () => {
+  const f = fillFromReading({ ...skelFor("KS"), country: null },
+    reading({ currency: null, currenciesSeen: [] }), { enable: true });
+  assert.equal(f.enabled, false);
+  assert.equal("currency" in f, false);
+  assert.match(f._pending, /nothing establishes/);
+});
+
+test("WHEN THEIR COUNTRY AND THEIR ROWS DISAGREE, THIS DECLARES NEITHER", () => {
+  /* Velva and Enderlin ND are ADM canola plants: payload says USA, rows quote
+     CAD per tonne. Declaring either produced "country US and currency CAD
+     disagree" from lib/sources.mjs — on DISABLED files, in every pass, because
+     loadSources validates before it skips a disabled source. */
+  const f = fillFromReading(skelFor("ND"), reading({ currency: "CAD", currenciesSeen: ["CAD"] }), { enable: true });
+  assert.equal("currency" in f, false, "a currency that contradicts their country reached the manifest");
+  assert.equal(f.enabled, false);
+  assert.match(f._pending, /quote CAD/);
+  assert.deepEqual(validateSource({ ...f, id: "adm-nd" }), [],
+    "the manifest still does not load, so it is an error every pass");
+});
+
+test("EVERY ROW IN A UNIT THE BANDS ARE NOT IN IS A HOLD", () => {
+  /* Watson SK, Carberry MB and Lloydminster AB post canola and nothing else,
+     all per metric tonne. lib/board.mjs's canola band is [6, 35] PER BUSHEL. */
+  const f = fillFromReading(skelFor("SK"), reading({
+    rows: 11, rowsNotInBushels: 11, units: ["metric_tons"],
+    rounding: { testable: 0, mode: null, confident: null, margin: 0, residuals: [] },
+  }), { enable: true });
+  assert.equal(f.enabled, false);
+  assert.match(f._pending, /metric_tons/);
+  assert.match(f._pending, /per bushel/);
+  /* One per-tonne row beside bushels rows is NOT a hold — Windsor ON posts
+     both and publishes the bushels ones. */
+  /* An Ontario market's rows quote CAD. Handing this fixture the default USD
+     made it a market whose country and rows disagree — a different hold
+     entirely, and the assertion below caught it. */
+  const mixed = fillFromReading(skelFor("ON"), reading({
+    rows: 13, rowsNotInBushels: 1, units: ["bushels", "metric_tons"],
+    currency: "CAD", currenciesSeen: ["CAD"] }), { enable: true });
+  assert.equal(mixed.enabled, true, mixed._pending);
 });
 
 test("TWO CURRENCIES ON ONE BOARD IS NOT A BOARD WITH A CURRENCY", () => {
@@ -302,15 +355,7 @@ test("TWO CURRENCIES ON ONE BOARD IS NOT A BOARD WITH A CURRENCY", () => {
   assert.match(f._pending, /CAD, USD/);
 });
 
-test("a country their payload names and a currency their rows quote must agree", () => {
-  /* lib/sources.mjs refuses the pair. This catches it before the file exists
-     and says which two disagreed. */
-  const f = fillFromReading({ ...skelFor("SK"), country: "CA" },
-    reading({ currency: "USD", currenciesSeen: ["USD"] }), { enable: true });
-  assert.equal(f.enabled, false);
-  assert.match(f._pending, /CA/);
-  assert.match(f._pending, /USD/);
-});
+
 
 test("a market with no board read is never turned into a file", () => {
   /* 30 of 152 on the first build. Each would have been "no bands. Every
@@ -404,4 +449,88 @@ test("THE MANIFEST CARRIES THEIR COUNTRY, from their own country_code", () => {
   /* And no skeleton declares a currency: a bootstrap states none, and
      lib/currency.mjs ranks a manifest's word below the feed's. */
   assert.equal("currency" in skeletonFor(us, "adm", "adm", "t"), false);
+});
+
+test("THE COMMITTED ADM REPORT BUILDS 122 MANIFESTS THAT ALL LOAD", () => {
+  /* The end of the chain, on the real thing. data/gradable/adm-boards.json was
+     written by a run that read 122 of ADM's boards over a plain fetch on
+     2026-09-15. No stand-in, no fixture I wrote: the file in this repository.
+     Every earlier version of this builder produced manifests lib/sources.mjs
+     refused — 152 of 152 on the first, then 2 of 122 on the fifth. */
+  const path = new URL("../data/gradable/adm-boards.json", import.meta.url);
+  const report = JSON.parse(readFileSync(path, "utf8"));
+  assert.equal(reportRefusal(report, "adm"), null);
+  assert.equal(report.transport, "fetch");
+
+  const readings = readingsByMarket(report);
+  const failures = new Map((report.failures ?? []).map((f) => [String(f.marketId), f.why]));
+  const built = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite)
+    .map((m) => fillFromReading(skeletonFor(m, "adm", "adm", "the committed bootstrap"),
+      readings.get(String(m.marketId)), { enable: true, failure: failures.get(String(m.marketId)) ?? null }))
+    .filter((x) => Object.keys(x.bands).length);
+
+  const r = loadSources(built);
+  assert.deepEqual(r.errors, [], r.errors.slice(0, 5).join("\n"));
+  assert.equal(built.length, 122);
+  assert.equal(r.sources.length, 114, "the enabled count moved — re-read the holds before shipping");
+  assert.equal(built.filter((x) => JSON.stringify(x).includes("SET THIS")).length, 0);
+  /* Nothing enabled may carry a null coordinate or an empty band. */
+  for (const x of r.sources) {
+    assert.ok(Object.keys(x.bands).length, `${x.id} enabled with no band`);
+    assert.equal(typeof x.lat, "number", `${x.id} enabled with no coordinate`);
+  }
+});
+
+test("FOUR OF ADM'S SEVEN CANADIAN BOARDS GO ON, and the other three say why", () => {
+  const report = JSON.parse(readFileSync(new URL("../data/gradable/adm-boards.json", import.meta.url), "utf8"));
+  const readings = readingsByMarket(report);
+  const built = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite)
+    .map((m) => fillFromReading(skeletonFor(m, "adm", "adm", "t"), readings.get(String(m.marketId)), { enable: true }))
+    .filter((x) => Object.keys(x.bands).length && x.country === "CA");
+
+  assert.equal(built.length, 7);
+  for (const x of built) assert.equal(x.currency, "CAD", `${x.id} is not in Canadian dollars`);
+
+  const on = built.filter((x) => x.enabled).map((x) => x.id).sort();
+  assert.deepEqual(on, ["adm-bacresgrain", "adm-blenheimon", "adm-maidstoneon", "adm-windsoron"]);
+
+  /* The three held are canola crushes whose every row is per metric tonne. */
+  for (const x of built.filter((y) => !y.enabled)) {
+    assert.match(x._pending, /metric_tons/, `${x.id} is held for something else`);
+    assert.match(x._pending, /per bushel/);
+  }
+});
+
+test("and no ADM manifest anywhere declares a currency against its own country", () => {
+  const report = JSON.parse(readFileSync(new URL("../data/gradable/adm-boards.json", import.meta.url), "utf8"));
+  const readings = readingsByMarket(report);
+  const built = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite)
+    .map((m) => fillFromReading(skeletonFor(m, "adm", "adm", "t"), readings.get(String(m.marketId)), { enable: true }))
+    .filter((x) => Object.keys(x.bands).length);
+  for (const x of built)
+    if (x.currency && x.country)
+      assert.equal(CURRENCY_OF_COUNTRY[x.country], x.currency, `${x.id} declares ${x.currency} in ${x.country}`);
+  /* Velva and Enderlin ND quote CAD on a US market and must declare nothing. */
+  for (const id of ["adm-velvand", "adm-enderlinnd"]) {
+    const x = built.find((y) => y.id === id);
+    if (!x) continue;
+    assert.equal("currency" in x, false, `${id} declares a currency that contradicts its country`);
+    assert.equal(x.enabled, false);
+  }
+});
+
+test("THE NOTE NAMES WHICHEVER SOURCE ACTUALLY WON", () => {
+  /* The value and its provenance used to be two separate expressions, so
+     reversing the precedence moved the value and left the note claiming the old
+     source — a mutation that survived a whole round because nothing compared
+     the two. They come off one ordered list now. */
+  const src = readFileSync(new URL("../scripts/gradable-markets.mjs", import.meta.url), "utf8");
+  assert.match(src, /const won = disagree \|\| twoMoneys \? null : sources\.find/,
+    "the currency and its provenance are being decided separately again");
+  assert.match(src, /const currency = won \? won\[1\] : null;/);
+  assert.match(src, /const currencyVia = won \? won\[0\] : null;/);
+  /* And the order on that list is rows first. */
+  const list = src.slice(src.indexOf("const sources = ["), src.indexOf("const won ="));
+  assert.ok(list.indexOf("own rows") < list.indexOf("country_code"),
+    "their country_code now outranks their own rows");
 });

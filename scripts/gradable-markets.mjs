@@ -217,38 +217,101 @@ export function fillFromReading(skel, reading, { enable = false, failure = null 
     out.cashRoundingCents = 0;
   }
 
-  /* THE CURRENCY THEIR OWN ROWS STATED — 2026-09-15.
+  /* THE CURRENCY, BY WHICHEVER OF THEIR OWN FACTS ESTABLISHES IT — 2026-09-15.
    *
-   * This used to hold every non-US market with "no run has measured what
-   * currency its board quotes", which was true and is no longer: the board
-   * payload carries `currency` on every row and `futures.currency` beside it,
-   * and lib/adapters/gradable.mjs was throwing both away. That is the exact
-   * fault lib/currency.mjs was written about — "the DTN payload states the
-   * currency on every record ... we were discarding it" — with gradable the
-   * last adapter still doing it.
+   * Their board rows carry `currency`, and lib/adapters/gradable.mjs now reads
+   * it. But the first ADM run showed three Ontario markets — Blenheim,
+   * Maidstone and Alvinston — whose rows state NO currency at all:
+   * `currenciesSeen: []`, in bushels, posting Canadian corn, soybeans and
+   * wheat. An earlier version of this held all three for it.
    *
-   * So the currency is written when their rows stated one, and a market is held
-   * when they did not, or when they stated two. Declaring it here is a second
-   * lock rather than the answer: resolveCurrency reads the feed first and
-   * REFUSES if the manifest disagrees with it, so a wrong declaration fails
-   * loudly instead of publishing. */
-  const currency = reading.currency ?? null;
+   * THAT HOLD WAS STRICTER THAN THE REPOSITORY'S OWN RULE, and it was keeping
+   * three real elevators off the board for a reason nothing requires.
+   * lib/currency.mjs ranks the ways a currency can be known — payload,
+   * declared, province — and both Canadian sources publishing TODAY sit on the
+   * middle one: sources/addisgrain-oromedonte.json declares `"currency":
+   * "CAD"` and data/addisgrain-oromedonte.json publishes `currencyVia:
+   * "declared"`.
+   *
+   * So this does what Addis Grain does. Their rows first, because that is the
+   * strongest tier there is. Failing that, their own `country_code` — "CAN" on
+   * thirteen ADM markets, read from their payload, not inferred from a state
+   * table — through CURRENCY_OF_COUNTRY, which is this repository's own.
+   *
+   * NEITHER IS A GUESS, AND BOTH ARE SELF-CHECKING. resolveCurrency reads the
+   * feed before it reads the manifest and REFUSES when they disagree: "the
+   * manifest declares CAD and the feed states USD on every row. The feed is the
+   * elevator's own word and the manifest is ours, so ours is the one that is
+   * wrong." A currency derived here that turns out wrong fails loudly on the
+   * next pass rather than publishing.
+   *
+   * TWO CURRENCIES ON ONE BOARD IS STILL A HOLD, and it is not a nicety:
+   * resolveCurrency THROWS on that, every pass, forever. Webberville, MI quotes
+   * both CAD and USD. */
+  const stated = reading.currency ?? null;
+  const fromCountry = out.country ? (CURRENCY_OF_COUNTRY[out.country] ?? null) : null;
+
+  /* WHEN THEIR OWN TWO FACTS DISAGREE, THIS DECLARES NEITHER — found by
+   * building all 122 and loading them, 2026-09-15.
+   *
+   * Velva and Enderlin, North Dakota, are ADM canola plants. Their payload says
+   * `country_code: "USA"` and their rows quote CAD per metric tonne, which is
+   * how a US canola crush prices off the ICE Canada contract. Writing either
+   * one as `currency` produced
+   *
+   *     "adm-velvand": country US and currency CAD disagree
+   *
+   * from lib/sources.mjs — twice, in every pass, on files that are DISABLED,
+   * because loadSources validates before it skips a disabled source.
+   *
+   * Leaving the key out is not a dodge, it is the safe answer: resolveCurrency
+   * reads the FEED before the manifest, so if either of these is ever enabled
+   * its rows' own CAD wins on the `payload` tier — the strongest there is —
+   * and no declaration of ours can overrule it. The market is held either way,
+   * and the note records both facts. */
+  const disagree = Boolean(stated && out.country && CURRENCY_OF_COUNTRY[out.country] !== stated);
+  /* A BOARD QUOTING TWO CURRENCIES GETS NEITHER, AND GETS NOTHING FROM ITS
+     COUNTRY EITHER. Falling back to the country there would stamp CAD on
+     Webberville, MI — a board that quotes both CAD and USD — on the strength of
+     a country that says nothing about which row is which. */
+  const twoMoneys = (reading.currenciesSeen ?? []).length > 1;
+  /* ONE DECISION, NOT TWO. The value and the sentence that says where it came
+     from were computed by separate expressions, so reversing the precedence
+     moved the value and left the note claiming the old source. Both come off
+     the same list now, in order, and the note names whichever entry won. */
+  const sources = [
+    ["their board's own rows", stated],
+    [`their payload's country_code (${out.country})`, fromCountry],
+  ];
+  const won = disagree || twoMoneys ? null : sources.find(([, v]) => v);
+  const currency = won ? won[1] : null;
+  const currencyVia = won ? won[0] : null;
   if (currency) out.currency = currency;
   else delete out.currency;
 
   const why = [];
-  if (!currency)
-    why.push((reading.currenciesSeen ?? []).length > 1
-      ? `their rows state two currencies (${reading.currenciesSeen.join(", ")}) and neither may stand for the other`
-      : `their rows state no currency, so nothing establishes which money this board is in`);
+  if (twoMoneys)
+    why.push(`their rows state two currencies (${reading.currenciesSeen.join(", ")}) — ` +
+             `lib/currency.mjs refuses a board that cannot say which money it is in`);
+  else if (!disagree && !currency)
+    why.push(`nothing establishes which money this board is in: their rows state none ` +
+             `and their payload names no country`);
   /* A country their payload names and a currency their rows state must agree.
      lib/sources.mjs refuses the pair outright; this catches it before the file
      is written and says which two disagreed. */
-  if (currency && out.country && CURRENCY_OF_COUNTRY[out.country] !== currency)
-    why.push(`their payload puts this market in ${out.country} and their rows quote ${currency}`);
-  if (reading.rowsNotInBushels > 0 && !Object.keys(bands).length)
-    why.push(`all ${reading.rowsNotInBushels} of its rows are priced in a unit other than bushels ` +
-             `(${(reading.units ?? []).join(", ") || "unstated"})`);
+  if (disagree)
+    why.push(`their payload puts this market in ${out.country} and their rows quote ${stated}, ` +
+             `so this file declares no currency and their rows would decide it`);
+
+  /* EVERY ROW IN A UNIT THE BANDS ARE NOT IN. Watson SK, Carberry MB and
+     Lloydminster AB post canola and nothing else, all of it per metric tonne.
+     lib/board.mjs's canola band is [6, 35] PER BUSHEL; a tonne price is two
+     orders of magnitude outside it and would be withheld row by row anyway.
+     Holding the market says so once, instead of publishing a source that
+     withholds everything it reads. */
+  if (reading.rows > 0 && reading.rowsNotInBushels === reading.rows)
+    why.push(`all ${reading.rows} of its rows are priced in ${(reading.units ?? []).join(", ") || "a unit it did not state"}, ` +
+             `and every band in lib/board.mjs is per bushel`);
   if (!Object.keys(bands).length) why.push("their board posted no crop this repository has a band for");
   if (!mode) why.push(`the residuals established no rounding mode (${reading.roundingSaid ?? "not stated"})`);
   else if (testable < MIN_TESTABLE_TO_ENABLE)
@@ -256,7 +319,9 @@ export function fillFromReading(skel, reading, { enable = false, failure = null 
 
   out.enabled = Boolean(enable && !why.length);
 
-  out.note = `${skel.note} BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: ` +
+  out.note = `${skel.note} ` +
+    (currency ? `CURRENCY IS ${currency}, FROM ${currencyVia}. ` : ``) +
+    `BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: ` +
     `${reading.rows} row(s) over ${reading.crops.length} of their commodity codes, ` +
     `${testable} of them testable against cash - basis = futures, and the residuals ` +
     `${mode === "exact" ? `were zero on every one — so no cashRounding is declared and the ` +
