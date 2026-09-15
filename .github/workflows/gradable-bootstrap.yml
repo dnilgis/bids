@@ -1,0 +1,125 @@
+# CAPTURE A GRADABLE PARTNER'S WHOLE MARKET LIST AND COMMIT IT.
+#
+# WHY THIS IS NOT A discover RUN. discover.yml is `permissions: contents: read`
+# on purpose -- it asks other people's sites and must not be able to write -- so
+# everything it learns leaves as a log. POET's bootstrap left that way: 202,283
+# bytes, thirty-six markets, read out of a run's output.
+#
+# ADM's cannot. Run 2026-09-15T02:04 asked for it with --dump-max 1000000 and
+# got back
+#
+#     200 application/json 400000B (TRUNCATED at the cap)
+#
+# because --dump-max governs PRINTING and captureAll's own maxBodyBytes governs
+# what the browser hands over, and the second one is 400,000. The body was cut
+# before anything decided whether to print it. What survived runs A through a
+# half-word of "Maidstone, ON": about 71 markets at POET's measured 5,619 bytes
+# each, so the whole payload is something over 700 KB.
+#
+# A 700 KB payload is not moved by pasting a log into a chat window. This job
+# captures it with the ceiling raised and writes the file, and the bytes never
+# pass through a person.
+#
+# WHAT IT CAN AND CANNOT TOUCH. It writes exactly one path,
+# fixtures/gradable-<partner>-bootstrap.json, and <partner> comes from the
+# dropdown below and is checked against a list in the script -- an input that
+# reaches a filename is an input that can reach `../`. It writes no source
+# manifest and publishes no bid. Turning a market into a source file is
+# scripts/gradable-markets.mjs, which prints skeletons for a person to read and
+# leaves `enabled: false` on every one.
+#
+# DRY RUN IS THE DEFAULT, like geocode-fill: it captures, checks and reports,
+# and commits nothing until the box is ticked.
+
+name: gradable bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      partner:
+        description: "Whose market list to capture"
+        type: choice
+        default: adm
+        options:
+          - adm
+          - poet
+      commit:
+        description: "Commit the fixture. Leave OFF for a dry run that captures and reports but writes nothing to the repository."
+        type: boolean
+        default: false
+      max_body:
+        description: "Bytes the browser may hand over. Blank uses 1,500,000 -- about 267 markets at POET's measured 5,619 bytes each. Raise it if the run says TRUNCATED."
+        required: false
+      allow_shrink:
+        description: "Let the fixture name FEWER markets than the committed one. Off by default: a list that shrank is a closure or a bad capture, and both deserve a human."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Never two at once: both would write the same path, and the loser's capture
+# would be the one that landed.
+concurrency:
+  group: gradable-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        # ref: main, not the SHA the dispatch was created at. A queued run that
+        # checks out an older tree would compare its capture against an older
+        # fixture and could "shrink" against a count that has since grown.
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # The guards that decide whether this body may be written run before the
+      # body exists. --selftest needs no browser and no network.
+      - name: Test the guards
+        run: |
+          node scripts/gradable_bootstrap.mjs --selftest
+          node --test test/gradable.test.mjs test/cdp.test.mjs test/workflows.test.mjs
+
+      - name: Capture
+        env:
+          PARTNER: ${{ inputs.partner }}
+          MAX_BODY: ${{ inputs.max_body }}
+          ALLOW_SHRINK: ${{ inputs.allow_shrink }}
+        run: |
+          ARGS="--partner $PARTNER"
+          if [ -n "$MAX_BODY" ]; then ARGS="$ARGS --max-body $MAX_BODY"; fi
+          if [ "$ALLOW_SHRINK" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          node scripts/gradable_bootstrap.mjs $ARGS
+
+      # The fixture is an input to the adapter's own tests. If it does not read,
+      # it does not get committed, however clean the capture looked.
+      - name: The adapter must still read it
+        run: |
+          node --test test/gradable.test.mjs
+          node scripts/gradable-markets.mjs fixtures/gradable-${{ inputs.partner }}-bootstrap.json --partner ${{ inputs.partner }} --json > /tmp/skeletons.json
+          node -e '
+            const s = JSON.parse(require("fs").readFileSync("/tmp/skeletons.json","utf8"));
+            if (!Array.isArray(s) || s.length === 0) { console.error("::error::the skeleton builder returned nothing"); process.exit(1); }
+            const enabled = s.filter((x) => x.enabled === true).length;
+            if (enabled) { console.error(`::error::${enabled} skeleton(s) came out enabled; nothing here has been read`); process.exit(1); }
+            console.log(`${s.length} skeleton(s), all held disabled`);
+          '
+
+      # MARKETS and FIXTURE come from the capture step through $GITHUB_ENV. The
+      # count is the adapter's own, not a second one grepped out of the file in
+      # a shell: two counters of the same thing eventually disagree, and the
+      # commit message is exactly where nobody would notice which one was wrong.
+      - name: Commit
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name "bids bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add "$FIXTURE"
+          if git diff --staged --quiet; then echo "the capture matches what is committed; nothing to commit"; exit 0; fi
+          bash scripts/commit-and-push.sh "gradable: $PARTNER bootstrap, $MARKETS market(s), captured whole [skip ci]"
+        env:
+          PARTNER: ${{ inputs.partner }}

@@ -49,7 +49,9 @@ on:
         default: unfinished
         options:
           - unfinished           # everything the ledger has not decided
-          - gradable             # the POET and ADM pages; pair with dump=bootstrap, limit=1
+          - gradable             # the POET and ADM pages. NOT for the bootstrap any more:
+                                 # ADM's is over 700 KB and captureAll's own 400,000-byte
+                                 # ceiling cuts it. Use the `gradable bootstrap` workflow.
           - gd-candidates        # Grain Desk
           - national             # the whole country
           - discover-candidates
