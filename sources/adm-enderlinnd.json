@@ -1,0 +1,31 @@
+{
+  "id": "adm-enderlinnd",
+  "operator": "ADM",
+  "location": "Enderlin",
+  "state": "ND",
+  "platform": "gradable",
+  "url": "https://adm.gradable.com/api/commodities/v2/merchandising/instruments/market/331847178?offer_type=public",
+  "browserPage": "https://adm.gradable.com/market/Enderlin--ND",
+  "locationId": "331847178",
+  "bands": {
+    "canola": [
+      6,
+      35
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "country": "US",
+  "lat": 46.612266540527344,
+  "lon": -97.57412719726562,
+  "zip": "58027",
+  "address": "5525 136th Ave Se",
+  "phone": null,
+  "email": null,
+  "website": "https://adm.gradable.com/market/Enderlin--ND",
+  "inMerge": true,
+  "note": "BUILT FROM ADM'S OWN BOOTSTRAP, the. market id, display name, address, state, zip and the coordinate are copied verbatim from that payload and nothing was looked up or derived. The coordinate is their geocoder's, recorded under geocodes[\"Google/Address\"]. THEIR PAYLOAD DECLARES NO ROUNDING — commodity_settings is empty on this market — so cashRounding is null and no value has been assumed. It has to be counted from this market's own board before this file can publish anything. BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: 10 row(s) over 1 of their commodity codes, 0 of them testable against cash - basis = futures, and the residuals admit no single mode. Every crop their board posted has a band.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own market page asks for. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "_pending": "HELD DISABLED: their payload puts this market in US and their rows quote CAD, so this file declares no currency and their rows would decide it; all 10 of its rows are priced in metric_tons, and every band in lib/board.mjs is per bushel; the residuals established no rounding mode (no testable row — nothing carried cash, basis and futures together (10 row(s) set aside — quoted in another unit, identity not checkable))."
+}
