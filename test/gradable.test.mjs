@@ -11,7 +11,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { readdirSync } from "node:fs";
 import { extract, marketsFrom, boardUrl, describe, roundingFor, parseBody,
-         COMMODITY_NAMES, DECLARED_ROUNDING, GradableRefused } from "../lib/adapters/gradable.mjs";
+         COMMODITY_NAMES, DECLARED_ROUNDING, GradableRefused,
+         commoditiesFrom, partnerFromUrl, namesFor, forgetNames } from "../lib/adapters/gradable.mjs";
+import { bandFor } from "../lib/board.mjs";
 import { CASH_ROUNDING } from "../lib/board.mjs";
 import { buildFile } from "../lib/board.mjs";
 import { toConfig, validateSource, PLATFORMS, transportOf } from "../lib/sources.mjs";
@@ -419,4 +421,127 @@ test("WHERE THE TWO SOURCES DISAGREE, THEIRS WINS — and on ZIP they do disagre
   for (const [id, zip] of [[331846037, "46107"], [331847519, "63451"], [331847520, "41059"]])
     assert.equal(ms.find((m) => m.marketId === id).zip, zip,
       `market ${id} took the typed ZIP over their geocoder's`);
+});
+
+/* ---------------------------------------------------------------------------
+ * THE DICTIONARY THAT WAS FOUR ENTRIES LONG — 2026-09-15.
+ *
+ * The first ADM board run read 122 boards and every row came back as a code:
+ * "01", "02", "11", "16", "37", "73", "MW", "31", "12", "28", "49", "U9",
+ * "59", "R5", "1B", "PB". None was in COMMODITY_NAMES, so bandFor returned
+ * null for all of them and NOT ONE ADM ROW COULD EVER HAVE PUBLISHED.
+ *
+ * The forty-two entry dictionary was in the bootstrap the whole time.
+ * --------------------------------------------------------------------------- */
+
+const ADM_CODES_SEEN = ["01", "02", "11", "16", "37", "73", "MW", "31",
+                        "12", "28", "49", "U9", "59", "R5", "1B", "PB"];
+
+test("EVERY CODE THE ADM RUN SAW IS NAMED BY ADM'S OWN BOOTSTRAP", () => {
+  const names = commoditiesFrom(readFileSync(new URL("../fixtures/gradable-adm-bootstrap.json", import.meta.url), "utf8"));
+  assert.ok(Object.keys(names).length >= 42, `${Object.keys(names).length} entries`);
+  for (const c of ADM_CODES_SEEN)
+    assert.ok(names[c], `code ${c} — seen on a real board — is not in their dictionary`);
+  /* The two that carry the most markets, by name, so a dictionary that shifted
+     under us is caught rather than merely counted. */
+  assert.equal(names["01"], "Soybeans");
+  assert.equal(names["02"], "Corn");
+});
+
+test("AND FIFTEEN OF THE SIXTEEN BAND. Before this, zero did.", () => {
+  const names = namesFor("adm");
+  const unbanded = [];
+  for (const c of ADM_CODES_SEEN) {
+    let b = null;
+    try { b = bandFor({ bands: {} }, names[c]); } catch { b = null; }
+    if (!b) unbanded.push(`${c} ${names[c]}`);
+  }
+  /* Soybean Meal is priced per ton and lib/board.mjs lists it in
+     KNOWN_UNBANDED on purpose — a null there is the right answer, not a gap. */
+  assert.deepEqual(unbanded, ["MW Soybean Meal"], unbanded.join(" | "));
+});
+
+test("the board's rows resolve through the PARTNER IN THEIR OWN URL", () => {
+  const proto = parseBody(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8")).instruments[0];
+  const body = JSON.stringify({
+    instruments: ADM_CODES_SEEN.map((c) => ({ ...proto, ext_commodity_id: c, market_id: 331844986 })),
+  });
+  const rows = extract(body, boardUrl(331844986, "adm"));
+  assert.equal(rows.length, 16);
+  assert.equal(rows.find((r) => r.commodityCode === "02").commodity, "Corn");
+  assert.equal(rows.find((r) => r.commodityCode === "37").commodity, "Sorghum");
+  /* Not one of them may come out as its own code. */
+  assert.deepEqual(rows.filter((r) => r.commodity === r.commodityCode), []);
+});
+
+test("A LOOK-ALIKE HOST PICKS NOBODY'S DICTIONARY", () => {
+  /* Choosing a dictionary by a host somebody else controls would name one
+     operator's crops with another operator's words. */
+  assert.equal(partnerFromUrl("https://adm.gradable.com/api/x"), "adm");
+  assert.equal(partnerFromUrl("https://poet.gradable.com/api/x"), "poet");
+  assert.equal(partnerFromUrl("https://adm.gradable.com.evil.example/api/x"), null);
+  assert.equal(partnerFromUrl("https://evil.example/api/x?h=adm.gradable.com"), null);
+  assert.equal(partnerFromUrl("https://sub.adm.gradable.com/api/x"), null);
+  assert.equal(partnerFromUrl("http://adm.gradable.com/api/x"), null, "http is not their board");
+  assert.equal(partnerFromUrl("not a url"), null);
+});
+
+test("POET'S PUBLISHED WORDS DO NOT MOVE", () => {
+  /* The live POET files carry "Corn" and "Soybeans" and nothing else. Their own
+     dictionary says exactly those two strings for CN and SB, so switching from
+     the hand-copied table to their payload changes no published value. If this
+     ever fails, 35 committed boards just had their commodity column rewritten. */
+  const poet = namesFor("poet");
+  assert.equal(poet.CN, "Corn");
+  assert.equal(poet.SB, "Soybeans");
+  const rows = extract(
+    readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8"),
+    boardUrl(331845223, "poet"));
+  assert.deepEqual([...new Set(rows.map((r) => r.commodity))], ["Corn"]);
+});
+
+test("a partner with no committed bootstrap falls back rather than throwing", () => {
+  /* A pass must not die for every other platform because one bootstrap has not
+     been captured. It falls back to the table and refuses row by row. */
+  forgetNames();
+  const table = namesFor("nosuchpartner");
+  assert.deepEqual(table, COMMODITY_NAMES);
+  forgetNames();
+  assert.deepEqual(namesFor("alsomissing", () => { throw new Error("no such file"); }), COMMODITY_NAMES);
+  /* And an empty dictionary is not an answer that shadows the fallback. */
+  forgetNames();
+  assert.deepEqual(namesFor("empty", () => JSON.stringify({ bids_offers_ext_commodities: {} })), COMMODITY_NAMES);
+  forgetNames();
+});
+
+test("THE TWO DICTIONARIES ARE NEVER MERGED", () => {
+  /* They share no key today — measured — but a merge is one collision away
+     from naming one operator's crop with another's word for it. */
+  const adm = namesFor("adm"), poet = namesFor("poet");
+  assert.equal(Object.keys(poet).length, 4, "poet's dictionary grew; re-check the collision claim");
+  assert.deepEqual(Object.keys(poet).filter((k) => k in adm), [],
+    "the two dictionaries now share a key, so per-partner lookup is load-bearing");
+  /* An ADM code must mean nothing on a POET board. */
+  const proto = parseBody(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8")).instruments[0];
+  const body = JSON.stringify({ instruments: [{ ...proto, ext_commodity_id: "02", market_id: 331845223 }] });
+  assert.equal(extract(body, boardUrl(331845223, "poet"))[0].commodity, "02",
+    "POET's board named an ADM code, so the dictionaries are being merged");
+});
+
+test("the caller may hand in its own dictionary", () => {
+  /* The boards reader already has the bootstrap open; making the adapter
+     re-read the same 783 KB file would be a second copy of one fact. */
+  const proto = parseBody(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8")).instruments[0];
+  const body = JSON.stringify({ instruments: [{ ...proto, ext_commodity_id: "ZZ", market_id: 1 }] });
+  assert.equal(extract(body, boardUrl(1, "adm"), { names: { ZZ: "Turnips" } })[0].commodity, "Turnips");
+});
+
+test("the code is kept on the row and NEVER reaches the published file", () => {
+  const rows = extract(
+    readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8"),
+    boardUrl(331845223, "poet"));
+  assert.equal(rows[0].commodityCode, "CN");
+  const src = readFileSync(new URL("../data/poetgrain-bigstonecity.json", import.meta.url), "utf8");
+  assert.doesNotMatch(src, /commodityCode/,
+    "the raw code leaked into a published board file");
 });

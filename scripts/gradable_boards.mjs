@@ -93,8 +93,12 @@ export function readingFor(market, body, url) {
 
   const byCrop = new Map();
   for (const r of rows) {
-    const k = r.commodity;
-    if (!byCrop.has(k)) byCrop.set(k, { commodity: k, rows: 0, deliveries: new Set() });
+    /* KEYED ON THEIR CODE, NOT ON THE NAME IT RESOLVES TO. Two codes can carry
+       the same word — a name collision would merge two of their instruments
+       into one line and hide that one of them is unbanded. */
+    const k = r.commodityCode ?? r.commodity;
+    if (!byCrop.has(k))
+      byCrop.set(k, { code: k, commodity: r.commodity, rows: 0, deliveries: new Set() });
     const e = byCrop.get(k);
     e.rows++;
     e.deliveries.add(r.delivery);
@@ -110,7 +114,13 @@ export function readingFor(market, body, url) {
       let band = null;
       try { band = bandFor({ bands: {} }, e.commodity, rows); } catch { band = null; }
       return {
+        /* THEIR CODE AND THE NAME IT RESOLVED TO, BOTH. A code still showing as
+           its own name is a code their dictionary does not carry, and that has
+           to be readable at a glance — on 2026-09-15 every ADM row came back as
+           a bare code and the report is where that has to show. */
+        code: e.code,
         commodity: e.commodity,
+        unresolved: e.commodity === e.code,
         rows: e.rows,
         deliveries: e.deliveries.size,
         /* bandFor names its answer "corn (default)" to say where the band came
@@ -319,11 +329,21 @@ export function summarise(report) {
            (report.failures.length ? `; ${report.failures.length} failed` : ""));
 
   const crops = new Map();
-  for (const m of ms) for (const c of m.crops)
-    crops.set(c.commodity, (crops.get(c.commodity) ?? 0) + 1);
+  for (const m of ms) for (const c of m.crops) {
+    const k = `${c.code}\t${c.commodity}`;
+    crops.set(k, (crops.get(k) ?? 0) + 1);
+  }
   out.push(`crops posted, by how many markets post them:`);
-  for (const [c, n] of [...crops].sort((a, b) => b[1] - a[1]))
-    out.push(`    ${String(n).padStart(4)}  ${c}`);
+  for (const [k, n] of [...crops].sort((a, b) => b[1] - a[1])) {
+    const [code, name] = k.split("\t");
+    out.push(`    ${String(n).padStart(4)}  ${String(code).padEnd(9)} ${name}`);
+  }
+
+  /* A CODE THAT DID NOT RESOLVE IS THE LOUDEST LINE THIS REPORT CAN PRINT. */
+  const unresolved = [...new Set(ms.flatMap((m) => m.crops.filter((c) => c.unresolved).map((c) => c.code)))];
+  if (unresolved.length)
+    out.push(`THEIR DICTIONARY DOES NOT NAME: ${unresolved.join(", ")} — these are codes, not ` +
+             `crops, and every row carrying one is withheld. Re-capture the bootstrap.`);
 
   const unbanded = [...new Set(ms.flatMap((m) => m.crops.filter((c) => !c.band).map((c) => c.commodity)))];
   out.push(unbanded.length

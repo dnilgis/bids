@@ -311,3 +311,53 @@ test("a limited run can never be committed either", () => {
   assert.match(src, /existingCount: limit \? null : existing/,
     "a partial run is being measured against the committed whole and would 'shrink'");
 });
+
+test("THE REPORT PRINTS THE CODE BESIDE THE NAME", () => {
+  /* On 2026-09-15 every ADM row came back as a bare code and the report was the
+     place that had to make it visible. It grouped on the resolved NAME, so an
+     unresolved code showed only as a strange-looking crop. */
+  const r = readingFor(MARKET, BOARD, "https://poet.gradable.com/x");
+  assert.equal(r.crops[0].code, "CN");
+  assert.equal(r.crops[0].commodity, "Corn");
+  assert.equal(r.crops[0].unresolved, false);
+});
+
+test("AN UNNAMED CODE SETS THE FLAG ITSELF, and is called out loudly", () => {
+  /* The first version of this test pushed `unresolved: true` onto the crop list
+     by hand. That proved the summary can print a flag and proved nothing about
+     readingFor ever setting one — hardcoding it to false left this green. So
+     the code below is one their dictionary genuinely does not carry. */
+  const proto = JSON.parse(BOARD).instruments[0];
+  const body = JSON.stringify({ instruments: [
+    { ...proto, ext_commodity_id: "02", market_id: 1 },
+    { ...proto, ext_commodity_id: "ZZ9", market_id: 1 },
+  ] });
+  const r = readingFor({ ...MARKET, marketId: 1 }, body, "https://adm.gradable.com/x");
+  const named = r.crops.find((c) => c.code === "02");
+  const unnamed = r.crops.find((c) => c.code === "ZZ9");
+  assert.equal(named.unresolved, false, "a code their dictionary names was flagged unresolved");
+  assert.equal(unnamed.unresolved, true, "a code nobody names was not flagged");
+  assert.equal(unnamed.commodity, "ZZ9", "an unknown code was given a name it does not have");
+  assert.equal(unnamed.band, null, "an unknown code was given a band");
+  const text = summarise(reportFrom({
+    partner: "adm", transport: "fetch", fixture: "f",
+    marketsInFixture: 152, attempted: 1, readings: [r], failures: [],
+  }));
+  assert.match(text, /DOES NOT NAME: ZZ/);
+  assert.match(text, /codes, not\s+crops/);
+});
+
+test("crops are grouped by THEIR CODE, not by the word it resolves to", () => {
+  /* Two codes carrying one word would merge into a single line and hide that
+     one of them is unbanded. ADM has three canolas under three codes. */
+  const proto = JSON.parse(BOARD).instruments[0];
+  const body = JSON.stringify({ instruments: [
+    { ...proto, ext_commodity_id: "31", market_id: 1 },
+    { ...proto, ext_commodity_id: "59", market_id: 1 },
+    { ...proto, ext_commodity_id: "PB", market_id: 1 },
+  ] });
+  const r = readingFor({ ...MARKET, marketId: 1 }, body, "https://adm.gradable.com/x");
+  assert.equal(r.crops.length, 3, "three distinct codes collapsed into fewer lines");
+  assert.deepEqual(r.crops.map((c) => c.code).sort(), ["31", "59", "PB"]);
+  for (const c of r.crops) assert.equal(c.band, "canola");
+});
