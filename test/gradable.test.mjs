@@ -316,3 +316,107 @@ test("the board URL is built from the market id, not typed", () => {
   assert.match(boardUrl(1, "adm"), /^https:\/\/adm\.gradable\.com\//);
   assert.throws(() => boardUrl(null), GradableRefused);
 });
+
+/* --- ADM: a second partner, and what it does NOT declare ---------------- */
+/*
+ * fixtures/gradable-adm-bootstrap.json is the 783,632-byte body of
+ *   adm.gradable.com/api/commodities/merchandising/bootstrap
+ * captured whole on 2026-09-15 by the `gradable bootstrap` workflow and
+ * committed as d84e3de. It is not edited.
+ *
+ * It is here because POET alone could not have caught either of the two bugs
+ * below. Both are the same shape: a field POET happens to carry on every one
+ * of its 36 markets, read as if it were guaranteed.
+ */
+const ADM = readFileSync(new URL("../fixtures/gradable-adm-bootstrap.json", import.meta.url), "utf8");
+
+test("ADM: THE ADDRESS IS NOT ONLY IN fbn_normalized, and 129 markets proved it", () => {
+  const ms = marketsFrom(ADM);
+  assert.equal(ms.length, 152);
+  /* Before the fallbacks landed, measured on these exact bytes:
+       state null on 129, zip null on 129, address null on 130.
+     fbn_normalized is present on 23 of 152 here and on 36 of 36 in POET's. */
+  const raw = parseBody(ADM).markets;
+  assert.equal(raw.filter((m) => m?.address?.fbn_normalized).length, 23,
+    "the fixture changed; this test's whole premise is that most markets lack that block");
+  for (const f of ["state", "zip", "address", "city", "lat", "lon"])
+    assert.equal(ms.filter((m) => m[f] == null).length, 0,
+      `${f} is null on ${ms.filter((m) => m[f] == null).length} of 152 ADM markets`);
+});
+
+test("ADM: the state list is 26 codes, and nine of them are only reachable by fallback", () => {
+  const states = [...new Set(marketsFrom(ADM).map((m) => m.state))].sort();
+  assert.equal(states.length, 26);
+  /* Reading fbn_normalized alone printed seventeen. These nine were invisible,
+     and two of them are Iowa and Ohio. */
+  for (const s of ["AB", "AR", "GA", "IA", "LA", "OH", "PA", "SK", "WA"])
+    assert.ok(states.includes(s), `${s} is missing — the fallback is not being consulted`);
+});
+
+test("THE STATE IS THE TWO-LETTER CODE, never the spelled-out name", () => {
+  /* a.input_administrative_area_level_1 says "Kansas" on the very market whose
+     manifest needs "KS". It is in the same object as the code and is not a
+     state source. */
+  const m = marketsFrom(ADM).find((x) => x.marketId === 371713182);
+  assert.equal(m.state, "KS");
+  const raw = parseBody(ADM).markets.find((x) => x.id === 371713182);
+  assert.equal(raw.address.input_administrative_area_level_1, "Kansas");
+  for (const x of marketsFrom(ADM))
+    assert.match(x.state, /^[A-Z]{2}$/, `${x.displayName} has state ${JSON.stringify(x.state)}`);
+});
+
+test("POET'S VALUES DO NOT MOVE. The fallbacks are additive or they are a rewrite", () => {
+  /* 35 POET manifests are committed with these bytes in them. A fallback that
+     changed the order would silently rewrite files a person has already read. */
+  const m = marketsFrom(BOOT).find((x) => x.marketId === 331845223);
+  assert.equal(m.city, "Big Stone City");
+  assert.equal(m.state, "SD");
+  assert.equal(m.zip, "57216");
+  assert.equal(m.address, "48416 144th Street");
+  assert.equal(m.lat, 45.29914855957031);
+  assert.equal(m.lon, -96.51194763183594);
+});
+
+test("ADM DECLARES NO ROUNDING AT ALL, and nothing may assume one", () => {
+  /* POET states a mode per market and states three different ones. ADM's
+     commodity_settings is {} on every one of its 152. A manifest that said
+     "floor-cent" here would carry a number nobody measured. */
+  const raw = parseBody(ADM).markets;
+  assert.equal(raw.filter((m) => Object.keys(m?.commodity_settings ?? {}).length === 0).length, 152);
+  const ms = marketsFrom(ADM);
+  assert.equal(ms.filter((m) => m.declaredRounding == null).length, 152);
+  assert.equal(ms.filter((m) => m.cashRounding == null).length, 152);
+  /* And POET still declares its three, so this is a fact about ADM and not a
+     reader that stopped reading. */
+  assert.ok(new Set(marketsFrom(BOOT).map((m) => m.declaredRounding)).size >= 3);
+});
+
+test("ADM: 0 demo markets, 136 of 152 post a board", () => {
+  const ms = marketsFrom(ADM);
+  assert.equal(ms.filter((m) => m.demo).length, 0);
+  assert.equal(ms.filter((m) => (m.publicInstruments ?? 0) > 0).length, 136);
+  /* Six companies run markets on ADM's own site. `operator` is theirs, not
+     "ADM" stamped on everything. */
+  const cos = [...new Set(ms.map((m) => m.company))].sort();
+  assert.deepEqual(cos, ["ADM", "Bacres Grain", "MFA", "MFA Agri Services",
+                         "Maplehurst Farms", "Prairie Grain Partners"]);
+});
+
+test("WHERE THE TWO SOURCES DISAGREE, THEIRS WINS — and on ZIP they do disagree", () => {
+  /* Measured across ADM's 23 markets that carry both blocks: state never
+     disagrees, ZIP disagrees on three, and the street line on fifteen. So the
+     order of the ?? chain is not cosmetic. These three are the proof:
+
+       Beech Grove, IN   fbn 46107   input 46107-0610   (ZIP+4 for a PO box)
+       Novelty, MO       fbn 63451   input 63460        (a different ZIP)
+       Silver Grove, KY  fbn 41059   input 41085        (a different ZIP)
+
+     fbn_normalized is the block their geocoder produced for the coordinate
+     this manifest also carries. input_postal_code is whatever was typed into
+     their system. Reading the typed one first would put two facilities in the
+     wrong postcode while the pin stayed right. */
+  const ms = marketsFrom(ADM);
+  for (const [id, zip] of [[331846037, "46107"], [331847519, "63451"], [331847520, "41059"]])
+    assert.equal(ms.find((m) => m.marketId === id).zip, zip,
+      `market ${id} took the typed ZIP over their geocoder's`);
+});

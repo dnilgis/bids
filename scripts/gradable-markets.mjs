@@ -37,7 +37,10 @@ const file = args.find((a) => !a.startsWith("--") && args[args.indexOf(a) - 1]?.
 export const slugOf = (displayName) =>
   String(displayName ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 26);
 
-export function skeletonFor(m, partner, operatorSlug) {
+/* `capture` names where these bytes came from. It used to be a hardcoded
+   "captured 2026-09-07 (discover run 92448826700)" inside the note, which was
+   POET's capture and would have been printed on 152 ADM files. */
+export function skeletonFor(m, partner, operatorSlug, capture = "capture not stated") {
   return {
     id: `${operatorSlug}-${slugOf(m.displayName)}`,
     operator: m.company ?? "SET THIS",
@@ -55,30 +58,50 @@ export function skeletonFor(m, partner, operatorSlug) {
     cadence: "grain-day",
     provenance: "scraped",
     enabled: false,
-    /* THEIR BOARD SAYS `always_down`, WHICH IS floor-cent. Not counted, not
-       inferred: `cash_bid_rounding_mode` is a field in their payload and
-       lib/adapters/gradable.mjs translates only the value that has been seen.
-       Confirm it on this market's own first read before enabling. */
-    cashRounding: "floor-cent",
-    cashRoundingCents: 0,
+    /* THE ROUNDING IS THIS MARKET'S OWN, OR IT IS NOTHING — 2026-09-15.
+     *
+     * This line used to be the literal string "floor-cent" for every market,
+     * with a note beside it saying "Their board declares cash_bid_rounding_mode
+     * always_down". That sentence is true of POET and false of ADM, and until
+     * ADM's bootstrap was captured whole there was no way to find out.
+     *
+     * Measured on fixtures/gradable-adm-bootstrap.json, 152 markets:
+     *
+     *     commodity_settings == {}   152 of 152
+     *     declaredRounding == null   152 of 152
+     *
+     * POET declares a mode per market and says three different ones — 17
+     * always_down, 10 half_down, 6 half_up, 2 absent. ADM declares none at
+     * all. Writing "floor-cent" into 152 files would have put a number nobody
+     * measured next to a note claiming their board said it.
+     *
+     * So it is theirs when they state one, and null when they do not, and a
+     * null here is a manifest lib/adapters/gradable.mjs REFUSES to publish
+     * until somebody counts the residuals on that market's own board. */
+    cashRounding: m.cashRounding ?? null,
+    cashRoundingCents: m.cashRounding ? 0 : null,
     lat: m.lat, lon: m.lon,
     zip: m.zip, address: m.address,
     phone: null, email: null,
     website: `https://${partner}.gradable.com/market${m.urlPath ?? ""}`,
     inMerge: true,
-    note: `BUILT FROM ${partner.toUpperCase()}'S OWN BOOTSTRAP, captured 2026-09-07 ` +
-          `(discover run 92448826700). market id, display name, address, state, zip and the ` +
-          `coordinate are copied verbatim from that payload and nothing was looked up or ` +
-          `derived. The coordinate is their geocoder's, recorded under geocodes["Google/Address"]. ` +
-          `Their board declares cash_bid_rounding_mode "always_down"; cashRounding is that ` +
-          `and not a count.`,
+    note: `BUILT FROM ${partner.toUpperCase()}'S OWN BOOTSTRAP, ${capture}. ` +
+          `market id, display name, address, state, zip and the coordinate are copied ` +
+          `verbatim from that payload and nothing was looked up or derived. The coordinate ` +
+          `is their geocoder's, recorded under geocodes["Google/Address"]. ` +
+          (m.declaredRounding
+            ? `Their board declares cash_bid_rounding_mode ${JSON.stringify(m.declaredRounding)}; ` +
+              `cashRounding is that and not a count.`
+            : `THEIR PAYLOAD DECLARES NO ROUNDING — commodity_settings is empty on this market — ` +
+              `so cashRounding is null and no value has been assumed. It has to be counted from ` +
+              `this market's own board before this file can publish anything.`),
     publicNote: "Their publicly posted cash board, read from the feed their own market page " +
       "asks for. Cash and basis are their own commercial numbers. The futures quote is " +
       "carried only so a consumer can re-check cash minus basis; it is not redistributed " +
       "as a price feed.",
-    _pending: `HELD DISABLED. One market's board has been read and parsed ` +
-      `(Big Stone City, 5 of 5 rows reconciling under floor-cent); this one has not. ` +
-      `bands is empty until a read says which crops it posts.`,
+    _pending: `HELD DISABLED. bands is empty until a read says which crops this market posts` +
+      (m.declaredRounding ? `.` : `, and cashRounding is null until somebody counts the ` +
+        `residuals on its board. Two measurements, both missing.`),
   };
 }
 
@@ -86,13 +109,14 @@ if (process.argv[1] && process.argv[1].endsWith("gradable-markets.mjs")) {
   if (!file) { console.error("usage: gradable-markets.mjs <bootstrap-body.json> [--partner poet] [--json]"); process.exit(2); }
   const partner = flag("partner", "poet");
   const operatorSlug = flag("slug", partner === "poet" ? "poetgrain" : partner);
+  const capture = flag("capture", `captured from ${file}`);
   const markets = marketsFrom(readFileSync(file, "utf8"));
 
   const live = markets.filter((m) => !m.demo && m.publicSite);
   const skipped = markets.filter((m) => m.demo || !m.publicSite);
 
   if (args.includes("--json")) {
-    console.log(JSON.stringify(live.map((m) => skeletonFor(m, partner, operatorSlug)), null, 2));
+    console.log(JSON.stringify(live.map((m) => skeletonFor(m, partner, operatorSlug, capture)), null, 2));
     process.exit(0);
   }
 
