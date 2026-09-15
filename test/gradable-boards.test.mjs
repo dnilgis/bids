@@ -361,3 +361,77 @@ test("crops are grouped by THEIR CODE, not by the word it resolves to", () => {
   assert.deepEqual(r.crops.map((c) => c.code).sort(), ["31", "59", "PB"]);
   for (const c of r.crops) assert.equal(c.band, "canola");
 });
+
+test("THE REPORT RECORDS THE CURRENCY THEIR ROWS STATED", () => {
+  const r = readingFor(MARKET, BOARD, "https://poet.gradable.com/x");
+  assert.equal(r.currency, "USD");
+  assert.deepEqual(r.currenciesSeen, ["USD"]);
+  assert.deepEqual(r.units, ["bushels"]);
+  assert.deepEqual(r.futuresUnits, ["bushels"]);
+  assert.equal(r.rowsNotInBushels, 0);
+});
+
+test("TWO CURRENCIES ON ONE BOARD IS RECORDED AS BOTH, never as one", () => {
+  /* Picking one would publish the other as if it were that one. */
+  const proto = JSON.parse(BOARD).instruments[0];
+  const body = JSON.stringify({ instruments: [
+    { ...proto, currency: "usd", futures: { ...proto.futures, currency: "usd" } },
+    { ...proto, currency: "cad", futures: { ...proto.futures, currency: "cad" } },
+  ] });
+  const r = readingFor({ ...MARKET, marketId: 1 }, body, "https://adm.gradable.com/x");
+  assert.equal(r.currency, null, "one of two currencies was chosen as the board's");
+  assert.deepEqual(r.currenciesSeen, ["CAD", "USD"]);
+  const text = summarise(reportFrom({ partner: "adm", transport: "fetch", fixture: "f",
+    marketsInFixture: 1, attempted: 1, readings: [r], failures: [] }));
+  assert.match(text, /TWO CURRENCIES ON ONE BOARD/);
+  assert.match(text, /CAD, USD/);
+});
+
+test("rows not in bushels are counted and named in the summary", () => {
+  const proto = JSON.parse(BOARD).instruments[0];
+  const body = JSON.stringify({ instruments: [
+    { ...proto, quantity_unit: "tonnes" }, { ...proto, quantity_unit: "bushels" },
+  ] });
+  const r = readingFor({ ...MARKET, marketId: 1 }, body, "https://adm.gradable.com/x");
+  assert.equal(r.rowsNotInBushels, 1);
+  assert.deepEqual(r.units, ["bushels", "tonnes"]);
+  const text = summarise(reportFrom({ partner: "adm", transport: "fetch", fixture: "f",
+    marketsInFixture: 1, attempted: 1, readings: [r], failures: [] }));
+  assert.match(text, /tonnes/);
+  assert.match(text, /never checked against each other/);
+});
+
+test("A COUNTED MODE NARROWER THAN THE DECLARED ONE IS NOT A CONTRADICTION", () => {
+  /* The first POET run printed "DECLARED AND COUNTED DISAGREE ON 1 MARKET(S):
+     Mitchell, SD declares half_down, counts round-cent". It does not.
+     lib/rounding.mjs's NARROWER_THAN says round-cent is contained by
+     round-cent-either — the same window with the top end open — so that board
+     has simply not posted a +0.5 residual today. */
+  const mk = (declared, counted) => ({
+    ...readingFor(MARKET, BOARD, "u"),
+    declaredInBootstrap: declared,
+    rounding: { testable: 5, mode: counted, confident: counted, margin: 5, residuals: [] },
+  });
+  const say = (declared, counted) => summarise(reportFrom({
+    partner: "poet", transport: "fetch", fixture: "f", marketsInFixture: 1, attempted: 1,
+    readings: [mk(declared, counted)], failures: [] }));
+
+  assert.match(say("half_down", "round-cent"), /no market's counted mode contradicts/,
+    "a narrower counted mode is being reported as a disagreement");
+  assert.match(say("always_down", "floor-cent"), /no market's counted mode contradicts/);
+  /* A real one: floor-cent and round-cent explain different residuals and
+     neither contains the other. */
+  assert.match(say("always_down", "round-cent"), /CONTRADICT EACH OTHER ON 1 MARKET/);
+  assert.match(say("always_down", "round-cent"), /declares always_down \(floor-cent\), counts round-cent/,
+    "the declared mode is not being translated through roundingFor");
+});
+
+test("and the contradiction check carries no copy of DECLARED_ROUNDING", () => {
+  /* It had one, typed inline. Two copies of that table is how one of them stops
+     matching the adapter. */
+  const src = readFileSync(new URL("../scripts/gradable_boards.mjs", import.meta.url), "utf8");
+  assert.doesNotMatch(src, /always_down:\s*"floor-cent"/,
+    "the mode table is typed out again here instead of imported");
+  assert.match(src, /roundingFor\(declared\)/);
+  assert.match(src, /NARROWER_THAN\[counted\]/);
+});

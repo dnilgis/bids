@@ -167,6 +167,7 @@ test("THE SHIPPED POET MANIFESTS AGREE WITH THE READER, ALL 35 OF THEM", () => {
 import { fillFromReading, bandsFromReading, reportRefusal, readingsByMarket,
          MIN_TESTABLE_TO_ENABLE } from "../scripts/gradable-markets.mjs";
 import { validateSource, loadSources } from "../lib/sources.mjs";
+import { countryOfState } from "../lib/currency.mjs";
 
 const reading = (over = {}) => ({
   marketId: 371713182, rows: 12,
@@ -177,11 +178,21 @@ const reading = (over = {}) => ({
   declaredInBootstrap: null, declaredOnBoard: null,
   rounding: { testable: 12, mode: "exact", confident: "exact", margin: 0, residuals: [0] },
   roundingSaid: "exact [12 testable]",
+  /* Their rows' own word for the money. A reading without one is a board that
+     stated no currency, and that market is held — so a fixture that leaves it
+     out is testing the hold, not the happy path. */
+  currency: "USD", currenciesSeen: ["USD"],
+  units: ["bushels"], futuresUnits: ["bushels"], rowsNotInBushels: 0,
   ...over,
 });
+/* A skeleton for one real ADM market, with the state (and the country their
+   payload implies) overridden. Setting the state without the country is what
+   made the first version of this helper produce a Saskatchewan market in the
+   United States, which lib/sources.mjs then refused for quoting CAD. */
 const skelFor = (state = "KS") => ({
   ...skeletonFor(marketsFrom(ADM).find((m) => m.marketId === 371713182), "adm", "adm", "test capture"),
   state,
+  country: countryOfState(state),
 });
 
 test("EXACT MEANS THE KEY IS ABSENT, NOT NULL — 152 manifests were refused over this", () => {
@@ -256,14 +267,49 @@ test("several of their codes under one band name is fine; two different ranges i
     crops[0], { ...crops[1], range: [5, 9] } ] }), /two different bands/);
 });
 
-test("A CANADIAN MARKET IS WRITTEN AND HELD, because nobody has read its currency", () => {
-  const f = fillFromReading(skelFor("SK"), reading(), { enable: true });
+test("A CANADIAN MARKET GOES ON THE BOARD WHEN ITS OWN ROWS SAY CAD", () => {
+  /* This used to hold every non-US market with "no run has measured what
+     currency its board quotes". The board payload states it on every row and
+     lib/adapters/gradable.mjs was throwing it away — the exact fault
+     lib/currency.mjs was written about. Now it is read, so the hold is gone and
+     the currency is a FACT rather than a province inference. */
+  const f = fillFromReading(skelFor("SK"), reading({ currency: "CAD", currenciesSeen: ["CAD"] }),
+                            { enable: true });
+  assert.equal(f.currency, "CAD");
+  assert.equal(f.enabled, true, f._pending);
+  assert.deepEqual(validateSource({ ...f, id: "adm-ca", country: "CA", lat: 52.12, lon: -104.38 }), []);
+});
+
+test("and it is held when their rows state NO currency, wherever it is", () => {
+  for (const state of ["SK", "KS"]) {
+    const f = fillFromReading(skelFor(state),
+      reading({ currency: null, currenciesSeen: [] }), { enable: true });
+    assert.equal(f.enabled, false);
+    assert.equal("currency" in f, false, "a currency nobody stated reached the manifest");
+    assert.match(f._pending, /state no currency/);
+  }
+});
+
+test("TWO CURRENCIES ON ONE BOARD IS NOT A BOARD WITH A CURRENCY", () => {
+  /* resolveCurrency refuses this outright: "cash figures in two currencies
+     cannot share one board file, and picking one of them would publish the
+     other as if it were that one". */
+  const f = fillFromReading(skelFor("ON"),
+    reading({ currency: null, currenciesSeen: ["CAD", "USD"] }), { enable: true });
   assert.equal(f.enabled, false);
-  assert.match(f._pending, /SK/);
-  assert.match(f._pending, /currency/);
-  /* But it still has to LOAD — loadSources validates before it skips a
-     disabled source, so a refused Canadian file is an error every pass. */
-  assert.deepEqual(validateSource({ ...f, id: "adm-ca", lat: 52.12, lon: -104.38 }), []);
+  assert.equal("currency" in f, false);
+  assert.match(f._pending, /two currencies/);
+  assert.match(f._pending, /CAD, USD/);
+});
+
+test("a country their payload names and a currency their rows quote must agree", () => {
+  /* lib/sources.mjs refuses the pair. This catches it before the file exists
+     and says which two disagreed. */
+  const f = fillFromReading({ ...skelFor("SK"), country: "CA" },
+    reading({ currency: "USD", currenciesSeen: ["USD"] }), { enable: true });
+  assert.equal(f.enabled, false);
+  assert.match(f._pending, /CA/);
+  assert.match(f._pending, /USD/);
 });
 
 test("a market with no board read is never turned into a file", () => {
@@ -304,7 +350,15 @@ test("THE WHOLE SET LOADS: 152 markets, a report, and zero loader errors", () =>
   /* The end of the chain, run rather than described. Build every ADM manifest
      from a report, hand them to loadSources, and demand it finds nothing. */
   const ms = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite);
-  const readings = new Map(ms.slice(0, 120).map((m) => [String(m.marketId), reading({ marketId: m.marketId })]));
+  /* THE CURRENCY MUST MATCH THE COUNTRY THEIR PAYLOAD NAMES. Handing every
+     market USD put nine Canadian ones in front of lib/sources.mjs as "country
+     CA and currency USD disagree" — the guard doing exactly its job on a
+     fixture that was wrong. */
+  const readings = new Map(ms.slice(0, 120).map((m) => [String(m.marketId), reading({
+    marketId: m.marketId,
+    currency: m.countryCode === "CA" ? "CAD" : "USD",
+    currenciesSeen: [m.countryCode === "CA" ? "CAD" : "USD"],
+  })]));
   const built = ms
     .map((m) => fillFromReading(skeletonFor(m, "adm", "adm", "t"), readings.get(String(m.marketId)), { enable: true }))
     .filter((x) => Object.keys(x.bands).length);
@@ -336,4 +390,18 @@ test("nothing publishes without the second box", () => {
   assert.match(enable, /default: false/, "enable is defaulted on");
   assert.match(y, /if \[ "\$ENABLE" = "true" \]; then ARGS="\$ARGS --enable"; fi/);
   assert.match(y, /transport === "rehearsal"/, "a rehearsal report could reach the manifest builder");
+});
+
+test("THE MANIFEST CARRIES THEIR COUNTRY, from their own country_code", () => {
+  /* Not inferred from the state: `country_code` is on the address of all 152,
+     139 USA and 13 CAN, and a market in a province this repository has not
+     enumerated still lands in the right country. */
+  const ms = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite);
+  const ca = ms.find((m) => m.state === "SK");
+  const us = ms.find((m) => m.state === "KS");
+  assert.equal(skeletonFor(ca, "adm", "adm", "t").country, "CA");
+  assert.equal(skeletonFor(us, "adm", "adm", "t").country, "US");
+  /* And no skeleton declares a currency: a bootstrap states none, and
+     lib/currency.mjs ranks a manifest's word below the feed's. */
+  assert.equal("currency" in skeletonFor(us, "adm", "adm", "t"), false);
 });

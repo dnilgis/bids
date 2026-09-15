@@ -12,7 +12,9 @@ import { readFileSync } from "node:fs";
 import { readdirSync } from "node:fs";
 import { extract, marketsFrom, boardUrl, describe, roundingFor, parseBody,
          COMMODITY_NAMES, DECLARED_ROUNDING, GradableRefused,
-         commoditiesFrom, partnerFromUrl, namesFor, forgetNames } from "../lib/adapters/gradable.mjs";
+         commoditiesFrom, partnerFromUrl, namesFor, forgetNames,
+         currencyOf, isBushels, BUSHELS } from "../lib/adapters/gradable.mjs";
+import { resolveCurrency } from "../lib/currency.mjs";
 import { bandFor } from "../lib/board.mjs";
 import { CASH_ROUNDING } from "../lib/board.mjs";
 import { buildFile } from "../lib/board.mjs";
@@ -544,4 +546,112 @@ test("the code is kept on the row and NEVER reaches the published file", () => {
   const src = readFileSync(new URL("../data/poetgrain-bigstonecity.json", import.meta.url), "utf8");
   assert.doesNotMatch(src, /commodityCode/,
     "the raw code leaked into a published board file");
+});
+
+/* ---------------------------------------------------------------------------
+ * WHICH MONEY, AND HOW MUCH GRAIN — 2026-09-15.
+ *
+ * lib/currency.mjs was written on 2026-09-06 about an Ontario board publishing
+ * CAD into a USD feed, and its conclusion was that the payload states the
+ * currency and "we were discarding it". Gradable was the last adapter still
+ * discarding it, with ADM running thirteen Canadian markets.
+ * --------------------------------------------------------------------------- */
+
+const boardOf = (rows) => JSON.stringify({ instruments: rows });
+const PROTO = parseBody(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8")).instruments[0];
+
+test("THE ROW'S OWN CURRENCY IS READ, and it reaches resolveCurrency as payload", () => {
+  const rows = extract(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8"),
+                       boardUrl(331845223, "poet"));
+  assert.equal(rows[0].currency, "USD");
+  /* The tier that matters: "the feed said so, per row, and every row agreed". */
+  assert.deepEqual(resolveCurrency({ id: "x", state: "SD" }, rows),
+                   { currency: "USD", currencyVia: "payload" });
+});
+
+test("A CANADIAN BOARD COMES OUT CAD, from its own rows and nothing else", () => {
+  const rows = extract(boardOf([{ ...PROTO, currency: "cad", futures: { ...PROTO.futures, currency: "cad" } }]),
+                       boardUrl(347074487, "adm"));
+  assert.equal(rows[0].currency, "CAD");
+  /* Note the state says nothing here — no province inference is involved. */
+  assert.deepEqual(resolveCurrency({ id: "x" }, rows), { currency: "CAD", currencyVia: "payload" });
+});
+
+test("a cash cell and a futures quote in DIFFERENT money names neither", () => {
+  /* Exactly the Ontario shape lib/currency.mjs describes: a CAD basis over a
+     USD futures price. Naming either would publish the other as if it were
+     that one. */
+  const rows = extract(boardOf([{ ...PROTO, currency: "cad", futures: { ...PROTO.futures, currency: "usd" } }]),
+                       boardUrl(1, "adm"));
+  assert.equal(rows[0].currency, null, "one of two currencies was picked as the board's");
+  assert.equal(resolveCurrency({ id: "x", state: "ON" }, rows).currencyVia, "province",
+    "it should fall through to the weaker tier and SAY so");
+});
+
+test("a currency this repository does not know is not a currency", () => {
+  assert.equal(currencyOf("usd"), "USD");
+  assert.equal(currencyOf("CAD"), "CAD");
+  assert.equal(currencyOf("eur"), null, "a code with no place in CURRENCIES was accepted");
+  assert.equal(currencyOf(""), null);
+  assert.equal(currencyOf(null), null);
+  const rows = extract(boardOf([{ ...PROTO, currency: "eur", futures: { ...PROTO.futures, currency: "eur" } }]),
+                       boardUrl(1, "adm"));
+  assert.equal(rows[0].currency, null);
+});
+
+test("PER TONNE IS NOT PER BUSHEL, and the row says so instead of being checked", () => {
+  /* Vanscoy SK posts Desi Chickpeas and North Battleford posts Yellow Peas.
+     Those trade per tonne. A per-tonne cash price checked against a per-bushel
+     futures quote is the Border Ag "Price X2 for CWT" failure, which reported a
+     board out by 82,486 cents. */
+  const rows = extract(boardOf([
+    { ...PROTO, quantity_unit: "tonnes" },
+    { ...PROTO, quantity_unit: "bushels", futures: { ...PROTO.futures, quantity_unit: "tonnes" } },
+    { ...PROTO, quantity_unit: "bushels" },
+  ]), boardUrl(1, "adm"));
+  assert.deepEqual(rows.map((r) => r.identityCheckable), [false, false, true]);
+  assert.equal(rows[0].quantityUnit, "tonnes", "their word for the unit was not carried");
+  assert.equal(rows[1].futuresUnit, "tonnes");
+  /* Both halves matter: the cash unit AND the futures unit. */
+  assert.equal(isBushels("bushels"), true);
+  assert.equal(isBushels("BUSHELS"), true);
+  assert.equal(isBushels("tonnes"), false);
+  assert.equal(isBushels(null), false);
+  assert.equal(BUSHELS, "bushels");
+});
+
+test("a row set aside for its unit is still CARRIED, never dropped", () => {
+  const rows = extract(boardOf([{ ...PROTO, quantity_unit: "tonnes" }]), boardUrl(1, "adm"));
+  assert.equal(rows.length, 1, "a per-tonne row vanished instead of being marked");
+  assert.equal(rows[0].identityCheckable, false);
+});
+
+test("THEIR OWN country_code, on all 152, agreeing with every state code", () => {
+  const ms = marketsFrom(ADM);
+  const counts = {};
+  for (const m of ms) counts[String(m.countryCode)] = (counts[String(m.countryCode)] ?? 0) + 1;
+  assert.deepEqual(counts, { US: 139, CA: 13 });
+  /* Their word and this repository's state table must not disagree. If they
+     ever do, the payload is the elevator's own and the table is ours. */
+  const CA = new Set(["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"]);
+  for (const m of ms)
+    assert.equal(m.countryCode, CA.has(m.state) ? "CA" : "US",
+      `${m.marketId} ${m.displayName}: they say ${m.countryCode}, the state ${m.state} says otherwise`);
+});
+
+test("POET'S PUBLISHED NUMBERS DO NOT MOVE — only the provenance sharpens", () => {
+  /* The committed POET files say currencyVia "province". Reading the payload
+     makes the same USD a fact instead of an inference. If any PRICE moved, 35
+     live boards just changed. */
+  const rows = extract(readFileSync(new URL("../fixtures/gradable-poet-bigstonecity.json", import.meta.url), "utf8"),
+                       boardUrl(331845223, "poet"));
+  assert.equal(rows.length, 5);
+  /* THESE FIVE ARE MEASURED off fixtures/gradable-poet-bigstonecity.json, not
+     remembered. The first version of this line carried five numbers I had
+     written down from nothing, and this assertion is what caught them — which
+     is the whole reason a pin like this exists. */
+  assert.deepEqual(rows.map((r) => r.cash), [4.66, 4.79, 4.79, 4.83, 4.96],
+    "a cash figure moved — 35 live POET boards just changed");
+  assert.equal(rows.every((r) => r.identityCheckable), true);
+  assert.equal(rows.every((r) => r.currency === "USD"), true);
 });

@@ -26,7 +26,7 @@
  */
 import { readFileSync } from "node:fs";
 import { marketsFrom, boardUrl } from "../lib/adapters/gradable.mjs";
-import { countryOfState } from "../lib/currency.mjs";
+import { countryOfState, CURRENCY_OF_COUNTRY } from "../lib/currency.mjs";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => { const i = args.indexOf(`--${n}`); return i === -1 ? d : args[i + 1] ?? d; };
@@ -81,6 +81,11 @@ export function skeletonFor(m, partner, operatorSlug, capture = "capture not sta
      * until somebody counts the residuals on that market's own board. */
     cashRounding: m.cashRounding ?? null,
     cashRoundingCents: m.cashRounding ? 0 : null,
+    /* THEIR OWN country_code, not an inference from the state. `currency` is
+       deliberately absent here: lib/currency.mjs ranks a manifest's declaration
+       BELOW what the feed states per row, and nothing in a bootstrap states a
+       currency. It is filled from a board read or it is left out. */
+    country: m.countryCode ?? null,
     lat: m.lat, lon: m.lon,
     zip: m.zip, address: m.address,
     phone: null, email: null,
@@ -212,15 +217,38 @@ export function fillFromReading(skel, reading, { enable = false, failure = null 
     out.cashRoundingCents = 0;
   }
 
+  /* THE CURRENCY THEIR OWN ROWS STATED — 2026-09-15.
+   *
+   * This used to hold every non-US market with "no run has measured what
+   * currency its board quotes", which was true and is no longer: the board
+   * payload carries `currency` on every row and `futures.currency` beside it,
+   * and lib/adapters/gradable.mjs was throwing both away. That is the exact
+   * fault lib/currency.mjs was written about — "the DTN payload states the
+   * currency on every record ... we were discarding it" — with gradable the
+   * last adapter still doing it.
+   *
+   * So the currency is written when their rows stated one, and a market is held
+   * when they did not, or when they stated two. Declaring it here is a second
+   * lock rather than the answer: resolveCurrency reads the feed first and
+   * REFUSES if the manifest disagrees with it, so a wrong declaration fails
+   * loudly instead of publishing. */
+  const currency = reading.currency ?? null;
+  if (currency) out.currency = currency;
+  else delete out.currency;
+
   const why = [];
-  /* A CANADIAN BOARD QUOTES A CURRENCY NOBODY HAS MEASURED. ADM runs markets in
-     AB, SK, MB and ON. lib/currency.mjs knows CA means CAD and
-     scripts/stamp_country.mjs is what writes it, but nothing here has READ one
-     of their Canadian boards and seen what it quotes in — and merge_bids
-     withholds a row whose country is unknown anyway. So they are written, with
-     their own coordinates, and held. */
-  if (countryOfState(skel.state) && countryOfState(skel.state) !== "US")
-    why.push(`this market is in ${skel.state} and no run has measured what currency its board quotes`);
+  if (!currency)
+    why.push((reading.currenciesSeen ?? []).length > 1
+      ? `their rows state two currencies (${reading.currenciesSeen.join(", ")}) and neither may stand for the other`
+      : `their rows state no currency, so nothing establishes which money this board is in`);
+  /* A country their payload names and a currency their rows state must agree.
+     lib/sources.mjs refuses the pair outright; this catches it before the file
+     is written and says which two disagreed. */
+  if (currency && out.country && CURRENCY_OF_COUNTRY[out.country] !== currency)
+    why.push(`their payload puts this market in ${out.country} and their rows quote ${currency}`);
+  if (reading.rowsNotInBushels > 0 && !Object.keys(bands).length)
+    why.push(`all ${reading.rowsNotInBushels} of its rows are priced in a unit other than bushels ` +
+             `(${(reading.units ?? []).join(", ") || "unstated"})`);
   if (!Object.keys(bands).length) why.push("their board posted no crop this repository has a band for");
   if (!mode) why.push(`the residuals established no rounding mode (${reading.roundingSaid ?? "not stated"})`);
   else if (testable < MIN_TESTABLE_TO_ENABLE)

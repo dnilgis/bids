@@ -51,9 +51,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { marketsFrom, boardUrl, extract, describe, GradableRefused }
+import { marketsFrom, boardUrl, extract, describe, GradableRefused, roundingFor }
   from "../lib/adapters/gradable.mjs";
-import { roundingEvidence, describeEvidence } from "../lib/rounding.mjs";
+import { roundingEvidence, describeEvidence, NARROWER_THAN } from "../lib/rounding.mjs";
 import { bandFor } from "../lib/board.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -134,6 +134,16 @@ export function readingFor(market, body, url) {
 
   const ev = roundingEvidence(rows);
 
+  /* WHICH MONEY THIS BOARD IS IN, BY ITS OWN ROWS.
+     lib/currency.mjs calls this the strongest tier there is — "the feed said
+     so, per row, and every row agreed". A board stating two is not a board with
+     a currency; resolveCurrency refuses it and so does this, by recording both
+     rather than picking one. */
+  const currencies = [...new Set(rows.map((r) => r.currency).filter(Boolean))].sort();
+  const units = [...new Set(rows.map((r) => r.quantityUnit).filter(Boolean))].sort();
+  const futuresUnits = [...new Set(rows.map((r) => r.futuresUnit).filter(Boolean))].sort();
+  const notCheckable = rows.filter((r) => r.identityCheckable === false).length;
+
   /* THE DECLARED MODE IS CARRIED BESIDE THE COUNTED ONE, NEVER INSTEAD OF IT.
      POET declares always_down at Big Stone City and the residuals agree; that
      agreement is worth something only if both numbers are in the file. A board
@@ -156,6 +166,15 @@ export function readingFor(market, body, url) {
        not, and that would be the cheapest possible answer to question 2. */
     declaredOnBoard: declaredOnRows.length === 1 ? declaredOnRows[0]
                    : declaredOnRows.length ? declaredOnRows.sort() : null,
+    /* One entry means every row agreed. Two means this board cannot publish
+       under either, and saying which two is the whole point. */
+    currency: currencies.length === 1 ? currencies[0] : null,
+    currenciesSeen: currencies,
+    units,
+    futuresUnits,
+    /* Rows whose cash and futures are not both in bushels. They are carried and
+       counted, never dropped and never checked against each other. */
+    rowsNotInBushels: notCheckable,
     rounding: {
       testable: ev.testable,
       mode: ev.mode,
@@ -356,16 +375,69 @@ export function summarise(report) {
   for (const [k, n] of [...modes].sort((a, b) => b[1] - a[1]))
     out.push(`    ${String(n).padStart(4)}  ${k === "null" ? "not established — no mode explains every row, or too few rows" : k}`);
 
-  /* The row this report exists to surface. */
-  const disagree = ms.filter((m) => m.declaredInBootstrap && m.rounding.confident &&
-    m.rounding.confident !== ({ always_down: "floor-cent", half_up: "round-cent", half_down: "round-cent-either" }[m.declaredInBootstrap] ?? null));
+  /* A COUNTED MODE NARROWER THAN THE DECLARED ONE IS NOT A CONTRADICTION —
+   * fixed 2026-09-15, having printed a false alarm on the first POET run.
+   *
+   * That run reported "DECLARED AND COUNTED DISAGREE ON 1 MARKET(S): Mitchell,
+   * SD declares half_down, counts round-cent". It does not disagree.
+   * lib/rounding.mjs's own NARROWER_THAN says round-cent is contained by
+   * round-cent-either — the same window with the top end open — so a board that
+   * declares half_down and counts round-cent has simply not posted a +0.5
+   * residual today. Naming that a contradiction sends somebody to look at a
+   * board that is behaving exactly as it says.
+   *
+   * The line had a second fault in the same breath: it carried its own copy of
+   * DECLARED_ROUNDING, typed inline. Two copies of that table is how one of them
+   * stops matching the adapter. Both are gone — the mapping is roundingFor()
+   * and the containment is NARROWER_THAN, each imported from the file that owns
+   * it.
+   *
+   * What is left is a real contradiction: two modes where neither explains the
+   * other, like a board declaring always_down whose residuals only fit
+   * round-cent. */
+  const contradicts = (declared, counted) => {
+    const d = roundingFor(declared);
+    if (!d || !counted || d === counted) return false;
+    /* Counted narrower than declared: they have shown us less than they
+       promised, which is what a quiet day looks like. Counted WIDER than
+       declared is a board doing something its own settings do not allow, and
+       that is the interesting one — it is still a contradiction and still
+       reported. */
+    return !(NARROWER_THAN[counted] ?? []).includes(d);
+  };
+  const disagree = ms.filter((m) => contradicts(m.declaredInBootstrap, m.rounding.confident));
   out.push(disagree.length
-    ? `DECLARED AND COUNTED DISAGREE ON ${disagree.length} MARKET(S): ` +
-      disagree.map((m) => `${m.displayName} declares ${m.declaredInBootstrap}, counts ${m.rounding.confident}`).join("; ")
-    : `no market's counted mode contradicts what its bootstrap declares`);
+    ? `DECLARED AND COUNTED CONTRADICT EACH OTHER ON ${disagree.length} MARKET(S): ` +
+      disagree.map((m) => `${m.displayName} declares ${m.declaredInBootstrap} ` +
+        `(${roundingFor(m.declaredInBootstrap)}), counts ${m.rounding.confident}`).join("; ")
+    : `no market's counted mode contradicts what its bootstrap declares ` +
+      `(a counted mode NARROWER than the declared one is a quiet day, not a disagreement)`);
 
   const onBoard = ms.filter((m) => m.declaredOnBoard).length;
   out.push(`${onBoard} of ${ms.length} board(s) state a cash_bid_rounding_mode on their own rows`);
+
+  /* THE CURRENCY, WHICH THIS ADAPTER USED TO THROW AWAY. */
+  const cur = new Map();
+  for (const m of ms) cur.set(String(m.currency), (cur.get(String(m.currency)) ?? 0) + 1);
+  out.push(`currency STATED BY THEIR OWN ROWS:`);
+  for (const [k, n] of [...cur].sort((a, b) => b[1] - a[1]))
+    out.push(`    ${String(n).padStart(4)}  ${k === "null" ? "none, or two on one board — nothing publishes on that" : k}`);
+  const mixed = ms.filter((m) => (m.currenciesSeen ?? []).length > 1);
+  if (mixed.length)
+    out.push(`TWO CURRENCIES ON ONE BOARD: ` +
+      mixed.map((m) => `${m.displayName} (${m.currenciesSeen.join(", ")})`).join("; "));
+
+  const allUnits = new Map();
+  for (const m of ms) for (const u of m.units ?? []) allUnits.set(u, (allUnits.get(u) ?? 0) + 1);
+  out.push(`quantity_unit, by how many markets use it:`);
+  for (const [u, n] of [...allUnits].sort((a, b) => b[1] - a[1]))
+    out.push(`    ${String(n).padStart(4)}  ${u}`);
+  const notBu = ms.filter((m) => (m.rowsNotInBushels ?? 0) > 0);
+  out.push(notBu.length
+    ? `${notBu.length} market(s) carry ${notBu.reduce((a, m) => a + m.rowsNotInBushels, 0)} row(s) whose ` +
+      `cash and futures are not both in bushels — carried, counted, never checked against each other: ` +
+      notBu.map((m) => `${m.displayName} (${m.rowsNotInBushels})`).join("; ")
+    : `every row on every board has cash and futures both in bushels`);
   return out.join("\n");
 }
 
