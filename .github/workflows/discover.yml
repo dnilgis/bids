@@ -72,6 +72,17 @@ on:
         description: "Advanced. Print one whole body, e.g. bootstrap. Set limit=1 too."
         required: false
         default: ""
+      # A GRADABLE BOOTSTRAP IS BIGGER THAN THE DEFAULT CEILING.
+      # dumpable() refuses a body over 250,000 bytes so --dump cannot paste a
+      # 5 MB bundle into a log. POET's is 202,283 for 36 markets -- 5,618 each
+      # -- so the cap sits at about 44 markets, and ADM has 38 facilities in
+      # the Barchart gap alone. Over the line the body is simply absent from
+      # the log, which reads as "no matching feed" rather than "too big".
+      # Raise it only when asking for something known to be large.
+      dump_max:
+        description: "Advanced. Byte ceiling for dump. Blank = 250000. A gradable bootstrap wants 1000000."
+        required: false
+        default: ""
       urls:
         description: "Advanced. Pages to ask instead of the list, space separated."
         required: false
@@ -136,6 +147,7 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           LIST: ${{ inputs.list }}
           DUMP: ${{ inputs.dump }}
+          DUMP_MAX: ${{ inputs.dump_max }}
           PATIENCE: ${{ inputs.patience }}
           BUDGET: ${{ inputs.budget }}
           FOLLOW: ${{ inputs.follow }}
@@ -196,6 +208,7 @@ jobs:
           echo "asking $FILE"
           DUMPARG=""
           if [ -n "$DUMP" ]; then DUMPARG="--dump $DUMP"; fi
+          if [ -n "$DUMP_MAX" ]; then DUMPARG="$DUMPARG --dump-max $DUMP_MAX"; fi
           BUDGETARG=""
           if [ -n "$BUDGET" ]; then BUDGETARG="--budget $BUDGET"; fi
           PATIENCEARG=""
