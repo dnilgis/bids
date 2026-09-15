@@ -1,0 +1,156 @@
+# READ EVERY BOARD A GRADABLE PARTNER POSTS, AND COUNT HOW EACH ONE ROUNDS.
+#
+# WHAT IS BLOCKED ON THIS. fixtures/gradable-adm-bootstrap.json names 152 ADM
+# markets and scripts/gradable-markets.mjs turns each into a skeleton with
+# `bands: {}` and `enabled: false`. lib/sources.mjs refuses to load a manifest
+# with no band -- "Every commodity needs a floor and ceiling before it can
+# publish" -- so not one of those 152 can become a file until two things are
+# measured, and neither is in the bootstrap:
+#
+#   1. WHICH CROPS each market posts.
+#   2. HOW each market rounds. POET declares a mode per market. ADM declares
+#      NOTHING: commodity_settings is {} on all 152, measured. So ADM's has to
+#      be counted from residuals on its own board.
+#
+# This job reads the boards and commits one report carrying both. It writes no
+# source manifest, enables nothing, and records no price -- only crop names, row
+# counts, residuals and the mode those residuals admit. A price is a fact about
+# today; a rounding mode is a fact about the board.
+#
+# WHY IT RUNS HERE AND NOT IN A DEVELOPMENT SANDBOX. lib/sources.mjs says the
+# open question plainly: "a plain GET might well work ... this sandbox cannot
+# reach gradable.com to find out." It still cannot -- asked on 2026-09-15, all
+# three sampled boards came back
+#
+#     403  Host not in allowlist: adm.gradable.com
+#
+# from the sandbox's own egress gateway, which never opened a connection to ADM.
+# That is not a fact about ADM, and the script refuses to record it as one. A
+# runner with open egress is the only place the question can be asked, so this
+# is the job that asks it, on three boards, before walking 136.
+#
+# WHAT IT CAN AND CANNOT TOUCH. It writes exactly one path,
+# data/gradable/<partner>-boards.json, and <partner> comes from the dropdown and
+# is checked against a list in the script. The subdirectory is not an accident:
+# scripts/merge_bids.mjs enumerates data/*.json and treats every one as a poller
+# capture, so a report at the top level would be read by the step that builds
+# the public feed.
+#
+# DRY RUN IS THE DEFAULT, like gradable bootstrap.
+
+name: gradable boards
+
+on:
+  workflow_dispatch:
+    inputs:
+      partner:
+        description: "Whose boards to read"
+        type: choice
+        default: adm
+        options:
+          - adm
+          - poet
+      commit:
+        description: "Commit the report. Leave OFF for a dry run that reads, measures and reports but writes nothing to the repository."
+        type: boolean
+        default: false
+      limit:
+        description: "Read only the first N markets, in market-id order. Blank reads them all. A limited run can never be committed."
+        required: false
+      transport:
+        description: "auto tries a plain fetch on three boards and stops if they do not answer. fetch insists on it."
+        type: choice
+        default: auto
+        options:
+          - auto
+          - fetch
+      allow_shrink:
+        description: "Let the report carry FEWER markets than the committed one. Off by default: a report that shrank is a partial run or a closure, and both deserve a human."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Never two at once: both would write the same path, and the loser's read would
+# be the one that landed.
+concurrency:
+  group: gradable-boards
+  cancel-in-progress: false
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        # ref: main, not the SHA the dispatch was created at. A queued run that
+        # checks out an older tree would compare its read against an older
+        # report and could "shrink" against a count that has since grown.
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # The guards that decide whether this report may be written run before the
+      # report exists. --selftest needs no browser and no network.
+      - name: Test the guards
+        run: |
+          node scripts/gradable_boards.mjs --selftest
+          node --test test/gradable-boards.test.mjs test/gradable.test.mjs test/workflows.test.mjs
+
+      # The whole walk, the report shape and every refusal, driven on the
+      # committed POET board with no network at all. If the path is broken it is
+      # broken here, before 136 requests go out to somebody else's site.
+      - name: Rehearse the walk offline
+        run: |
+          node scripts/gradable_boards.mjs --partner ${{ inputs.partner }} \
+            --rehearse fixtures/gradable-poet-bigstonecity.json
+
+      - name: Read the boards
+        env:
+          PARTNER: ${{ inputs.partner }}
+          LIMIT: ${{ inputs.limit }}
+          TRANSPORT: ${{ inputs.transport }}
+          COMMIT: ${{ inputs.commit }}
+          ALLOW_SHRINK: ${{ inputs.allow_shrink }}
+        run: |
+          ARGS="--partner $PARTNER --transport $TRANSPORT"
+          if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
+          if [ "$ALLOW_SHRINK" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          if [ "$COMMIT" = "true" ]; then ARGS="$ARGS --write"; fi
+          node scripts/gradable_boards.mjs $ARGS
+
+      # A report that does not read is not committed, however clean the walk
+      # looked. This is the same contract the bootstrap job keeps.
+      - name: The report must read back
+        if: ${{ inputs.commit }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const p = process.env.REPORT;
+            if (!p) { console.error("::error::the read step set no REPORT path"); process.exit(1); }
+            const r = JSON.parse(fs.readFileSync(p, "utf8"));
+            if (!Array.isArray(r.markets) || !r.markets.length) { console.error("::error::the report names no market"); process.exit(1); }
+            if (r.transport === "rehearsal") { console.error("::error::a rehearsal reached the commit step"); process.exit(1); }
+            const s = JSON.stringify(r);
+            for (const k of ["\"cash\"", "\"basis\"", "\"futuresPrice\""])
+              if (s.includes(k)) { console.error(`::error::${k} is in the report; this file records no price`); process.exit(1); }
+            const banded = r.markets.filter((m) => m.crops.every((c) => c.band)).length;
+            const counted = r.markets.filter((m) => m.rounding.confident).length;
+            console.log(`${r.markets.length} market(s); ${banded} have a band for every crop; ${counted} have a counted rounding mode`);
+          '
+
+      # BOARDS_READ and REPORT come from the read step through $GITHUB_ENV. The
+      # count is the script's own, not a second one grepped out of the file in a
+      # shell: two counters of the same thing eventually disagree, and the commit
+      # message is exactly where nobody would notice which one was wrong.
+      - name: Commit
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name "bids bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add "$REPORT"
+          if git diff --staged --quiet; then echo "the read matches what is committed; nothing to commit"; exit 0; fi
+          bash scripts/commit-and-push.sh "gradable: $PARTNER boards, $BOARDS_READ read over $TRANSPORT [skip ci]"
+        env:
+          PARTNER: ${{ inputs.partner }}
