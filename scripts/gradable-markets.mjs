@@ -26,6 +26,7 @@
  */
 import { readFileSync } from "node:fs";
 import { marketsFrom, boardUrl } from "../lib/adapters/gradable.mjs";
+import { countryOfState } from "../lib/currency.mjs";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => { const i = args.indexOf(`--${n}`); return i === -1 ? d : args[i + 1] ?? d; };
@@ -105,6 +106,146 @@ export function skeletonFor(m, partner, operatorSlug, capture = "capture not sta
   };
 }
 
+/* ---------------------------------------------------------------------------
+ * FILLING A SKELETON FROM A BOARD READ.
+ *
+ * `bands` and `cashRounding` are the two fields lib/sources.mjs will not let a
+ * manifest publish without, and neither is in the bootstrap. Both are in
+ * data/gradable/<partner>-boards.json, which scripts/gradable_boards.mjs wrote
+ * by reading the boards themselves.
+ *
+ * NOTHING HERE DECIDES ANYTHING. A band is the band lib/board.mjs already
+ * carries for that crop, copied out of the report. A rounding mode is the mode
+ * the residuals admitted, copied out of the report. A crop the report could not
+ * band gets NO band — it is named in the note and its rows are withheld, which
+ * is what withholding is for.
+ * ------------------------------------------------------------------------- */
+
+/* TWO TESTABLE ROWS, NOT ONE. lib/rounding.mjs requires a margin of 2 before it
+   will state a mode, because "one disagreeing row can be a typo on somebody's
+   board and two independent ones are not". `exact` is exempt from that margin
+   inside roundingEvidence — it is the absence of a rule rather than a rule — so
+   a single row that happens to reconcile would come back "exact" with a sample
+   of one. That is not enough to enable a board on. */
+export const MIN_TESTABLE_TO_ENABLE = 2;
+
+/** Index a boards report by market id. Reads, decides nothing. */
+export function readingsByMarket(report) {
+  const out = new Map();
+  for (const m of report?.markets ?? []) out.set(String(m.marketId), m);
+  return out;
+}
+
+/** Why this report may not be used, or null. */
+export function reportRefusal(report, partner) {
+  if (!report || typeof report !== "object") return "the boards report is not an object";
+  if (report.transport === "rehearsal")
+    return `that report is a REHEARSAL — one board replayed for every market. Its crops and ` +
+           `residuals are one facility's, copied. It can never become a manifest.`;
+  if (report.partner !== partner)
+    return `the report is ${JSON.stringify(report.partner)} and this run is ${JSON.stringify(partner)}. ` +
+           `One partner's crops must never be written into another's files.`;
+  if (!Array.isArray(report.markets) || !report.markets.length)
+    return "the report names no market";
+  return null;
+}
+
+/** The bands a market's own board says it needs, and the crops that get none. */
+export function bandsFromReading(reading) {
+  const bands = {};
+  const unbanded = [];
+  for (const c of reading?.crops ?? []) {
+    if (!c.band || !Array.isArray(c.range) || c.range.length !== 2) {
+      unbanded.push(`${c.code} ${c.commodity}`);
+      continue;
+    }
+    /* Several of their codes land on one band name — 11, 16 and U9 are all soft
+       and hard red winter wheat. Writing the same pair twice is not a conflict;
+       writing two DIFFERENT pairs under one name would be, and that is the case
+       this refuses rather than letting the last one win. */
+    const prev = bands[c.band];
+    if (prev && (prev[0] !== c.range[0] || prev[1] !== c.range[1]))
+      throw new Error(`${reading.marketId}: two different bands for "${c.band}" — ` +
+                      `${JSON.stringify(prev)} and ${JSON.stringify(c.range)}`);
+    bands[c.band] = [c.range[0], c.range[1]];
+  }
+  return { bands, unbanded };
+}
+
+/**
+ * A skeleton with what the board read, filled in.
+ *
+ * `enabled` stays false unless `enable` is asked for AND the market cleared
+ * every measurement: a band for at least one crop, a rounding mode the
+ * residuals established, and enough testable rows to have established it.
+ */
+export function fillFromReading(skel, reading, { enable = false, failure = null } = {}) {
+  const out = { ...skel };
+
+  if (!reading) {
+    out._pending = failure
+      ? `HELD DISABLED. Its board was asked and did not read: ${failure}`
+      : `HELD DISABLED. No board read covers this market, so bands is empty.`;
+    return out;
+  }
+
+  const { bands, unbanded } = bandsFromReading(reading);
+  out.bands = bands;
+
+  const mode = reading.rounding?.confident ?? null;
+  const testable = reading.rounding?.testable ?? 0;
+  /* ABSENT, NOT NULL, AND THAT IS NOT A STYLE CHOICE — found by running it.
+     lib/sources.mjs line 233 tests `s.cashRounding !== undefined`, so a null
+     lands in the membership check and comes back `cashRounding "null" is not
+     one of exact, floor-cent, ...`. Every one of 152 manifests was refused by
+     the loader on exactly that. The committed POET manifests that declare no
+     mode leave the KEY OUT, and so does this. */
+  delete out.cashRounding;
+  delete out.cashRoundingCents;
+  if (mode === "exact") {
+    /* lib/board.mjs, on roundingRule: "Leave it out for a board whose cash cell
+       is the arithmetic to the last digit." So no mode is named and the
+       tolerance is zero — the strictest the identity guard goes. */
+    out.cashRoundingCents = 0;
+  } else if (mode) {
+    out.cashRounding = mode;
+    out.cashRoundingCents = 0;
+  }
+
+  const why = [];
+  /* A CANADIAN BOARD QUOTES A CURRENCY NOBODY HAS MEASURED. ADM runs markets in
+     AB, SK, MB and ON. lib/currency.mjs knows CA means CAD and
+     scripts/stamp_country.mjs is what writes it, but nothing here has READ one
+     of their Canadian boards and seen what it quotes in — and merge_bids
+     withholds a row whose country is unknown anyway. So they are written, with
+     their own coordinates, and held. */
+  if (countryOfState(skel.state) && countryOfState(skel.state) !== "US")
+    why.push(`this market is in ${skel.state} and no run has measured what currency its board quotes`);
+  if (!Object.keys(bands).length) why.push("their board posted no crop this repository has a band for");
+  if (!mode) why.push(`the residuals established no rounding mode (${reading.roundingSaid ?? "not stated"})`);
+  else if (testable < MIN_TESTABLE_TO_ENABLE)
+    why.push(`only ${testable} testable row(s) — ${MIN_TESTABLE_TO_ENABLE} is the floor for stating a mode`);
+
+  out.enabled = Boolean(enable && !why.length);
+
+  out.note = `${skel.note} BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: ` +
+    `${reading.rows} row(s) over ${reading.crops.length} of their commodity codes, ` +
+    `${testable} of them testable against cash - basis = futures, and the residuals ` +
+    `${mode === "exact" ? `were zero on every one — so no cashRounding is declared and the ` +
+      `identity guard stays exact` : mode ? `admit ${JSON.stringify(mode)} and nothing narrower` :
+      `admit no single mode`}. ` +
+    (unbanded.length
+      ? `THEIR BOARD ALSO POSTS ${unbanded.join(", ")}, which lib/board.mjs has no band for; ` +
+        `those rows are withheld loudly rather than published under a band nobody set.`
+      : `Every crop their board posted has a band.`);
+
+  out._pending = why.length
+    ? `HELD DISABLED: ${why.join("; ")}.`
+    : (out.enabled ? undefined : `Measured and ready. Not enabled because --enable was not asked for.`);
+  if (out._pending === undefined) delete out._pending;
+  return out;
+}
+
 if (process.argv[1] && process.argv[1].endsWith("gradable-markets.mjs")) {
   if (!file) { console.error("usage: gradable-markets.mjs <bootstrap-body.json> [--partner poet] [--json]"); process.exit(2); }
   const partner = flag("partner", "poet");
@@ -115,8 +256,68 @@ if (process.argv[1] && process.argv[1].endsWith("gradable-markets.mjs")) {
   const live = markets.filter((m) => !m.demo && m.publicSite);
   const skipped = markets.filter((m) => m.demo || !m.publicSite);
 
+  /* --boards fills bands and cashRounding from a committed board read. Without
+     it every skeleton comes out with empty bands and held disabled, which is
+     what this script did before the boards job existed. */
+  const boardsPath = flag("boards", null);
+  let readings = new Map(), failures = new Map(), report = null;
+  if (boardsPath) {
+    report = JSON.parse(readFileSync(boardsPath, "utf8"));
+    const why = reportRefusal(report, partner);
+    if (why) { console.error(`::error::${why}`); process.exit(1); }
+    readings = readingsByMarket(report);
+    for (const f of report.failures ?? []) failures.set(String(f.marketId), f.why);
+  }
+  const enable = args.includes("--enable");
+  if (enable && !boardsPath) {
+    console.error("::error::--enable needs --boards. Nothing is enabled on a payload nobody read.");
+    process.exit(1);
+  }
+
+  const build = (m) => {
+    const skel = skeletonFor(m, partner, operatorSlug, capture);
+    if (!boardsPath) return skel;
+    return fillFromReading(skel, readings.get(String(m.marketId)),
+                           { enable, failure: failures.get(String(m.marketId)) ?? null });
+  };
+
+  /* A MANIFEST WITH NO BAND IS NOT A FILE, IT IS THIRTY ERRORS A PASS.
+     lib/sources.mjs refuses an empty `bands` and loadSources validates BEFORE
+     it skips a disabled source, so writing the markets whose boards were never
+     read would put an error per file into every run of the feed — measured at
+     30 of 152 on the first build. A market with no board read gets no file at
+     all; it is reported below and it waits for a read. */
+  const publishable = (x) => Object.keys(x.bands ?? {}).length > 0;
+
   if (args.includes("--json")) {
-    console.log(JSON.stringify(live.map((m) => skeletonFor(m, partner, operatorSlug, capture)), null, 2));
+    const built = live.map(build);
+    console.log(JSON.stringify(boardsPath ? built.filter(publishable) : built, null, 2));
+    process.exit(0);
+  }
+
+  if (boardsPath) {
+    const all = live.map(build);
+    const built = all.filter(publishable);
+    const noFile = all.filter((x) => !publishable(x));
+    const on = built.filter((x) => x.enabled);
+    console.log(`${live.length} live market(s); ${readings.size} covered by ${boardsPath}` +
+                ` (read ${report.capturedAt ?? "at an unstated time"} over ${report.transport}).\n`);
+    const heldWhy = new Map();
+    for (const x of built.filter((y) => !y.enabled))
+      heldWhy.set(x._pending ?? "no reason recorded", (heldWhy.get(x._pending ?? "no reason recorded") ?? 0) + 1);
+    console.log(`${built.length} manifest(s) written, ${noFile.length} market(s) get NO FILE ` +
+                `(no band, so lib/sources.mjs would refuse them every pass).`);
+    console.log(`${on.length} would publish${enable ? "" : " if --enable were asked for"}; ` +
+                `${built.length - on.length} written but held.`);
+    for (const [why, n] of [...heldWhy].sort((a, b) => b[1] - a[1]))
+      console.log(`    ${String(n).padStart(4)}  ${why}`);
+    const bandCounts = new Map();
+    for (const x of built) for (const b of Object.keys(x.bands ?? {}))
+      bandCounts.set(b, (bandCounts.get(b) ?? 0) + 1);
+    console.log(`\nbands written, by how many manifests carry them:`);
+    for (const [b, n] of [...bandCounts].sort((a, b2) => b2[1] - a[1]))
+      console.log(`    ${String(n).padStart(4)}  ${b}`);
+    console.log(`\n--json prints them. Every enabled one has a band and a measured rounding.`);
     process.exit(0);
   }
 

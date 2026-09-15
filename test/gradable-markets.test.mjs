@@ -156,3 +156,184 @@ test("THE SHIPPED POET MANIFESTS AGREE WITH THE READER, ALL 35 OF THEM", () => {
   }
   assert.equal(compared, 35, "a committed POET manifest went missing from the comparison");
 });
+
+/* ---------------------------------------------------------------------------
+ * FILLING A MANIFEST FROM A BOARD READ.
+ *
+ * Everything below was found by BUILDING 152 MANIFESTS AND LOADING THEM, not
+ * by reading the validator. The first build produced 152 files and
+ * lib/sources.mjs refused every single one.
+ * --------------------------------------------------------------------------- */
+import { fillFromReading, bandsFromReading, reportRefusal, readingsByMarket,
+         MIN_TESTABLE_TO_ENABLE } from "../scripts/gradable-markets.mjs";
+import { validateSource, loadSources } from "../lib/sources.mjs";
+
+const reading = (over = {}) => ({
+  marketId: 371713182, rows: 12,
+  crops: [
+    { code: "02", commodity: "Corn", unresolved: false, rows: 6, deliveries: 2, band: "corn", range: [2, 12] },
+    { code: "01", commodity: "Soybeans", unresolved: false, rows: 6, deliveries: 2, band: "soybean", range: [6, 32] },
+  ],
+  declaredInBootstrap: null, declaredOnBoard: null,
+  rounding: { testable: 12, mode: "exact", confident: "exact", margin: 0, residuals: [0] },
+  roundingSaid: "exact [12 testable]",
+  ...over,
+});
+const skelFor = (state = "KS") => ({
+  ...skeletonFor(marketsFrom(ADM).find((m) => m.marketId === 371713182), "adm", "adm", "test capture"),
+  state,
+});
+
+test("EXACT MEANS THE KEY IS ABSENT, NOT NULL — 152 manifests were refused over this", () => {
+  /* lib/sources.mjs tests `s.cashRounding !== undefined`, so a null falls into
+     the membership check and comes back `cashRounding "null" is not one of
+     exact, floor-cent, ...`. Every one of 152 files failed on it. */
+  const f = fillFromReading(skelFor(), reading());
+  assert.equal("cashRounding" in f, false, "a null cashRounding is back and the loader will refuse it");
+  assert.equal(f.cashRoundingCents, 0, "an exact board must pin the guard at zero tolerance");
+  assert.deepEqual(validateSource({ ...f, id: "adm-x" }), []);
+});
+
+test("a market that DOES have a counted mode carries it", () => {
+  const f = fillFromReading(skelFor(), reading({
+    rounding: { testable: 9, mode: "floor-cent", confident: "floor-cent", margin: 9, residuals: [0.25, 0.75] } }));
+  assert.equal(f.cashRounding, "floor-cent");
+  assert.equal(f.cashRoundingCents, 0);
+  assert.deepEqual(validateSource({ ...f, id: "adm-y" }), []);
+});
+
+test("and one with no established mode is held, with both keys absent", () => {
+  const f = fillFromReading(skelFor(), reading({
+    rounding: { testable: 5, mode: null, confident: null, margin: 0, residuals: [0.25, -0.5] },
+    roundingSaid: "rounding UNRESOLVED" }));
+  assert.equal("cashRounding" in f, false);
+  assert.equal("cashRoundingCents" in f, false);
+  assert.equal(f.enabled, false);
+  assert.match(f._pending, /established no rounding mode/);
+});
+
+test("ONE TESTABLE ROW IS NOT A MEASUREMENT", () => {
+  /* roundingEvidence exempts `exact` from its margin — it is the absence of a
+     rule rather than a rule — so a single row that happens to reconcile comes
+     back confident. That is not enough to turn a board on. */
+  assert.equal(MIN_TESTABLE_TO_ENABLE, 2);
+  const one = fillFromReading(skelFor(), reading({
+    rounding: { testable: 1, mode: "exact", confident: "exact", margin: 0, residuals: [0] } }), { enable: true });
+  assert.equal(one.enabled, false);
+  assert.match(one._pending, /only 1 testable row/);
+  const two = fillFromReading(skelFor(), reading({
+    rounding: { testable: 2, mode: "exact", confident: "exact", margin: 0, residuals: [0] } }), { enable: true });
+  assert.equal(two.enabled, true);
+});
+
+test("THE BANDS ARE THE BOARD'S OWN CROPS, and an unbanded one gets no band", () => {
+  const { bands, unbanded } = bandsFromReading(reading({
+    crops: [
+      { code: "02", commodity: "Corn", band: "corn", range: [2, 12], rows: 4 },
+      { code: "MW", commodity: "Soybean Meal", band: null, range: null, rows: 2 },
+    ] }));
+  assert.deepEqual(bands, { corn: [2, 12] });
+  assert.deepEqual(unbanded, ["MW Soybean Meal"]);
+  const f = fillFromReading(skelFor(), reading({
+    crops: [
+      { code: "02", commodity: "Corn", band: "corn", range: [2, 12], rows: 4 },
+      { code: "MW", commodity: "Soybean Meal", band: null, range: null, rows: 2 },
+    ] }));
+  assert.match(f.note, /Soybean Meal/, "the note does not say which crop is being withheld");
+  assert.match(f.note, /withheld/);
+});
+
+test("several of their codes under one band name is fine; two different ranges is not", () => {
+  /* 11, 16 and U9 are all red winter wheat. Writing [3,20] twice is not a
+     conflict. Two DIFFERENT pairs under one name would be, and the last one
+     would silently win. */
+  const crops = [
+    { code: "11", commodity: "Wheat (Soft Red Winter)", band: "red winter", range: [3, 20], rows: 2 },
+    { code: "16", commodity: "Wheat (Hard Red Winter)", band: "red winter", range: [3, 20], rows: 2 },
+  ];
+  assert.deepEqual(bandsFromReading({ marketId: 1, crops }).bands, { "red winter": [3, 20] });
+  assert.throws(() => bandsFromReading({ marketId: 1, crops: [
+    crops[0], { ...crops[1], range: [5, 9] } ] }), /two different bands/);
+});
+
+test("A CANADIAN MARKET IS WRITTEN AND HELD, because nobody has read its currency", () => {
+  const f = fillFromReading(skelFor("SK"), reading(), { enable: true });
+  assert.equal(f.enabled, false);
+  assert.match(f._pending, /SK/);
+  assert.match(f._pending, /currency/);
+  /* But it still has to LOAD — loadSources validates before it skips a
+     disabled source, so a refused Canadian file is an error every pass. */
+  assert.deepEqual(validateSource({ ...f, id: "adm-ca", lat: 52.12, lon: -104.38 }), []);
+});
+
+test("a market with no board read is never turned into a file", () => {
+  /* 30 of 152 on the first build. Each would have been "no bands. Every
+     commodity needs a floor and ceiling" in every pass, forever. */
+  const f = fillFromReading(skelFor(), undefined, { enable: true });
+  assert.deepEqual(f.bands, {});
+  assert.equal(f.enabled, false);
+  assert.ok(validateSource({ ...f, id: "adm-z" }).some((e) => /no bands/.test(e)),
+    "an empty-bands manifest now loads, so nothing stops it being written");
+  const src = readFileSync(new URL("../scripts/gradable-markets.mjs", import.meta.url), "utf8");
+  assert.match(src, /const publishable = \(x\) => Object\.keys\(x\.bands \?\? \{\}\)\.length > 0;/,
+    "the writer no longer filters out bandless manifests");
+  assert.match(src, /boardsPath \? built\.filter\(publishable\) : built/,
+    "--json emits bandless manifests again");
+});
+
+test("a failed board is recorded as why, not as silence", () => {
+  const f = fillFromReading(skelFor(), undefined, { failure: "the instruments array is empty" });
+  assert.match(f._pending, /asked and did not read/);
+  assert.match(f._pending, /instruments array is empty/);
+});
+
+test("A REHEARSAL REPORT CAN NEVER BECOME A MANIFEST", () => {
+  assert.match(reportRefusal({ transport: "rehearsal", partner: "adm", markets: [1] }, "adm") ?? "", /REHEARSAL/);
+  assert.match(reportRefusal({ transport: "fetch", partner: "poet", markets: [1] }, "adm") ?? "", /partner/);
+  assert.ok(reportRefusal({ transport: "fetch", partner: "adm", markets: [] }, "adm"));
+  assert.equal(reportRefusal({ transport: "fetch", partner: "adm", markets: [{ marketId: 1 }] }, "adm"), null);
+});
+
+test("--enable without --boards is refused at the CLI", () => {
+  const src = readFileSync(new URL("../scripts/gradable-markets.mjs", import.meta.url), "utf8");
+  assert.match(src, /if \(enable && !boardsPath\)/,
+    "--enable no longer needs a board read, so a payload nobody read could publish");
+});
+
+test("THE WHOLE SET LOADS: 152 markets, a report, and zero loader errors", () => {
+  /* The end of the chain, run rather than described. Build every ADM manifest
+     from a report, hand them to loadSources, and demand it finds nothing. */
+  const ms = marketsFrom(ADM).filter((m) => !m.demo && m.publicSite);
+  const readings = new Map(ms.slice(0, 120).map((m) => [String(m.marketId), reading({ marketId: m.marketId })]));
+  const built = ms
+    .map((m) => fillFromReading(skeletonFor(m, "adm", "adm", "t"), readings.get(String(m.marketId)), { enable: true }))
+    .filter((x) => Object.keys(x.bands).length);
+  assert.equal(built.length, 120);
+  const r = loadSources(built);
+  assert.deepEqual(r.errors, [], r.errors.slice(0, 3).join("\n"));
+  assert.ok(r.sources.length > 100, `${r.sources.length} loaded`);
+  /* Not one of them may carry a placeholder. */
+  assert.equal(built.filter((x) => JSON.stringify(x).includes("SET THIS")).length, 0);
+});
+
+test("THE WORKFLOW LOADS EVERY MANIFEST BEFORE IT WRITES ANY", () => {
+  /* The first build of these produced 152 files and lib/sources.mjs refused all
+     152. A build that does not load must never reach sources/. */
+  const y = readFileSync(new URL("../.github/workflows/gradable-manifests.yml", import.meta.url), "utf8");
+  assert.match(y, /name: They must load/, "the load gate is gone");
+  assert.match(y, /loadSources/, "nothing checks the manifests against the loader");
+  assert.match(y, /SET THIS/, "the placeholder check is gone");
+  /* The load step has no `if:`, so it runs on a dry run too. */
+  const load = y.slice(y.indexOf("name: They must load"), y.indexOf("name: Write and commit"));
+  assert.doesNotMatch(load, /^\s+if:/m, "the load gate only runs when committing");
+  /* And the write step does. */
+  assert.match(y, /name: Write and commit\n\s+if: \$\{\{ inputs\.commit \}\}/);
+});
+
+test("nothing publishes without the second box", () => {
+  const y = readFileSync(new URL("../.github/workflows/gradable-manifests.yml", import.meta.url), "utf8");
+  const enable = y.slice(y.indexOf("      enable:"), y.indexOf("permissions:"));
+  assert.match(enable, /default: false/, "enable is defaulted on");
+  assert.match(y, /if \[ "\$ENABLE" = "true" \]; then ARGS="\$ARGS --enable"; fi/);
+  assert.match(y, /transport === "rehearsal"/, "a rehearsal report could reach the manifest builder");
+});
