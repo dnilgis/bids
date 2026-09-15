@@ -1,0 +1,134 @@
+# WRITE A GRADABLE PARTNER'S SOURCE MANIFESTS FROM A COMMITTED BOARD READ.
+#
+# THE LAST STEP OF THREE. gradable bootstrap captured who ADM is; gradable
+# boards read what their markets post and how each one rounds; this turns the
+# two committed files into sources/<partner>-*.json.
+#
+# IT INVENTS NOTHING. Every field is copied:
+#
+#   town, state, zip, street, coordinate   their bootstrap
+#   bands                                  the crops their board posted, with
+#                                          lib/board.mjs's own band for each
+#   cashRounding / cashRoundingCents       the residuals their board produced
+#
+# A crop lib/board.mjs has no band for gets NO band. Its rows are withheld and
+# the manifest's note names it. A market whose board was never read gets NO FILE
+# — lib/sources.mjs refuses an empty `bands` and loadSources validates BEFORE it
+# skips a disabled source, so writing those would put one error per file into
+# every pass of the feed, forever.
+#
+# NOTHING PUBLISHES WITHOUT THE SECOND BOX. `enable` is off by default and every
+# manifest comes out `enabled: false`. With it on, a manifest is enabled only if
+# its board gave a band for at least one crop, the residuals established a
+# rounding mode, and there were at least two testable rows to establish it on. A
+# market outside the US is written and held whatever the boxes say: nobody has
+# read what currency its board quotes.
+
+name: gradable manifests
+
+on:
+  workflow_dispatch:
+    inputs:
+      partner:
+        description: "Whose manifests to write"
+        type: choice
+        default: adm
+        options:
+          - adm
+          - poet
+      commit:
+        description: "Commit the manifests. Leave OFF for a dry run that builds and reports but writes nothing."
+        type: boolean
+        default: false
+      enable:
+        description: "Set enabled:true on the manifests that cleared every measurement. Leave OFF to commit them all held disabled and read them first."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gradable-manifests
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Test the guards
+        run: node --test test/gradable-markets.test.mjs test/sources.test.mjs test/gradable.test.mjs test/workflows.test.mjs
+
+      - name: The report has to exist and not be a rehearsal
+        env:
+          PARTNER: ${{ inputs.partner }}
+        run: |
+          REPORT="data/gradable/$PARTNER-boards.json"
+          if [ ! -f "$REPORT" ]; then
+            echo "::error::$REPORT is not committed. Run gradable boards with commit on first."
+            exit 1
+          fi
+          echo "REPORT=$REPORT" >> "$GITHUB_ENV"
+          node -e '
+            const r = JSON.parse(require("fs").readFileSync(process.env.REPORT, "utf8"));
+            if (r.transport === "rehearsal") { console.error("::error::that report is a rehearsal"); process.exit(1); }
+            console.log(`${r.marketsRead} market(s) read over ${r.transport} at ${r.capturedAt}`);
+          '
+
+      - name: Build them
+        env:
+          PARTNER: ${{ inputs.partner }}
+          ENABLE: ${{ inputs.enable }}
+        run: |
+          ARGS="fixtures/gradable-$PARTNER-bootstrap.json --partner $PARTNER --boards $REPORT"
+          ARGS="$ARGS --capture the $PARTNER bootstrap committed in this repository"
+          if [ "$ENABLE" = "true" ]; then ARGS="$ARGS --enable"; fi
+          echo "ARGS=$ARGS" >> "$GITHUB_ENV"
+          node scripts/gradable-markets.mjs $ARGS
+
+      # EVERY FILE IS LOADED BEFORE ANY FILE IS WRITTEN. The first build of
+      # these produced 152 manifests and lib/sources.mjs refused all 152 — a
+      # null cashRounding on 122 and an empty bands on 30. A build that does not
+      # load is not committed, however clean the summary looked.
+      - name: They must load
+        run: |
+          node scripts/gradable-markets.mjs $ARGS --json > /tmp/manifests.json
+          node -e '
+            const fs = require("fs");
+            import("./lib/sources.mjs").then(({ loadSources }) => {
+              const all = JSON.parse(fs.readFileSync("/tmp/manifests.json", "utf8"));
+              if (!all.length) { console.error("::error::the build produced no manifest"); process.exit(1); }
+              const r = loadSources(all);
+              if (r.errors.length) {
+                for (const e of r.errors.slice(0, 20)) console.error(`::error::${e}`);
+                console.error(`::error::${r.errors.length} manifest error(s); nothing written`);
+                process.exit(1);
+              }
+              const s = JSON.stringify(all);
+              if (s.includes("SET THIS")) { console.error("::error::a placeholder reached a manifest"); process.exit(1); }
+              console.log(`${all.length} manifest(s) load clean; ${r.sources.length} are enabled`);
+              fs.appendFileSync(process.env.GITHUB_ENV, `WROTE=${all.length}\nENABLED=${r.sources.length}\n`);
+            });
+          '
+
+      - name: Write and commit
+        if: ${{ inputs.commit }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const all = JSON.parse(fs.readFileSync("/tmp/manifests.json", "utf8"));
+            for (const s of all) fs.writeFileSync(`sources/${s.id}.json`, JSON.stringify(s, null, 2) + "\n");
+            console.log(`${all.length} file(s) written to sources/`);
+          '
+          node --test test/sources.test.mjs
+          git config user.name "bids bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add sources/
+          if git diff --staged --quiet; then echo "the build matches what is committed; nothing to commit"; exit 0; fi
+          bash scripts/commit-and-push.sh "gradable: $WROTE ${{ inputs.partner }} manifest(s), $ENABLED enabled [skip ci]"
