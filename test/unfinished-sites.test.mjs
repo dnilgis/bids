@@ -162,7 +162,22 @@ test("and against the SHIPPED ledger the head is genuinely the oldest", () => {
     assert.ok(stamps[i - 1] <= stamps[i],
       `row ${i} (${rows[i].seenAt}) is older than row ${i - 1} (${rows[i - 1].seenAt})`);
   }
-  const alphabetical = [...rows].sort((a, b) => a.url.localeCompare(b.url));
-  assert.notEqual(rows[0].url, alphabetical[0].url,
-    "if these agree the fix is doing nothing on the real ledger");
+  /* THE TRIPWIRE, AND WHY IT IS NO LONGER THE HEAD -- 2026-09-15.
+   *
+   * This compared rows[0].url against the alphabetical head, to prove the sort
+   * was doing something on the real ledger rather than passing by luck. Right
+   * intent, wrong assertion: it keys on a COINCIDENCE. On 2026-09-15 both were
+   * "https://21stcoop.com/" -- the alphabetically first site also happened to
+   * be among the least recently asked -- and the test went red with the sort
+   * working perfectly. It had been red for days on correct code, which is the
+   * one thing a guard must never do: it teaches you to skip the whole file.
+   *
+   * The same intent, stated as a property of the WHOLE ordering. A sort that
+   * became a no-op, or that quietly became alphabetical, still fails here; one
+   * url landing in the same place in both orders does not. */
+  assert.ok(new Set(stamps).size > 1,
+    "every row carries the same stamp, so this proves nothing about ordering");
+  const alphabetical = [...rows].sort((a, b) => a.url.localeCompare(b.url)).map((r) => r.url);
+  assert.notDeepEqual(rows.map((r) => r.url), alphabetical,
+    "the oldest-first order is identical to alphabetical -- the sort is doing nothing");
 });

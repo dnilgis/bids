@@ -11,6 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fingerprint, findFeeds, countLocations, readList, SIGNATURES , flagValue, setArgs,
+         dumpCeiling,
          PROBE_VERSION } from "../scripts/discover.mjs";
 import { looksLikeData } from "../lib/cdp.mjs";
 
@@ -622,6 +623,48 @@ test("NOTHING IS DUMPED UNLESS SOMEBODY ASKS", () => {
 test("and a body too big for a log is refused even when asked for", () => {
   assert.deepEqual(dumpable([F("GetBidsList", 900000)], "GetBidsList"), []);
   assert.equal(dumpable([F("GetBidsList", 9000)], "GetBidsList").length, 1);
+});
+
+test("THE DUMP CEILING IS SAYABLE, because a gradable bootstrap is over the default", () => {
+  /* POET's bootstrap is 202,283 bytes for 36 markets -- 5,618 each -- so the
+     250,000 default lands at about FORTY-FOUR markets. ADM runs the same
+     platform with 38 facilities in the Barchart gap alone, so its bootstrap is
+     near certain to be over. Over the cap dumpable() returns nothing, the run
+     goes green, and the log has no body in it: indistinguishable from a page
+     that had no matching feed. */
+  const big = { url: "u", endpoint: "bootstrap", body: "x".repeat(400000) };
+  assert.deepEqual(dumpable([big], "bootstrap"), [],
+    "the default must still refuse a body this size");
+  assert.equal(dumpable([big], "bootstrap", 1000000).length, 1,
+    "a stated ceiling must let it through");
+  /* And the ceiling still means something at the value it is given. */
+  assert.deepEqual(dumpable([big], "bootstrap", 399999), []);
+
+  /* The workflow has to be able to say it, or the knob is unreachable. */
+  const wf = readFileSync(new URL("../.github/workflows/discover.yml", import.meta.url), "utf8");
+  assert.match(wf, /dump_max:/, "discover.yml offers no dump_max input");
+  assert.match(wf, /--dump-max/, "discover.yml never passes --dump-max through");
+
+  /* And discover.mjs must treat it as a VALUE flag, or `--dump-max 1000000`
+     feeds "1000000" to the url checker as if it were a page to ask. */
+  const src = readFileSync(new URL("../scripts/discover.mjs", import.meta.url), "utf8");
+  assert.match(src, /"--dump-max"/, "--dump-max is not registered as a value flag");
+
+  /* THE CALL SITE, not just the rule. A mutation that hardcoded the ceiling
+     back to 250000 left this file green, because every assertion above passes
+     dumpable() an explicit third argument and never touches the wiring. */
+  assert.match(src, /dumpable\(everything, flagValue\("dump"\),\s*\n?\s*dumpCeiling\(flagValue\("dump-max"\)\)\)/,
+    "the dump call site does not read the ceiling from the flag");
+});
+
+test("the dump ceiling falls back rather than disabling the guard", () => {
+  assert.equal(dumpCeiling("1000000"), 1000000);
+  assert.equal(dumpCeiling(1000000), 1000000);
+  /* Blank, rubbish, zero and negative are not ceilings. Falling back to the
+     default is right; falling through to Infinity would turn --dump into a way
+     to paste a 5 MB bundle into a log by typo. */
+  for (const bad of ["", null, undefined, "abc", "0", 0, -1, NaN])
+    assert.equal(dumpCeiling(bad), 250000, JSON.stringify(bad));
 });
 
 test("an empty or absent body is not dumpable", () => {

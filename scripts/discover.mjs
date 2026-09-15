@@ -87,7 +87,8 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
 export const PROBE_VERSION = 6;
 
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
-                             "--budget", "--list", "--ledger", "--follow"]);
+                             "--budget", "--list", "--ledger", "--follow",
+                             "--dump-max"]);
 
 export const SIGNATURES = [
   { platform: "dtn-cs", adapter: "lib/adapters/dtn-cs.mjs", family: /(^|\.)dtn\.com$/,
@@ -546,6 +547,21 @@ function dedupe(feeds) {
  * because somebody asked for it. Keys are redacted. Aim it at a small board --
  * CHS Farmers Alliance is nine kilobytes against CHS Illinois' eighty -- and
  * pair it with `--limit 1` so one page answers and the log stays readable. */
+/** The byte ceiling a run asked for, or the default.
+ *
+ *  Its own function so the CALL SITE is testable. Written inline first, and a
+ *  mutation that hardcoded the ceiling back to 250000 left the suite green:
+ *  the tests were calling dumpable() with an explicit third argument and never
+ *  touching the wiring from the flag. A knob nothing proves is connected is a
+ *  knob that silently stops working. Anything not a positive finite number --
+ *  blank, "abc", 0, -1 -- is not a ceiling and falls back rather than
+ *  disabling the guard.
+ */
+export function dumpCeiling(raw, fallback = 250000) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 export function dumpable(feeds, want, maxBytes = 250000) {
   if (!want) return [];
   return (feeds ?? []).filter((f) =>
@@ -1167,7 +1183,25 @@ if (import.meta.url === `file://${process.argv[1]}`) {
      *
      * A status is information. It is not a reason to withhold the body. */
     const everything = [...(feeds ?? []), ...(result?.responses ?? [])];
-    for (const d of dumpable(everything, flagValue("dump"))) {
+    /* THE CAP IS A KNOB NOW, AND A GRADABLE BOOTSTRAP IS WHY -- 2026-09-15.
+     *
+     * dumpable() has always refused a body over 250,000 bytes, which is right:
+     * the default exists so `--dump` cannot paste a 5 MB bundle into a log.
+     *
+     * But POET's gradable bootstrap is 202,283 bytes for 36 markets -- 5,618
+     * bytes each -- so the cap lands at about FORTY-FOUR markets. ADM runs the
+     * same platform and has 38 facilities in the Barchart gap ALONE, before
+     * counting the ones already covered. Its bootstrap is near certain to be
+     * over the line.
+     *
+     * And the failure is silent. Over the cap, dumpable() returns nothing, the
+     * run goes green, and the log simply has no body in it -- which reads as
+     * "the page had no matching feed" rather than "the body was too big to
+     * print". A run spent for a wrong conclusion.
+     *
+     * So the default is unchanged and the ceiling is sayable. */
+    for (const d of dumpable(everything, flagValue("dump"),
+                             dumpCeiling(flagValue("dump-max")))) {
       console.log(`   (status ${d.status ?? "?"}, ${d.mime || "no mime"})`);
       console.log(`   FULL BODY of ${d.url} (${d.body.length} bytes), because --dump asked:`);
       console.log(redactBody(d.body));
