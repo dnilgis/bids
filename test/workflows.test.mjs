@@ -1043,3 +1043,212 @@ test("the shrink check runs AFTER the fetch, and only when the fetch ran", () =>
   assert.match(body, /python scripts\/registries_not_shrunk\.py/);
   assert.ok(!body.includes("<<'PY'"), "no second copy of the arithmetic in the yaml");
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NOTHING READS AN ENVIRONMENT VARIABLE ITS OWN STEP JUST WROTE
+   ══════════════════════════════════════════════════════════════════════════
+   2026-09-15. `gradable manifests` ran at 968ebd7. All 1,238 guard tests
+   passed, the report was committed, the step checked the file existed with
+   [ -f ] and found it -- and then died two lines later:
+
+       TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type
+       string or an instance of Buffer or URL. Received undefined
+
+   because the step wrote REPORT to $GITHUB_ENV and read process.env.REPORT
+   in the SAME step. $GITHUB_ENV reaches later steps only. The shell
+   assignment above it did not help either: NAME=value is not exported, so
+   the child node process had it under neither mechanism.
+
+   Two other jobs here read process.env.REPORT and are correct, because they
+   read it a step later. That is why this is checked as a sequence and not as
+   a set of lines, and why it could not be caught by running the scripts: the
+   fault is in the handoff between steps, which only a real runner performs.
+   ══════════════════════════════════════════════════════════════════════════ */
+import { envReadFaults, envNamesWritten, stepsOf } from "../lib/check-workflows.mjs";
+
+const SCRIPTS = fileURLToPath(new URL("../scripts/", import.meta.url));
+
+/* A step that runs a script inherits whatever that script puts into
+   $GITHUB_ENV -- gradable-boards.yml gets REPORT this way, from inside
+   scripts/gradable_boards.mjs, with no sign of it in the YAML. Read those
+   out of the scripts rather than listing them here, or the list goes stale
+   into a false accusation. */
+const SCRIPTS_WRITING = Object.fromEntries(
+  readdirSync(SCRIPTS)
+    .filter((f) => /\.(mjs|js|py|sh)$/.test(f))
+    .map((f) => [`scripts/${f}`, [...envNamesWritten(readFileSync(join(SCRIPTS, f), "utf8"))]])
+    .filter(([, names]) => names.length),
+);
+
+test("the scripts that hand values on through $GITHUB_ENV are found", () => {
+  // Without this, a rename that emptied the map above would turn every
+  // legitimate cross-step read into a fault -- or, once someone silenced
+  // that, turn the guard off.
+  assert.deepEqual(
+    SCRIPTS_WRITING["scripts/gradable_boards.mjs"]?.sort(),
+    ["BOARDS_READ", "REPORT", "TRANSPORT"],
+  );
+  assert.deepEqual(SCRIPTS_WRITING["scripts/gradable_bootstrap.mjs"]?.sort(), ["FIXTURE", "MARKETS"]);
+});
+
+for (const f of FILES) {
+  test(`${f} reads no environment variable nothing gave it`, () => {
+    const faults = envReadFaults(read(f), SCRIPTS_WRITING);
+    assert.deepEqual(
+      faults, [],
+      faults.map((x) => `${f}:${x.line}  ${x.text}\n    ${x.why}`).join("\n"),
+    );
+  });
+}
+
+const job = (...steps) => ["jobs:", "  j:", "    steps:", ...steps].join("\n");
+
+test("caught: the line that actually shipped", () => {
+  const doc = job(
+    "      - name: check",
+    "        run: |",
+    '          REPORT="data/x.json"',
+    '          echo "REPORT=$REPORT" >> "$GITHUB_ENV"',
+    `          node -e 'require("fs").readFileSync(process.env.REPORT)'`,
+  );
+  const faults = envReadFaults(doc);
+  assert.equal(faults.length, 1, "the shipped fault is not caught");
+  assert.match(faults[0].why, /only reaches LATER steps/);
+});
+
+test("caught: a name nothing in the job ever sets", () => {
+  const doc = job("      - name: check", `        run: node -e 'console.log(process.env.NOBODY_SETS_THIS)'`);
+  assert.equal(envReadFaults(doc).length, 1);
+});
+
+test("caught: the bracket form of the same read", () => {
+  const doc = job(
+    "      - name: check",
+    "        run: |",
+    '          echo "REPORT=x" >> "$GITHUB_ENV"',
+    `          node -e 'require("fs").readFileSync(process.env["REPORT"])'`,
+  );
+  assert.equal(envReadFaults(doc).length, 1);
+});
+
+test("caught: a second job does not inherit the first job's $GITHUB_ENV", () => {
+  // A second job is a second runner with a fresh environment. Carrying the
+  // name across would excuse exactly the fault this file exists to catch.
+  const doc = [
+    "jobs:", "  a:", "    steps:",
+    "      - name: set",
+    '        run: echo "REPORT=x" >> "$GITHUB_ENV"',
+    "  b:", "    steps:",
+    "      - name: read",
+    `        run: node -e 'console.log(process.env.REPORT)'`,
+  ].join("\n");
+  assert.equal(envReadFaults(doc).length, 1);
+});
+
+test("allowed: the same read one step later", () => {
+  const doc = job(
+    "      - name: set",
+    '        run: echo "REPORT=data/x.json" >> "$GITHUB_ENV"',
+    "      - name: read",
+    `        run: node -e 'require("fs").readFileSync(process.env.REPORT)'`,
+  );
+  assert.deepEqual(envReadFaults(doc), []);
+});
+
+test("allowed: the step's own env: mapping", () => {
+  const doc = job(
+    "      - name: read",
+    "        env:",
+    "          PARTNER: ${{ inputs.partner }}",
+    `        run: node -e 'console.log(process.env.PARTNER)'`,
+  );
+  assert.deepEqual(envReadFaults(doc), []);
+});
+
+test("allowed: a job-level env: mapping above the steps", () => {
+  const doc = [
+    "jobs:", "  j:", "    env:", "      TOKEN: x", "    steps:",
+    "      - name: read",
+    `        run: node -e 'console.log(process.env.TOKEN)'`,
+  ].join("\n");
+  assert.deepEqual(envReadFaults(doc), []);
+});
+
+test("allowed: a name an earlier step's script put there", () => {
+  const doc = job(
+    "      - name: read the boards",
+    "        run: node scripts/gradable_boards.mjs --partner adm",
+    "      - name: the report must read back",
+    `        run: node -e 'require("fs").readFileSync(process.env.REPORT)'`,
+  );
+  assert.deepEqual(envReadFaults(doc, SCRIPTS_WRITING), []);
+});
+
+test("allowed: what the runner itself provides", () => {
+  const doc = job(
+    "      - name: read",
+    `        run: node -e 'require("fs").appendFileSync(process.env.GITHUB_ENV, "A=1\\n")'`,
+  );
+  assert.deepEqual(envReadFaults(doc), []);
+});
+
+test("allowed: the word env: inside a run block is not an env: mapping", () => {
+  // `echo env:` at run-block depth once looked like a mapping to a draft of
+  // the parser, which then read the shell's next line as a name it provides.
+  const doc = job(
+    "      - name: read",
+    "        run: |",
+    "          echo env:",
+    "          REPORT: nothing",
+    `          node -e 'console.log(process.env.REPORT)'`,
+  );
+  assert.equal(envReadFaults(doc).length, 1, "a shell line was mistaken for an env: mapping");
+});
+
+test("envNamesWritten reads both shapes this repository uses", () => {
+  assert.deepEqual([...envNamesWritten('echo "FAILED_PASSES=$failed" >> "$GITHUB_ENV"')], ["FAILED_PASSES"]);
+  assert.deepEqual(
+    [...envNamesWritten("appendFileSync(process.env.GITHUB_ENV,\n  `WROTE=${n}\\nENABLED=${m}\\n`);")],
+    ["WROTE", "ENABLED"],
+  );
+  assert.deepEqual([...envNamesWritten('echo "not a write at all"')], []);
+});
+
+test("stepsOf finds the steps of the real manifests job", () => {
+  // The whole guard rests on this split. If it returned one step, or none,
+  // every cross-step read would look like a same-step read, or nothing would
+  // be checked at all -- and the file-level test above would still be green.
+  const steps = stepsOf(read("gradable-manifests.yml"));
+  assert.equal(steps.length, 7, steps.map((s) => s.name).join(" | "));
+  assert.equal(steps[2].name, "Test the guards");
+  assert.ok(steps.every((s) => s.job === 0));
+  assert.deepEqual([...steps[3].env], ["PARTNER"]);
+});
+
+test("a comment is not a read, and a commented-out redirect is not a write", () => {
+  // The comment explaining this fault, on the line above the fixed call,
+  // names process.env.REPORT. The first run of this guard accused the file
+  // it had just fixed.
+  const clean = job(
+    "      - name: check",
+    "        run: |",
+    '          REPORT="data/x.json"',
+    '          echo "REPORT=$REPORT" >> "$GITHUB_ENV"',
+    "          # this once read process.env.REPORT and died",
+    `          node -e 'require("fs").readFileSync(process.argv[1])' "$REPORT"`,
+  );
+  assert.deepEqual(envReadFaults(clean), []);
+
+  // And the other direction: a redirect that is commented out provides
+  // nothing to the step after it.
+  const dud = [
+    "jobs:", "  j:", "    steps:",
+    "      - name: set",
+    "        run: |",
+    '          # echo "REPORT=x" >> "$GITHUB_ENV"',
+    "          echo nothing",
+    "      - name: read",
+    `        run: node -e 'console.log(process.env.REPORT)'`,
+  ].join("\n");
+  assert.equal(envReadFaults(dud).length, 1, "a commented-out write was counted as a write");
+});
