@@ -7,6 +7,8 @@
   "currency": "USD",
   "countryVia": "state",
   "platform": "cashbidssingle",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
   "url": "https://scoularview.com/cashbidssingle-",
   "locationId": "2347",
   "bands": {
@@ -26,7 +28,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 33894470994) from the board page discover recorded for this operator: https://scoularview.com/cashbidssingle-. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 5 row(s) in Ip Soybeans, Ysb.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: 2 directory row(s) for COVINGTON, OH; they disagree on the ZIP, so none is taken. The board writes this location as \"Covington, OH\"; the operator's own name, the cash-bid boilerplate and the state code were peeled off it by normaliseLabel() in lib/place.mjs, leaving \"Covington\" in OH. Nothing was added to it.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 40.1176,-84.3496 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"COVINGTON\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 33894470994) from the board page discover recorded for this operator: https://scoularview.com/cashbidssingle-. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 5 row(s) in Ip Soybeans, Ysb.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: 2 directory row(s) for COVINGTON, OH; they disagree on the ZIP, so none is taken. The board writes this location as \"Covington, OH\"; the operator's own name, the cash-bid boilerplate and the state code were peeled off it by normaliseLabel() in lib/place.mjs, leaving \"Covington\" in OH. Nothing was added to it.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 40.1176,-84.3496 from geocodes/places.json on 2026-08-29, keyed on this source's own id and resolved from \"COVINGTON\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.\n\nFUTURES UNITS, MEASURED 2026-09-16 from this board's own refusal in data/index.json, not from a fixture and not from the arithmetic: every one of the 5 testable row(s) on this board fails cash - basis = futures when the futures column is read as cents, and every one balances when it is read as DOLLARS. On the rows the refusal printed: cash 12.79 basis -0.35 needs 1314c, the column reads 13.14 which is -1300.86c as cents and +0c as dollars; cash 13.3 basis 0 needs 1330c, the column reads 13.305 which is -1316.69c as cents and +0.5c as dollars. The two hypotheses are a hundred apart, which is three orders of magnitude past anything a bid board can produce, so this is read off the board rather than fitted to it. Declared, not inferred, and self-checking: a wrong declaration is out by a hundredfold and the identity guard refuses it straight back.\n\nCASH ROUNDING, MEASURED 2026-09-16 across 47 rows on the 25 cashbidssingle boards refused for this same reason: under the dollars hypothesis the residuals are -0.25c (17), +0c (2), +0.25c (24), +0.5c (4) and nothing else. Worst is 0.5c, they run in BOTH directions, and they sit on the quarter-cent grid — the board posts cash and basis to two decimals and its quote on the quarter cent, so the derived value is a whole number of cents and the quote is not. floor-cent does not describe this: it explains only the non-negative ones. round-cent-both bounds it at strictly under a cent either way, which is exactly what two cent-rounded columns can produce between them, and it still refuses every column shift, which moves things by tens of cents.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": null,
@@ -36,6 +38,6 @@
   "email": null,
   "website": "https://scoularview.com/cashbidssingle-",
   "inMerge": true,
-  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.",
+  "_pending": "lat/lon is the centroid of the town's ZIP and can be miles from the yard.",
   "latPrecision": "town"
 }

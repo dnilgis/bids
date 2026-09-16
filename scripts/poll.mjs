@@ -45,6 +45,7 @@ import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
+import { fetchWithin, deadlineFrom, SOURCE_FETCH_MS_DEFAULT } from "../lib/deadline.mjs";
 import { capture } from "../lib/cdp.mjs";
 import { Breaker, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
@@ -154,6 +155,12 @@ if (!todo.length) { console.error(`FAILED: no enabled source matches ${only ?? "
  * in the annotations, and in the index. */
 const PASS_BUDGET_MS = Number(process.env.PASS_BUDGET_MS ?? 6 * 60 * 1000);
 const BREAKER_STRIKES = Number(process.env.BREAKER_STRIKES ?? 3);
+
+/* WHAT ONE SOURCE'S URL LIST MAY COST. The reasoning, the measurement and
+   Node's own unbounded default are in lib/deadline.mjs; it lives there so it
+   can be tested without running a pass, the same argument lib/breaker.mjs
+   makes for itself. */
+const SOURCE_FETCH_MS = Number(process.env.SOURCE_FETCH_MS ?? SOURCE_FETCH_MS_DEFAULT);
 const passStarted = Date.now();
 const breaker = new Breaker({ strikes: BREAKER_STRIKES });
 
@@ -236,6 +243,9 @@ todo.sort((a, b) => {
 
 const budgetLeftMs = () => PASS_BUDGET_MS - (Date.now() - passStarted);
 
+/** What one source's whole url list is allowed to cost, never past the wall. */
+const fetchDeadline = () => deadlineFrom(Date.now(), budgetLeftMs(), SOURCE_FETCH_MS);
+
 /* ---------- one fetch per page ---------- */
 const pages = new Map();
 async function getPage(s) {
@@ -311,9 +321,13 @@ async function getPage(s) {
       headers.apikey = key;
     }
 
+    /* ONE DEADLINE FOR THE WHOLE LIST. See SOURCE_FETCH_MS above: the entries
+       are the same site under two hostnames, so charging each of them a full
+       timeout bills one dead site twice. */
+    const deadline = fetchDeadline();
     for (const url of urlsFor(s)) {
       try {
-        const res = await fetch(url, { headers, redirect: "follow" });
+        const res = await fetchWithin(url, { headers, redirect: "follow" }, deadline);
         if (!res.ok) { problems.push(`${url} -> HTTP ${res.status}`); continue; }
         const html = await res.text();
         /* THE 500-BYTE FLOOR IS AN HTML ASSUMPTION. It exists to catch a shell
@@ -366,9 +380,15 @@ async function sharedFor(platform) {
   if (sharedCtx.has(key)) return sharedCtx.get(key);
 
   const bodies = [], problems = [];
+  /* A DEADLINE EACH, NOT ONE BETWEEN THEM. These are seven DIFFERENT pages
+     and every one that answers is wanted -- unlike a source's url list, where
+     the entries are one site written two ways and the first good answer ends
+     it. Still clamped to the budget, so seven hung quote pages cannot spend
+     more of the pass than there was left. */
   for (const u of spec.urls) {
     try {
-      const res = await fetch(u, { headers: { "User-Agent": UA, Accept: "text/html" }, redirect: "follow" });
+      const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
+                                       redirect: "follow" }, fetchDeadline());
       if (!res.ok) { problems.push(`${u} -> HTTP ${res.status}`); continue; }
       const body = await res.text();
       if (!body.length) { problems.push(`${u} -> empty response`); continue; }

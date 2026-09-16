@@ -13,6 +13,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
+import { COORD_BOX } from "../lib/sources.mjs";
+import { countryOfState } from "../lib/currency.mjs";
 
 const TSV = new URL("../geocodes/basis1st-list-2026-08-20.tsv", import.meta.url);
 const rows = readFileSync(TSV, "utf8").split(/\r?\n/)
@@ -76,7 +78,7 @@ test("THE TWO CORRECTED PINS STAY CORRECTED", () => {
   }
 });
 
-test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE THE CONTINENTAL US", () => {
+test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE ITS OWN COUNTRY'S BOX", () => {
   /* The precision heuristic above works on the TSV, where the two populations
      differ exactly that way, and it does NOT transfer to the manifests: JSON
      drops trailing zeros, so albertlea's honest 43.65500 arrives as 43.655 and
@@ -114,8 +116,28 @@ test("NO SOURCE FILE PINS AN ELEVATOR OUTSIDE THE CONTINENTAL US", () => {
        test finally agreeing with the guard that actually ships. What it still
        adds over the validator is that it walks every file on disk, including
        the ones that are disabled and therefore never loaded. */
-    assert.ok(s.lat > 24 && s.lat < 50, `${s.id}: latitude ${s.lat} is not in the continental US`);
-    assert.ok(s.lon > -125 && s.lon < -66, `${s.id}: longitude ${s.lon} is not in the continental US`);
+    /* THE THIRD COPY OF THESE FOUR NUMBERS -- 2026-09-16.
+     *
+     * The comment above says "the new bounds are exactly the ones
+     * `validateSource` in lib/sources.mjs has ALWAYS enforced", and on
+     * 2026-09-15 that stopped being true: the loader's box became per country
+     * so ADM's Alberta and Saskatchewan markets could be committed, and
+     * test/sources.test.mjs was changed to import it. THIS copy was missed,
+     * and it is the one that walks disabled files -- so `adm-lloydminsterab`
+     * at 53.28N turned main red the moment the manifest landed, with the
+     * loader and the other test both passing it.
+     *
+     * That is the same fault the 2026-09-15 note describes, one file further
+     * on: two guards measuring the same thing from separately typed numbers,
+     * where one of them quietly stops being true. There is one box now and
+     * this asks it. Nothing is loosened for a US source, and a transposed
+     * pair still falls out in either country -- swap Lloydminster and the
+     * latitude is -110, which is not a latitude at all. */
+    const box = COORD_BOX[s.country ?? countryOfState(s.state) ?? "US"] ?? COORD_BOX.US;
+    assert.ok(s.lat > box.lat[0] && s.lat < box.lat[1],
+      `${s.id}: latitude ${s.lat} is not in ${box.what}`);
+    assert.ok(s.lon > box.lon[0] && s.lon < box.lon[1],
+      `${s.id}: longitude ${s.lon} is not in ${box.what}`);
   }
 });
 
