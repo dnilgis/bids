@@ -16,7 +16,8 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import { readFileSync } from "node:fs";
 import {
-  fetchWithin, deadlineFrom, SOURCE_FETCH_MS_DEFAULT, NODE_HEADERS_TIMEOUT_MS,
+  fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
+  NODE_HEADERS_TIMEOUT_MS, BROWSER_FLOOR_MS,
 } from "../lib/deadline.mjs";
 
 /** A socket that completes the TCP handshake and then says nothing at all.
@@ -139,4 +140,77 @@ test("scripts/poll.mjs HAS NO UNGUARDED fetch()", () => {
     `every fetch in the live reader goes through fetchWithin, so a hung host `
     + `cannot spend the pass. Found ${bare.length} bare call(s).`);
   assert.match(code, /fetchWithin\(/, "and it must still be reaching the network at all");
+});
+
+
+/* ── THE SPLIT, AND THE RUN THAT FOUND IT NEEDED ────────────────────────── */
+
+test("A SHARED DEADLINE IS DIVIDED, NOT QUEUED", () => {
+  const now = 1_000_000;
+  /* Two urls on a 12s mark: 6s each, and the second gets the rest. */
+  assert.equal(shareOf(now + 12_000, 2, now), now + 6_000);
+  assert.equal(shareOf(now + 6_000, 1, now), now + 6_000);
+  /* Three shared pages, a third each. */
+  assert.equal(shareOf(now + 9_000, 3, now), now + 3_000);
+  /* Spent is spent. */
+  assert.equal(shareOf(now - 1, 2, now), now);
+  assert.equal(shareOf(now + 12_000, 0, now), now);
+});
+
+test("an attempt that returns early hands its time to the next one", () => {
+  const now = 1_000_000, mark = now + 12_000;
+  assert.equal(shareOf(mark, 2, now), now + 6_000);
+  /* First url answered in 500ms instead of spending its 6s: 11.5s remain and
+     one attempt is left, so the twin gets all of it — not the 6s it was
+     provisionally allotted. */
+  assert.equal(shareOf(mark, 1, now + 500), now + 12_000);
+});
+
+test("THE PRODUCTION FAILURE THIS FIXES: 10,487ms of 12,000 on one hostname", () => {
+  /* Run 2026-09-16T12:57:51Z, verbatim from the log:
+       https://farmerswin.com/...     -> fetch failed
+       https://www.farmerswin.com/... -> no answer within 1513ms
+     Node's connect timeout (~10.5s) fired before the abort could, so the twin
+     that exists BECAUSE only one of the pair is sometimes served got 1.5s. */
+  const now = 0, CONNECT = 10_487;
+  const unshared = 12_000 - CONNECT;
+  assert.equal(unshared, 1_513, "this is the number the log printed");
+  const shared = shareOf(now + 12_000, 2, now) - now;
+  assert.equal(shared, 6_000);
+  assert.ok(shared > unshared * 3, "the twin gets a real attempt, not a formality");
+  /* And the site still costs the same in total. */
+  assert.equal(shareOf(now + 12_000, 2, now) + 6_000, now + 12_000);
+});
+
+/* ── THE BROWSER FLOOR ───────────────────────────────────────────────────── */
+
+test("THE BROWSER FLOOR IS ABOVE EVERY BROWSER READ EVER MEASURED", () => {
+  /* The fourteen consecutive ADM gradable reads of run 2026-09-16T12:57:51Z,
+     as seconds past 13:03:00, read off the log's own timestamps. Every one a
+     successful read. */
+  const at = [0.623, 2.194, 4.048, 5.732, 8.377, 10.319, 12.004,
+              13.742, 15.361, 16.952, 19.705, 21.307, 22.926, 24.468];
+  const gaps = at.slice(1).map((t, i) => t - at[i]);
+  const slowest = Math.max(...gaps);
+  assert.equal(gaps.length, 13);
+  assert.ok(Math.abs(slowest - 2.753) < 0.001, `slowest measured read ${slowest}s`);
+  assert.ok(BROWSER_FLOOR_MS > slowest * 1000,
+    "a floor at or under the slowest real read would skip reads that would have answered");
+  assert.ok(BROWSER_FLOOR_MS < 45_000, "and it is a floor, not a second timeout");
+});
+
+test("scripts/poll.mjs CLAMPS THE BROWSER READ TO THE BUDGET", () => {
+  /* capture() has accepted timeoutMs since it was written and poll.mjs never
+     passed one, so `adm-enolane` started with 27.2s of budget left, spent
+     45.4, and carried the pass 18.2 seconds past its own wall. A library
+     constant nobody hands to the call is not a guard. */
+  const src = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const calls = [...code.matchAll(/capture\(\{[^}]*\}/g)].map((m) => m[0]);
+  assert.ok(calls.length, "poll.mjs must still be reading browser sources at all");
+  for (const c of calls)
+    assert.match(c, /timeoutMs/,
+      "every capture() in the live reader carries a budget-clamped timeout");
+  assert.match(code, /BROWSER_FLOOR_MS/,
+    "and it must skip rather than record a browser read it never gave time to");
 });

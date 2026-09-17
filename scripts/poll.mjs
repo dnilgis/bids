@@ -45,7 +45,8 @@ import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
-import { fetchWithin, deadlineFrom, SOURCE_FETCH_MS_DEFAULT } from "../lib/deadline.mjs";
+import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
+         BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture } from "../lib/cdp.mjs";
 import { Breaker, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
@@ -270,9 +271,38 @@ async function getPage(s) {
           + `published while it is inside the withdrawal window. Nothing about this source is `
           + `known to be wrong.`);
       }
+      /* THE BROWSER BRANCH HAD NO BUDGET CLAMP AT ALL, AND IT IS THE BRANCH
+         THAT CAN SPEND 45 SECONDS.
+         *
+         * capture() has taken a `timeoutMs` since it was written and this
+         * call has never passed one, so every browser read got the full 45s
+         * default however little of the pass was left. The fetch branch above
+         * was fixed on 2026-09-16 and this one was not, which is the same
+         * fault in the other half of the same function.
+         *
+         * MEASURED, run 2026-09-16T12:57:51Z. The 360s wall fell at
+         * 13:03:51.665. `adm-enolane` was started at 13:03:24.47 with 27.2
+         * seconds left and ran 45.4, and the budget error printed at
+         * 13:04:09.848 -- 18.2 SECONDS PAST THE WALL, on one source, after
+         * the reader had already decided to stop.
+         *
+         * AND A CLAMP ALONE WOULD LIE. A browser load handed three seconds
+         * fails, and a failure is recorded `broken` and counted against the
+         * operator's streak -- so clamping without a floor would invent
+         * evidence against sources nobody actually tested. Below the floor
+         * this SKIPS, which lib/breaker.mjs already defines as "we did not
+         * try, so we learned nothing" and which leaves the streak alone. */
+      const browserMs = Math.min(45_000, Math.max(0, budgetLeftMs()));
+      if (browserMs < BROWSER_FLOOR_MS)
+        throw new Skipped(`not attempted: ${Math.round(browserMs)}ms of the pass budget were `
+          + `left, under the ${BROWSER_FLOOR_MS}ms floor a browser read is given — the `
+          + `slowest successful one measured is 2.75s. Asking would have failed on the `
+          + `clock rather than on the board, and been recorded against them. Its last `
+          + `good file is untouched and still published while it is inside the withdrawal `
+          + `window. Nothing about this source is known to be wrong.`);
       let got;
       try {
-        got = await capture({ pageUrl: s.browserPage, target: s.url });
+        got = await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
       } catch (e) {
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
@@ -321,13 +351,19 @@ async function getPage(s) {
       headers.apikey = key;
     }
 
-    /* ONE DEADLINE FOR THE WHOLE LIST. See SOURCE_FETCH_MS above: the entries
-       are the same site under two hostnames, so charging each of them a full
-       timeout bills one dead site twice. */
+    /* ONE DEADLINE FOR THE WHOLE LIST, SHARED EVENLY. See SOURCE_FETCH_MS
+       above: the entries are the same site under two hostnames, so charging
+       each a full timeout bills one dead site twice. But handing them one
+       mark and letting the first take what it likes is not a bound either --
+       measured 2026-09-16, Node's own connect timeout spent 10,487 of 12,000ms
+       on the bare hostname and left the www twin 1,513. shareOf() divides what
+       is left by the attempts still to make. */
     const deadline = fetchDeadline();
-    for (const url of urlsFor(s)) {
+    const urls = urlsFor(s);
+    for (const [i, url] of urls.entries()) {
       try {
-        const res = await fetchWithin(url, { headers, redirect: "follow" }, deadline);
+        const res = await fetchWithin(url, { headers, redirect: "follow" },
+                                      shareOf(deadline, urls.length - i));
         if (!res.ok) { problems.push(`${url} -> HTTP ${res.status}`); continue; }
         const html = await res.text();
         /* THE 500-BYTE FLOOR IS AN HTML ASSUMPTION. It exists to catch a shell
