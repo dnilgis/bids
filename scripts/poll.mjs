@@ -225,20 +225,52 @@ try {
 } catch { /* first run, or an unreadable index: every streak is zero */ }
 
 const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
+
+/* THE PENALTY IS PER PAGE, AND THE PAGE IS WHAT getPage() ALREADY CACHES ON.
+ *
+ * This was per OPERATOR and took the worst case, defended like this:
+ *
+ *     WORST CASE PER OPERATOR, not average: one source of theirs failing means
+ *     their page is not answering, and every other source behind that page is
+ *     about to cost 45 seconds proving it.
+ *
+ * Every word of that is about a PAGE. It was written when an operator was a
+ * page, and on 2026-09-15 that stopped being true: 113 ADM sources came in as
+ * one operator with 113 SEPARATE gradable market urls.
+ *
+ * MEASURED 2026-09-17 over all 1,094 enabled sources — 316 distinct page keys
+ * across 185 operators:
+ *
+ *     Heartland 54 sources / 1 page      Riceland 11 / 1
+ *     CoMark    48 / 1                   Central United 16 / 1
+ *     ...every operator with 5+ sources has exactly ONE page, except
+ *     ADM  113 sources / 113 pages       POET Grain  19 / 19
+ *
+ * So keying on the page changes NOTHING for the 183 operators the old comment
+ * was protecting -- their page key and their operator are the same set -- and
+ * fixes the two where one source's streak was condemning every sibling.
+ *
+ * WHAT IT COST, before this line: `adm-enolane` carried a streak of 37 and set
+ * the penalty for all 87 ADM rows in the index, while 80 of those 87 had a
+ * streak of ZERO. 172 of 185 operators sorted ahead. ADM was never attempted,
+ * an unattempted source keeps its streak (lib/breaker.mjs), so it sorted last
+ * forever: 87 of 88 carried, 62 aged past the 14-hour withdrawal at a median
+ * of 31 hours, and merge dropped all 62 with "price is 30.6h old".
+ *
+ * Still the WORST CASE within a page, because that argument is untouched: the
+ * sources behind one page stand or fall together. */
+const pageKeyOf = (s) => `${s.browserPage ?? ""}|${s.url}`;
 const opFails = new Map(), opSeen = new Map();
 for (const s of todo) {
-  const o = operatorOf(s);
-  /* WORST CASE PER OPERATOR, not average: one source of theirs failing means
-     their page is not answering, and every other source behind that page is
-     about to cost 45 seconds proving it. */
-  opFails.set(o, Math.max(opFails.get(o) ?? 0, prevFails.get(s.id) ?? 0));
-  opSeen.set(o, Math.max(opSeen.get(o) ?? 0, prevSeen.get(s.id) ?? 0));
+  const k = pageKeyOf(s);
+  opFails.set(k, Math.max(opFails.get(k) ?? 0, prevFails.get(s.id) ?? 0));
+  opSeen.set(k, Math.max(opSeen.get(k) ?? 0, prevSeen.get(s.id) ?? 0));
 }
 const spread = (id) => parseInt(createHash("sha1").update(id).digest("hex").slice(0, 8), 16);
 todo.sort((a, b) => {
-  const oa = operatorOf(a), ob = operatorOf(b);
-  return (opFails.get(oa) - opFails.get(ob))
-      || (opSeen.get(oa) - opSeen.get(ob))
+  const ka = pageKeyOf(a), kb = pageKeyOf(b);
+  return (opFails.get(ka) - opFails.get(kb))
+      || (opSeen.get(ka) - opSeen.get(kb))
       || (spread(a.id) - spread(b.id));
 });
 
@@ -255,7 +287,7 @@ async function getPage(s) {
   /* Both urls in the key. Thirteen Ag Partners sources share one API url AND
      one page, so they share one browser load; a fourteenth on the same API url
      but a different page must not silently reuse it. */
-  const key = `${s.browserPage ?? ""}|${s.url}`;
+  const key = pageKeyOf(s);   /* ONE definition, shared with the read order above */
   if (pages.has(key)) return pages.get(key);
   const p = (async () => {
     const problems = [];

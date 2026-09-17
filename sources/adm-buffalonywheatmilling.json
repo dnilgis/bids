@@ -5,7 +5,7 @@
   "state": "NY",
   "platform": "gradable",
   "url": "https://adm.gradable.com/api/commodities/v2/merchandising/instruments/market/617191503?offer_type=public",
-  "browserPage": "https://adm.gradable.com/market/Buffalo--NY",
+  "browserPage": "https://adm.gradable.com/market/Buffalo--NY-Wheat-Milling",
   "locationId": "617191503",
   "bands": {
     "red winter": [
@@ -25,7 +25,7 @@
   "email": null,
   "website": "https://adm.gradable.com/market/Buffalo--NY",
   "inMerge": true,
-  "note": "BUILT FROM ADM'S OWN BOOTSTRAP, the. market id, display name, address, state, zip and the coordinate are copied verbatim from that payload and nothing was looked up or derived. The coordinate is their geocoder's, recorded under geocodes[\"Google/Address\"]. THEIR PAYLOAD DECLARES NO ROUNDING — commodity_settings is empty on this market — so cashRounding is null and no value has been assumed. It has to be counted from this market's own board before this file can publish anything. CURRENCY IS USD, FROM their board's own rows. BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: 2 row(s) over 1 of their commodity codes, 2 of them testable against cash - basis = futures, and the residuals were zero on every one — so no cashRounding is declared and the identity guard stays exact. Every crop their board posted has a band.",
+  "note": "BUILT FROM ADM'S OWN BOOTSTRAP, the. market id, display name, address, state, zip and the coordinate are copied verbatim from that payload and nothing was looked up or derived. The coordinate is their geocoder's, recorded under geocodes[\"Google/Address\"]. THEIR PAYLOAD DECLARES NO ROUNDING — commodity_settings is empty on this market — so cashRounding is null and no value has been assumed. It has to be counted from this market's own board before this file can publish anything. CURRENCY IS USD, FROM their board's own rows. BANDS AND ROUNDING COME FROM A BOARD READ, not from this payload: 2 row(s) over 1 of their commodity codes, 2 of them testable against cash - basis = futures, and the residuals were zero on every one — so no cashRounding is declared and the identity guard stays exact. Every crop their board posted has a band.\n\nBROWSER PAGE CORRECTED Buffalo--NY-Wheat-Milling (was Buffalo--NY), 2026-09-17, from data/gradable/adm-boards.json captured 2026-09-15. This market's displayName is \"Buffalo, NY (Wheat Milling)\" and its city field is \"Buffalo\"; the page slug was built from the city. gradable routes /market/<slug-of-displayName>, so the old slug loaded a DIFFERENT market's page — it rendered, made its requests, and the call for market 617191503 never fired, which is why the failure read as a 45-second timeout on a site that was plainly up. Measured across all 122 ADM manifests: the slug rule reproduces 115 of them exactly, and every one of the 7 it does not reproduce was broken — six in the index (this one at a streak of 7), the seventh held disabled. No manifest that agreed with the rule was broken.",
   "publicNote": "Their publicly posted cash board, read from the feed their own market page asks for. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "cashRoundingCents": 0,
   "currency": "USD"
