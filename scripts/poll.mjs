@@ -497,7 +497,16 @@ async function getPage(s) {
  * publishing rows nothing checked -- is the one this whole file exists to
  * avoid. */
 const sharedCtx = new Map();
-async function sharedFor(platform) {
+/* THE PROMISE, NOT THE VALUE — and this is what the concurrency below forced.
+ *
+ * This cached `ctx` only after the seven quote pages had been fetched and
+ * parsed. Read one source at a time that is the same thing. Read three at a
+ * time and all three miss a cache that is not filled yet, so the pass asks
+ * legacyfarmers.mobile.agricharts.com for twenty-one pages instead of seven,
+ * every pass, forever. getPage() has cached the promise since it was written
+ * for exactly this reason; this one did not, because nothing had ever called
+ * it twice at once. */
+function sharedFor(platform) {
   const spec = SHARED_PAGES[platform];
   if (!spec) return undefined;
   /* KEYED BY THE PAGES, NOT BY THE PLATFORM.
@@ -510,7 +519,7 @@ async function sharedFor(platform) {
      one fetch and one parse. */
   const key = spec.urls.join("|");
   if (sharedCtx.has(key)) return sharedCtx.get(key);
-
+  const p = (async () => {
   const bodies = [], problems = [];
   /* A DEADLINE EACH, NOT ONE BETWEEN THEM. These are seven DIFFERENT pages
      and every one that answers is wanted -- unlike a source's url list, where
@@ -541,8 +550,10 @@ async function sharedFor(platform) {
   else
     console.log(`   ${platform}: read ${spec.urls.length} shared page(s) once for the whole pass `
       + `(${spec.why})`);
-  sharedCtx.set(key, ctx);
   return ctx;
+  })();
+  sharedCtx.set(key, p);
+  return p;
 }
 
 /* ---------- read each source ---------- */
@@ -550,14 +561,14 @@ const now = new Date().toISOString();
 const results = [];
 
 let skippedForTime = 0;
-for (const s of todo) {
+async function readOne(s) {
   const out = join(DATA, `${s.id}.json`);
   /* THE BUDGET IS CHECKED BEFORE EACH SOURCE, NOT AFTER. Checking afterwards
      lets one 45-second load start with two seconds left and take the pass over
      the wall anyway. */
   if (budgetLeftMs() <= 0) {
     skippedForTime++;
-    continue;
+    return;
   }
   /* A FILE THAT WILL NOT PARSE MUST NOT KILL THE RUN.
      This JSON.parse sat OUTSIDE the per-source try, so one corrupt
@@ -691,6 +702,43 @@ for (const s of todo) {
   }
   results.push(r);
 }
+
+/* ---------- THREE AT A TIME ----------
+ *
+ * THE PASS WAS BROWSER-BOUND AND THE BROWSER QUEUE WAS SERIAL. 447 of the
+ * 1,094 enabled sources need a browser read. They sit on 180 distinct pages,
+ * because getPage() caches per page — but those 180 were read one after
+ * another, and a board page measures 1.9 seconds. That is 316 seconds of a
+ * 360-second budget spent before anything else is counted, which is why a pass
+ * reaches between 595 and 805 sources and never all of them, and why WHICH
+ * 40% miss out is decided by sort order rather than by anything about them.
+ *
+ * MEASURED, on two cores and 7 GB — the shape of a GitHub standard runner —
+ * against a local page delayed to 1.4s so the serial case reproduces the 1.9s
+ * a real board takes:
+ *
+ *     concurrency 1   1756 ms a capture      (the 1.9s the log shows)
+ *     concurrency 2    998 ms                 1.76x
+ *     concurrency 3    790 ms                 2.22x     968 MB peak
+ *     concurrency 4    715 ms                 2.46x    1099 MB peak
+ *     concurrency 5    785 ms                 slower — two cores, saturated
+ *
+ * So 180 pages go from about 316s to about 142s, and roughly 175 seconds come
+ * back to the rest of the pass.
+ *
+ * THREE AND NOT FOUR. Four is 10% quicker and the memory is nowhere near a
+ * problem — 1.1 GB of 7. But the same two cores also run every fetch source,
+ * every adapter and every parse alongside this, and the gap between three and
+ * four is inside the noise of a real network. Raise it with READ_CONCURRENCY
+ * if a run says otherwise; the number is not sacred, the measurement is.
+ *
+ * The order is unchanged: this is a queue, and the reprieve still puts the
+ * longest-starved pages at the front of it. */
+const READ_CONCURRENCY = Math.max(1, Number(process.env.READ_CONCURRENCY ?? 3));
+let cursor = 0;
+await Promise.all(Array.from({ length: READ_CONCURRENCY }, async () => {
+  while (cursor < todo.length) await readOne(todo[cursor++]);
+}));
 
 /* WHAT THE PASS DID NOT REACH, SAID OUT LOUD.
    A pass that quietly reads two hundred of three hundred and fifty looks exactly
