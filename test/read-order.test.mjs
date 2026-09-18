@@ -30,16 +30,31 @@ const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
    protect has exactly one page, and the two that do not -- ADM and POET
    Grain, one gradable market url per source -- are the two it was breaking. */
 const pageKeyOf = (s) => `${s.browserPage ?? ""}|${s.url}`;
-function readOrder(sources, prevFails = {}, prevSeen = {}) {
-  const opFails = new Map(), opSeen = new Map();
+/* The way back, key ZERO. Without it the three keys below have no exit: a page
+   with any streak sorts last, the wall arrives first, and an unattempted source
+   keeps its streak. Measured on main 2026-09-18: of 143 sources unattempted for
+   ten hours, ZERO were on a page with a streak of zero. */
+export const STARVING_MS = 10 * 3600_000;
+export const REPRIEVE_PAGES = 4;
+function readOrder(sources, prevFails = {}, prevSeen = {}, now = Date.now()) {
+  const opFails = new Map(), opSeen = new Map(), lastSeen = new Map();
   for (const s of sources) {
     const k = pageKeyOf(s);
     opFails.set(k, Math.max(opFails.get(k) ?? 0, prevFails[s.id] ?? 0));
     opSeen.set(k, Math.max(opSeen.get(k) ?? 0, prevSeen[s.id] ?? 0));
+    const p = prevSeen[s.id];
+    if (p !== undefined) lastSeen.set(k, Math.max(lastSeen.get(k) ?? 0, p));
   }
+  const reprieved = new Set(
+    [...lastSeen.entries()]
+      .filter(([, t]) => now - t > STARVING_MS)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, REPRIEVE_PAGES)
+      .map(([k]) => k));
   return [...sources].sort((a, b) => {
     const ka = pageKeyOf(a), kb = pageKeyOf(b);
-    return (opFails.get(ka) - opFails.get(kb))
+    return ((reprieved.has(kb) ? 1 : 0) - (reprieved.has(ka) ? 1 : 0))
+        || (opFails.get(ka) - opFails.get(kb))
         || (opSeen.get(ka) - opSeen.get(kb))
         || (spread(a.id) - spread(b.id));
   });
@@ -137,11 +152,70 @@ test("a source with no operator falls back to its id prefix, and never crashes",
   assert.equal(operatorOf(odd[1]), "x");
 });
 
+test("A CONDEMNED PAGE GETS BACK IN — that is what the three keys never allowed", () => {
+  /* THE BUG THIS FILE DID NOT CATCH, 2026-09-18. 107 enabled sources were past
+     the 14-hour withdrawal and publishing nothing. Every one of them sat on a
+     page with a streak, and 61 of them on a page whose streak was ONE or TWO,
+     unattempted for 21 hours. One bad minute was a life sentence. */
+  const now = 1_000_000_000_000;
+  const old = now - 21 * 3600_000;       // starved
+  const fresh = now - 60_000;            // read a minute ago
+  const starved = S("starved-a", "Starved");
+  const clean = ["c-1", "c-2", "c-3"].map((id) => S(id, id));
+  const order = readOrder([...clean, starved],
+    { "starved-a": 2 },                                   // only a streak of two
+    { "starved-a": old, "c-1": fresh, "c-2": fresh, "c-3": fresh },
+    now).map((s) => s.id);
+  assert.equal(order[0], "starved-a",
+    `a page waiting 21 hours is read FIRST, ahead of its streak — got ${order.join(", ")}`);
+});
+
+test("the reprieve is bounded: four pages a pass and no more", () => {
+  /* Unbounded, a wall of dead browser pages at 45s each eats the whole budget
+     and the healthy majority pays for the suspects. */
+  const now = 1_000_000_000_000;
+  const many = Array.from({ length: 10 }, (_, i) => S(`starved-${i}`, `Op${i}`));
+  const seen = Object.fromEntries(many.map((s, i) => [s.id, now - (30 - i) * 3600_000]));
+  const fails = Object.fromEntries(many.map((s) => [s.id, 5]));
+  const order = readOrder([...many, S("clean-x", "Clean")], fails, { ...seen, "clean-x": now - 60_000 }, now);
+  const front = order.slice(0, REPRIEVE_PAGES).map((s) => s.id);
+  assert.equal(front.length, 4);
+  assert.deepEqual(front, ["starved-0", "starved-1", "starved-2", "starved-3"],
+    "the four longest-waiting, oldest first");
+  assert.equal(order[REPRIEVE_PAGES].id, "clean-x",
+    "and the clean page is next, ahead of the six still-starving ones");
+});
+
+test("a page attempted recently is never reprieved, however bad its streak", () => {
+  const now = 1_000_000_000_000;
+  const order = readOrder([S("bad", "Bad"), S("good", "Good")],
+    { bad: 99 }, { bad: now - 60_000, good: now - 120_000 }, now).map((s) => s.id);
+  assert.deepEqual(order, ["good", "bad"], "the streak still decides when nobody is starving");
+});
+
+test("a source never attempted at all is new, not starved — it does not spend a slot", () => {
+  /* prevSeen has no entry. The old code defaulted it to 0, which is 1970 and
+     would have looked like the most starved page in the manifest. */
+  const now = 1_000_000_000_000;
+  const starved = S("starved-a", "Starved");
+  const brandnew = S("new-a", "New");
+  const order = readOrder([brandnew, starved], { "starved-a": 4 },
+    { "starved-a": now - 20 * 3600_000 }, now).map((s) => s.id);
+  assert.equal(order[0], "starved-a", "the reprieve slot goes to the one we have actually neglected");
+});
+
 test("poll.mjs sorts by these three keys and in this order", () => {
   /* The ordering above is a specification; this is the check that the script
      actually implements it. A spec nothing is held to is a comment. */
   const src = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
-  const sort = src.slice(src.indexOf("todo.sort("), src.indexOf("todo.sort(") + 400);
+  const sort = src.slice(src.indexOf("todo.sort("), src.indexOf("todo.sort(") + 500);
+  /* The two constants live in both files. If they drift, the spec above stops
+     describing the script and this file goes back to being a comment. */
+  for (const [name, want] of [["STARVING_MS", STARVING_MS], ["REPRIEVE_PAGES", REPRIEVE_PAGES]]) {
+    const m = src.match(new RegExp(`const ${name} = ([^;]+);`));
+    assert.ok(m, `${name} must be declared in poll.mjs`);
+    assert.equal(eval(m[1]), want, `${name} disagrees between poll.mjs and this specification`);
+  }
   assert.match(sort, /opFails\.get\(ka\) - opFails\.get\(kb\)/, "first key: the page's failure streak");
   assert.match(sort, /opSeen\.get\(ka\) - opSeen\.get\(kb\)/, "second key: the page's last attempt");
   /* ONE definition of the page key. getPage() built the same string inline for
@@ -150,6 +224,7 @@ test("poll.mjs sorts by these three keys and in this order", () => {
   assert.equal((src.match(/const pageKeyOf =/g) || []).length, 1, "pageKeyOf is defined once");
   assert.doesNotMatch(src.replace(/const pageKeyOf =.*\n/, ""), /`\$\{s\.browserPage \?\? ""\}\|\$\{s\.url\}`/,
     "nothing rebuilds the page key by hand");
+  assert.match(sort, /reprieved\.has\(kb\).*reprieved\.has\(ka\)/, "key zero: the way back");
   assert.match(sort, /spread\(a\.id\) - spread\(b\.id\)/, "third key: a hash, never the id");
   assert.doesNotMatch(sort, /localeCompare/, "an alphabetical tiebreak is the bug this file exists for");
 });

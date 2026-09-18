@@ -261,15 +261,79 @@ const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
  * sources behind one page stand or fall together. */
 const pageKeyOf = (s) => `${s.browserPage ?? ""}|${s.url}`;
 const opFails = new Map(), opSeen = new Map();
+/* Real timestamps only. A page with no row has never been attempted, which is
+   new, not starved -- and it already sorts near the front on key 3. */
+const lastSeen = new Map();
 for (const s of todo) {
   const k = pageKeyOf(s);
   opFails.set(k, Math.max(opFails.get(k) ?? 0, prevFails.get(s.id) ?? 0));
   opSeen.set(k, Math.max(opSeen.get(k) ?? 0, prevSeen.get(s.id) ?? 0));
+  const t = prevSeen.get(s.id);
+  if (t !== undefined) lastSeen.set(k, Math.max(lastSeen.get(k) ?? 0, t));
 }
+
+/* ---------- THE WAY BACK ----------
+ *
+ * THE THREE KEYS ABOVE HAVE NO EXIT. A page with ANY failure streak sorts
+ * behind every clean page; the 360s wall arrives before it is reached; and an
+ * unattempted source keeps its streak (lib/breaker.mjs). So it is never tried
+ * again, and the streak that condemned it can never be cleared. One bad minute
+ * is a life sentence.
+ *
+ * The page-key fix stopped one bad source condemning its SIBLINGS. It did not
+ * give the condemned page itself a way back, and the comment above says so
+ * without noticing: "an unattempted source keeps its streak, so it sorted last
+ * forever".
+ *
+ * MEASURED on main, 2026-09-18, against data/index.json and the 1,094 enabled
+ * sources:
+ *
+ *     143 sources had not been ATTEMPTED in ten hours
+ *     of those, on a page with a streak of zero:  0
+ *     on a page with a streak of one or two:     61   -- waiting 21 hours
+ *     on a page with a streak of three or more:  82
+ *
+ * Not one starving source was on a clean page. This is not the budget being
+ * short; it is the order having no way back. 107 enabled sources were past the
+ * 14-hour withdrawal and publishing nothing, including three ADM boards whose
+ * slug fix shipped the day before and has never been tried.
+ *
+ * So the longest-waiting pages are read FIRST, ahead of the streak, a few per
+ * pass.
+ *
+ * TEN HOURS: the withdrawal is 14, and a page promoted at 10 has four hours of
+ * passes to succeed in before its boards leave the feed. The poll commits
+ * between two and seven times an hour, measured over the last three days, so
+ * four hours is between eight and twenty-eight more chances.
+ *
+ * FOUR PAGES: a browser read is clamped at 45s, so four of them is 180s -- half
+ * the budget, and the most the pass can spend on suspects without the healthy
+ * majority losing more than half of its own time. The backlog at ten hours is
+ * 50 pages (13 of them browser pages), so it drains in about thirteen passes.
+ * In the ordinary case a recovered page answers in about 1.9s, the measured
+ * serial browser read, and four of them cost eight seconds.
+ *
+ * SELF-CLEARING, and this is what makes it safe: a reprieved page is ATTEMPTED,
+ * so its attemptedAt moves and it is no longer starving next pass -- whether it
+ * succeeded or not. The reprieve cannot latch on to one dead host, because the
+ * dead host stops being the longest-waiting as soon as it is tried. */
+const STARVING_MS = 10 * 3600_000;
+const REPRIEVE_PAGES = 4;
+const reprieveAt = Date.now();
+const reprieved = new Set(
+  [...lastSeen.entries()]
+    .filter(([, t]) => reprieveAt - t > STARVING_MS)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, REPRIEVE_PAGES)
+    .map(([k]) => k));
+if (reprieved.size)
+  console.log(`  reprieve: ${reprieved.size} page(s) unattempted for over ${STARVING_MS / 3600_000}h are read first this pass`);
+
 const spread = (id) => parseInt(createHash("sha1").update(id).digest("hex").slice(0, 8), 16);
 todo.sort((a, b) => {
   const ka = pageKeyOf(a), kb = pageKeyOf(b);
-  return (opFails.get(ka) - opFails.get(kb))
+  return ((reprieved.has(kb) ? 1 : 0) - (reprieved.has(ka) ? 1 : 0))
+      || (opFails.get(ka) - opFails.get(kb))
       || (opSeen.get(ka) - opSeen.get(kb))
       || (spread(a.id) - spread(b.id));
 });
