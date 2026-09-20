@@ -633,6 +633,7 @@ test("substring matching is kept, because two published commodities need it", ()
 
 test("every commodity string this repository has ever published still bands", () => {
   const seen = new Set();
+  const rowsOf = {};
   const DATA = new URL("../data/", import.meta.url).pathname;
   for (const f of readdirSync(DATA).filter((x) => x.endsWith(".json"))) {
     /* NOT a bare catch. A `catch { continue }` here swallowed a missing
@@ -642,9 +643,35 @@ test("every commodity string this repository has ever published still bands", ()
     let j;
     try { j = JSON.parse(readFileSync(DATA + f, "utf8")); }
     catch (e) { if (e instanceof SyntaxError) continue; throw e; }
-    for (const b of j.bids || []) if (b.commodity) seen.add(b.commodity);
+    for (const b of j.bids || []) if (b.commodity) {
+      seen.add(b.commodity);
+      /* THE ROWS, AS THE POLLER SAW THEM. An abbreviation (Yc, Ysb, Hww, Sor)
+         bands only from its own futures column -- bandFor() says so and asks
+         for the rows. Called with none, as this test did, all four fail
+         on every run: red since 09-17 by the 09-20 status count, once
+         Scoular's boards were publishing. The published file keeps that
+         column as futuresMonth, with ONE edit: buildFile strips a trailing
+         "corn" (lib/board.mjs, `.replace(/\s*corn\s*$/i, "")`), so "Dec 26 Corn"
+         is published as "Dec 26". That edit is undone here and nothing else is:
+         only a bare "Mon YY" gets the word back, which is the only shape the
+         strip can leave. A board whose futures column says something else keeps
+         saying it, and a word that is not an abbreviation still gets no help. */
+      const k = f + "\u0000" + b.commodity;
+      const fm = b.futuresMonth == null ? "" : String(b.futuresMonth);
+      (rowsOf[k] = rowsOf[k] || { c: b.commodity, rows: [] }).rows.push(
+        { futures: /^[A-Z][a-z]{2} \d{2}$/.test(fm) ? fm + " Corn" : fm });
+    }
   }
   assert.ok(seen.size > 50, `only ${seen.size} commodity strings found — is data/ present?`);
-  const lost = [...seen].filter((c) => { try { return !bandFor({}, c); } catch { return true; } });
+  const bands = (c) => { try { return !!bandFor({}, c); } catch { return false; } };
+  /* every board's rows must band on their own: a name that bands on one board
+     and not on the next is lost on the next */
+  const lost = [...seen].filter((c) => !bands(c) && Object.values(rowsOf).some((e) => {
+    if (e.c !== c) return false;
+    try { return !bandFor({}, c, e.rows); } catch { return true; }
+  }));
+  /* and the rows must be doing the work only for abbreviations */
+  for (const c of seen) if (!bands(c) && !lost.includes(c))
+    assert.match(c, /^[a-z]{1,4}$/i, `${c} banded from its rows but is not an abbreviation`);
   assert.deepEqual(lost, [], `these stopped banding: ${lost.join(", ")}`);
 });

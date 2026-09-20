@@ -118,6 +118,19 @@ def main():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    print("\na merged shard one folder down: the race that turned read boyceville red from 09-19")
+    tmp = tempfile.mkdtemp(prefix="cap-")
+    try:
+        repo = build_race(tmp, "data/merged/adm-abilene-ks-4ddd6c69.json",
+                          mine='{"bids":12}\n', theirs='{"bids":9}\n')
+        r = run_script(repo)
+        check(r.returncode == 0, "the push lands despite the conflict",
+              (r.stdout + r.stderr).strip().splitlines()[-1][:120] if (r.stdout + r.stderr).strip() else "")
+        got = Path(repo, "data/merged/adm-abilene-ks-4ddd6c69.json").read_text()
+        check(got == '{"bids":12}\n', "and the shard is THIS run's build", repr(got))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print("\nthe same race on a HAND-EDITED file still stops and asks")
     tmp = tempfile.mkdtemp(prefix="cap-")
     try:
@@ -177,7 +190,7 @@ def main():
 
     print("\n.gitattributes covers what two workflows both regenerate")
     attrs = (ROOT / ".gitattributes").read_text()
-    for p in ("data/*.json", "geocodes/*.json", "data/gaps/*"):
+    for p in ("data/*.json", "data/merged/*.json", "geocodes/*.json", "data/gaps/*"):
         check(p in attrs and "merge=generated" in attrs.split(p)[1].split("\n")[0],
               "%s is declared generated" % p)
     check("sources/" not in [l.split()[0] for l in attrs.splitlines()
