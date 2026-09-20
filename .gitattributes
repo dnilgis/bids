@@ -37,10 +37,32 @@
 # regenerated — geocode-fill fills a coordinate, stamp-country writes a country,
 # the sweeps add new files. Two jobs disagreeing about one manifest is a real
 # disagreement and it must still stop everything and ask.
+#
+# index.html, ADDED 2026-09-20, AND WHY IT WAS THE ONE LEFT.
+#
+# data/merged/*.json went on this list that morning, after every read since
+# 09-19 had gone red on a shard conflict. It fixed the shards and the runs kept
+# going red — 0.74 an hour before the change, 0.91 an hour after, measured over
+# the day from this repository's own commit gaps. Run 35540862829, started
+# 22:10, named exactly one file:
+#
+#     ::error title=conflicting files::index.html
+#
+# The dashboard. scripts/status.mjs writes it and nothing else does, from
+# data/index.json, on every pass that commits — which is the definition of a
+# file on this list. It had been overlooked because it is the only such file
+# that does not live under data/, and because the line above it names the
+# folders, not the builds.
+#
+# THE COST OF EACH ONE OF THESE, BEFORE THE FIX: the read job hits its
+# twenty-minute ceiling after three eight-minute attempts, the backup job hits
+# its twelve, and a run that had already read 1,094 boards throws them away
+# after 33 minutes. About twenty of those a day since 09-07.
 
 data/*.json            merge=generated
 data/merged/*.json     merge=generated
 data/gaps/*            merge=generated
 geocodes/*.json        merge=generated
 probe-lists/*.txt      merge=generated
+index.html             merge=generated
 
