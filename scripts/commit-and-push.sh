@@ -112,9 +112,36 @@ for i in $(seq 1 "$tries"); do
     # regenerate it, took reading the whole log. A conflict that survives the
     # generated-file driver above is a real disagreement and the next person
     # needs its name.
-    conflicts="$(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
-    [ -n "$conflicts" ] &&
-      echo "::error title=conflicting files::$conflicts -- these are NOT declared generated in .gitattributes, so this is a real disagreement, not a rebuild"
+    #
+    # SAY WHICH OF THEM IS WHICH, 2026-09-20. This printed one sentence over
+    # every conflicting path: "these are NOT declared generated". On 09-20 it
+    # printed that over 400 data/merged/*.json files that ARE declared -- they
+    # were listed only because index.html, one line further down, had stopped
+    # the rebase and left everything else marked unmerged. The sentence sent
+    # the morning's fix at the wrong list, and the real file was the last name
+    # in a wall of text.
+    #
+    # So the attribute is asked for, per file, instead of assumed. Undeclared
+    # files keep the old wording, because that is the case a person has to
+    # decide. A DECLARED file in this list means something worse than a
+    # conflict: the driver did not run, and no list will fix that.
+    conflicts="$(git diff --name-only --diff-filter=U 2>/dev/null)"
+    if [ -n "$conflicts" ]; then
+      undeclared=""; declared=""
+      while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        if [ "$(git check-attr merge -- "$f" 2>/dev/null | sed 's/.*merge: //')" = "generated" ]
+        then declared="$declared $f"
+        else undeclared="$undeclared $f"
+        fi
+      done <<EOF
+$conflicts
+EOF
+      [ -n "$undeclared" ] &&
+        echo "::error title=conflicting files::${undeclared# } -- these are NOT declared generated in .gitattributes, so this is a real disagreement, not a rebuild"
+      [ -n "$declared" ] &&
+        echo "::error title=a declared-generated file still conflicted::$(echo "$declared" | wc -w) file(s), first: $(echo "$declared" | awk '{print $1}') -- the merge driver did not resolve a file this repository says it regenerates; look at merge.generated.driver, not at .gitattributes"
+    fi
     [ "$UNTRACKED_STASHED" = "1" ] && git stash pop --quiet 2>/dev/null || true
     git rebase --abort 2>/dev/null || true
     echo "::error title=rebase failed::the work is committed locally and NOT on the remote"

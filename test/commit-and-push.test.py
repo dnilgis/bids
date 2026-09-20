@@ -131,6 +131,26 @@ def main():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    print("\nthe dashboard: the file that kept read boyceville red after the shards were fixed")
+    tmp = tempfile.mkdtemp(prefix="cap-")
+    try:
+        # 2026-09-20, run 35540862829: one name in the annotation, index.html.
+        # scripts/status.mjs writes it on every pass that commits, from
+        # data/index.json, and the barchart and sweep jobs rebuild it too.
+        repo = build_race(tmp, "index.html",
+                          mine="<p>1094 live</p>\n", theirs="<p>850 live</p>\n")
+        r = run_script(repo)
+        check(r.returncode == 0, "the push lands despite the conflict",
+              (r.stdout + r.stderr).strip().splitlines()[-1][:120]
+              if (r.stdout + r.stderr).strip() else "")
+        got = Path(repo, "index.html").read_text()
+        check(got == "<p>1094 live</p>\n",
+              "and the dashboard is THIS run's bake", repr(got))
+        check("<<<<<<<" not in got,
+              "with no conflict markers served to a browser")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print("\nthe same race on a HAND-EDITED file still stops and asks")
     tmp = tempfile.mkdtemp(prefix="cap-")
     try:
@@ -190,12 +210,82 @@ def main():
 
     print("\n.gitattributes covers what two workflows both regenerate")
     attrs = (ROOT / ".gitattributes").read_text()
-    for p in ("data/*.json", "data/merged/*.json", "geocodes/*.json", "data/gaps/*"):
-        check(p in attrs and "merge=generated" in attrs.split(p)[1].split("\n")[0],
-              "%s is declared generated" % p)
+    # THE DECLARATION LINES, NOT ANY MENTION OF THE PATH. This was
+    # `attrs.split(p)[1].split("\n")[0]`, which reads the FIRST occurrence of
+    # the path anywhere in the file — and on 2026-09-20 the first occurrence of
+    # both data/merged/*.json and index.html became a sentence in the comment
+    # explaining why they are on the list. Two true declarations reported red.
+    # The sibling lesson to the one below: a comment must not be able to
+    # satisfy a guard, and it must not be able to break one either.
+    decls = {}
+    for line in attrs.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) >= 2:
+            decls[parts[0]] = parts[1:]
+    for p in ("data/*.json", "data/merged/*.json", "geocodes/*.json", "data/gaps/*",
+              "index.html"):
+        check("merge=generated" in decls.get(p, []),
+              "%s is declared generated" % p, repr(decls.get(p)))
     check("sources/" not in [l.split()[0] for l in attrs.splitlines()
                              if l.strip() and not l.startswith("#")],
           "and sources/ is NOT — a manifest conflict is a real one")
+
+    print("\nand every file the pipeline stages is either declared or deliberately not")
+    # THE GUARD THAT WOULD HAVE CAUGHT index.html.
+    #
+    # The list above pins the paths somebody already thought of. This one works
+    # the other way round: it reads every `git add` in the scripts and the
+    # workflows, and asks of each concrete file whether .gitattributes has an
+    # answer for it. A file with no answer is either a real disagreement -- in
+    # which case it belongs on MUST_ASK, in writing, with a reason -- or it is a
+    # build nobody declared, which is how a repository spends 33 minutes a run
+    # throwing away 1,094 boards.
+    #
+    # Directories (`git add data/`) are skipped: an attribute is a property of a
+    # path, and the files inside are covered by the globs above.
+    MUST_ASK = {
+        # A manifest is edited, not regenerated. See .gitattributes.
+        "sources/",
+        # Captured pages. A sweep disagreeing with a committed fixture is the
+        # fixture's whole purpose.
+        "fixtures/",
+        # Survey output kept for reading, rebuilt only by the monthly
+        # registries run, so two writers cannot overlap.
+        "debug/",
+    }
+    import re as _re2
+    staged, roots = set(), [ROOT / "scripts", ROOT / ".github" / "workflows"]
+    for d in roots:
+        for f in sorted(d.rglob("*")):
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text(errors="ignore")
+            except OSError:
+                continue
+            for m in _re2.finditer(r"^\s*(?:if\s+)?git add\s+([^\n|&;]+)", text, _re2.M):
+                for tok in m.group(1).split():
+                    if tok.startswith("-") or "$" in tok or tok.startswith("2>"):
+                        continue
+                    tok = tok.strip("\"'`")
+                    if not tok or tok.endswith("/") or "." not in tok.rsplit("/", 1)[-1]:
+                        continue
+                    staged.add(tok)
+    unanswered = []
+    for tok in sorted(staged):
+        if any(tok.startswith(a) for a in MUST_ASK):
+            continue
+        attr = subprocess.run(["git", "check-attr", "merge", "--", tok],
+                              cwd=ROOT, capture_output=True, text=True).stdout
+        if "merge: generated" not in attr:
+            unanswered.append(tok)
+    check(staged, "found the staged paths to check at all", "%d paths" % len(staged))
+    check(not unanswered,
+          "every staged file is declared generated or listed as one to ask about",
+          "undeclared: " + ", ".join(unanswered) if unanswered else "")
 
     print("")
     if FAILED:
