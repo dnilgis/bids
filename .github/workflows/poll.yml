@@ -170,6 +170,11 @@ concurrency:
 jobs:
   read:
     runs-on: ubuntu-latest
+    # WHY THE LAST PASS FAILED, FOR THE BACKUP JOB BELOW: "read", "publish",
+    # "tell", or empty when nothing failed. Only "read" is something another
+    # pass can fix.
+    outputs:
+      why: ${{ steps.pass.outputs.why }}
     # ══════════════════════════════════════════════════════════════════════
     #  A CEILING, BECAUSE THIS JOB HOLDS THE CONCURRENCY GROUP
     # ══════════════════════════════════════════════════════════════════════
@@ -231,6 +236,7 @@ jobs:
       #  can still use it, and because it is the thing to reach for if the
       #  cadence ever has to be raised again without raising the fire count.
       - name: Read, commit and tell — for the rest of the hour
+        id: pass
         env:
           TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
           PING_SITES: ${{ inputs.ping_sites }}
@@ -256,28 +262,28 @@ jobs:
           LOOP=${LOOP_MINUTES:-0}; EVERY=${EVERY_MINUTES:-10}
           DEADLINE=$(( $(date +%s) + LOOP * 60 ))
           pass=0; failed=0; firstfail=""
+          # THE WHOLE STEP GETS SEVENTEEN MINUTES OF THE JOB'S TWENTY; checkout
+          # and setup-node take about one, and three are kept back. Every pass
+          # below is handed what is left of that, not a fixed three attempts --
+          # see scripts/pass-with-retries.sh for the 33-minute red runs that
+          # "three attempts of eight minutes under a ceiling of twenty" caused.
+          STEP_END=$(( $(date +%s) + 17 * 60 ))
+          why=""
           while : ; do
             pass=$((pass + 1))
             ok=0
-            for attempt in 1 2 3; do
-              # PASS_TIMEOUT, and not just the job ceiling above. A job timeout
-              # turns a hang into a lost hour; an 8-minute pass timeout turns
-              # the same hang into one failed attempt that the retry directly
-              # below already knows how to recover. A full 255-source pass has
-              # measured between 1m20s and 2m11s, so 8 minutes is a hang, not
-              # a slow day.
-              if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
-              if [ $attempt -lt 3 ]; then
-                # IMMEDIATELY on the first retry. That is the whole point of it.
-                back=$(( (attempt - 1) * 20 ))
-                echo "::warning title=pass $pass failed::retrying now (attempt $((attempt+1)) of 3)"
-                [ $back -gt 0 ] && sleep $back
-              fi
-            done
+            bash scripts/pass-with-retries.sh "pass $pass" $(( STEP_END - $(date +%s) ))
+            rc=$?
+            case "$rc" in
+              0) ok=1 ;;
+              3) why=publish ;;
+              4) why=tell ;;
+              *) why=read ;;
+            esac
             if [ $ok -eq 0 ]; then
               failed=$((failed + 1))
               [ -n "$firstfail" ] || firstfail="pass $pass"
-              echo "::error title=pass $pass failed three times::the loop continues; the run will end red"
+              echo "::error title=pass $pass failed ($why)::the loop continues; the run will end red"
             fi
             # Stop if the next pass would run past the deadline. Checked BEFORE
             # sleeping so the job does not sit idle for ten minutes and then quit.
@@ -286,6 +292,8 @@ jobs:
             echo "── sleeping ${EVERY}m; $(( (DEADLINE - now) / 60 ))m of the hour left"
             sleep $(( EVERY * 60 ))
           done
+          [ $failed -eq 0 ] && why=""
+          echo "why=$why" >> "$GITHUB_OUTPUT"
           echo "passes: $pass, failed: $failed"
           {
             echo "### read boyceville"
@@ -346,22 +354,36 @@ jobs:
         with:
           node-version: 22
 
+      # ONLY WHEN ANOTHER PASS CAN HELP, AND ONLY ONE THAT FITS.
+      #
+      # Until 2026-09-20 this ran three eight-minute attempts inside a twelve-
+      # minute job, on every red read job whatever had gone wrong. It could not
+      # finish, GitHub killed the job at 12m0s, and a job killed by its ceiling
+      # runs none of its remaining steps -- so the email and the issue below
+      # never once fired, across ~20 red runs a day. And it could not help: the
+      # red runs were rebase conflicts, and a fourth read of 1,094 boards meets
+      # the same conflict as the first three.
+      #
+      # Now: the read job says why it failed. A failed READ gets one recovery
+      # pass, in nine minutes of this job's twelve, which leaves the alert steps
+      # their time. A refused PUSH gets no pass at all, straight to the alert,
+      # because a person has to look at the file it names. A pass that
+      # published but could not tell the Emmert sites gets neither: the price
+      # is out, emmertadmin tells the sites itself, and an email every ten
+      # minutes about a courtesy call is how alerts stop being read.
       - name: One recovery pass, immediately
+        id: recover
+        # Empty counts as a read failure: a read job killed by its own ceiling,
+        # or one that died before its last line, never wrote why.
+        if: needs.read.outputs.why == 'read' || needs.read.outputs.why == ''
         env:
           TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
           PING_SITES: ${{ inputs.ping_sites }}
         run: |
           set -uo pipefail
-          echo "the read job ended red; running one recovery pass now"
+          echo "the read job could not read; running one recovery pass now"
           ok=0
-          for attempt in 1 2 3; do
-            if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
-            if [ $attempt -lt 3 ]; then
-              back=$(( (attempt - 1) * 20 ))
-              echo "::warning title=backup attempt $attempt failed::retrying now (attempt $((attempt+1)) of 3)"
-              [ $back -gt 0 ] && sleep $back
-            fi
-          done
+          bash scripts/pass-with-retries.sh "backup" $(( 9 * 60 )) && ok=1
           {
             echo "### backup run"
             echo ""
@@ -372,7 +394,7 @@ jobs:
           if [ $ok -eq 1 ]; then
             echo "recovered — the board is current again"
           else
-            echo "::error title=backup pass failed three times::the feed is down, not flaky"
+            echo "::error title=backup pass failed::the read job's attempts and this one all failed to read -- the feed is down, not flaky"
           fi
           [ $ok -eq 1 ]
 
@@ -402,40 +424,51 @@ jobs:
       #  annotation, because a mail problem must never be the reason a feed
       #  problem goes unreported.
       - name: Email, immediately
-        if: failure()
+        if: failure() || needs.read.outputs.why == 'publish'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ALERT_TO:  ${{ secrets.ALERT_TO }}
+          WHY: ${{ needs.read.outputs.why }}
         run: |
-          node scripts/alert-email.mjs \
-            "bids: the reader failed AND the backup failed" \
-            "The scheduled read of the elevator boards failed, the backup run that follows it
-          failed too, and each of them had already retried three times.
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "${WHY:-}" = "publish" ]; then
+            SUBJ="bids: the boards were read but the push was refused"
+            BODY="The reader read the boards and then could not push them: a rebase met a file
+          that .gitattributes does not declare generated, or the remote kept moving. Another
+          read cannot fix that, so none was attempted. The run log's \"conflicting files\"
+          annotation names the file.
 
-          run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          run log: $RUN"
+          else
+            SUBJ="bids: the reader failed AND the backup failed"
+            BODY="The read of the elevator boards failed on every attempt that fitted in its job,
+          and the recovery pass in the backup job failed too.
 
-          Nothing further is scheduled to recover this before the next fire. The two Emmert
-          sites hold their last good price for 14 hours and then show \"Call for today's
-          price\", so there is time, but this one needs a person."
+          run log: $RUN"
+          fi
+          node scripts/alert-email.mjs "$SUBJ" "$BODY
+
+          The two Emmert sites hold their last good price for 14 hours and then show
+          \"Call for today's price\", so there is time, but this one needs a person."
 
       - name: Say so, out loud, if a pass could not be recovered
-        if: always() && failure()
+        if: always() && (failure() || needs.read.outputs.why == 'publish')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
           TITLE="read boyceville is failing"
           RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          BODY="The reader ended red AND the backup run that follows it also failed three times.
+          BODY="The reader ended red, and either the backup's recovery pass failed too or the failure was a refused push, which a recovery pass cannot fix.
           
           - run log: $RUN
           
-          Both the in-pass retry and the backup run have been spent, so this is a feed that is
-          down rather than one request that timed out. Check the run log for which sources
-          refused. The two Emmert sites hold their last good price for 14 hours and then show
+          For a refused push, the \"conflicting files\" annotation in the run log names the
+          file. Otherwise every read attempt that fitted has been spent, so this is a feed that
+          is down rather than one request that timed out. The two Emmert sites hold their last good price for 14 hours and then show
           \"Call for today's price\", so there is time to fix it before anything goes dark.
           
           This issue is reused rather than reopened per failure. Close it when the feed is

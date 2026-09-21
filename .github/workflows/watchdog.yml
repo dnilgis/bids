@@ -213,16 +213,14 @@ jobs:
         run: |
           set -uo pipefail
           echo "covering for a missed run: last pass ${{ steps.age.outputs.age }}m ago"
+          # ONE PASS THAT FITS, NOT THREE THAT DO NOT. Three eight-minute
+          # attempts under this job's twelve-minute ceiling could never finish,
+          # and a job killed by its ceiling skips the email and the issue that
+          # follow this step. Nine minutes buys exactly one attempt and leaves
+          # those steps their time. See scripts/pass-with-retries.sh.
           ok=0
-          for attempt in 1 2 3; do
-            if timeout 8m bash scripts/one-pass.sh; then ok=1; break; fi
-            if [ $attempt -lt 3 ]; then
-              back=$(( (attempt - 1) * 20 ))
-              echo "::warning title=watchdog attempt $attempt failed::retrying now (attempt $((attempt+1)) of 3)"
-              [ $back -gt 0 ] && sleep $back
-            fi
-          done
-          [ $ok -eq 1 ] || echo "::error title=watchdog pass failed three times::the feed is down, not just late"
+          bash scripts/pass-with-retries.sh "watchdog" $(( 9 * 60 )) && ok=1
+          [ $ok -eq 1 ] || echo "::error title=watchdog pass failed::the feed is down, not just late"
           [ $ok -eq 1 ]
 
       # AN ISSUE ONLY WHEN IT IS REALLY BROKEN, NOT MERELY LATE.
