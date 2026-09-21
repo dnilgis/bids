@@ -205,14 +205,22 @@ test("one pass of the reader is ONE THING, so it can be called in a loop", () =>
                             ["commit and push", /commit-and-push\.sh" \.commit-message/],
                             ["tell the sites", /repository_dispatch|dispatches/]])
     assert.match(sh, re, `one-pass.sh does not ${what} — the pass is not whole`);
-  assert.match(y, /bash scripts\/one-pass\.sh/, "the workflow no longer calls the pass");
+  /* THROUGH scripts/pass-with-retries.sh SINCE 2026-09-20, which is the one
+     place the retry lives. The call has to be a real one, not a mention: the
+     comments in poll.yml name one-pass.sh a dozen times. */
+  const helper = readFileSync(new URL("../scripts/pass-with-retries.sh", import.meta.url), "utf8");
+  assert.match(y, /^\s+bash scripts\/pass-with-retries\.sh /m, "the workflow no longer calls the pass");
+  assert.match(helper, /^\s+timeout "\$\{PASS_TIMEOUT\}s" bash "\$here\/one-pass\.sh"$/m,
+    "pass-with-retries.sh no longer runs one-pass.sh under its timeout");
   /* And the pass must NOT still be duplicated as steps, or two writers exist. */
   assert.doesNotMatch(y, /^\s+run: node scripts\/poll\.mjs\s*$/m,
     "poll.mjs is still invoked directly by a step as well as by the script — two writers");
 });
 
 test("A FAILED PASS RETRIES AT ONCE, and the first retry does not sleep", () => {
-  const y = readFileSync(new URL("../.github/workflows/poll.yml", import.meta.url), "utf8");
+  /* The retry moved into scripts/pass-with-retries.sh on 2026-09-20; the
+     property is the same and so is the arithmetic. */
+  const y = readFileSync(new URL("../scripts/pass-with-retries.sh", import.meta.url), "utf8");
   assert.match(y, /for attempt in 1 2 3/, "there is no retry at all");
   assert.match(y, /back=\$\(\(\s*\(attempt - 1\) \* 20\s*\)\)/,
     "the backoff is not zero on the first retry — that is the word 'immediately'");

@@ -166,7 +166,13 @@ fi
 # It lived here as six lines, and the two workflows that needed it most never
 # got them — the registries run of 2026-08-28 lost 581 businesses to exactly
 # this. It is scripts/commit-and-push.sh now, so there is one copy to fix.
-bash "$(dirname "$0")/commit-and-push.sh" .commit-message
+#
+# EXIT 3 WHEN THIS FAILS, NOT 1. 2026-09-20: scripts/pass-with-retries.sh
+# retries a pass that failed to READ and does not retry one that read
+# everything and then could not push, because reading 1,094 boards again cannot
+# fix a refusal in this repository. Before this line said which was which, every
+# rebase conflict cost three full re-reads and a 33-minute red run.
+bash "$(dirname "$0")/commit-and-push.sh" .commit-message || exit 3
 
 # ---- TELL THE TWO SITES, INSTEAD OF LEAVING THEM TO ASK ------------------
 set -u
@@ -200,21 +206,32 @@ grep -qx boyceville .changed-sources 2>/dev/null && MOVED=true
 
 if [ -z "${TOKEN:-}" ]; then
   echo "::error title=EMMERT_DISPATCH_TOKEN is not set::neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
-  exit 1
+  # 4, not 1: the prices ARE published by now. See pass-with-retries.sh.
+  exit 4
 fi
 
 [ "$FORCE" = "true" ] && echo "ping_sites was ticked"
 echo "boyceville moved this run: $MOVED"
 PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
 CHECKED=$(node -e "const i=require('./data/index.json');const s=(i.sources||[]).find(x=>x.id==='boyceville');process.stdout.write(s&&s.checkedAt||'')" || true)
+# WHY, IN THE PAYLOAD. The sites print client_payload.reason in their own log
+# since 2026-09-20, and treat a missing one as a price move -- which, told
+# every pass from here, would have logged "the price moved" six times an hour
+# on a price that had not. So say which it was.
+REASON=checked
+[ "$MOVED" = "true" ] && REASON=moved
 fail=""
 for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
-  code=$(curl -sS -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
+  # --max-time: curl has no deadline of its own, and this runs inside the
+  # pass's eight-minute timeout, after the prices are already pushed. A hung
+  # api.github.com here used to spend the rest of the eight minutes and then
+  # count as a failed READ, which re-read every board to tell two sites again.
+  code=$(curl -sS --max-time 20 -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
     "https://api.github.com/repos/$repo/dispatches" \
-    -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"checkedAt\":\"$CHECKED\",\"moved\":$MOVED,\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
+    -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"checkedAt\":\"$CHECKED\",\"moved\":$MOVED,\"reason\":\"$REASON\",\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
   if [ "$code" = "204" ]; then
     echo "told $repo (pricedAt $PRICED, checkedAt $CHECKED, moved $MOVED)"
   else
@@ -222,4 +239,5 @@ for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
     fail=1
   fi
 done
-[ -z "$fail" ] || exit 1
+# 4, not 1: the prices are on the remote; only the courtesy call failed.
+[ -z "$fail" ] || exit 4
