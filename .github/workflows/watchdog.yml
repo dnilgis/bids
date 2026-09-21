@@ -207,9 +207,6 @@ jobs:
       # the concurrency group when that fire arrived.
       - name: Read the board, because the reader did not
         if: steps.age.outputs.late == 'true' || inputs.force == true
-        env:
-          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
-          PING_SITES: "false"
         run: |
           set -uo pipefail
           echo "covering for a missed run: last pass ${{ steps.age.outputs.age }}m ago"

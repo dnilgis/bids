@@ -145,10 +145,6 @@ on:
     - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
     inputs:
-      ping_sites:
-        description: "Tell the sites even if the price did not move (use this to prove EMMERT_DISPATCH_TOKEN works)"
-        type: boolean
-        default: false
       loop_minutes:
         description: "Keep reading for this many minutes (blank = 0 for a hand-fired run, so it finishes at once; the hourly schedule uses 50)"
         required: false
@@ -238,8 +234,11 @@ jobs:
       - name: Read, commit and tell — for the rest of the hour
         id: pass
         env:
-          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
-          PING_SITES: ${{ inputs.ping_sites }}
+          # NO TOKEN HERE ANY MORE, 2026-09-21. This job used to carry
+          # EMMERT_DISPATCH_TOKEN and a ping_sites input, because the pass ended
+          # by telling midwestagsupply/badgergrain and .../midwestcommodity to
+          # rebuild. emmertadmin does that for them now. See the tail of
+          # scripts/one-pass.sh.
           # A hand-fired run finishes at once unless it is asked not to: the
           # concurrency group is held for as long as this loop runs, and
           # somebody pressing the button wants an answer, not a 50-minute lock.
@@ -376,9 +375,6 @@ jobs:
         # Empty counts as a read failure: a read job killed by its own ceiling,
         # or one that died before its last line, never wrote why.
         if: needs.read.outputs.why == 'read' || needs.read.outputs.why == ''
-        env:
-          TOKEN: ${{ secrets.EMMERT_DISPATCH_TOKEN }}
-          PING_SITES: ${{ inputs.ping_sites }}
         run: |
           set -uo pipefail
           echo "the read job could not read; running one recovery pass now"
