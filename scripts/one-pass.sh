@@ -174,70 +174,32 @@ fi
 # rebase conflict cost three full re-reads and a 33-minute red run.
 bash "$(dirname "$0")/commit-and-push.sh" .commit-message || exit 3
 
-# ---- TELL THE TWO SITES, INSTEAD OF LEAVING THEM TO ASK ------------------
-set -u
-# A WAY TO PROVE THE TOKEN WORKS WITHOUT WAITING FOR THE MARKET.
-# Without this the only test is a real price move, which may be an
-# hour away and which fails at the moment you are not watching. Run
-# the workflow by hand with ping_sites ticked and the answer is
-# immediate: both sites rebuild, or this step goes red and says why.
-# EVERY RUN, NOT ONLY WHEN THE PRICE MOVED.
+# ---- AND THAT IS THE PASS -----------------------------------------------
 #
-# This used to exit here unless boyceville had changed, and that was
-# right while the page showed one fact. It now shows two: "as of
-# 1:40pm" is when THEIR board moved, and "checked 4:49pm" is that
-# somebody is still looking. The second one is the answer to Sig's
-# question on 2026-08-20 -- at five o'clock nineteen of the twenty
-# boards in this feed still read 1:40pm, correctly, because futures
-# settle at 1:20pm Central and cash boards freeze after it.
+# IT USED TO TELL THE TWO EMMERT SITES, AND IT NO LONGER DOES. 2026-09-21.
 #
-# A "checked" stamp is only worth printing if it moves, and the sites
-# only rebuild when they are told to. So they are told every run, and
-# the rebuild is timed to the scrape rather than to the price. THAT
-# COSTS A COMMIT AND A PAGES DEPLOY PER RUN on each site, which is
-# the trade Sig chose knowingly: "if we are scraping the data i want
-# it timed with the scraper".
+# Everything from here to the end of the file was a repository_dispatch of
+# `price-moved` into midwestagsupply/badgergrain and midwestagsupply/
+# midwestcommodity, on every pass, so their pages would reprint their "checked"
+# stamp with the scrape rather than on their own cron.
 #
-# The payload still says whether the price actually moved, so the
-# run log on the other side can tell the two kinds of rebuild apart.
-FORCE="${PING_SITES:-false}"      # was ${{ inputs.ping_sites }} inline; a script reads the environment
-MOVED=false
-grep -qx boyceville .changed-sources 2>/dev/null && MOVED=true
-
-if [ -z "${TOKEN:-}" ]; then
-  echo "::error title=EMMERT_DISPATCH_TOKEN is not set::neither site was told. Add a fine-grained token with Contents: write on           midwestagsupply/badgergrain and midwestagsupply/midwestcommodity as the repository           secret EMMERT_DISPATCH_TOKEN. Until then both sites wait for their own cron."
-  # 4, not 1: the prices ARE published by now. See pass-with-retries.sh.
-  exit 4
-fi
-
-[ "$FORCE" = "true" ] && echo "ping_sites was ticked"
-echo "boyceville moved this run: $MOVED"
-PRICED=$(node -e "process.stdout.write(require('./data/boyceville.json').pricedAt||'')" || true)
-CHECKED=$(node -e "const i=require('./data/index.json');const s=(i.sources||[]).find(x=>x.id==='boyceville');process.stdout.write(s&&s.checkedAt||'')" || true)
-# WHY, IN THE PAYLOAD. The sites print client_payload.reason in their own log
-# since 2026-09-20, and treat a missing one as a price move -- which, told
-# every pass from here, would have logged "the price moved" six times an hour
-# on a price that had not. So say which it was.
-REASON=checked
-[ "$MOVED" = "true" ] && REASON=moved
-fail=""
-for repo in midwestagsupply/badgergrain midwestagsupply/midwestcommodity; do
-  # --max-time: curl has no deadline of its own, and this runs inside the
-  # pass's eight-minute timeout, after the prices are already pushed. A hung
-  # api.github.com here used to spend the rest of the eight minutes and then
-  # count as a failed READ, which re-read every board to tell two sites again.
-  code=$(curl -sS --max-time 20 -o /tmp/dispatch-resp -w '%{http_code}' -X POST \
-    -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "X-GitHub-Api-Version: 2022-11-28" \
-    "https://api.github.com/repos/$repo/dispatches" \
-    -d "{\"event_type\":\"price-moved\",\"client_payload\":{\"source\":\"boyceville\",\"pricedAt\":\"$PRICED\",\"checkedAt\":\"$CHECKED\",\"moved\":$MOVED,\"reason\":\"$REASON\",\"from\":\"$GITHUB_REPOSITORY\",\"run\":\"$GITHUB_RUN_ID\"}}" ) || code=000
-  if [ "$code" = "204" ]; then
-    echo "told $repo (pricedAt $PRICED, checkedAt $CHECKED, moved $MOVED)"
-  else
-    echo "::error title=could not tell $repo::HTTP $code $(head -c 300 /tmp/dispatch-resp 2>/dev/null)"
-    fail=1
-  fi
-done
-# 4, not 1: the prices are on the remote; only the courtesy call failed.
-[ -z "$fail" ] || exit 4
+# That job moved out of this repository. midwestagsupply/emmertadmin reads Big
+# River's board for those sites now, and since 2026-09-20 it also checks each
+# page's published stamp and tells whichever one has fallen behind. Two callers
+# doing the same thing meant every pass here started a build on both sites --
+# twelve site runs an hour on top of their own schedules -- and neither half
+# counted the other.
+#
+# Sig, 2026-09-21: "bids has nothing to do with feeding the emmert site anything
+# at all. they have their own scrapers and so forth."
+#
+# So this repository reads their board as one of its own 1,094 elevators and
+# publishes it in the feed, and that is all. data/boyceville.json is still
+# written, still committed, and still there for anything that wants to read it;
+# nothing is pushed at anybody.
+#
+# What went with it: the EMMERT_DISPATCH_TOKEN secret is no longer used here,
+# the `ping_sites` input on poll.yml and watchdog.yml is gone, and a pass can no
+# longer end in the "published, but the sites were not told" state that
+# scripts/pass-with-retries.sh called exit 4.
+echo "── pass done $(date -u +%H:%M:%SZ)"

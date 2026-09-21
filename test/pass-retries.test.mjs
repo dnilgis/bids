@@ -80,12 +80,6 @@ test("A REFUSED PUSH IS NOT RETRIED — reading every board again cannot fix it"
   assert.match(r.out, /::error title=t published nothing::/);
 });
 
-test("a pass that published but could not tell the sites is not retried either", () => {
-  const r = run([4, 0]);
-  assert.equal(r.code, 4, r.out);
-  assert.equal(r.attempts, 1);
-});
-
 test("three failed reads end as a failed read, not a hang", () => {
   const r = run([1, 1, 1], { available: 300 });
   assert.equal(r.code, 1, r.out);
@@ -199,10 +193,25 @@ test("one-pass.sh says which stage failed", () => {
   const sh = readFileSync(join(ROOT, "scripts/one-pass.sh"), "utf8");
   assert.match(sh, /^bash "\$\(dirname "\$0"\)\/commit-and-push\.sh" \.commit-message \|\| exit 3$/m,
     "a refused push no longer exits 3, so it would be retried as a failed read");
-  assert.doesNotMatch(sh.slice(sh.indexOf("commit-and-push.sh\" .commit-message")), /\bexit 1\b/,
+  assert.doesNotMatch(sh.slice(sh.indexOf("commit-and-push.sh\" .commit-message")), /^\s*exit 1\b/m,
     "something after the push still exits 1, which the retry reads as a failed read");
-  assert.match(sh, /curl -sS --max-time \d+/,
-    "the dispatch to the sites has no deadline, so a hung API spends the pass");
-  assert.match(sh, /\\"reason\\":\\"\$REASON\\"/,
-    "the dispatch no longer says why, so the sites log every pass as a price move");
+});
+
+test("THE PASS DOES NOT PUSH ANYTHING AT THE EMMERT SITES", () => {
+  /* Sig, 2026-09-21: "bids has nothing to do with feeding the emmert site
+     anything at all. they have their own scrapers and so forth."
+     midwestagsupply/emmertadmin reads their board for them and, since
+     2026-09-20, also tells whichever page's stamp has gone stale. This
+     repository reads the same board as one of its own elevators and publishes
+     it in the feed. Two callers telling the same two sites was twelve site
+     runs an hour that neither half had counted. */
+  for (const f of ["scripts/one-pass.sh", "scripts/pass-with-retries.sh",
+                   ".github/workflows/poll.yml", ".github/workflows/watchdog.yml"]) {
+    const t = readFileSync(join(ROOT, f), "utf8")
+      .split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
+    assert.doesNotMatch(t, /midwestagsupply\/(badgergrain|midwestcommodity)/,
+      `${f} dispatches at an Emmert site repository again`);
+    assert.doesNotMatch(t, /EMMERT_DISPATCH_TOKEN|ping_sites|PING_SITES/,
+      `${f} still carries the Emmert dispatch's token or its input`);
+  }
 });

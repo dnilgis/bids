@@ -7,7 +7,10 @@
 # Exit: 0 the pass published
 #       1 reading failed on every attempt that fitted
 #       3 the pass read the boards but the push was refused
-#       4 the pass published, but the Emmert sites were not told
+#
+# There was a 4 -- "published, but the Emmert sites were not told" -- until
+# 2026-09-21, when the pass stopped telling them at all. See the tail of
+# scripts/one-pass.sh.
 #
 # WHY THIS FILE EXISTS, 2026-09-20.
 #
@@ -70,9 +73,6 @@ for attempt in 1 2 3; do
     3)
       echo "::error title=$label published nothing::the boards were read, but the push was refused. Not retried: reading 1,094 boards again cannot fix a refusal in this repository. commit-and-push.sh said why, in the annotation above this one."
       exit 3 ;;
-    4)
-      echo "::error title=$label published, sites not told::the prices are on the remote; the dispatch to the Emmert sites failed. Not retried: the price is already out, and emmertadmin and the sites' own crons also cover this."
-      exit 4 ;;
     124)
       echo "::warning title=$label attempt $attempt timed out::killed at ${PASS_TIMEOUT}s" ;;
     *)

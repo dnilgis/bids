@@ -201,9 +201,12 @@ test("one pass of the reader is ONE THING, so it can be called in a loop", () =>
      that registries.yml and sync_known.yml were missing when they lost 581
      businesses to a rejected push. Passing .commit-message keeps the price
      message's exact bytes. */
+  /* "tell the sites" was the third of these until 2026-09-21. The pass ended
+     with a repository_dispatch into the two Emmert site repositories, and that
+     job belongs to midwestagsupply/emmertadmin now -- test/pass-retries.test.mjs
+     fails if it comes back here. A pass is read, then publish. */
   for (const [what, re] of [["read", /node scripts\/poll\.mjs/],
-                            ["commit and push", /commit-and-push\.sh" \.commit-message/],
-                            ["tell the sites", /repository_dispatch|dispatches/]])
+                            ["commit and push", /commit-and-push\.sh" \.commit-message/]])
     assert.match(sh, re, `one-pass.sh does not ${what} — the pass is not whole`);
   /* THROUGH scripts/pass-with-retries.sh SINCE 2026-09-20, which is the one
      place the retry lives. The call has to be a real one, not a mention: the
