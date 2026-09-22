@@ -13,7 +13,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { plan, applyTo, noteFor } from "../scripts/geocode-fill.mjs";
+import { plan, applyTo, noteFor, refusesACentroid } from "../scripts/geocode-fill.mjs";
 
 const BASE = {
   id: "x-town", operator: "X Co-op", location: "Town", state: "WI",
@@ -85,4 +85,47 @@ test("every manifest that claims a precision has a coordinate to go with it", ()
     assert.ok(typeof s.lat === "number" && typeof s.lon === "number",
       `${s.id}: latPrecision without a coordinate`);
   }
+});
+
+
+/* ── THE REFUSAL THIRTY MANIFESTS WROTE AND THIS SCRIPT OVERRODE ──────────
+ *
+ * On 2026-09-21 geocode-fill wrote a town centroid onto every manifest whose
+ * note says "NO COORDINATE ... a centroid derived from a town name nobody has
+ * confirmed is not a coordinate" -- thirty of them. Only heartland.test.mjs
+ * noticed, and only because it asserts a count; the other twenty-five shipped
+ * green into a distance-sorted map and a Worth-the-Drive calculation.
+ *
+ * The first test is the repository-wide guard: it does not care which tool put
+ * the pin there. The second holds the script itself to the rule.
+ */
+test("NO MANIFEST THAT REFUSES A CENTROID CARRIES A TOWN PIN", () => {
+  const dir = new URL("../sources/", import.meta.url);
+  const bad = [];
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+    const s = JSON.parse(readFileSync(new URL(f, dir), "utf8"));
+    if (!refusesACentroid(s)) continue;
+    if (s.lat !== null && s.lat !== undefined && s.latPrecision !== "street") {
+      bad.push(`${s.id} (${s.latPrecision ?? "no precision"})`);
+    }
+  }
+  assert.deepEqual(bad, [],
+    "these manifests say NO COORDINATE and carry a town-precision pin anyway; " +
+    "a centroid can be miles from the yard and these feed a distance sort");
+});
+
+test("plan() refuses a town centroid for a manifest that refuses one, and takes a street fix", () => {
+  const refusing = {
+    id: "x-refuses", lat: null, lon: null,
+    note: "HOW THIS PLACE WAS PLACED: registry only. NO COORDINATE. No ZIP is carried.",
+  };
+  const townOffer = { "x-refuses": { lat: 41.5, lon: -93.5, precision: "town", via: "zip-centroid", resolvedFrom: "Somewhere, IA" } };
+  const r1 = plan([refusing], townOffer);
+  assert.equal(r1.fill.length, 0, "a town centroid was filled onto a manifest that refuses one");
+  assert.equal(r1.refuse.length, 1);
+  assert.match(r1.refuse[0].why, /refuses a town centroid/);
+
+  const streetOffer = { "x-refuses": { lat: 41.5, lon: -93.5, precision: "street", via: "census", resolvedFrom: "100 Main St" } };
+  const r2 = plan([refusing], streetOffer);
+  assert.equal(r2.fill.length, 1, "a STREET fix is what those notes ask to be checked against and must still apply");
 });

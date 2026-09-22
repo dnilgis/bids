@@ -7,9 +7,9 @@
  * points and refuses everything it cannot reach.
  *
  * The refusals are the part worth pinning. Superior East sits on the Kansas
- * line, and a nearest-neighbour fill with no unanimity test would have put a
- * Nebraska label on it — a wrong state on a real place, which is worse than no
- * state at all.
+ * line, and a fill with no unanimity test would have put a Nebraska label on
+ * it — a wrong state on a real place, which is worse than no state at all.
+ * Which rule refuses it has changed once already; see the note further down.
  *
  *     node --test test/fill-states.test.mjs
  */
@@ -35,9 +35,39 @@ test("every state it filled says in the file how it was derived", () => {
   }
 });
 
-test("A BORDER TOWN IS REFUSED. Superior East splits NE/KS and stays null", () => {
-  assert.match(out, /superioreast\s+REFUSED — its nearest neighbours split/);
+test("A BORDER TOWN IS REFUSED. Superior East stays null", () => {
+  assert.match(out, /superioreast\s+REFUSED/);
   assert.equal(rd("sources/auroracooperative-superioreast.json").state, null);
+});
+
+/* COVERAGE LOST HERE, ON PURPOSE. READ THIS BEFORE DELETING THE SPLIT BRANCH.
+ *
+ * Until 2026-09-22 this file pinned the exact refusal Superior East earned:
+ * "REFUSED — its nearest neighbours split NE/KS". That reason needs a
+ * coordinate, and the only coordinate Superior East ever had was a ZIP
+ * centroid a geocode bot wrote onto a manifest whose own note says a centroid
+ * derived from an unconfirmed town name is not a coordinate. Thirty manifests
+ * were pinned that way; all thirty were reverted to null and the bot gated.
+ *
+ * Superior East is still refused and its state is still null — the sibling
+ * rule catches it now, because Aurora Cooperative publishes in both NE and KS.
+ * The outcome the reader sees is unchanged. What changed is the reason, so the
+ * assertion above no longer names one.
+ *
+ * The consequence, stated rather than buried: ZERO sources now reach the
+ * nearest-neighbours-split branch of scripts/fill_states.mjs. Measured on
+ * 2026-09-22 — the sweep printed 18 refusals, 8 for no coordinate and no
+ * sibling, 7 for IA/WI, 3 for NE/KS, and 0 for a split. That branch is live
+ * code with no test coverage from real data. The test below is all that holds
+ * it in place. If a street-level coordinate is ever confirmed for a border
+ * town, restore a named-reason assertion here.
+ */
+test("the split branch still exists even though no source reaches it", () => {
+  const src = readFileSync(ROOT + "scripts/fill_states.mjs", "utf8");
+  assert.match(src, /REFUSED — its nearest neighbours split/,
+    "the split refusal was deleted; a border town with a real coordinate would now be mislabelled");
+  assert.equal((out.match(/nearest neighbours split/g) ?? []).length, 0,
+    "a source reaches the split branch again — give it back its named assertion above");
 });
 
 test("an operator that spans two states cannot fill by sibling", () => {

@@ -49,6 +49,15 @@ export function noteFor(id, p) {
     `depends on the distance.`;
 }
 
+/* The refusal, as the manifests actually write it. Prose rather than a flag
+   because the notes are the standard in this repository and thirty of them
+   already carry this sentence; a new field would leave every existing refusal
+   unprotected until somebody remembered to add it. */
+export function refusesACentroid(s) {
+  const txt = String(s?.note ?? "") + " " + String(s?._pending ?? "");
+  return txt.includes("NO COORDINATE");
+}
+
 export function plan(sources, places) {
   const fill = [], skip = [], refuse = [];
   for (const s of sources) {
@@ -71,6 +80,24 @@ export function plan(sources, places) {
        question this tool is allowed to answer: does adding this pin make the
        manifest worse? */
     const before = new Set(validateSource(s, new Set()));
+    /* A MANIFEST THAT REFUSES A CENTROID IS NOT ASKING TO BE TALKED ROUND.
+       Thirty manifests say, in their own notes, "NO COORDINATE ... a centroid
+       derived from a town name nobody has confirmed is not a coordinate", and
+       this script filled a town centroid onto every one of them anyway on
+       2026-09-21. Only heartland.test.mjs noticed, and only because it happens
+       to assert a count; the other twenty-five went in green and are feeding a
+       distance-sorted map and a Worth-the-Drive calculation.
+
+       The objection is to the CENTROID, not to a coordinate. A street-level fix
+       resolved from the operator's own published address is the thing those
+       notes say to check against, so it still passes here. A town centroid does
+       not. */
+    if (refusesACentroid(s) && p.precision !== "street") {
+      refuse.push({ id: s.id, why:
+        `this manifest's note refuses a town centroid, and places.json offers ` +
+        `${p.precision}. A street-level fix would be accepted.` });
+      continue;
+    }
     const after = validateSource({ ...s, lat: p.lat, lon: p.lon }, new Set());
     const introduced = after.filter((x) => !before.has(x));
     if (introduced.length) { refuse.push({ id: s.id, why: introduced.join("; ") }); continue; }
