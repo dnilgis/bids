@@ -42,6 +42,27 @@ test("merge_bids.mjs still writes the bulk file", () => {
     "the bulk file no longer carries `kept` — the rows every consumer reads");
 });
 
+test("THE POLL STAGES IT, or it is built every pass and thrown away", () => {
+  /* The bug this test exists for, 2026-09-22: merge_bids.mjs was taught to
+     write data/merged-all.json and scripts/one-pass.sh was not taught to stage
+     it. The poll rebuilt the file every ten minutes and discarded it, the raw
+     URL served a 404 for a day, and agsist's merge fell back to Barchart on
+     every run -- silently, because it degrades rather than fails. Writing a
+     file and publishing a file are two places; a green merge proves only the
+     first. */
+  const sh = readFileSync(join(ROOT, "scripts", "one-pass.sh"), "utf8");
+  const staged = sh.split("\n").filter((l) => /^\s*git add /.test(l)).join("\n");
+  assert.match(staged, /data\/merged-all\.json/,
+    "one-pass.sh never stages data/merged-all.json — the poll would build it " +
+    "and throw it away, and every consumer would get a 404");
+  /* And it must be staged in the same breath as the shards it has to agree
+     with, or the two land in different commits and drift. */
+  const line = sh.split("\n").find((l) => /^\s*git add .*merged-all\.json/.test(l)) || "";
+  assert.match(line, /data\/merged(\s|$)/,
+    "merged-all.json is staged without data/merged — the bulk file and the " +
+    "shards must land in one commit or they disagree between passes");
+});
+
 test("the bulk file is present and well formed", () => {
   assert.ok(existsSync(ALL), "data/merged-all.json is missing");
   const d = JSON.parse(readFileSync(ALL, "utf8"));

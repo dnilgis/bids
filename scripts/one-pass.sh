@@ -149,7 +149,15 @@ fi
 # SAME FAIL-OPEN RULE as the dashboard and the directory above: a merge that
 # cannot be rebuilt must never stop a price reaching the repo.
 if node scripts/merge_bids.mjs; then
-  git add data/merged-index.json data/merged
+  # EVERY FILE THE MERGE WRITES, NOT JUST THE ONES IT USED TO WRITE.
+  # merge_bids.mjs gained data/merged-all.json on 2026-09-22 and this line did
+  # not, so the poll built the bulk file every ten minutes and threw it away:
+  # raw.githubusercontent.com served a 404, and agsist's merge -- the whole
+  # point of the file -- fell back to Barchart only on every run, silently,
+  # because it is written to degrade rather than fail. The writer and the
+  # thing that stages the writer's output are two places; both change together.
+  # test/merged-all.test.mjs now asserts this line names the file.
+  git add data/merged-index.json data/merged data/merged-all.json
 else
   echo "::warning::merge failed; committing the prices without refreshing the feed"
 fi
