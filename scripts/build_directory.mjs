@@ -194,8 +194,38 @@ const addOrg = (state, location, operator, phone) => {
 for (const s of active) addOrg(s.state, s.location, s.operator, s.phone);
 
 const knownRaw = geoFile.known || {};
+
+/* ── DECLARED THE SAME, BY A PERSON, IN THE MANIFEST ──────────────────────
+   The rule above is right to refuse a match on name and town: "a town can
+   hold three elevators". But it leaves one case it can never close. Badger
+   Grain Supply at Wheeler and Midwest Commodity Service at Baldwin publish
+   their own feed, read here since 2026-09-21, and Barchart lists both under
+   telephone numbers that are not the one office number their sites print
+   (715.632.2319 x3 and 715-246-5573, against 715-704-0548). No phone will
+   ever match, so each elevator drew one live pin and one grey
+   "may be the same yard" pin beside it, for good.
+
+   So a manifest may name the Barchart rows it IS, by their exact key, in
+   `sameAsKnown`. That is a statement somebody made and can be read in the
+   source file, not a guess this script makes — which is the line the rule
+   above draws. A key that no longer exists is reported, not ignored, so a
+   declaration cannot quietly go stale. Only an active source can declare: a
+   disabled one is a board we stopped reading, and its grey pin comes back. */
+const declaredSame = new Map();
+for (const s of active)
+  for (const kid of Array.isArray(s.sameAsKnown) ? s.sameAsKnown : [])
+    declaredSame.set(String(kid), s.id);
+for (const [kid, sid] of declaredSame)
+  if (!(kid in knownRaw))
+    console.warn(`  ${sid} declares sameAsKnown "${kid}", and no known elevator has that key any more`);
+let declaredDropped = 0;
+
 let merged = 0;
-const known = Object.entries(knownRaw).map(([kid, k]) => {
+const known = Object.entries(knownRaw).filter(([kid]) => {
+  if (!declaredSame.has(kid)) return true;
+  declaredDropped++;
+  return false;
+}).map(([kid, k]) => {
   const ph = digits(k.phone);
   const dup = (ph.length === 10 && ourPhones.has(ph)) || ourTowns.has(townKey(k.state, k.location));
   if (dup) merged++;
@@ -380,6 +410,9 @@ const counts = {
   /* Kept BECAUSE of a phone, against a name-and-town match. */
   registryKeptOnADifferentPhone: regPhoneDisagreed,
   duplicateSuspects: merged + regSameTown,
+  /* Barchart rows a manifest declared it is, by key. Not in duplicateSuspects:
+     they are not suspected, they are settled, and they are not on the map. */
+  knownDeclaredSame: declaredDropped,
   operators: new Set(elevators.map((e) => e.operator)).size,
 };
 

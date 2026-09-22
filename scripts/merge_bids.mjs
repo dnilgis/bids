@@ -123,7 +123,7 @@ const has = (name) => process.argv.includes(name);
 const NOT_A_BOARD = new Set([
   "index.json", "directory.json", "platforms.json", "registries.json",
   "registry-ia.json", "registry-survey.json", "us-states.json",
-  "known-elevators.json", "barchart-grid.json", "merged-index.json", "merged.json",
+  "known-elevators.json", "barchart-grid.json", "merged-index.json", "merged-all.json", "merged.json",
 ]);
 
 /** Is this parsed file a board? The only question that decides whether a file
@@ -785,6 +785,42 @@ function main() {
                  orphaned: orphanShards };
   const indexOut = { ...out, bids: undefined, places: placeRows };
   delete indexOut.bids;
+
+  /* THE BULK FILE, FOR A CONSUMER THAT NEEDS EVERY ROW ONCE.
+   *
+   * The index-plus-shards split above is right for a browser: cash-bids.html
+   * fetches the handful of shards near one ZIP and nothing else. It is wrong
+   * for a BUILD. agsist's fetch_bids.py merges this whole network into the
+   * feed its basis map and futures cards read, every half hour, server side --
+   * and against shards that is 1,056 HTTPS requests a run (~10 MB, ~14 GB of
+   * Pages bandwidth a month) with no way to bound it.
+   *
+   * The index cannot serve that consumer either, and this is the measurable
+   * reason: `best` above is the top CASH bid per crop, deliberately not a
+   * comparison across periods -- so 1,467 of the best rows are 2027 contracts.
+   * A card built from them shows a deferred price as today's cash, which is
+   * exactly the fault the shards exist to let a consumer avoid. Measured
+   * 2026-09-22: `best` was the highest-priced row in 112 of 112 place/crop
+   * pairs and the nearest delivery in 15 of them.
+   *
+   * So: one flat file, every row, the same field names the shards use, so a
+   * consumer reads one shape whichever it fetches. 3 MB raw and about 170 KB
+   * gzipped -- the same order as merged-index.json, which is already rewritten
+   * every run, and git deltas successive versions of it cheaply. */
+  const allOut = {
+    schema: "agsist-merged-all/1",
+    generated: out.generated,
+    note: "Every merged bid row, flat, for a server-side consumer that needs "
+        + "all of them in one request. Same field names as data/merged/*.json. "
+        + "A browser should read merged-index.json plus the shards it needs "
+        + "instead -- see the header of scripts/merge_bids.mjs.",
+    counts: out.counts,
+    bids: kept,
+  };
+  const allPath = arg("--out-all", join(ROOT, "data", "merged-all.json"));
+  writeFileSync(allPath, JSON.stringify(allOut));
+  console.log(`\nwrote ${allPath}`);
+  console.log(`  ${kept.length} rows, ${(statSync(allPath).size / 1048576).toFixed(2)} MB`);
 
   const outPath = arg("--out", join(ROOT, "data", "merged-index.json"));
   writeFileSync(outPath, JSON.stringify(indexOut, null, 1));
