@@ -325,6 +325,80 @@ test("the fixture actually contains the shape that broke, so this cannot go stal
   for (const x of us) assert.ok(delivery(x.label, ASOF).key, `"${x.label}" still unreadable`);
 });
 
+/* ── A TWO-DIGIT DAY IS NOT A TWO-DIGIT YEAR ────────────────────────────────
+   Rule 4a has always refused to read a day as a year and its comment names
+   "Sept 21-30 -> 2021-09" as the failure it exists to stop. Two shapes walked
+   round it and landed on rule 5, which takes a two-digit number after a month
+   as the year:
+
+     "Sept 21st-30th (2026-12)"   -> 2021-09   ADM, Columbus, Nebraska
+     "Sept 16-Oct 10 (2026-11)"   -> 2016-09   ADM, Decatur, Illinois
+     "Sept 25 (2026-11)"          -> 2025-09   ADM, Fremont and Lincoln, NE
+
+   Every one carried a parenthetical futures month that a September delivery
+   would be priced off, which is the elevator saying the same thing twice. The
+   ordinal suffix is now part of rule 4a, and rule 5 will not take a two-digit
+   number as a year when that year is already behind the year the board was
+   read in. The month was never in doubt; only the year, which was never on the
+   row, so it is inferred and says so. */
+test("a two-digit day is not read as a year", () => {
+  for (const [label, key, via] of [
+    ["Sept 21st-30th (2026-12)", "2026-09", "day-range-inferred-year"],
+    ["October 1st-10th (2026-12)", "2026-10", "day-range-inferred-year"],
+    ["Sept 16-Oct 10 (2026-11)", "2026-09", "month-inferred-year"],
+    ["Sept 25 (2026-11)", "2026-09", "month-inferred-year"],
+    ["Sep16", "2026-09", "month-inferred-year"],
+  ]) {
+    const r = delivery(label, ASOF);
+    assert.equal(r.key, key, `"${label}" read its DAY as a year`);
+    assert.equal(r.via, via, `"${label}" must say how the year was arrived at`);
+  }
+  /* The ordinal range keeps the days it printed. */
+  const dr = delivery("Sept 21st-30th (2026-12)", ASOF);
+  assert.equal(dr.start, "2026-09-21");
+  assert.equal(dr.end, "2026-09-30");
+});
+
+/* AND THE ROWS THAT MUST NOT MOVE. "Sep 26" and "Sept 25" are the same shape
+   and mean different things, so the rule above is the whole difference between
+   them. A year at or ahead of the read year is a year and stays one; four
+   digits are never second-guessed. */
+test("a real two-digit year is still a year", () => {
+  for (const [label, key] of [
+    ["Sep 26", "2026-09"], ["Dec26", "2026-12"], ["Jan 27", "2027-01"],
+    ["July27", "2027-07"], ["OCT-26", "2026-10"], ["Nov '26", "2026-11"],
+  ]) {
+    const r = delivery(label, ASOF);
+    assert.equal(r.key, key, label);
+    assert.equal(r.via, "month-year", `"${label}" is a year the board wrote, not an inference`);
+  }
+  /* A board that types the year out in full is stale, not misread, and this
+     file does not rewrite a year an elevator posted. */
+  assert.equal(delivery("Jan 2026", ASOF).key, "2026-01");
+  assert.equal(delivery("Jan 2026", ASOF).via, "month-year");
+});
+
+/* ── A MONTH THAT HAS GONE SAYS SO ──────────────────────────────────────────
+   33 rows in the 2026-09-23 feed name a month already past. The key is the
+   board's own and is not touched; `past` exists so a consumer does not have to
+   work today out again from the key. Three AGSIST surfaces did not, and showed
+   those rows as prices a grower could take. */
+test("a period already gone is flagged, and only when it is one month", () => {
+  assert.equal(delivery("Jan 2026", ASOF).past, true);
+  assert.equal(delivery("Aug 2026", ASOF).past, true);
+  assert.equal(delivery("03/01/2026", ASOF).past, true);
+  assert.equal(delivery("Sep 26", ASOF).past, false, "the current month is present, not past");
+  assert.equal(delivery("Jan 27", ASOF).past, false);
+  /* Not one month, so never flagged, whatever it contains. */
+  assert.equal(delivery("Oct-Nov 26", ASOF).past, false);
+  assert.equal(delivery("Fall 26", ASOF).past, false);
+  assert.equal(delivery("Cash", ASOF).past, false);
+  assert.equal(delivery("J/J27", ASOF).past, false, "an unreadable row names no month at all");
+  /* Without a read date nothing is behind anything, the same rule the year
+     inference follows when it refuses to invent one. */
+  assert.equal(delivery("Jan 2026").past, false);
+});
+
 test("a letter pair is the same pair however it is punctuated", () => {
   /* "O-N 2026" and "O-N 2027" sat unreadable for a hyphen where the table had a
      slash. Widened only because PAIR is a closed list: "J/J" is June/July or

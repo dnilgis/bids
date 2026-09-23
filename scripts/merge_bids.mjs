@@ -211,6 +211,11 @@ function row(o) {
     delivery: o.delivery ?? null,        // verbatim
     period: d.key,                       // comparable; null if unreadable
     periodVia: d.via,                    // how the period was arrived at
+    /* TRUE when that month had already gone when the board was read. The row
+       is kept and the price is the board's -- dropping somebody's posted bid
+       on our own judgement is the bigger sin -- but a consumer ranking bids by
+       nearest delivery needs to know, and until now had to work it out. */
+    periodPast: d.past === true,
 
     cash: cash == null ? null : Math.round(cash * 1e4) / 1e4,
 
@@ -650,6 +655,10 @@ function main() {
   const byCurrency = {}, byCurrencyVia = {};
   const placesSeen = new Set();
   let unmappable = 0, noState = 0, noCoord = 0;
+  /* Boards posting a month that has gone. Not an error here and not dropped:
+     published so the number is visible in the run instead of being discovered
+     downstream by somebody reading a price he cannot take. */
+  let pastPeriod = 0; const pastPeriodLabels = {};
   for (const b of kept) {
     if (!b.mappable) {
       unmappable++;
@@ -660,6 +669,7 @@ function main() {
     byVia[b.via] = (byVia[b.via] || 0) + 1;
     byState[b.state] = (byState[b.state] || 0) + 1;
     byPeriodVia[b.periodVia] = (byPeriodVia[b.periodVia] || 0) + 1;
+    if (b.periodPast) { pastPeriod++; pastPeriodLabels[b.delivery] = (pastPeriodLabels[b.delivery] || 0) + 1; }
     byCurrency[b.currency] = (byCurrency[b.currency] || 0) + 1;
     byCurrencyVia[b.currencyVia] = (byCurrencyVia[b.currencyVia] || 0) + 1;
     placesSeen.add(b.place);
@@ -683,6 +693,11 @@ function main() {
       rows: kept.length, places: placesSeen.size,
       byCrop, byVia, byState, byPeriodVia, byCurrency, byCurrencyVia,
       collisionsBetweenFeeds: collisions.length,
+      /* Rows whose delivery month had already gone when the board was read.
+         The label is the board's own words, so a repeat offender is named. */
+      periodAlreadyPast: pastPeriod,
+      periodAlreadyPastLabels: Object.fromEntries(
+        Object.entries(pastPeriodLabels).sort((a, b) => b[1] - a[1]).slice(0, 25)),
       /* Real prices that cannot go on a map. Published so the map is never
          mistaken for the whole feed. */
       unmappable, unmappableNoCoordinate: noCoord, unmappableNoState: noState,
