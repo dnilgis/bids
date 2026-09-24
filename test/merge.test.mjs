@@ -8,7 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf,
-         isBoardFile } from "../scripts/merge_bids.mjs";
+         isBoardFile, nearestOpen } from "../scripts/merge_bids.mjs";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -411,4 +411,101 @@ test("data/gaps/ IS WHERE A REPORT GOES, and barchart_gap.mjs writes it there", 
      written to catch. */
   assert.ok(!/writeFileSync\(join\(ROOT, "data", "barchart-coverage\.json"\)/.test(src),
     "the coverage report is being written into data/, where the board files live");
+});
+
+
+/* ── the number a cash card prints ──────────────────────────────────────── */
+
+const B = (crop, period, cash, past = false, delivery = "") =>
+  ({ crop, period, cash, periodPast: past, basis: null, basisCents: null,
+     commodity: crop, delivery });
+
+test("nearestOpen takes the soonest window, not the biggest number", () => {
+  /* ABBYVILLE, FROM THE LIVE FILE. `best` returns the June-July 2027 wheat at
+     $7.185 because carry pays. A grower reading a cash board wants the window
+     he can deliver into, which is thirteen cents lower and nine months
+     sooner. 1,590 of 2,239 place/crop rows in that file disagree this way. */
+  const got = nearestOpen([
+    B("wheat", "2027-06/2027-07", 7.185),
+    B("wheat", "2026-09/2026-11", 7.05),
+  ]);
+  assert.equal(got.wheat.cash, 7.05);
+  assert.equal(got.wheat.period, "2026-09/2026-11");
+});
+
+test("inside one window the better price wins", () => {
+  const got = nearestOpen([
+    B("corn", "2026-10/2026-11", 4.90),
+    B("corn", "2026-10/2026-11", 5.10),
+  ]);
+  assert.equal(got.corn.cash, 5.10);
+});
+
+test("a window that has closed is never the nearest one", () => {
+  /* periodPast is lib/delivery.mjs's answer, not ours. Its own comment says
+     this is how 37 rows reached three AGSIST surfaces as prices a grower
+     could take. */
+  const got = nearestOpen([
+    B("corn", "2026-08", 9.99, true),
+    B("corn", "2026-12", 5.00, false),
+  ]);
+  assert.equal(got.corn.cash, 5.00, "the expired row must not win on price");
+});
+
+test("a row with no readable period cannot be the nearest anything", () => {
+  const got = nearestOpen([{ crop: "corn", period: null, cash: 9.99, periodPast: false }]);
+  assert.equal(got.corn, undefined);
+});
+
+test("a row with no price is not a bid", () => {
+  const got = nearestOpen([B("corn", "2026-12", null)]);
+  assert.equal(got.corn, undefined);
+});
+
+test("each crop is answered on its own, and nothing else is invented", () => {
+  const got = nearestOpen([
+    B("corn", "2026-12", 5.00), B("soybeans", "2026-11", 13.00),
+  ]);
+  assert.deepEqual(Object.keys(got).sort(), ["corn", "soybeans"]);
+});
+
+test("a bare month sorts against a range on the end of the range", () => {
+  /* "2026-09" and "2026-08/2026-11" both appear in the live file. Comparing
+     whole strings would put the range first because "2026-0" < "2026-9". */
+  const got = nearestOpen([
+    B("corn", "2026-08/2026-11", 5.50),
+    B("corn", "2026-09", 5.00),
+  ]);
+  assert.equal(got.corn.period, "2026-09", "the bare September closes first");
+});
+
+test("a price the board could not confirm this pass is not today's cash", () => {
+  /* agsist's merge already drops these and says why: "merging that would show
+     an unconfirmed price as today's cash." 268 rows in the live file carry
+     stale:true and 268 a sourceStatus that is not ok. */
+  const stale = nearestOpen([
+    { ...B("corn", "2026-10", 9.99), stale: true },
+    B("corn", "2026-12", 5.00),
+  ]);
+  assert.equal(stale.corn.cash, 5.00, "a stale row must not win on nearness");
+
+  for (const st of ["broken", "refused"]) {
+    const got = nearestOpen([
+      { ...B("corn", "2026-10", 9.99), sourceStatus: st },
+      B("corn", "2026-12", 5.00),
+    ]);
+    assert.equal(got.corn.cash, 5.00, `a ${st} source must not win on nearness`);
+  }
+});
+
+test("a Canadian board is not stale and is not dropped here", () => {
+  /* Whether a page can draw CAD is that page's question. The place row carries
+     `currency` so it can ask without fetching the shard. */
+  const got = nearestOpen([{ ...B("corn", "2026-12", 5.00), currency: "CAD" }]);
+  assert.equal(got.corn.cash, 5.00);
+});
+
+test("nearestOpen copes with nothing at all", () => {
+  assert.deepEqual(nearestOpen([]), {});
+  assert.deepEqual(nearestOpen(null), {});
 });

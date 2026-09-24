@@ -173,6 +173,63 @@ class Tally {
  * which are already on every row and only move when the board does. When the
  * feed is when the shard was built, ask data/merged-index.json: it has one
  * `generated` for the run, which is the honest place for it. */
+/* THE NEAREST STILL-OPEN WINDOW PER CROP.
+ *
+ * `best` on a place row is the top cash across every period it quotes, and the
+ * comment where it is built says why that is the only thing it can honestly
+ * be. It is also the wrong number for any surface whose heading says "prices
+ * today", because carry pays. Measured on the live file the day this was
+ * written: 1,590 of 2,239 place/crop rows have `best` and `now` naming
+ * DIFFERENT periods. Abbyville's best wheat is $7.185 for June-July 2027; the
+ * soonest window a grower can actually deliver into is $7.05 for September to
+ * November 2026. Thirteen cents and nine months apart.
+ *
+ * Published here so consumers read a field. "Nearest delivery first, best
+ * price inside it" is already implemented three times across AGSIST --
+ * _bid_order in fetch_bids.py, bidWhen in the three futures pages,
+ * deliveryRank in cash-bids.html -- and they have disagreed before.
+ *
+ * OPEN IS `periodPast === false` AND IS NOT RE-DECIDED HERE. lib/delivery.mjs
+ * sets it per bid, and its own comment says why: "so a consumer does not have
+ * to re-derive today from the key, which is how 37 rows reached three
+ * different AGSIST surfaces and were shown as prices a grower could take."
+ *
+ * NEAREST IS THE END OF THE WINDOW, NOT THE START, matching every other
+ * ordering in the project. `period` is "YYYY-MM/YYYY-MM" or a bare "YYYY-MM",
+ * so the half after the slash compares as a plain string. A row with no
+ * readable period is not a candidate: it cannot be shown as the nearest
+ * anything.
+ */
+const periodEnd = (p) => String(p).split("/").pop();
+
+export function nearestOpen(bids) {
+  const out = {};
+  for (const b of bids || []) {
+    if (b.cash == null || b.period == null || b.periodPast === true) continue;
+    /* AN UNCONFIRMED PRICE IS NOT TODAY'S CASH. A board this repo could not
+       read on the current pass republishes its last-known price with
+       `stale: true` and a sourceStatus of "broken" or "refused" -- 268 and 268
+       rows respectively in the live file. agsist's own merge already drops
+       exactly these before selecting, and its comment gives the reason:
+       "merging that would show an unconfirmed price as today's cash." A field
+       published for a consumer to select from has to have made the same
+       decision, or every consumer makes it again and one of them forgets.
+       CURRENCY IS NOT FILTERED HERE. A Canadian board publishing in CAD is
+       correct, not stale; whether a given page can render it is that page's
+       question, and `currency` is on the place row for it to ask. */
+    if (b.stale === true) continue;
+    if ((b.sourceStatus || "ok") !== "ok") continue;
+    const cur = out[b.crop];
+    if (!cur
+        || periodEnd(b.period) < periodEnd(cur.period)
+        || (periodEnd(b.period) === periodEnd(cur.period) && b.cash > cur.cash)) {
+      out[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
+                      period: b.period, commodity: b.commodity, delivery: b.delivery };
+    }
+  }
+  return out;
+}
+
 export function shardOf(place, bids) {
   const f = bids[0];
   return { schema: SHARD_SCHEMA, place,
@@ -765,6 +822,10 @@ function main() {
                          period: b.period, commodity: b.commodity, delivery: b.delivery };
       }
     }
+
+    /* See nearestOpen() above for why this is not `best`. */
+    const now = nearestOpen(bids);
+
     const f = bids[0];
     const slug = shardName(place);
     placeRows.push({
@@ -772,9 +833,15 @@ function main() {
       operator: f.operator, branch: f.branch, city: f.city, state: f.state,
       lat: f.lat, lon: f.lon, precision: f.precision, mappable: f.mappable,
       via: f.via, source: f.source, bids: bids.length,
+      /* FOR A CONSUMER THAT RENDERS A DOLLAR SIGN. 16 of the 11,797 rows in
+         the live file are CAD. A page drawing "$" + number in front of a
+         reader in Michigan must be able to tell, and asking it to fetch the
+         place shard to find out defeats the point of the index. */
+      currency: f.currency || null,
+      zip: f.zip || null,
       crops: [...new Set(bids.map((b) => b.crop))].sort(),
       periods: [...new Set(bids.map((b) => b.period))].sort(),
-      best, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
+      best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
     const shard = shardOf(place, bids);
     const path = join(outDir, `${slug}.json`);
