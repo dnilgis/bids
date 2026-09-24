@@ -138,8 +138,19 @@ const Q_CASHBIDS = `query GetCashBids($companyId: ID!, $filter: CashBidFilter, $
 }`;
 
 const Q_INTROSPECT = `query { __schema {
-  queryType { fields { name } }
-  mutationType { fields { name } }
+  queryType { fields { name args { name type { kind name ofType { kind name } } } } }
+  mutationType { fields { name args { name type { kind name ofType { kind name } } }
+                          type { kind name ofType { kind name } } } }
+} }`;
+
+/* One named type, described. Asked only for the handful that decide what can
+ * be done next -- the company filter, and whatever registerDevice takes and
+ * returns. A full __schema { types } dump is megabytes and answers nothing
+ * this does not. */
+const Q_TYPE = `query T($name: String!) { __type(name: $name) {
+  kind name
+  inputFields { name type { kind name ofType { kind name ofType { kind name } } } }
+  fields { name type { kind name ofType { kind name } } }
 } }`;
 
 const companyGid = (n) => Buffer.from(`01:Company:${n}`).toString("base64");
@@ -295,18 +306,51 @@ async function main() {
     console.log(aOk ? `A  ok  ${A.ms}ms  bids WITH the device token` : `A  no  ${A.why}`);
   }
 
-  /* ---- I: introspection ---- */
+  /* ---- I: introspection ----
+   *
+   * Run 2 found it ON and counted 9 queries and 45 mutations without naming
+   * one of them, which is a tally rather than a finding. The names are the
+   * whole value: they say which doors exist. */
   const I = await ask({ query: Q_INTROSPECT, variables: {}, headers: BROWSER_HEADERS });
-  const qf = (I.data?.__schema?.queryType?.fields || []).map((f) => f.name);
-  const mf = (I.data?.__schema?.mutationType?.fields || []).map((f) => f.name);
+  const qFields = I.data?.__schema?.queryType?.fields || [];
+  const mFields = I.data?.__schema?.mutationType?.fields || [];
+  const qf = qFields.map((f) => f.name), mf = mFields.map((f) => f.name);
+  let filterTakesId = false;
   if (qf.length || mf.length) {
     console.log(`I  ok  ${I.ms}ms  introspection is ON — ${qf.length} queries, ${mf.length} mutations`);
-    const hot = mf.filter((n) => /device|token|register|auth|session|login/i.test(n));
+    console.log(`      queries:`);
+    for (const f of qFields)
+      console.log(`         ${f.name}(${(f.args || []).map((a) => a.name).join(", ")})`);
+    const hot = mFields.filter((f) => /device|token|register|auth|session|login/i.test(f.name));
+    console.log(`      mutations: ${mf.join(", ")}`);
     if (hot.length) {
-      console.log(`      mutations that look like they issue a credential:`);
-      for (const n of hot) console.log(`         ${n}`);
-    } else if (mf.length) {
-      console.log(`      no mutation name mentions a device or a token.`);
+      console.log(`      and these look like they issue a credential:`);
+      for (const f of hot) {
+        const ret = f.type?.name || f.type?.ofType?.name || f.type?.kind || "?";
+        console.log(`         ${f.name}(${(f.args || []).map((a) => a.name).join(", ")}) -> ${ret}`);
+      }
+    }
+    /* Describe only the types that decide what can be done next. */
+    const wanted = ["CompanyFilter", ...hot.map((f) => f.name.replace(/^./, (c) => c.toUpperCase()) + "Input")];
+    for (const name of [...new Set(wanted)]) {
+      const t = await ask({ query: Q_TYPE, variables: { name }, headers: BROWSER_HEADERS });
+      const ty = t.data?.__type;
+      if (!ty) continue;
+      const fl = ty.inputFields || ty.fields || [];
+      console.log(`      ${ty.kind} ${ty.name}: ${fl.map((x) => x.name).join(", ") || "(no fields)"}`);
+      if (ty.name === "CompanyFilter" && fl.some((x) => x.name === "id")) filterTakesId = true;
+    }
+    /* And whatever registerDevice actually takes. */
+    for (const f of hot) {
+      for (const a of f.args || []) {
+        const tn = a.type?.name || a.type?.ofType?.name;
+        if (!tn || /^(String|ID|Int|Boolean|Float)$/.test(tn)) continue;
+        const t = await ask({ query: Q_TYPE, variables: { name: tn }, headers: BROWSER_HEADERS });
+        const ty = t.data?.__type;
+        if (!ty) continue;
+        console.log(`      ${f.name}.${a.name}: ${ty.kind} ${ty.name} { ` +
+                    `${(ty.inputFields || ty.fields || []).map((x) => x.name).join(", ")} }`);
+      }
     }
   } else {
     console.log(`I  no  introspection is off${I.why ? ` — ${I.why}` : ""}`);
@@ -396,24 +440,47 @@ async function main() {
     }
   }
 
-  /* ---- F: do AgriCharts site numbers answer as companies? ---- */
+  /* ---- F: do AgriCharts site numbers answer as companies? ----
+   *
+   * RUN 2 MADE THIS TEST SAY SOMETHING IT HAD NOT MEASURED. node(id) was
+   * refused for VIA -- the one company whose id is known to be right -- and F
+   * then asked node(id) for 99 and 1446, got the same refusal, and the verdict
+   * announced that site numbers are NOT company numbers. That is a false
+   * negative printed as a finding, and it is worse than the run having no
+   * answer, because a wrong no closes a line of work.
+   *
+   * So F now needs a CONTROL that passed before its own result means anything,
+   * and it prefers the door that is open: companies(filter:) needs no
+   * credential, so if CompanyFilter will take an id, F goes through there
+   * instead of through node(). */
   const F = [];
+  let fVia = null;
   if (also.length) {
     console.log("");
     console.log("── F  AgriCharts site numbers asked as Marketplace companies");
+    const byId = filterTakesId;
+    const askOne = async (gidFor) => byId
+      ? await ask({ query: Q_COMPANIES, variables: { filter: { id: { eq: gidFor } } },
+                    headers: BROWSER_HEADERS })
+      : await ask({ query: Q_META, variables: { companyId: gidFor }, headers: BROWSER_HEADERS });
+    const readOne = (r) => byId ? (edges(r.data?.companies)[0] || null) : (r.data?.node || null);
+
+    console.log(`   route: ${byId ? "companies(filter: id) — the unauthenticated door"
+                                  : "node(id) — the same door that refused M"}`);
+    /* The control: the id we KNOW is a company. If this cannot be read, no
+       answer about 99 or 1446 is interpretable. */
+    const ctl = readOne(await askOne(gid));
+    fVia = Boolean(ctl);
+    console.log(`   control ${company}: ${ctl ? `ok — ${ctl.name || ctl.displayId}` : "REFUSED"}`);
+
     for (const n of also) {
-      const r = await ask({ query: Q_META, variables: { companyId: companyGid(n) },
-                            headers: BROWSER_HEADERS });
-      const node = r.data?.node;
-      if (!node) {
-        console.log(`   ${String(n).padEnd(6)} no   ${r.why || "node was null — no such company"}`);
-        F.push({ n, ok: false }); continue;
-      }
-      const ls = edges(node.locations), wb = ls.filter((l) => l.hasCashBids);
-      console.log(`   ${String(n).padEnd(6)} ok   ${node.displayId || "?"}  ${node.name || "?"}` +
-                  `  — ${ls.length} location(s), ${wb.length} with bids`);
+      const got = readOne(await askOne(companyGid(n)));
+      if (!got) { console.log(`   ${String(n).padEnd(6)} no answer`); F.push({ n, ok: false }); continue; }
+      const ls = edges(got.locations), wb = ls.filter((l) => l.hasCashBids);
+      console.log(`   ${String(n).padEnd(6)} ok   ${got.displayId || "?"}  ${got.name || "?"}` +
+                  (ls.length ? `  — ${ls.length} location(s), ${wb.length} with bids` : ""));
       for (const l of wb.slice(0, 5)) console.log(`             ${l.name}`);
-      F.push({ n, ok: true, name: node.name, locs: wb.length });
+      F.push({ n, ok: true, name: got.name });
     }
   }
 
@@ -438,16 +505,23 @@ async function main() {
 
   if (F.length) {
     const hit = F.filter((x) => x.ok);
-    console.log(`\n${hit.length} of ${F.length} AgriCharts site number(s) answered as a Marketplace company.`);
-    if (hit.length === F.length && hit.length)
-      console.log("The numbering is shared on every one asked. An AgriCharts source's company\n" +
-                  "id can be read off its logo URL.");
-    else if (hit.length)
-      console.log("Shared on some and not others, so it cannot be assumed. It has to be\n" +
-                  "looked up per operator.");
-    else
-      console.log("None answered. Nexus sharing its number with site 658 is a coincidence of\n" +
-                  "one, and AgriCharts sources gain nothing here.");
+    if (!fVia) {
+      console.log(`\nF PROVED NOTHING and is not a negative. The control -- ${company}, whose ` +
+                  `company id is\nknown to be right -- was refused by the same route, so ` +
+                  `"99 did not answer"\nmeans the route is shut, not that the company is absent.`);
+    } else {
+      console.log(`\n${hit.length} of ${F.length} AgriCharts site number(s) answered as a Marketplace company, ` +
+                  `against a\ncontrol that passed.`);
+      if (hit.length === F.length)
+        console.log("The numbering is shared on every one asked. An AgriCharts source's company\n" +
+                    "id can be read off its logo URL.");
+      else if (hit.length)
+        console.log("Shared on some and not others, so it cannot be assumed. It has to be\n" +
+                    "looked up per operator.");
+      else
+        console.log("Neither answered while the control did. On this evidence a site number is\n" +
+                    "not a company number, and site 658 matching Nexus is a coincidence of one.");
+    }
   }
 
   if (tenants.length)
@@ -459,7 +533,9 @@ async function main() {
     const hot = mf.filter((n) => /device|token|register/i.test(n));
     if (hot.length)
       console.log(`\nIntrospection named ${hot.length} mutation(s) that may issue a device token: ` +
-                  `${hot.join(", ")}.\nThat is the next thing to ask about.`);
+                  `${hot.join(", ")}.\nIts arguments are printed above. This probe does NOT call it: ` +
+                  `a mutation writes to\nsomebody else's system, and that is a decision, not a ` +
+                  `measurement.`);
   }
 }
 
