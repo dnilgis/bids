@@ -1,0 +1,92 @@
+# What Barchart Marketplace's GraphQL will answer, and to whom.
+#
+# scripts/discover.mjs has known since 2026-08-26 that the entire Barchart
+# Marketplace surface is ten responses to one endpoint,
+# connect.api.barchart.com/graphql. Nobody has ever asked it a question.
+#
+# IT WRITES NOTHING. It prints, and a person reads it and decides. There is no
+# commit box on this workflow and no data/ path in the script, by construction
+# rather than by default -- on 2026-09-24 a workflow whose `enable` box
+# defaulted to off rewrote 122 ADM manifests as disabled and took the network
+# from 1,096 sources to 982 for two hours. A probe that cannot write cannot do
+# that, whatever anyone ticks.
+#
+#   permissions: contents: read      <- it may not write anything
+#
+# ── THE QUESTION ───────────────────────────────────────────────────────────
+#
+# A cURL captured from a logged-out browser on 2026-09-24 carried no cookie
+# and no Authorization header. The only credential-shaped thing in it was an
+# x-device-token that decodes to a device number and a random string -- issued
+# to a browser, not to a person. Whether that header is checked at all is the
+# difference between an adapter that reads every Barchart tenant and one that
+# cannot be written.
+#
+# The token box below is EMPTY BY DEFAULT and no token is committed to this
+# repository, because sending none is the experiment.
+#
+# ── AND THE BIGGER ONE ─────────────────────────────────────────────────────
+#
+# Nexus's company id decodes to 01:Company:658 and its logo comes from
+# media.agricharts.com/sites/658/. If Marketplace company ids are AgriCharts
+# site ids, then 519 sources in this repo -- 47% of the network -- can be read
+# with a real futures quote instead of the implied one lib/adapters/
+# agricharts.mjs is forced into. The `also` box asks two site numbers read off
+# live boards this repo already polls: 99 (Legacy Farmers) and 1446 (Kokomo
+# Grain).
+
+name: marketplace probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      company:
+        description: "A Marketplace company: a displayId like VIA, or a number like 658."
+        required: false
+        default: "VIA"
+      also:
+        description: "Also ask these company numbers, comma separated. 99 is Legacy Farmers and 1446 is Kokomo Grain -- both AgriCharts site numbers off boards this repo already reads. Blank to skip."
+        required: false
+        default: "99,1446"
+      roster:
+        description: "Also ask companies() with no filter, to see whether the whole tenant roster is readable."
+        type: boolean
+        default: true
+      pages:
+        description: "Pages of 100 bid rows to read from the main company. 1 is enough to answer the access question; 5 is the cap."
+        required: false
+        default: "1"
+      device_token:
+        description: "OPTIONAL. An x-device-token from a browser, for the control request only. LEAVE BLANK on the first run -- blank is the experiment. Fill it in only if the run says the token is checked."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    # Five requests and up to five pages. Nothing here is slow; if it hangs it
+    # is refusing, and a refusal is an answer worth failing fast on.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Ask
+        env:
+          COMPANY: ${{ inputs.company }}
+          ALSO: ${{ inputs.also }}
+          PAGES: ${{ inputs.pages }}
+          TOKEN: ${{ inputs.device_token }}
+          ROSTER: ${{ inputs.roster }}
+        run: |
+          # Through environment variables, never interpolated into the command
+          # line: a workflow_dispatch input is a string a human typed.
+          args=(--company "$COMPANY" --pages "$PAGES")
+          [ -n "$ALSO" ]  && args+=(--also "$ALSO")
+          [ -n "$TOKEN" ] && args+=(--device-token "$TOKEN")
+          [ "$ROSTER" = "true" ] && args+=(--roster)
+          node scripts/marketplace-probe.mjs "${args[@]}"
