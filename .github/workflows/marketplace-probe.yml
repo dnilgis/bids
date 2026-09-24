@@ -13,17 +13,22 @@
 #
 #   permissions: contents: read      <- it may not write anything
 #
-# ── THE QUESTION ───────────────────────────────────────────────────────────
+# ── WHAT RUN 1 ESTABLISHED, 2026-09-24 23:46 UTC ───────────────────────────
 #
-# A cURL captured from a logged-out browser on 2026-09-24 carried no cookie
-# and no Authorization header. The only credential-shaped thing in it was an
-# x-device-token that decodes to a device number and a random string -- issued
-# to a browser, not to a person. Whether that header is checked at all is the
-# difference between an adapter that reads every Barchart tenant and one that
-# cannot be written.
+# The endpoint is authenticated PER FIELD, not per request.
 #
-# The token box below is EMPTY BY DEFAULT and no token is committed to this
-# repository, because sending none is the experiment.
+#     companies(...)        answered with NO credential of any kind
+#     node(id).cashBids     "Unauthenticated."
+#
+# So the x-device-token IS checked, and it is checked on the prices and not on
+# the company records. Run 1 also exposed three faults in the probe itself --
+# it discarded the partial data GraphQL returns beside an error, it asked
+# companies() with no first: and reported the default page size of 10 as if it
+# were the roster, and it skipped the AgriCharts test because a different
+# request had failed. All three are fixed; the script's header says how.
+#
+# The token box below is still EMPTY BY DEFAULT and no token is committed to
+# this repository. Fill it in to find out what the token buys.
 #
 # ── AND THE BIGGER ONE ─────────────────────────────────────────────────────
 #
