@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-09-24T20:03:54Z",
+ "generated": "2026-09-24T20:07:45Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
-   "rows": 12322,
-   "boards": 1049,
-   "generated": "2026-09-24T19:51:02.419Z"
+   "rows": 12325,
+   "boards": 1030,
+   "generated": "2026-09-24T20:01:06.085Z"
   },
   "barchart": {
    "rows": 0,
@@ -15,28 +15,28 @@
   }
  },
  "counts": {
-  "rows": 12322,
+  "rows": 12325,
   "places": 1056,
   "byCrop": {
    "wheat": 1931,
-   "soybeans": 4303,
+   "soybeans": 4306,
    "sorghum": 545,
    "corn": 5455,
    "oats": 11,
    "other": 77
   },
   "byVia": {
-   "scrape": 12322
+   "scrape": 12325
   },
   "byState": {
    "KS": 1554,
    "IL": 1393,
    "ON": 16,
-   "IN": 664,
+   "IN": 663,
    "NY": 2,
    "IA": 2135,
    "MO": 100,
-   "NE": 1632,
+   "NE": 1636,
    "OH": 440,
    "OK": 135,
    "MI": 185,
@@ -62,12 +62,12 @@
   "byPeriodVia": {
    "explicit-range": 338,
    "us-date": 6329,
-   "month-year": 3500,
+   "month-year": 3501,
    "month-pair": 471,
    "season": 499,
-   "month-inferred-year": 708,
+   "month-inferred-year": 707,
    "day-range-inferred-year": 21,
-   "contract-pair": 142,
+   "contract-pair": 145,
    "spot-word": 202,
    "month-pair-inferred-year": 29,
    "quarter": 9,
@@ -76,12 +76,12 @@
    "iso-date": 60
   },
   "byCurrency": {
-   "USD": 12306,
+   "USD": 12309,
    "CAD": 16
   },
   "byCurrencyVia": {
    "declared": 7385,
-   "payload": 4819,
+   "payload": 4822,
    "province": 118
   },
   "collisionsBetweenFeeds": 0,
@@ -107,15 +107,15 @@
  "dropped": {
   "scrape": {
    "leftover board file from a retired or disabled source": 25,
-   "broken: price is 237.6h old, past the 14h withdrawal": 2,
-   "refused: price is 231.5h old, past the 14h withdrawal": 1,
+   "broken: price is 237.7h old, past the 14h withdrawal": 2,
+   "refused: price is 231.6h old, past the 14h withdrawal": 1,
    "inMerge is false on the source": 1,
    "refused: price is 511.1h old, past the 14h withdrawal": 1,
-   "refused: price is 71.7h old, past the 14h withdrawal": 1,
-   "refused: price is 212.3h old, past the 14h withdrawal": 1,
-   "refused: price is 75.2h old, past the 14h withdrawal": 1,
-   "broken: price is 30.2h old, past the 14h withdrawal": 1,
-   "refused: price is 436.7h old, past the 14h withdrawal": 1
+   "refused: price is 71.8h old, past the 14h withdrawal": 1,
+   "refused: price is 212.4h old, past the 14h withdrawal": 1,
+   "refused: price is 75.3h old, past the 14h withdrawal": 1,
+   "broken: price is 30.3h old, past the 14h withdrawal": 1,
+   "refused: price is 436.8h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
@@ -2302,8 +2302,8 @@
      "delivery": "July (2027-07)"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "ADM||LAOTTO|IN",
@@ -4208,8 +4208,8 @@
      "delivery": "May '27 (2027-05)"
     }
    },
-   "pricedAt": "2026-09-24T18:41:36.962Z",
-   "checkedAt": "2026-09-24T19:51:02.419Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "ADM||Shobonier|IL",
@@ -4570,8 +4570,8 @@
      "delivery": "April '27 (2027-05)"
     }
    },
-   "pricedAt": "2026-09-24T18:41:36.962Z",
-   "checkedAt": "2026-09-24T19:51:02.419Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "ADM||St. Paul|MN",
@@ -10706,26 +10706,38 @@
    "mappable": true,
    "via": "scrape",
    "source": "auroracooperative-superior",
-   "bids": 2,
+   "bids": 6,
    "crops": [
-    "corn"
+    "corn",
+    "soybeans"
    ],
    "periods": [
     "2026-09",
-    "2026-10/2026-11"
+    "2026-09/2026-10",
+    "2026-10/2026-11",
+    "2027-09/2027-10",
+    "2027-10/2027-11"
    ],
    "best": {
     "corn": {
-     "cash": 4.825,
-     "basis": -0.45,
-     "basisCents": -45,
-     "period": "2026-10/2026-11",
+     "cash": 4.8325,
+     "basis": -0.44,
+     "basisCents": -44,
+     "period": "2027-10/2027-11",
      "commodity": "Corn",
-     "delivery": "O/N26"
+     "delivery": "O/N27"
+    },
+    "soybeans": {
+     "cash": 12.575,
+     "basis": -0.6,
+     "basisCents": -60,
+     "period": "2026-09",
+     "commodity": "Soybeans",
+     "delivery": "Sep26"
     }
    },
-   "pricedAt": "2026-09-24T19:51:02.419Z",
-   "checkedAt": "2026-09-24T19:51:02.419Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "Aurora Elevator Inc.||Aurora|IA",
@@ -10858,8 +10870,8 @@
      "delivery": "July 2027 (2027-07)"
     }
    },
-   "pricedAt": "2026-09-24T19:51:02.419Z",
-   "checkedAt": "2026-09-24T19:51:02.419Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "Badger Grain Supply, LLC||Wheeler|WI",
@@ -11085,8 +11097,8 @@
      "delivery": "06/01/2027"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "Bocker Ruff Grain||POLO|IL",
@@ -19403,8 +19415,8 @@
      "delivery": "Jan 2027"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "CHS Illinois||Davenport|IA",
@@ -19748,8 +19760,8 @@
      "delivery": "Jan 2027"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "CHS Illinois||Steward|IL",
@@ -20560,8 +20572,8 @@
      "delivery": "June 2027"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "CHS River Terminals & Processing Plants||Fairmont|MN",
@@ -40265,12 +40277,11 @@
    "mappable": true,
    "via": "scrape",
    "source": "keystonecooperative-holland",
-   "bids": 9,
+   "bids": 8,
    "crops": [
     "corn"
    ],
    "periods": [
-    "2026-09",
     "2026-10",
     "2026-11",
     "2026-12",
@@ -40290,8 +40301,8 @@
      "delivery": "April '27"
     }
    },
-   "pricedAt": "2026-09-24T18:31:06.749Z",
-   "checkedAt": "2026-09-24T19:43:24.063Z"
+   "pricedAt": "2026-09-24T20:01:06.085Z",
+   "checkedAt": "2026-09-24T20:01:06.085Z"
   },
   {
    "place": "Keystone Cooperative||Legacy Feed|IN",
