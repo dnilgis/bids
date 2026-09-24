@@ -194,6 +194,86 @@ test("ONE CELL OUT OF STEP REFUSES THE BOARD", () => {
   assert.match(e.message, /ALLEMAN 4\.81\/-0\.5 implies 531c/);
 });
 
+
+/* ── the cell posted at zero basis ──────────────────────────────────────── */
+
+/* SURGERY BY POSITION, INSIDE ONE TABLE.
+   The obvious way to write these -- BOARD.replace(theCellHtml, ...) -- does not
+   work here and fails SILENTLY. PROCESSOR SOYBEANS' first column holds
+   "<span>12.66</span><span>-0.30</span>" twice, and that exact string appears
+   six times in the document; String.replace takes the first, which is in
+   another table. An earlier draft of these checks passed without mutating
+   anything at all. So: find the one table, walk its rows, and address the cell
+   by index -- and assert the mutation landed, the way the check above does. */
+const inProcessorSoy = (cellFor) => {
+  const tables = [...BOARD.matchAll(/<table[\s\S]*?<\/table>/gi)].map((m) => m[0]);
+  const target = tables.find((t) => /PROCESSOR SOYBEANS/i.test(t));
+  assert.ok(target, "the PROCESSOR SOYBEANS table is no longer in the fixture");
+  let row = -1;
+  const rebuilt = target.replace(/<tr>[\s\S]*?<\/tr>/gi, (tr) => {
+    if (!/basis-num/.test(tr)) return tr;
+    row++;
+    let col = -1;
+    return tr.replace(/<td class="basis-num">[\s\S]*?<\/td>/gi, (td) => {
+      col++;
+      if (col !== 0) return td;
+      const v = cellFor(row);
+      return v === null ? td : `<td class="basis-num">${v}</td>`;
+    });
+  });
+  const out = BOARD.replace(target, rebuilt);
+  assert.notEqual(out, BOARD, "the mutation did not apply; the fixture has changed");
+  return out;
+};
+const flat = (cash) => `<span>${cash}</span><span>0</span>`;
+
+test("A CELL AT ZERO BASIS DOES NOT GET A VOTE ON THE COLUMN", () => {
+  /* THE LIVE FAILURE OF 2026-09-23, REPRODUCED. From 21:17 UTC every poll
+     refused all 54 Heartland sources on one cell:
+
+       "PROCESSOR SOYBEANS" Sep 26 (SX26): 8 cell(s) imply 2 different futures
+       prices -- 1318c x7, 1317c x1. AGP - ST JOE 13.17/0 implies 1317c.
+
+     Same table, same column, same eight cells. Cash minus a zero basis is the
+     cash price, so the cell implies itself and lands one cent off a column
+     that agrees perfectly without it. Before this rule the board was dark for
+     21 hours and 54 Iowa locations aged past the staleness threshold. */
+  const board = inProcessorSoy((i) => (i === 0 ? flat("12.95") : null));
+  const rows = extract(board, URL_, quotes());
+  assert.equal(rows.length, 625, "the whole board still reads");
+});
+
+test("...AND ITS PRICE IS STILL PUBLISHED", () => {
+  /* Losing a vote is not being dropped. The cell is a real posted price. */
+  const board = inProcessorSoy((i) => (i === 0 ? flat("12.95") : null));
+  const rows = extract(board, URL_, quotes());
+  const hit = rows.filter((r) => Number(r.cash) === 12.95 && Number(r.basis) === 0);
+  assert.ok(hit.length >= 1, "the flat cell was published as a bid");
+});
+
+test("A CELL THAT DOES CARRY A BASIS STILL REFUSES THE BOARD", () => {
+  /* The narrowing must not become an off switch. Same column, same distance,
+     but a real basis -- and it refuses exactly as it always did. */
+  const board = inProcessorSoy((i) =>
+    (i === 0 ? '<span>12.40</span><span>-0.60</span>' : null));
+  const e = refusal(() => extract(board, URL_, quotes()));
+  assert.ok(e instanceof HeartlandRefused, `expected a refusal, got ${e}`);
+  assert.match(e.message, /imply 2 different futures prices/);
+});
+
+test("A COLUMN THAT IS ENTIRELY FLAT IS STILL HELD TO ITSELF", () => {
+  /* With no cell carrying a basis there is no reference to exclude anything
+     in favour of, so every cell counts and the original rule stands. */
+  const bad = inProcessorSoy((i) => flat((12.90 + i * 0.05).toFixed(2)));
+  const e = refusal(() => extract(bad, URL_, quotes()));
+  assert.ok(e instanceof HeartlandRefused, `expected a refusal, got ${e}`);
+  assert.match(e.message, /different futures prices/);
+
+  const ok = inProcessorSoy(() => flat("12.95"));
+  assert.equal(extract(ok, URL_, quotes()).length, 625,
+    "an all-flat column that agrees with itself is fine");
+});
+
 test("THE PAIR READ THE WRONG WAY ROUND REFUSES THE BOARD", () => {
   /* This is the mutation the column check cannot see: swap cash and basis
      everywhere and every cell in a column still agrees with every other. Only
