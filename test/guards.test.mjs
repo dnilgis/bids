@@ -675,3 +675,9 @@ test("every commodity string this repository has ever published still bands", ()
     assert.match(c, /^[a-z]{1,4}$/i, `${c} banded from its rows but is not an abbreviation`);
   assert.deepEqual(lost, [], `these stopped banding: ${lost.join(", ")}`);
 });
+
+test("a band whose floor is zero or negative is refused, not accepted", () => {
+  assert.throws(() => validBand([0, 10], "t"), Refused);
+  assert.throws(() => validBand([-1, 10], "t"), Refused);
+  assert.doesNotThrow(() => validBand([2, 12], "t"));
+});
