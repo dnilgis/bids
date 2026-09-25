@@ -62,9 +62,17 @@ on:
         required: false
         default: "1"
       device_token:
-        description: "OPTIONAL. An x-device-token from a browser, for the control request only. LEAVE BLANK on the first run -- blank is the experiment. Fill it in only if the run says the token is checked."
+        description: "An x-device-token from a browser. The secret rotates inside half an hour, so copy it and run within a couple of minutes. Needed for the bids and for the global table."
         required: false
         default: ""
+      global_pages:
+        description: "Pages of 100 rows to read from the TOP-LEVEL cashBids table -- the one that is not company-scoped. 0 skips it. 25 is a sizing run. 200 is the cap."
+        required: false
+        default: "25"
+      mint:
+        description: "Call registerDevice to try minting a device token instead of pasting one. This WRITES to Barchart's system. Leave off unless you mean it."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -87,6 +95,8 @@ jobs:
           PAGES: ${{ inputs.pages }}
           TOKEN: ${{ inputs.device_token }}
           ROSTER: ${{ inputs.roster }}
+          GLOBAL_PAGES: ${{ inputs.global_pages }}
+          MINT: ${{ inputs.mint }}
         run: |
           # Through environment variables, never interpolated into the command
           # line: a workflow_dispatch input is a string a human typed.
@@ -94,4 +104,6 @@ jobs:
           [ -n "$ALSO" ]  && args+=(--also "$ALSO")
           [ -n "$TOKEN" ] && args+=(--device-token "$TOKEN")
           [ "$ROSTER" = "true" ] && args+=(--roster)
+          [ -n "$GLOBAL_PAGES" ] && args+=(--global-pages "$GLOBAL_PAGES")
+          [ "$MINT" = "true" ] && args+=(--mint)
           node scripts/marketplace-probe.mjs "${args[@]}"
