@@ -24,15 +24,15 @@ on:
   workflow_dispatch:
     inputs:
       urls:
-        description: "Space-separated URLs to probe INSTEAD of the built-in targets (leave blank to use them)"
+        description: "urls — space-separated pages to probe INSTEAD of the built-in targets. Leave blank to use them."
         required: false
         default: ""
       referer:
-        description: "Referer/Origin header to send with your own URLs (an iframe's parent page)"
+        description: "referer — ADVANCED, usually blank. Referer/Origin header to send with your own URLs (an iframe's parent page)."
         required: false
         default: ""
       all_origins:
-        description: "Also follow scripts hosted on other domains"
+        description: "all_origins — also follow scripts hosted on other domains. Leave ON to see what a page's own backend serves."
         type: boolean
         default: true
       raw:
@@ -42,7 +42,7 @@ on:
         # web page, found no scripts, and printed the first 600 bytes at most.
         # DTN's grain-bids elevator directory answers with an array of every
         # elevator in a state, which is a great deal more than 600 bytes.
-        description: "Bytes of the response body to print (e.g. 400000). Leave blank for the default 40000."
+        description: "raw — bytes of each response body to print. Blank = 40000. Put 400000 to read a whole page."
         required: false
         default: ""
       dtn_key:
@@ -52,7 +52,7 @@ on:
         # a real key the directory returns every elevator in a state with city,
         # county, postalCode, fips, latitude and longitude. Left blank, the step
         # that uses it does not run.
-        description: "A licensed DTN Markets API key, to fetch the national elevator directory. Blank = skip."
+        description: "dtn_key — ADVANCED, usually blank. A licensed DTN Markets API key, to fetch the national elevator directory."
         required: false
         default: ""
 

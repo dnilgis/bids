@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
     inputs:
       list:
-        description: "Which list to ask"
+        description: "list — which list to ask. IGNORED if you fill in urls below."
         type: choice
         default: unfinished
         options:
@@ -62,16 +62,16 @@ on:
           - canada
           - weather-only          # the 119 filed agricharts on a weather widget alone
       follow:
-        description: "Board pages to try per site when it publishes no link of its own"
+        description: "follow — board pages to try per site when it publishes no link of its own"
         type: choice
         default: "2"
         options: ["2", "11"]
       limit:
-        description: "How many sites this run (0 = all)"
+        description: "limit — how many sites this run (0 = all). Set 1 when asking one page."
         required: false
         default: "20"
       dump:
-        description: "Advanced. Print one whole body, e.g. bootstrap. Set limit=1 too."
+        description: "dump — ADVANCED, usually blank. Print one whole body of a RECOGNISED FEED, e.g. bootstrap. Does nothing on a page that returned 0 feeds — use the probe workflow for those. Set limit=1 too."
         required: false
         default: ""
       # A GRADABLE BOOTSTRAP IS BIGGER THAN THE DEFAULT CEILING.
@@ -82,15 +82,15 @@ on:
       # the log, which reads as "no matching feed" rather than "too big".
       # Raise it only when asking for something known to be large.
       dump_max:
-        description: "Advanced. Byte ceiling for dump. Blank = 250000. A gradable bootstrap wants 1000000."
+        description: "dump_max — ADVANCED, usually blank. Byte ceiling for dump. Blank = 250000. A gradable bootstrap wants 1000000."
         required: false
         default: ""
       urls:
-        description: "Advanced. Pages to ask instead of the list, space separated."
+        description: "urls — one or more pages to ask INSTEAD of the list, space separated. Filling this overrides the list box above."
         required: false
         default: ""
       patience:
-        description: "Advanced. Seconds per page. Blank = 45."
+        description: "patience — ADVANCED, usually blank. Seconds per page. Blank = 45. Raise it when a run says the network never went quiet."
         required: false
         default: ""
       budget:
@@ -98,11 +98,11 @@ on:
         # mid-page, ending with no tally and no resume line. discover now stops
         # itself between pages and prints both. Blank uses its own 45-minute
         # default; 0 turns it off.
-        description: "Advanced. Minutes before stopping cleanly. Blank = 45."
+        description: "budget — ADVANCED, usually blank. Minutes before stopping cleanly. Blank = 45."
         required: false
         default: ""
       start:
-        description: "Advanced. Skip this many entries of the list."
+        description: "start — ADVANCED, usually 0. Skip this many entries of the list."
         required: false
         default: "0"
 
