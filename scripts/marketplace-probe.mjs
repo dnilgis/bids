@@ -138,6 +138,19 @@ const Q_CASHBIDS = `query GetCashBids($companyId: ID!, $filter: CashBidFilter, $
 }`;
 
 const TYPEREF = `kind name ofType { kind name ofType { kind name ofType { kind name } } }`;
+/* The TOP-LEVEL cashBids query, which is not company-scoped. Run 7 asked it
+ * for five rows and got location 349 and Barchart's own Chicago office while
+ * the question on the table was Nexus -- so it is not one board, it is the
+ * table. Its selection is BUILT FROM THE SCHEMA below rather than written
+ * here, because a guessed field name fails with an error that reads like a
+ * refusal and this probe has made that mistake once already. */
+const Q_GLOBAL = (sel, args) => `query GlobalCashBids($cursor: String) {
+  cashBids(${args}first: 100, after: $cursor) {
+    edges { node { ${sel} } }
+    pageInfo { endCursor hasNextPage }
+  }
+}`;
+
 const Q_INTROSPECT = `query { __schema {
   queryType { fields { name type { ${TYPEREF} } args { name type { ${TYPEREF} } } } }
   mutationType { fields { name args { name type { ${TYPEREF} } } type { ${TYPEREF} } } }
@@ -279,6 +292,8 @@ async function main() {
   const token = arg("--device-token", "");
   const pages = Math.max(1, Math.min(5, Number(arg("--pages", "1")) || 1));
   const roster = process.argv.includes("--roster");
+  const globalPages = Math.max(0, Math.min(200, Number(arg("--global-pages", "0")) || 0));
+  const mint = process.argv.includes("--mint");
   const also = String(arg("--also", "")).split(",")
     .map((x) => x.trim()).filter((x) => /^\d+$/.test(x)).slice(0, 12);
 
@@ -618,6 +633,126 @@ async function main() {
     }
   }
 
+  /* ---- H: how big is the table? ----
+   *
+   * This is the number the cutover decision turns on. The frozen roster holds
+   * 2,354 facilities and bids reads 1,468 of them; the other 886 are the
+   * question. If the global cashBids query serves Barchart's whole Marketplace
+   * table then it does not care whether a co-op gates its own website, because
+   * Barchart already carries them -- which is the difference between buying
+   * the file and reading it.
+   *
+   * It pages with a CAP, not to exhaustion. A sizing run should cost what a
+   * sizing run costs. */
+  let H = null;
+  if (globalPages > 0 && authed) {
+    console.log("");
+    console.log(`── H  the global cashBids table (up to ${globalPages} page(s) of 100)`);
+    const ty = await ask({ query: Q_TYPE, variables: { name: "CashBid" }, headers: BROWSER_HEADERS });
+    const fl = ty.data?.__type?.fields || [];
+    const has = (n) => fl.some((x) => x.name === n);
+    const want = ["id", "deliveryStart", "deliveryEnd", "futuresMonth", "futuresSymbol",
+                  "price", "roundAt"].filter(has);
+    let sel = want.join(" ");
+    if (has("basis")) sel += " basis(format: DECIMAL)";
+    if (has("quote")) sel += " quote { lastPrice priceChange unitCode }";
+    if (has("commodity")) sel += " commodity { id name }";
+    if (has("location")) sel += " location { id name city state addressOne zipCode phoneNumber }";
+    if (has("company")) sel += " company { id displayId name }";
+    console.log(`   selection built from the schema: ${fl.length} field(s) on CashBid, ` +
+                `${want.length + 4} asked`);
+
+    let cursor = null, rows = [], page = 0, stopped = "";
+    for (; page < globalPages; page++) {
+      const r = await ask({ query: Q_GLOBAL(sel, ""), variables: { cursor }, headers: authed,
+                            operationName: "GlobalCashBids" });
+      const got = edges(r.data?.cashBids);
+      if (!got.length) { stopped = r.why || "no rows"; break; }
+      rows = rows.concat(got);
+      const pi = r.data.cashBids.pageInfo || {};
+      if (!pi.hasNextPage) { stopped = "reached the end"; page++; break; }
+      if (!pi.endCursor) { stopped = "no cursor"; page++; break; }
+      cursor = pi.endCursor;
+    }
+    if (!stopped) stopped = `hit the ${globalPages}-page cap — the table is BIGGER than this`;
+
+    const locIds = new Set(), locNames = new Map(), states = new Set(), cos = new Set();
+    for (const b of rows) {
+      const l = b.location;
+      if (l?.id) { locIds.add(l.id); if (!locNames.has(l.id)) locNames.set(l.id, l); }
+      if (l?.state) states.add(l.state);
+      if (b.company?.name) cos.add(b.company.name);
+    }
+    const q2 = checkRows(rows);
+    console.log(`   pages read           ${page}   (${stopped})`);
+    console.log(`   rows                 ${rows.length}`);
+    console.log(`   distinct locations   ${locIds.size}`);
+    console.log(`   distinct states      ${states.size}  ${[...states].sort().join(" ")}`);
+    if (cos.size) console.log(`   distinct companies   ${cos.size}`);
+    console.log(`   with a phone         ${rows.filter((b) => b?.location?.phoneNumber).length}`);
+    console.log(`   cash == quote+basis  ${q2.identity}/${q2.checked}, ${q2.offBy.length} off by >1c`);
+    console.log(`   cash at or below 0   ${q2.nonPositive.length}`);
+    for (const b of q2.nonPositive.slice(0, 6))
+      console.log(`      ${where(b)}  cash ${money(b.price)} basis ${money(b.basis)} quote ${money(b.quote?.lastPrice)}`);
+
+    /* Cross-reference against the facilities bids does NOT read. */
+    const fr = await loadRoster();
+    if (fr?.rows) {
+      const { readFileSync } = await import("node:fs");
+      const all = JSON.parse(readFileSync("data/roster/barchart-roster-2026-09-24.json", "utf8"))
+        .facilities || [];
+      const todo = all.filter((r) => !r.read_by_bids);
+      const key = (c, st) => `${norm(c)}|${String(st || "").toUpperCase()}`;
+      const here = new Set([...locNames.values()].map((l) => key(l.city || l.name, l.state)));
+      const hit = todo.filter((r) => here.has(key(r.city, r.state)));
+      console.log("");
+      console.log(`   of the ${todo.length} facilities bids does not read, this sample covers ${hit.length}`);
+      const byOp = {};
+      for (const r of hit) byOp[r.operator] = (byOp[r.operator] || 0) + 1;
+      for (const [op, n] of Object.entries(byOp).sort((a, b) => b[1] - a[1]).slice(0, 12))
+        console.log(`      ${String(n).padStart(4)}  ${op}`);
+    }
+    H = { rows: rows.length, locs: locIds.size, pages: page, stopped, states: states.size };
+  } else if (globalPages > 0) {
+    console.log("");
+    console.log("── H  skipped — the global table needs the device token, and none was given.");
+  }
+
+  /* ---- J: can a token be minted? ----
+   *
+   * The secret rotates inside half an hour, so nothing can run on a token a
+   * person pasted in. registerDevice is how the browser gets one on first
+   * load. This DESCRIBES it always and CALLS it only with --mint, because a
+   * mutation writes and that is a decision somebody makes on purpose. */
+  if (mFields.length) {
+    const reg = mFields.find((f) => f.name === "registerDevice");
+    if (reg) {
+      console.log("");
+      console.log("── J  registerDevice");
+      for (const nm of ["RegisterDeviceInput", "Device", "DeviceType"]) {
+        const t = await ask({ query: Q_TYPE, variables: { name: nm }, headers: BROWSER_HEADERS });
+        const ty = t.data?.__type;
+        if (!ty) { console.log(`   ${nm}: not in the schema under that name`); continue; }
+        const f2 = ty.inputFields || ty.fields || [];
+        console.log(`   ${ty.kind} ${ty.name}: ${f2.map((x) => {
+          const u = unwrap(x.type); return `${x.name}: ${u.name || u.kind}`;
+        }).join(", ") || "(none)"}`);
+      }
+      if (!mint) {
+        console.log("   not called. Tick the mint box to try it.");
+      } else {
+        console.log("   calling it.");
+        const M2 = await ask({
+          query: `mutation Reg($input: RegisterDeviceInput!) { registerDevice(input: $input) { __typename } }`,
+          variables: { input: { company: gid, type: "WEB", identifier: `agsist-bids-${Date.now()}` } },
+          headers: BROWSER_HEADERS, operationName: "Reg" });
+        console.log(`   -> ${M2.errors.length ? M2.errors.join("; ") : JSON.stringify(M2.data).slice(0, 400)}`);
+        console.log("   (the selection is __typename only: what a Device carries is printed above,");
+        console.log("    and asking for a token field that does not exist fails like a refusal.)");
+      }
+    }
+  }
+
   /* ---------- verdict ---------- */
   console.log("");
   console.log("── verdict");
@@ -667,6 +802,10 @@ async function main() {
     }
   }
 
+  if (H)
+    console.log(`\nThe global table gave ${H.rows} row(s) across ${H.locs} location(s) in ` +
+                `${H.states} state(s) —\n${H.stopped}. One query, one anonymous device, ` +
+                `every tenant in it.`);
   if (tenants.length)
     console.log(`\ncompanies() returned ${tenants.length} tenant(s) with no credential. That is ` +
                 `Barchart's own\ncustomer list, and it is the thing this repo has been ` +
