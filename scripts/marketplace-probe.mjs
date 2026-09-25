@@ -162,27 +162,51 @@ const isLeaf = (t) => { const u = unwrap(t); return u.kind === "SCALAR" || u.kin
 const companyGid = (n) => Buffer.from(`01:Company:${n}`).toString("base64");
 const ungid = (g) => { try { return Buffer.from(g, "base64").toString("utf8"); } catch { return g; } };
 
+/* EVERY HEADER THE BROWSER SENT, because run 5 sent a valid device token and
+ * was still refused, and the first suspect has to be that my request was not
+ * the browser's request. Five of these were missing and so was operationName.
+ *
+ * Copied from the cURL captured 2026-09-24. Not a reconstruction of it. */
 const BROWSER_HEADERS = {
   "accept": "*/*",
+  "accept-language": "en-US,en;q=0.9",
   "content-type": "application/json",
+  "dnt": "1",
   "origin": "https://via.marketplace.barchart.com",
+  "priority": "u=1, i",
   "referer": "https://via.marketplace.barchart.com/cash-bids",
+  "sec-ch-ua": '"Google Chrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": '"Windows"',
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-site",
   "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
 };
+
+/* The filter the browser actually sent. An empty object is not the same
+ * string on the wire, and when a request is being compared against a working
+ * one the differences are the whole experiment. */
+const BROWSER_BID_FILTER = { location: { id: {} }, commodity: { id: {} } };
 const BARE_HEADERS = { "accept": "*/*", "user-agent": "agsist-bids-probe" };
 
 /* A GraphQL answer can be partly allowed and partly refused. `errors` is not
  * a verdict on the response, it is a verdict on some fields in it, so both
  * are carried and the caller decides. This is defect 1 from run 1. */
-async function ask({ query, variables, headers }) {
+async function ask({ query, variables, headers, operationName }) {
   const t0 = Date.now();
   let res, body, json = null;
   try {
     res = await fetch(ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify({ variables, query }),
+      /* operationName first, then variables, then query -- the order the
+         browser serialises them in. A gateway that routes on the operation
+         name never saw one from runs 1 to 5, because this field did not
+         exist here until run 6. */
+      body: JSON.stringify(operationName ? { operationName, variables, query }
+                                         : { variables, query }),
     });
     body = await res.text();
     try { json = JSON.parse(body); } catch { /* kept as text below */ }
@@ -293,21 +317,22 @@ async function main() {
     : `M  no  ${M.why}`);
 
   /* ---- B / C / A: the bids ---- */
-  const B = await ask({ query: Q_CASHBIDS, variables: { companyId: gid, filter: {} },
-                        headers: BROWSER_HEADERS });
+  const bidVars = { companyId: gid, filter: BROWSER_BID_FILTER };
+  const B = await ask({ query: Q_CASHBIDS, variables: bidVars,
+                        headers: BROWSER_HEADERS, operationName: "GetCashBids" });
   const bOk = Boolean(edges(B.data?.node?.cashBids).length);
   console.log(bOk ? `B  ok  ${B.ms}ms  bids with NO token` : `B  no  ${B.why}`);
 
-  const C = await ask({ query: Q_CASHBIDS, variables: { companyId: gid, filter: {} },
-                        headers: BARE_HEADERS });
+  const C = await ask({ query: Q_CASHBIDS, variables: bidVars,
+                        headers: BARE_HEADERS, operationName: "GetCashBids" });
   const cOk = Boolean(edges(C.data?.node?.cashBids).length);
   console.log(cOk ? `C  ok  ${C.ms}ms  bids with no token and no browser headers`
                   : `C  no  ${C.why}`);
 
   let A = null, aOk = false;
   if (authed) {
-    A = await ask({ query: Q_CASHBIDS, variables: { companyId: gid, filter: {} },
-                    headers: authed });
+    A = await ask({ query: Q_CASHBIDS, variables: bidVars,
+                    headers: authed, operationName: "GetCashBids" });
     aOk = Boolean(edges(A.data?.node?.cashBids).length);
     console.log(aOk ? `A  ok  ${A.ms}ms  bids WITH the device token` : `A  no  ${A.why}`);
   }
@@ -389,7 +414,8 @@ async function main() {
     const hdr = srcName === "C" ? BARE_HEADERS : srcName === "A" ? authed : BROWSER_HEADERS;
     for (let i = 1; i < pages && more && pi.endCursor; i++) {
       const n = await ask({ query: Q_CASHBIDS,
-        variables: { companyId: gid, filter: {}, cursor: pi.endCursor }, headers: hdr });
+        variables: { ...bidVars, cursor: pi.endCursor }, headers: hdr,
+        operationName: "GetCashBids" });
       const rows = edges(n.data?.node?.cashBids);
       if (!rows.length) { console.log(`   page ${i + 1}: ${n.why || "nothing"}`); break; }
       all = all.concat(rows);
@@ -565,14 +591,23 @@ async function main() {
         G.push({ name: f.name, asked: false }); continue;
       }
       const argStr = args.length ? `(${args.join(", ")})` : "";
-      const r = await ask({ query: `query { ${f.name}${argStr}${sel} }`, variables: {},
-                            headers: BROWSER_HEADERS });
-      const val = r.data?.[f.name];
+      const q1 = `query { ${f.name}${argStr}${sel} }`;
+      let r = await ask({ query: q1, variables: {}, headers: BROWSER_HEADERS });
+      let val = r.data?.[f.name];
+      /* Run 5 knocked on every door bare and never knocked again holding the
+         token. A door that opens for a credential is not a closed door. */
+      let viaToken = false;
+      if ((val === undefined || val === null) && authed) {
+        const r2 = await ask({ query: q1, variables: {}, headers: authed });
+        const v2 = r2.data?.[f.name];
+        if (v2 !== undefined && v2 !== null) { r = r2; val = v2; viaToken = true; }
+      }
       const open = val !== undefined && val !== null;
       if (open) {
         const rows = Array.isArray(val?.edges) ? val.edges.length
                    : Array.isArray(val) ? val.length : null;
-        console.log(`   ${f.name.padEnd(16)} OPEN${rows !== null ? `  ${rows} row(s)` : ""}`);
+        console.log(`   ${f.name.padEnd(16)} OPEN${viaToken ? " (with the token)" : ""}` +
+                    `${rows !== null ? `  ${rows} row(s)` : ""}`);
         const sample = Array.isArray(val?.edges) ? val.edges[0]?.node
                      : Array.isArray(val) ? val[0] : val;
         if (sample) console.log(`      ${JSON.stringify(sample).slice(0, 220)}`);
