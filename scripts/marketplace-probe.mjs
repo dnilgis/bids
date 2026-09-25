@@ -137,10 +137,10 @@ const Q_CASHBIDS = `query GetCashBids($companyId: ID!, $filter: CashBidFilter, $
   }
 }`;
 
+const TYPEREF = `kind name ofType { kind name ofType { kind name ofType { kind name } } }`;
 const Q_INTROSPECT = `query { __schema {
-  queryType { fields { name args { name type { kind name ofType { kind name } } } } }
-  mutationType { fields { name args { name type { kind name ofType { kind name } } }
-                          type { kind name ofType { kind name } } } }
+  queryType { fields { name type { ${TYPEREF} } args { name type { ${TYPEREF} } } } }
+  mutationType { fields { name args { name type { ${TYPEREF} } } type { ${TYPEREF} } } }
 } }`;
 
 /* One named type, described. Asked only for the handful that decide what can
@@ -149,9 +149,15 @@ const Q_INTROSPECT = `query { __schema {
  * this does not. */
 const Q_TYPE = `query T($name: String!) { __type(name: $name) {
   kind name
-  inputFields { name type { kind name ofType { kind name ofType { kind name } } } }
-  fields { name type { kind name ofType { kind name } } }
+  inputFields { name type { ${TYPEREF} } }
+  fields { name type { ${TYPEREF} } }
 } }`;
+
+/* Unwrap NON_NULL and LIST wrappers down to the named type. A root field's
+ * return type is usually Connection! or [Thing!]!, and the name is what
+ * __type needs. */
+const unwrap = (t) => { let x = t; while (x && !x.name && x.ofType) x = x.ofType; return x || {}; };
+const isLeaf = (t) => { const u = unwrap(t); return u.kind === "SCALAR" || u.kind === "ENUM"; };
 
 const companyGid = (n) => Buffer.from(`01:Company:${n}`).toString("base64");
 const ungid = (g) => { try { return Buffer.from(g, "base64").toString("utf8"); } catch { return g; } };
@@ -484,14 +490,113 @@ async function main() {
     }
   }
 
+  /* ---- G: the doors never knocked on ----
+   *
+   * RUNS 1 TO 3 ASKED ONE DOOR AND CALLED IT THE BUILDING. Every bid request
+   * they made went through node(id) { cashBids }, and when that was refused
+   * the verdict said "bids refused in every form asked" -- which was true and
+   * useless, because run 3's own schema dump lists NINE root queries and the
+   * probe had tried two of them:
+   *
+   *     node(id)                                      asked, refused
+   *     companies(filter, first, after)               asked, open
+   *     elevators()                                   never asked
+   *     cashBids(filter, orderBy, sort, first, after) never asked
+   *     locations(filter, sort, first, after)         never asked
+   *     search(type, query, first, after)             never asked
+   *     serviceToken(type)                            never asked
+   *     viewer()                                      never asked
+   *     unitsOfMeasure(first, after)                  never asked
+   *
+   * cashBids is a SEPARATE RESOLVER from the cashBids field inside Company.
+   * A different resolver can have different authorisation, and assuming it
+   * does not is how run 1's "nothing answered" happened again three times.
+   *
+   * serviceToken(type) is the one to notice: it is a QUERY. Queries read.
+   * Asking it is not a write to somebody else's system, which registerDevice
+   * would be -- so it can be asked here and registerDevice cannot.
+   *
+   * The selection for each is BUILT FROM THE SCHEMA, not guessed: unwrap the
+   * root field's return type, ask __type for its fields, and take the leaf
+   * ones. A hand-written guess at a selection fails with a syntax error that
+   * reads exactly like a refusal. */
+  const G = [];
+  if (qFields.length) {
+    console.log("");
+    console.log("── G  every root query, unauthenticated");
+    const described = new Map();
+    const describe = async (name) => {
+      if (described.has(name)) return described.get(name);
+      const t = await ask({ query: Q_TYPE, variables: { name }, headers: BROWSER_HEADERS });
+      const ty = t.data?.__type || null;
+      described.set(name, ty);
+      return ty;
+    };
+    for (const f of qFields) {
+      if (f.name === "node" || f.name === "companies") continue;   // already asked
+      const ret = unwrap(f.type);
+      let sel = "";
+      if (!isLeaf(f.type) && ret.name) {
+        const ty = await describe(ret.name);
+        const fl = ty?.fields || [];
+        if (fl.some((x) => x.name === "edges")) {
+          const edgeTy = await describe(unwrap(fl.find((x) => x.name === "edges").type).name);
+          const nodeRef = (edgeTy?.fields || []).find((x) => x.name === "node");
+          const nodeTy = nodeRef ? await describe(unwrap(nodeRef.type).name) : null;
+          const leaves = (nodeTy?.fields || []).filter((x) => isLeaf(x.type)).slice(0, 6)
+            .map((x) => x.name);
+          sel = ` { edges { node { ${leaves.join(" ") || "__typename"} } } }`;
+        } else {
+          const leaves = fl.filter((x) => isLeaf(x.type)).slice(0, 8).map((x) => x.name);
+          sel = ` { ${leaves.join(" ") || "__typename"} }`;
+        }
+      }
+      /* Only arguments we can fill honestly. A required argument we cannot
+         supply is reported as not asked, not as a refusal. */
+      const args = [];
+      let blocked = null;
+      for (const a of f.args || []) {
+        if (a.name === "first") { args.push("first: 5"); continue; }
+        const req = a.type?.kind === "NON_NULL";
+        if (req) blocked = a.name;
+      }
+      if (blocked) {
+        console.log(`   ${f.name.padEnd(16)} not asked — needs ${blocked}`);
+        G.push({ name: f.name, asked: false }); continue;
+      }
+      const argStr = args.length ? `(${args.join(", ")})` : "";
+      const r = await ask({ query: `query { ${f.name}${argStr}${sel} }`, variables: {},
+                            headers: BROWSER_HEADERS });
+      const val = r.data?.[f.name];
+      const open = val !== undefined && val !== null;
+      if (open) {
+        const rows = Array.isArray(val?.edges) ? val.edges.length
+                   : Array.isArray(val) ? val.length : null;
+        console.log(`   ${f.name.padEnd(16)} OPEN${rows !== null ? `  ${rows} row(s)` : ""}`);
+        const sample = Array.isArray(val?.edges) ? val.edges[0]?.node
+                     : Array.isArray(val) ? val[0] : val;
+        if (sample) console.log(`      ${JSON.stringify(sample).slice(0, 220)}`);
+      } else {
+        console.log(`   ${f.name.padEnd(16)} ${r.why || "null"}`);
+      }
+      G.push({ name: f.name, asked: true, open });
+    }
+  }
+
   /* ---------- verdict ---------- */
   console.log("");
   console.log("── verdict");
+  const gOpen = G.filter((x) => x.open).map((x) => x.name);
   if (cOk)      console.log("BIDS ARE READABLE WITH NO CREDENTIAL AND NO BROWSER HEADERS.");
   else if (bOk) console.log("BIDS ARE READABLE WITH NO TOKEN, but the origin or referer is checked.");
   else if (aOk) console.log("THE DEVICE TOKEN IS WHAT UNLOCKS THE BIDS. Without it they are refused,\n" +
                             "with it they are served. The question becomes whether one can be minted.");
-  else          console.log("BIDS REFUSED in every form asked.");
+  else if (gOpen.includes("cashBids"))
+                console.log("node(id).cashBids is refused, but the TOP-LEVEL cashBids query answered.\n" +
+                            "Two resolvers, two authorisations. The prices are reachable.");
+  else          console.log("Bids refused through node(id) and through the top-level cashBids query.");
+  if (gOpen.length)
+    console.log(`\nRoot queries open without a credential: ${gOpen.join(", ")}.`);
 
   if (meta && !cOk && !bOk)
     console.log("\nBut the COMPANY RECORD is readable with no credential: locations, which of\n" +
@@ -516,8 +621,11 @@ async function main() {
         console.log("The numbering is shared on every one asked. An AgriCharts source's company\n" +
                     "id can be read off its logo URL.");
       else if (hit.length)
-        console.log("Shared on some and not others, so it cannot be assumed. It has to be\n" +
-                    "looked up per operator.");
+        console.log("Shared where it could be checked. A site number that returns nothing is\n" +
+                    "NOT evidence against the numbering: only 96 operators are Marketplace\n" +
+                    "tenants at all, so an AgriCharts customer who never bought the portal has\n" +
+                    "no company record to find. Check the name against E before reading a miss\n" +
+                    "as a mismatch.");
       else
         console.log("Neither answered while the control did. On this evidence a site number is\n" +
                     "not a company number, and site 658 matching Nexus is a coincidence of one.");
