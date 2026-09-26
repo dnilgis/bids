@@ -1,0 +1,39 @@
+{
+  "id": "buckleybrosinc-buckleybrothersinc",
+  "operator": "Buckley Bros Inc.",
+  "location": "Buckley Brothers Inc",
+  "state": "OH",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0221901/cash-bids?units=us",
+  "browserPage": "https://buckleybrosinc.com/cash-bids/",
+  "siteId": "E0221901",
+  "locationId": "9102",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 36255564413) from the board page discover recorded for this operator: https://api.dtn.com/markets/sites/E0221901/cash-bids?units=us. The platform is dtn-cs, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 1 row(s) in Corn.\n\nREAD THROUGH A BROWSER: https://buckleybrosinc.com/cash-bids/ was loaded in Chromium and the response its own widget asked https://api.dtn.com/markets/sites/E0221901/cash-bids?units=us for was taken. DTN answers a server 403, so this is the only way it is read, here and in scripts/poll.mjs. No key is stored anywhere.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board.",
+  "address": null,
+  "zip": "45177",
+  "lat": null,
+  "lon": null,
+  "phone": "19373832040",
+  "email": null,
+  "website": "https://buckleybrosinc.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as cents: 0c x1. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart."
+}
