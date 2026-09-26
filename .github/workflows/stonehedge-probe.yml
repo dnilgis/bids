@@ -1,0 +1,133 @@
+# StoneHedge (StoneX) — capture the boards so an adapter can be written from
+# what came back and not from a description.
+#
+# WHAT IS UNREAD. 8 operator sites are filed `platform: stonehedge, adapter:
+# null` in data/platforms.json; the roster names 64 elevators behind four of
+# them (Frontier Cooperative, Maple River Grain, Ag Valley Co-op, Scott Equity
+# Exchange; NE/ND/MN). Nothing of a StoneHedge board is committed: not a page,
+# not a response, not one price. This repository writes an adapter against
+# CAPTURED pages only, so this run is the first half of that job.
+#
+# YOU CLICK ONE BUTTON: Actions -> "stonehedge probe" -> Run workflow. Leave the
+# boxes alone. It commits fixtures/stonehedge-*.{html,json,txt} and
+# data/gaps/stonehedge-probe.json, and nothing else. It publishes nothing and
+# touches no source, no data feed, no manifest.
+#
+# IT GOES GREEN ON A REFUSAL. A 403 or 429 is the finding. It goes red only when
+# it could not ask any site at all.
+#
+# ── THE PLAN FOR THE ADAPTER: WHAT TO LOOK FOR IN THE CAPTURES ──────────────
+#
+# Open data/gaps/stonehedge-probe.json first. Per site it says status, which
+# pages were read, whether a price table was seen and where, and every response
+# the widget made (URL with the key removed, status, mime, body bytes).
+#
+#  1. Where do the prices live? A JSON response under api.stonehedge.stonex.com
+#     (the names seen on 2026-08-23, never read: /settings/v1/locations,
+#     /settings/v2/delivery-periods?locationIds=..., /offers/v1/offers) or only
+#     in the rendered document (component-rendered.html)? If a JSON body has
+#     them, the adapter reads JSON with transport "browser" like dtn-cs and
+#     bushel (PLATFORM_TRANSPORT in lib/sources.mjs) — the API scopes to a
+#     browser the same way, unless the plain fetch above says otherwise.
+#  2. Identity. lib/board.mjs wants cash - basis = futures. Does a row carry
+#     cash, basis AND a futures price, or cash and basis only? Only two of
+#     three means a declared identityAlternative and the shared CBOT quote
+#     pages (SHARED_PAGES), exactly as agricharts-cashgrid does. Do not
+#     invent the third figure.
+#  3. Rounding. Are cash values exact to the cent or below it? Run
+#     lib/rounding.mjs's roundingEvidence over the rows before declaring a
+#     cashRounding; several past boards floor.
+#  4. Locations. The widget URL carries `locs=<ids>`; the /locations response
+#     should map an id to a name and maybe coordinates. A manifest is written
+#     ONLY for a location proven on a captured board (name + id present in
+#     a capture), and its coordinate comes from the roster/geocodes, never
+#     from a guess. Compare the names against data/roster/barchart-roster-
+#     2026-09-24.json (Frontier 38 rows, Maple River 9, Ag Valley 4, Scott 4).
+#  5. Commodities, delivery periods and units. Which commodity ids appear, how
+#     a delivery period is spelled (the `month` and `date` columns in the
+#     widget's own `cols=` list), bushels vs hundredweight, and what `hideRows`
+#     hides. A hidden row must not be published as absent.
+#  6. Time. "All prices delayed 10 minutes" is printed on Full Circle's board.
+#     Find the response's own timestamp; the adapter must carry the board's
+#     time, not ours.
+#  7. The key. Kept in memory only and scrubbed from every capture (the one
+#     edit made). The adapter must read it from the operator's page at poll
+#     time; check whether the same key serves every location on one operator.
+#  8. Siblings. Do the eight sites share one bundle (index-DcdTd-4E.js was seen
+#     on seven of them) and one response shape? One shape, one adapter.
+#
+# Statuses in the summary: captured; widget-loaded-nothing-kept; widget-seen-
+# not-loaded; no-widget-found (page and rendered page both carry no widget);
+# no-widget-in-markup (browser off); refused; unreachable; not-asked.
+#
+# ── THE TIMEOUT IS ARITHMETIC ───────────────────────────────────────────────
+# 11 sites x (4 plain fetches x 2.5 s + 2 browser loads x 45 s + settle) is
+# about 11 x 110 s = 20 minutes in the worst case. 45 minutes allows for a slow
+# runner, and --budget 40 makes the script stop itself and say so before the
+# job's own clock kills it.
+
+name: stonehedge probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Optional. Sites to ask, separated by spaces. Blank asks every StoneHedge site the repo knows (see the header)."
+        required: false
+        default: ""
+      refresh:
+        # A fixture is frozen evidence. Replacing one is something a person asks for.
+        description: "Replace fixtures already captured instead of keeping them"
+        type: boolean
+        default: false
+      commit:
+        description: "Commit what came back (fixtures/stonehedge-*, data/gaps/stonehedge-probe.json)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write         # only fixtures/stonehedge-* and data/gaps/stonehedge-probe.json
+
+concurrency:
+  group: stonehedge-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Test the guards
+        run: node --test test/stonehedge-probe.test.mjs test/cdp.test.mjs
+
+      - name: Ask
+        # The URL box goes through env, never into the command line: a string a
+        # human typed is not a shell fragment.
+        env:
+          URLS: ${{ inputs.urls }}
+          REFRESH: ${{ inputs.refresh }}
+        run: |
+          # An array and no globbing, so a URL is one argument, never a pattern or a fragment.
+          set -f
+          ARGS=()
+          if [ "$REFRESH" = "true" ]; then ARGS+=(--refresh); fi
+          for u in $URLS; do
+            case "$u" in http://*|https://*) ARGS+=(--url "$u") ;; esac
+          done
+          node scripts/stonehedge-probe.mjs "${ARGS[@]}"
+
+      # `if: always()` because the capture is the valuable half. Commits
+      # nothing when nothing changed.
+      - name: Keep whatever came back
+        if: ${{ always() && inputs.commit }}
+        run: |
+          git add -A fixtures/ data/gaps/stonehedge-probe.json || true
+          if git diff --cached --quiet; then
+            echo "nothing new captured; the fixtures already here are unchanged"
+          else
+            bash scripts/commit-and-push.sh "stonehedge: captured board(s) from the runner"
+          fi
