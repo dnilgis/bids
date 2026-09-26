@@ -68,3 +68,11 @@ test("every place names its evidence and a five-digit ZIP", () => {
     assert.match(p.zip, /^\d{5}$/, p.operator);
   }
 });
+
+test("a manifest URL never carries a literal &amp; or http", async () => {
+  const { manifestFor } = await import("../scripts/board-sweep.mjs");
+  const m = manifestFor({ id: "x-y", platform: "aghost", operator: "X", website: "https://x/",
+    url: "http://x.aghost.net/index.cfm?show=11&amp;mid=3", loc: { rows: 1, commodities: new Set(["Corn"]) },
+    dir: { branch: "Y", state: "IA", zip: null, phone: null }, zipCoord: undefined });
+  assert.equal(m.url, "https://x.aghost.net/index.cfm?show=11&mid=3");
+});

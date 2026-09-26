@@ -359,8 +359,11 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
     platform,
     /* THIS REPOSITORY REFUSES A CASH BOARD ON AN UNAUTHENTICATED WIRE
        (test/sources.test.mjs), and two POET boards were found over http. The
-       manifest is written https and says so; the first poll proves it. */
-    url: String(url).replace(/^http:\/\//i, "https://"),
+       manifest is written https and says so; the first poll proves it.
+       (It did not: the two POET boards answer https with HTTP 400, so they were
+       disabled. `&amp;` is decoded too: two boards were written with a literal
+       `&amp;mid=` in the URL, which the server reads as an unknown parameter.) */
+    url: String(url).replace(/&amp;/g, "&").replace(/^http:\/\//i, "https://"),
     ...(browserPage ? { browserPage } : {}),
     ...(siteId ? { siteId: String(siteId) } : {}),
     /* THE UNITS OF THE FUTURES COLUMN, MEASURED FROM THE BOARD THIS RUN READ.
