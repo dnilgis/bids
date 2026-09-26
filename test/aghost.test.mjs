@@ -300,33 +300,24 @@ test("the DataGrid is found wherever the class attribute sits", async () => {
   }
 });
 
-test("the two AgHost layouts we cannot yet read refuse with the right reason", () => {
-  /* Nine of the 38 serve a real DataGrid in a shape this adapter does not
-     read, and they are two DIFFERENT shapes, not one:
-   
-       POET / Glacial Lakes / E-Energy / CFS — DELIVERY DOWN THE ROWS
-         thead: Delivery | Futures Month | Futures Price | Basis | Futures Change
-   
-       Topflight — LOCATIONS ACROSS THE COLUMNS
-         caption CORN, thead: (blank) | MAR ×6 | BEM ×6 | MON ×6 | …
-   
-     Flash Grain's board is the transpose of the first and unrelated to the
-     second. Both need their own reader; neither gets a widened regex, because
-     widening a selector until it swallows a different table is how a board
-     gets read wrong instead of refused. What is pinned here is that they
-     refuse for the reason that is actually true of them — a grid is present
-     and its header is not one we know — so the next person reads a diagnosis
-     and not a mystery. */
-  const seen = [];
-  for (const f of ["board-sweep/aghost-poetbiorefiningashtonaghostnet.html",
-                   "board-sweep/aghost-cornglaciallakesenergycom.html",
-                   "board-sweep/aghost-topflightgrain2com.html"]) {
+test("the AgHost layout we still cannot read refuses with the right reason", () => {
+  /* Nine of the 38 served a real DataGrid in a shape this adapter did not
+     read. Six of them -- POET (2), Glacial Lakes, Harmony, E Energy Adams and
+     Central Farm Service, DELIVERY DOWN THE ROWS -- are read now, by header
+     label; see test/aghost-delivery-rows.test.mjs. What remains is Topflight:
+
+       LOCATIONS ACROSS THE COLUMNS
+         caption CORN, thead: (blank) | MAR x6 | BEM x6 | MON x6 | ...
+         each group: (blank cash) | Futures Change | Futures Price | Futures Month | Basis | (blank)
+
+     Its cash column has no label and `Basis` appears sixteen times, so reading
+     it means guessing which blank column is cash. It refuses, and for the
+     reason that is actually true of it. */
+  for (const f of ["aghost-matrix-topflight.html"]) {
     let why = null;
     try { extract(readFileSync(new URL("../fixtures/" + f, import.meta.url), "utf8"), f); }
     catch (e) { why = e.message; }
     assert.ok(why, `${f} claimed to read a board this adapter does not know`);
     assert.match(why, /no delivery columns in the DataGrid header/, f);
-    seen.push(f);
   }
-  assert.equal(seen.length, 3);
 });

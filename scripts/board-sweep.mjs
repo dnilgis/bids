@@ -66,7 +66,9 @@ import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
-import { validateSource } from "../lib/sources.mjs";
+import { validateSource, transportOf } from "../lib/sources.mjs";
+import { capture, redactText } from "../lib/cdp.mjs";
+import { roundingEvidence, describeEvidence } from "../lib/rounding.mjs";
 import { normaliseLabel, US_STATES } from "../lib/place.mjs";
 import { bandFor, measureFuturesUnits, scaleFutures } from "../lib/board.mjs";
 
@@ -93,7 +95,13 @@ export const NOT_SWEEPABLE = {
 
 export function parseArgs(argv) {
   const out = { write: false, limit: Infinity, start: 0, timeoutMs: 20000,
-                platform: null, only: null, capture: false };
+                platform: null, only: null, capture: false,
+                /* A BROWSER PLATFORM HAS ITS OWN CLOCKS -- 2026-09-26. One page load
+                   is capped at 45s (what poll.mjs gives a browser read), sites are
+                   spaced by a pause so a co-operative's server sees one visitor
+                   and not a burst, and the whole sweep stops asking after a
+                   budget so the job's own wall is never the thing that ends it. */
+                browserTimeoutMs: 45000, delayMs: 3000, budgetMs: 40 * 60000 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--write") out.write = true;
@@ -101,6 +109,9 @@ export function parseArgs(argv) {
     else if (a === "--limit") out.limit = Number(argv[++i]);
     else if (a === "--start") out.start = Number(argv[++i]);
     else if (a === "--timeout") out.timeoutMs = Number(argv[++i]) * 1000;
+    else if (a === "--browser-timeout") out.browserTimeoutMs = Number(argv[++i]) * 1000;
+    else if (a === "--delay") out.delayMs = Number(argv[++i]) * 1000;
+    else if (a === "--budget") out.budgetMs = Number(argv[++i]) * 60000;
     else if (a === "--platform") out.platform = argv[++i];
     else if (a === "--only") out.only = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
   }
@@ -316,7 +327,10 @@ export function linkedBoards(html, base, platform) {
   const out = [];
   const abs = (h) => { try { return new URL(h, base).toString(); } catch { return null; } };
   const re = platform === "aghost"
-    ? /href=["']([^"']*index\.cfm\?[^"']*show=11[^"']*)["']/gi
+    /* `<iframe src=` TOO: Great Lakes Grain embeds its AgHost board as
+       <iframe src="https://cashbids.greatlakesgrain.com/index.cfm?show=11&mid=25">
+       on a page that has no href to it (captured 2026-09-26). */
+    ? /(?:href|<iframe\b[^>]*?\bsrc)=["']([^"']*index\.cfm\?[^"']*show=11[^"']*)["']/gi
     : platform === "cashbidssingle"
       ? /href=["']([^"']*cashbidssingle-\d+)["']/gi
       : null;
@@ -333,11 +347,18 @@ export function hostOf(u) {
 }
 
 export function manifestFor({ id, platform, operator, website, url, loc, dir, zipCoord, runId,
-                              units = null }) {
+                              units = null, browserPage = null, siteId = null, rounding = null }) {
   const bands = { corn: [2.0, 12.0], soybean: [6.0, 32.0], wheat: [3.0, 20.0] };
+  /* A BROWSER SOURCE'S ROUNDING IS STATED ONLY WHEN THE BOARD'S OWN ROWS NAME IT.
+     dtn-cs floors its cash to the cent, so a manifest with no cashRounding
+     refuses most rows at the identity guard. Enabled only when the evidence
+     is confident; otherwise written disabled and saying why. */
+  const held = browserPage && rounding && !rounding.confident;
   return {
     id, operator, location: dir.branch, state: dir.state,
     platform, url,
+    ...(browserPage ? { browserPage } : {}),
+    ...(siteId ? { siteId: String(siteId) } : {}),
     /* THE UNITS OF THE FUTURES COLUMN, MEASURED FROM THE BOARD THIS RUN READ.
      *
      * `futuresUnits` existed from 2026-08-20 and no manifest this sweep ever
@@ -351,12 +372,18 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
     ...(units?.units && units.units !== "cents" ? { futuresUnits: units.units } : {}),
     ...(loc.locationId != null ? { locationId: String(loc.locationId) } : {}),
     bands,
-    cadence: "grain-day", provenance: "scraped", enabled: true,
+    ...(browserPage && rounding?.confident && rounding.confident !== "exact"
+        ? { cashRounding: rounding.confident } : {}),
+    cadence: "grain-day", provenance: "scraped", enabled: !held,
     note: `WRITTEN BY scripts/board-sweep.mjs${runId ? ` (run ${runId})` : ""} from the board `
       + `page discover recorded for this operator: ${url}. The platform is ${platform}, which `
       + `this repository already reads elsewhere; nothing about the parsing is new here. At the `
       + `time of writing this location showed ${loc.rows} row(s) in `
       + `${[...loc.commodities].join(", ")}.\n\n`
+      + (browserPage
+          ? `READ THROUGH A BROWSER: ${browserPage} was loaded in Chromium and the response its own `
+            + `widget asked ${url} for was taken. DTN answers a server 403, so this is the only way `
+            + `it is read, here and in scripts/poll.mjs. No key is stored anywhere.\n\n` : "")
       + `THE OPERATOR NAME was read from the board's own title.\n\n`
       + `HOW THIS PLACE WAS PLACED: ${dir.placedBy || "a directory row for this operator"}.`
       + (dir.clean && dir.clean.town && dir.clean.town !== loc.label
@@ -377,7 +404,11 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
     email: null,
     website: website ?? null,
     inMerge: true,
-    _pending: "cashRounding is NOT set and must not be guessed; it is measured from a real "
+    _pending: (held
+      ? `HELD DISABLED — ROUNDING UNRESOLVED. ${describeEvidence(rounding)}. A board is not enabled `
+        + `on a rounding nobody could state; re-run on another day's prices and set cashRounding `
+        + `from the residuals.\n\n` : "")
+      + "cashRounding is NOT set and must not be guessed; it is measured from a real "
       + "board against real futures. lat/lon is the centroid of the town's ZIP and can be "
       + "miles from the yard."
       /* THE MEASUREMENT, NOT THE DECISION. The units above can be read off two
@@ -601,10 +632,12 @@ export function boardUnits(rows) {
 }
 
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
-                           have = new Set(), runId = null }) {
+                           have = new Set(), runId = null, browserPage = null, siteId = null }) {
   const homeAddress = operatorAddress(html);
   const operator = operatorNameFrom(html);
-  const op = operatorSlug(url) || slug(hostOf(site) || "");
+  /* THE ID COMES FROM THE OPERATOR'S HOST. For a browser platform `url` is the
+     vendor's API (api.dtn.com), which would name every manifest `dtn-<town>`. */
+  const op = operatorSlug(browserPage || url) || slug(hostOf(site) || "");
   if (!operator) return { ok: false, why: "the board's title and h1 name no operator", write: [], unmatched: [] };
   if (!op) return { ok: false, why: "no usable id could be derived from the board URL", write: [], unmatched: [] };
 
@@ -664,8 +697,11 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
       skip.push({ id, why: `this elevator is already read under another id (${identity})` });
       continue;
     }
+    const rounding = browserPage
+      ? roundingEvidence([...loc.byCommodity.values()].flat()) : null;
     const m = manifestFor({ id, platform, operator, website: site, url, loc, dir,
-                            zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId, units });
+                            zipCoord: dir.zip ? byZip.get(dir.zip) : undefined, runId, units,
+                            browserPage, siteId, rounding });
     const bad = validateSource(m, new Set());
     if (bad.length) { skip.push({ id, why: bad.join("; ") }); continue; }
     const nb = unbandable(m, loc.byCommodity);
@@ -708,7 +744,56 @@ async function get(url, timeoutMs, platform = null) {
   finally { clearTimeout(t); }
 }
 
-export const IO = { get, readText: (f) => readFileSync(join(ROOT, f), "utf8") };
+/* THE BROWSER READER -- 2026-09-26.
+ *
+ * A live `--platform dtn-cs` run asked six sites and got "HTTP 403 (651B)" from
+ * api.dtn.com for every one: "The api key is valid, but it is valid to be used
+ * within a browser only" (lib/cdp.mjs explains). scripts/poll.mjs reads these
+ * platforms by loading the customer's page and taking the response its own
+ * widget asks for; the sweep used plain fetch, so a dtn-cs site could never be
+ * swept. transportOf() is the one place that says which platforms are which,
+ * and it is asked here rather than a second list being kept.
+ *
+ * ONE PAGE LOAD PER SITE. `readPage` also returns the page's own document from
+ * the same tab, because the response is JSON and names no operator -- its title
+ * does. The document is redacted before it leaves capture(). */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const IO = { get, readText: (f) => readFileSync(join(ROOT, f), "utf8"),
+                    capture: (o) => capture({ ...o, readPage: true }), sleep };
+
+/* The load, not the request: an http:// board page is loaded as https://, which
+   is what the manifest must say (validateSource refuses any other browserPage)
+   and what a redirect would have landed on. If the https one does not answer,
+   that is reported as not answering, never papered over. */
+export const httpsPage = (u) => String(u ?? "").replace(/^http:\/\//i, "https://");
+
+/** One candidate, read through the browser. Same verdict shape as tryOne. */
+export async function browserTry({ candidate, board, platform, io, cfg }) {
+  const { url, why } = candidate;
+  const siteId = (url.match(/\/sites\/([^/?]+)\/cash-bids/) ?? [])[1];
+  if (!siteId)
+    return { url, why, verdict: "no siteId recorded, so there is no response to wait for" };
+  const target = url.split("?")[0];
+  const pageUrl = httpsPage(board);
+  let got;
+  try {
+    got = await io.capture({ pageUrl, target, timeoutMs: cfg.browserTimeoutMs });
+  } catch (e) {
+    const m = redactText(String(e?.message ?? e)).replace(/\s+/g, " ");
+    return { url, why, siteId, browserPage: pageUrl, fatal: /no browser found|BIDS_BROWSER/.test(m),
+             verdict: `did not answer: ${m.slice(0, 140)}` };
+  }
+  const body = String(got?.body ?? "");
+  const bytes = Buffer.byteLength(body);
+  if (got?.status !== 200) return { url, why, siteId, browserPage: pageUrl, verdict: `HTTP ${got?.status} (${bytes}B)` };
+  if (bytes < 200) return { url, why, siteId, browserPage: pageUrl, verdict: `${bytes}B — too short to be a board` };
+  const pageHtml = String(got.pageHtml ?? "");
+  let rows;
+  try { rows = adapterFor(platform)(body, url); }
+  catch (e) { return { url, why, siteId, browserPage: pageUrl, body, pageHtml, verdict: `refused: ${String(e.message).slice(0, 110)}` }; }
+  if (!rows.length) return { url, why, siteId, browserPage: pageUrl, body, pageHtml, verdict: "read, but no rows" };
+  return { url, why, siteId, browserPage: pageUrl, body, pageHtml, rows };
+}
 
 export async function main(argv = process.argv.slice(2), io = IO) {
   const cfg = parseArgs(argv);
@@ -807,20 +892,45 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     return { url, why, body: r.body, rows };
   };
 
+  /* THE BROWSER PLATFORMS ARE READ ONE PAGE AT A TIME, POLITELY, AND WITHIN A BUDGET. */
+  const startedAt = Date.now();
+  let browserLoads = 0, aborted = false;
   for (const [i, s] of sites.entries()) {
     const tried = [];
     let hit = null;
+    const viaBrowser = transportOf(s.platform) === "browser";
+    if (viaBrowser && aborted) {
+      noBoard.push({ ...s, why: "not attempted: no browser on this machine, the run stopped", tried: [] });
+      continue;
+    }
+    if (viaBrowser && Date.now() - startedAt + cfg.browserTimeoutMs > cfg.budgetMs) {
+      const line = { ...s, why: "not attempted: the sweep's time budget was spent", tried: [] };
+      noBoard.push(line);
+      console.log(`── [${i + 1}/${sites.length}] ${s.site}  [${s.platform}] NOT ATTEMPTED, the `
+        + `${Math.round(cfg.budgetMs / 60000)} minute budget was spent. Run again with --start ${i}.`);
+      continue;
+    }
     for (const c of boardCandidates(s.site, s.rec, s.platform)) {
-      const t = await tryOne(c.url, s.platform, c.why);
+      let t;
+      if (viaBrowser) {
+        if (browserLoads++ > 0) await io.sleep(cfg.delayMs);
+        t = await browserTry({ candidate: c, board: s.board, platform: s.platform, io, cfg });
+      } else t = await tryOne(c.url, s.platform, c.why);
       tried.push(t);
       if (t.rows) { hit = t; break; }
+      if (t.fatal) { aborted = true; break; }
+    }
+    if (aborted) {
+      console.log(`::error::${tried.at(-1).verdict}`);
+      noBoard.push({ ...s, why: tried.at(-1).verdict, tried });
+      continue;
     }
 
     /* THE GRID IS ONE CLICK AWAY. An AgHost page carrying displayNumber() is
        the right site; a cashbidssingle page listing locations is the right
        site. Both name the page that actually holds the board in their own
        links, so follow them rather than guessing a query string. */
-    if (!hit) {
+    if (!hit && !viaBrowser) {
       const withBody = tried.find((t) => t.body);
       if (withBody) {
         for (const u of linkedBoards(withBody.body, withBody.url, s.platform)) {
@@ -846,8 +956,11 @@ export async function main(argv = process.argv.slice(2), io = IO) {
       continue;
     }
 
-    const plan = planSite({ html: hit.body, url: hit.url, site: s.site, platform: s.platform,
-                            rows: hit.rows, known, byZip, existingIds: seenIds, have, runId });
+    /* A BROWSER PLATFORM'S BODY IS JSON: THE OPERATOR IS NAMED BY THE PAGE THAT ASKED. */
+    const plan = planSite({ html: viaBrowser ? hit.pageHtml : hit.body, url: hit.url, site: s.site,
+                            platform: s.platform, rows: hit.rows, known, byZip, existingIds: seenIds,
+                            have, runId,
+                            ...(viaBrowser ? { browserPage: hit.browserPage, siteId: hit.siteId } : {}) });
     if (!plan.ok) {
       unreadable.push({ ...s, why: plan.why, tried });
       console.log(`── [${i + 1}/${sites.length}] ${s.site}  [${s.platform}] ${plan.why}`);
@@ -886,6 +999,13 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     const dir = join(ROOT, "fixtures", "board-sweep");
     mkdirSync(dir, { recursive: true });
     for (const c of captured.slice(0, 20)) {
+      /* A browser platform's board is JSON: a comment header would break it, and
+         it is passed through redactText so no key can ride along. */
+      if (transportOf(c.platform) === "browser") {
+        writeFileSync(join(dir, `${c.platform}-${slug(hostOf(c.site) || "site")}.json`),
+          redactText(String(c.body).slice(0, 400000)));
+        continue;
+      }
       const name = `${c.platform}-${slug(hostOf(c.site) || "site")}.html`;
       writeFileSync(join(dir, name),
         `<!-- CAPTURED BY scripts/board-sweep.mjs${runId ? ` run ${runId}` : ""}\n`

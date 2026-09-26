@@ -128,8 +128,25 @@ test("every captured cashbidssingle board decides its own units", () => {
   const files = readdirSync(dir).filter((f) => f.startsWith("cashbidssingle-"));
   assert.ok(files.length >= 10, `expected the captured boards to still be there, saw ${files.length}`);
   const answers = new Map();
+  /* CAPTURES THAT ARE NOT BOARDS. The 2026-09-26 sweep keeps the page it read
+     when it found "no rows": a site root, a stub. Such a file has nothing to
+     decide units from, and that is not a board this reader will get wrong. It
+     is named here, not skipped in general, and the test still requires it to
+     have ZERO rows: a capture that starts carrying rows must decide its units
+     like any other and must come off this list. */
+  const NOT_A_BOARD = new Set([
+    "cashbidssingle-prairiegrainpartnerscom.html",
+    "cashbidssingle-riocreekfeedmillcom.html",
+    "cashbidssingle-skylandgraincom.html",
+    "cashbidssingle-winchesteragservicecom.html",
+  ]);
   for (const f of files) {
-    const m = measureFuturesUnits(extractBids(readFileSync(join(dir, f), "utf8"), f));
+    const rows = extractBids(readFileSync(join(dir, f), "utf8"), f);
+    if (NOT_A_BOARD.has(f)) {
+      assert.equal(rows.length, 0, `${f} now carries ${rows.length} row(s); take it off NOT_A_BOARD so its units are decided`);
+      continue;
+    }
+    const m = measureFuturesUnits(rows);
     assert.ok(m.units, `${f}: ${m.why}`);
     answers.set(f, m.units);
   }
