@@ -1,0 +1,41 @@
+{
+  "id": "babgrain-waverlyrail",
+  "operator": "BAB Grain",
+  "location": "Waverly Rail",
+  "state": "IL",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/babgrain/cash-bids",
+  "locationId": "Waverly Rail",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "GENERATED WITH the shape of the sweep-written graindesk sources (see sources/boswellchasegrain-boswell.json) for the BAB Grain board at https://marketplace.graindiscovery.com/api/public-sites/babgrain/cash-bids, which sources/babgrain-auburn.json already reads. locationId IS THE DESTINATION STRING VERBATIM, as the payload spells it (lib/adapters/graindesk.mjs sets every row's locationId to o.destination; filterLocation() compares by exact string equality). This location's own rows were NOT seen when this file was written. bands are the DEFAULT_BANDS values for corn, soybean and wheat, copied from lib/board.mjs; cashRounding is NOT set (the strict guard) and must not be guessed.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: data/babgrain-auburn.json (committed poll capture, checked 2026-09-26) lists \"Waverly Rail (Waverly Rail)\" in otherLocationsOnPage, built from rows the graindesk adapter parsed off https://marketplace.graindiscovery.com/api/public-sites/babgrain/cash-bids. ROSTER IDENTITY: B.A.B. Grain, branch \"Waverly Rail\", Waverly IL 62692, phone 217-438-3316 (data/known-elevators.json and data/roster/barchart-roster-2026-09-24.json id babgrain|waverly|il; roster row 536). The label equals the roster branch exactly. \"Rail\" names a rail loading point, not a separate town; the roster city is Waverly IL. Coordinate is geocodes/places.json \"B.A.B. Grain|Waverly Rail|Waverly|IL\" (town, zip-centroid).",
+  "publicNote": "Their publicly posted cash board at Auburn, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": "62692",
+  "lat": 39.587,
+  "lon": -89.9449,
+  "latPrecision": "town",
+  "phone": "12174383316",
+  "email": null,
+  "website": "https://marketplace.graindiscovery.com/babgrain",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard."
+}

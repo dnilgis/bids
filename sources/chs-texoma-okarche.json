@@ -1,0 +1,47 @@
+{
+  "id": "chs-texoma-okarche",
+  "operator": "CHS Texoma (Oklahoma/Texas)",
+  "location": "Okarche",
+  "state": "OK",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chs-texoma.com/grain/cash-bids/",
+  "locationId": "8f76971d-1f7e-48ec-b6a8-e859369314d4",
+  "labelInFeed": "Okarche",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "milo": [
+      2,
+      14
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "note": "BUILT OFFLINE 2026-09-26 from committed evidence, on the shape of chs-texoma-hinton. BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS, so state, ZIP and phone are the roster's. bands are the repo's default per-commodity values, not measured on this location.\n\nPROOF THE LOCATION IS ON THE BOARD: data/chs-texoma-kingfisher.json and data/chs-texoma-hinton.json (committed poll captures, checked 2026-09-26) list \"Okarche (8f76971d-1f7e-48ec-b6a8-e859369314d4)\" in otherLocationsOnPage, built from rows the bushel adapter parsed off this board. No Bushel payload for this location is committed, so its rows and residuals were NOT seen; cashRounding floor-cent is the board-level mode both enabled CHS Texoma sources on this board declare.\n\nROSTER IDENTITY: Barchart roster row 1922: CHS Western Oklahama (Barchart's spelling), Okarche OK 73762, phone 405-368-2767 (data/known-elevators.json branch Okarche). Same operator-name reasoning as Frederick. Coordinate is geocodes/places.json \"CHS Western Oklahama|Okarche|Okarche|OK\" (town, zip-centroid).\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": "73762",
+  "lat": 35.7502,
+  "lon": -97.93,
+  "latPrecision": "town",
+  "phone": "14053682767",
+  "email": null,
+  "website": "https://www.chs-texoma.com/grain/cash-bids/",
+  "inMerge": true
+}

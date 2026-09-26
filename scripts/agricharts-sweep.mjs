@@ -378,6 +378,15 @@ export const GENERIC_NAME_WORDS = new Set(
     .map((w) => String(w).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8))
     .filter((w) => w.length >= 2));
 
+/* A ROW WITH NO BRANCH IS NAMED BY ITS TOWN. The 2026-09-22 roster rebuild left
+   970 of 2,493 Barchart rows without `branch` (data/known-elevators.json now:
+   1,520 of 2,490 carry one). Every caller writes `location` and the id from
+   `dir.branch`, so a branchless row planned as "missing location" and nothing
+   was written. The town is the only name such a row has, and it is already the
+   second key this join matches a label on, so it is the name the manifest and
+   the id take. A row that has a branch keeps it. */
+const named = (row) => (row && !row.branch && row.city ? { ...row, branch: row.city } : row);
+
 export function joinDirectory(known, operator, label, { soleLocation = false } = {}) {
   const o = slug(operator), l = slug(label);
   /* AN INDUSTRY WORD IS NOT AN IDENTITY.
@@ -407,9 +416,9 @@ export function joinDirectory(known, operator, label, { soleLocation = false } =
   };
   const rows = known.filter(sameOperator);
   if (l) {
-    return rows.find((k) => slug(k.branch) === l)
+    return named(rows.find((k) => slug(k.branch) === l)
         ?? rows.find((k) => slug(k.city) === l)
-        ?? null;
+        ?? null);
   }
   /* A SINGLE-LOCATION BOARD OFTEN NAMES NO PLACE AT ALL.
    *
@@ -419,7 +428,7 @@ export function joinDirectory(known, operator, label, { soleLocation = false } =
    * knows where the operator is -- but only if it knows of exactly ONE of them.
    * Two rows for one company and there is nothing here to choose between them,
    * so it reports rather than picks. Rule 1. */
-  if (soleLocation && rows.length === 1) return rows[0];
+  if (soleLocation && rows.length === 1) return named(rows[0]);
   return null;
 }
 

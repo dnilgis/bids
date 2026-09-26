@@ -124,13 +124,52 @@ test("a branch on the board finds its town in the directory", () => {
 });
 
 /* A LOCATION WITH NO DIRECTORY ENTRY GETS NO MANIFEST, and that is the rule
- * this test exists to keep. Paw Paw is on Wheatfield Grain's board with 27 rows
- * of real prices and is not in the directory. There is no honest town for it,
- * so it waits. Rule 1. */
+ * this test exists to keep. There is no honest town for it, so it waits.
+ * Rule 1.
+ *
+ * THE LABELS ARE MADE UP, ON PURPOSE. This used to pin Paw Paw and East
+ * Findlay, two towns the directory happened not to carry on the day it was
+ * written. The 2026-09-22 roster rebuild added East Findlay, and the test went
+ * red on a town the directory had legitimately learned, not on a broken rule.
+ * The rule is about a label with no row, so the label is one no row can have,
+ * and the operators are ones the directory does carry so that the operator
+ * half of the join is exercised too. */
 test("a location the directory does not carry returns nothing", () => {
-  assert.equal(joinDirectory(KNOWN, "Wheatfield Grain", "Paw Paw"), null);
-  assert.equal(joinDirectory(KNOWN, "Legacy Farmers Cooperative", "East Findlay"), null);
+  for (const op of ["Wheatfield Grain", "Legacy Farmers Cooperative", "Kokomo Grain"]) {
+    assert.ok(KNOWN.some((k) => joinDirectory([k], op, k.city)),
+              `${op} must be in the directory or this test proves nothing`);
+    assert.equal(joinDirectory(KNOWN, op, "Zzyzx Nowhere Junction"), null, op);
+  }
   assert.equal(joinDirectory(KNOWN, "Kokomo Grain", ""), null);
+});
+
+/* A ROW WITH NO BRANCH IS NAMED BY ITS TOWN. data/known-elevators.json lost
+ * `branch` on 970 of 2,493 rows in the 2026-09-22 rebuild; joinDirectory handed
+ * those back branchless, manifestFor wrote `location: undefined`, validateSource
+ * refused "missing location", and the sweep planned 126 manifests where it had
+ * planned 253. */
+test("a directory row with no branch is named by its town, and one with a branch keeps it", () => {
+  const bare = { facility: "Kokomo Grain Co.", city: "Amboy", state: "IN", zip: "46911" };
+  const d = joinDirectory([bare], "Kokomo Grain", "Amboy");
+  assert.equal(d.branch, "Amboy");
+  assert.equal(bare.branch, undefined, "the directory row itself is not rewritten");
+  const m = manifestFor({ id: "kokomograin-amboy", operator: "Kokomo Grain Co.", website: "https://x/",
+    url: "https://x/cash/prices.php", loc: LOC, dir: d, zipCoord: null });
+  assert.equal(m.location, "Amboy");
+  assert.deepEqual(validateSource(m, new Set()), []);
+  const kept = joinDirectory([{ ...bare, branch: "AMB-1", city: "Amboy" }], "Kokomo Grain", "Amboy");
+  assert.equal(kept.branch, "AMB-1");
+  /* Nothing to name it by is still nothing. */
+  assert.equal(joinDirectory([{ facility: "Kokomo Grain Co.", state: "IN" }], "Kokomo Grain", null,
+                             { soleLocation: true })?.branch ?? null, null);
+  /* and the board-driven path, end to end, on a directory with no branch at all */
+  const html = read("fixtures/agricharts-kokomograin.html");
+  const url = "https://kokomograin.mobile.agricharts.com/cash/prices.php";
+  const rows = extract(html, url, { contracts: CONTRACTS });
+  const noBranch = KNOWN.map(({ branch, ...rest }) => rest);
+  const plan = planBoard({ html, url, site: url, rows, known: noBranch, byZip: ZIPS, existingIds: new Set() });
+  assert.ok(plan.write.length > 0, "a branchless directory must still place a board by town");
+  for (const w of plan.write) assert.equal(w.id, `kokomograin-${slug(w.json.location)}`);
 });
 
 test("the join never crosses operators", () => {
@@ -220,57 +259,87 @@ const ZIPS = new Map(JSON.parse(read("geocodes/zip-candidates.json")).zips.map((
 
 const PLANS = {
   "agricharts-kokomograin.html": {
-    url: "https://kokomograin.mobile.agricharts.com/cash/prices.php", locations: 8, write: 8, unmatched: 0 },
+    url: "https://kokomograin.mobile.agricharts.com/cash/prices.php", locations: 8 },
   "agricharts-legacyfarmers.html": {
-    url: "https://legacyfarmers.mobile.agricharts.com/cash/prices.php", locations: 10, write: 8, unmatched: 2 },
+    url: "https://legacyfarmers.mobile.agricharts.com/cash/prices.php", locations: 10 },
   "agricharts-wheatfieldgrain.html": {
-    url: "https://wheatfieldgrain.mobile.agricharts.com/cash/prices.php", locations: 7, write: 6, unmatched: 1 },
+    url: "https://wheatfieldgrain.mobile.agricharts.com/cash/prices.php", locations: 7 },
   "agricharts-thefarmerselevator.html": {
-    url: "https://mobile.thefarmerselevator.com/cash/prices.php", locations: 1, write: 1, unmatched: 0 },
+    url: "https://mobile.thefarmerselevator.com/cash/prices.php", locations: 1 },
 };
 
+/* WHAT IS PINNED AND WHAT IS DERIVED. `locations` is a property of the captured
+ * fixture and cannot move. How many of them the directory can place is a
+ * property of data/known-elevators.json, which a nightly job rewrites: this
+ * used to pin "write 8, unmatched 2" and went red on 2026-09-22 when the
+ * directory learned East Findlay and North Findlay. The expectation is now the
+ * directory's own answer for each location, asked through joinDirectory one
+ * label at a time, so the test checks that planBoard AGREES WITH THE JOIN
+ * rather than what the join said in September. */
+const planOf = (f, want, { known = KNOWN, existingIds = new Set() } = {}) => {
+  const html = read(`fixtures/${f}`);
+  const rows = extract(html, want.url, { contracts: CONTRACTS });
+  const plan = planBoard({ html, url: want.url, site: want.url, rows, known, byZip: ZIPS, existingIds });
+  const labels = new Map();
+  for (const r of rows) if (!labels.has(r.locationId) || !labels.get(r.locationId)) labels.set(r.locationId, r.location);
+  return { plan, rows, labels };
+};
+const placeable = (plan, known, labels) => [...labels.entries()].filter(([, label]) => {
+  const d = joinDirectory(known, plan.operator, label, { soleLocation: labels.size === 1 });
+  return d && d.state && d.branch;
+}).map(([id]) => id);
+
 for (const [f, want] of Object.entries(PLANS)) {
-  test(`${f}: plans ${want.write} manifest(s) and reports ${want.unmatched} without a town`, () => {
-    const html = read(`fixtures/${f}`);
-    const rows = extract(html, want.url, { contracts: CONTRACTS });
-    const plan = planBoard({ html, url: want.url, site: want.url, rows, known: KNOWN,
-                             byZip: ZIPS, existingIds: new Set() });
+  test(`${f}: writes a manifest for every location the directory places and reports the rest`, () => {
+    const { plan, labels } = planOf(f, want);
     assert.ok(plan.ok, plan.why);
     assert.equal(plan.locations, want.locations);
-    assert.equal(plan.write.length, want.write);
-    assert.equal(plan.unmatched.length, want.unmatched);
+    const placed = placeable(plan, KNOWN, labels);
+    assert.equal(plan.write.length + plan.skip.length, placed.length,
+                 "every location the join places is written or skipped, none is lost");
+    assert.equal(plan.skip.length, 0, `nothing exists yet: ${plan.skip.map((s) => s.why).join("; ")}`);
+    assert.equal(plan.unmatched.length, want.locations - placed.length);
+    assert.deepEqual(plan.unmatched.map((u) => String(u.locationId)).sort(),
+                     [...labels.keys()].filter((id) => !placed.includes(id)).map(String).sort());
     for (const w of plan.write) assert.deepEqual(validateSource(w.json, new Set()), []);
   });
 
-  /* AND RUN AGAINST WHAT IS ALREADY THERE IT WRITES NOTHING. This is the test
-     that stops a nightly sweep from re-writing every manifest in the repository
-     — and, worse, from quietly reverting a coordinate somebody corrected. */
-  test(`${f}: a second pass over the live repository writes nothing`, () => {
-    const html = read(`fixtures/${f}`);
-    const rows = extract(html, want.url, { contracts: CONTRACTS });
+  /* A SECOND PASS WRITES NOTHING, on any state the repository can be in. Pass
+     one is planned from an empty set; pass two is handed those ids plus every
+     manifest that is really in sources/. It must write nothing and skip
+     exactly what pass one wrote. (This used to assert that the live repository
+     already held all of pass one, which is a claim about how far the sweep has
+     got, not about the sweep: it went red the day the directory grew.) */
+  test(`${f}: a second pass over the repository writes nothing`, () => {
     const live = new Set(readdirSync(join(ROOT, "sources")).map((x) => x.replace(/\.json$/, "")));
-    const plan = planBoard({ html, url: want.url, site: want.url, rows, known: KNOWN,
-                             byZip: ZIPS, existingIds: live });
-    assert.equal(plan.write.length, 0, `would rewrite ${plan.write.map((w) => w.id).join(", ")}`);
-    assert.equal(plan.skip.length, want.write);
-    for (const s of plan.skip) assert.match(s.why, /already exists/);
+    const first = planOf(f, want).plan;
+    const ids = first.write.map((w) => w.id);
+    const second = planOf(f, want, { existingIds: new Set([...live, ...ids]) }).plan;
+    assert.equal(second.write.length, 0, `would rewrite ${second.write.map((w) => w.id).join(", ")}`);
+    assert.deepEqual(second.skip.map((s) => s.id).sort(), ids.sort());
+    for (const s of second.skip) assert.match(s.why, /already exists/);
+    /* and a manifest that IS live is never rewritten, whatever else is */
+    const inLive = planOf(f, want, { existingIds: live }).plan;
+    for (const w of inLive.write) assert.ok(!live.has(w.id), `${w.id} is live and would be rewritten`);
+    assert.deepEqual(inLive.skip.map((s) => s.id).sort(), ids.filter((id) => live.has(id)).sort());
   });
 }
 
-test("across the four boards, three locations are known and cannot be placed", () => {
-  const all = Object.entries(PLANS).flatMap(([f, want]) => {
-    const html = read(`fixtures/${f}`);
-    const rows = extract(html, want.url, { contracts: CONTRACTS });
-    return planBoard({ html, url: want.url, site: want.url, rows, known: KNOWN,
-                       byZip: ZIPS, existingIds: new Set() }).unmatched;
-  });
-  assert.deepEqual(all.map((u) => u.label).sort(), ["East Findlay", "North Findlay", "Paw Paw"]);
-  // They are real elevators posting real prices, so the report has to carry
-  // enough to act on: which board, which location id, how many rows.
-  for (const u of all) {
-    assert.match(String(u.locationId), /^\d+$/);
-    assert.ok(u.rows > 0);
-    assert.match(u.url, /^https:\/\//);
+test("a board whose operator the directory lacks reports every location, with what is needed to place it", () => {
+  /* The report is what a person works from, so it is exercised on a directory
+     that cannot place anything rather than on whichever towns happen to be
+     missing this month. */
+  for (const [f, want] of Object.entries(PLANS)) {
+    const { plan: probe } = planOf(f, want);
+    const without = KNOWN.filter((k) => !joinDirectory([k], probe.operator, k.city));
+    const { plan } = planOf(f, want, { known: without });
+    assert.equal(plan.write.length, 0, f);
+    assert.equal(plan.unmatched.length, want.locations, f);
+    for (const u of plan.unmatched) {
+      assert.match(String(u.locationId), /^\d+$/);
+      assert.ok(u.rows > 0);
+      assert.match(u.url, /^https:\/\//);
+    }
   }
 });
 

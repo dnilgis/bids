@@ -1,0 +1,40 @@
+{
+  "id": "kalmbachmarkets-shippensburg",
+  "operator": "Kalmbach Feeds",
+  "location": "Shippensburg",
+  "state": "PA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://www.kalmbachmarkets.com/markets/cashgrid.php",
+  "locationId": "24359",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "GENERATED WITH manifestFor() of scripts/agricharts-sweep.mjs from their own cashgrid board at https://www.kalmbachmarkets.com/markets/cashgrid.php. locationId 24359 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. This location's own rows were NOT seen when this file was written; see the offline-proof paragraph below.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. Those checks were NOT run on this location: its rows were not seen. The poll runs them at its first read, and a wrong declaration is refused there.\n\nCompany is the sibling manifests'; branch is this board's own label; town, state, ZIP and phone are the Barchart roster row cited below (not data/known-elevators.json, which has no row for this location). Website is the site the sweep was pointed at.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: data/kalmbachmarkets-*.json (committed poll captures, checked 2026-09-26) list \"Shippensburg (24359)\" in otherLocationsOnPage, built from rows the adapter parsed off https://www.kalmbachmarkets.com/markets/cashgrid.php. No HTML of this board is committed. ROSTER IDENTITY: Barchart roster row 1976: Kalmbach Feeds, Shippensburg PA 17257, 908 Mt Rock Rd, locationId 24359 -- the same number as this board's l= parameter. Coordinate: neither geocodes/places.json nor zip-candidates.json holds Shippensburg PA, so the roster's own point is used (see _pending).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "17257",
+  "lat": 40.010903,
+  "lon": -77.541576,
+  "latPrecision": "town",
+  "phone": "17175322197",
+  "email": null,
+  "website": "https://kalmbachmarkets.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else. lat/lon is the point the Barchart roster row carries for this facility (40.010903, -77.541576); nothing in this repository's geocodes/ holds this town. It was copied, not derived or checked, so treat it as EVIDENCE, NOT A FACT, and labelled town precision on purpose: it can be miles from the yard. Replace it when geocode-fill resolves the ZIP."
+}

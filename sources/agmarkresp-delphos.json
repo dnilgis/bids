@@ -1,0 +1,40 @@
+{
+  "id": "agmarkresp-delphos",
+  "operator": "AgMark LLC.",
+  "location": "Delphos",
+  "state": "KS",
+  "platform": "agricharts-cashgrid",
+  "url": "https://agmarkresp.agricharts.com/markets/cashgrid.php",
+  "locationId": "87262",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "GENERATED WITH manifestFor() of scripts/agricharts-sweep.mjs from their own cashgrid board at https://agmarkresp.agricharts.com/markets/cashgrid.php. locationId 87262 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 12 row(s) in Corn, Milo, Soybeans, Wheat.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. The checks that CAN fail all passed before this file was written: the named contract is one our quote pages price, its root agrees with the board's own commodity heading, and every delivery code appears in its own table's column headers.\n\nCompany is the sibling manifests'; branch is this board's own label; town, state, ZIP and phone are the Barchart roster row cited below (not data/known-elevators.json, which has no row for this location). Website is the site the sweep was pointed at.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: fixtures/agricharts-cashgrid-agmarkllc.html is a captured AgMark cashgrid board; read through readBoard() it carries l=87262 \"Delphos\" with 12 rows (Corn, Milo, Soybeans, Wheat). data/gaps/board-siblings.csv lists it on all three AgMark board hosts, agmarkresp.agricharts.com being the one the 14 live agmarkresp-* sources read. ROSTER IDENTITY: Barchart roster row 917 (agsist ag/data/elevator-directory.json): AgMark LLC, Delphos KS 67436, 413 W 1st St, locationId 87262 -- the same number as this board's l= parameter. Coordinate is the one geocodes/places.json already holds for Delphos KS (registry bucket agmarkllc|delphos, town, zip-centroid).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "67436",
+  "lat": 39.2731,
+  "lon": -97.7717,
+  "latPrecision": "town",
+  "phone": "17855234213",
+  "email": null,
+  "website": "https://agmarkresp.agricharts.com/markets/cash.php?location_filter=10111",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else, so the interval is closed at both ends. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Delphos, KS, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
+}

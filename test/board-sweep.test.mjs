@@ -388,14 +388,19 @@ test("a planned manifest is valid, and says which platform it is", () => {
 });
 
 test("a board whose operator is not in the directory writes nothing and says who", () => {
-  /* Flash Grain and Ace Ethanol are not in Barchart's directory at all — they
-     are two of the 271 elevators this repository carries and Barchart does
-     not. The queue is a list of names, not a number. */
+  /* An operator the directory does not carry at all. Flash Grain was the
+     example while Barchart lacked it; the 2026-09-22 roster rebuild added both
+     its towns (Granton and Thorp, WI), so the example is now made by taking the
+     operator's rows OUT of the directory this test hands the planner. The rule
+     is "no operator row, no manifest", and it is tested on any directory.
+     The queue is a list of names, not a number. */
+  const known = KNOWN.filter((k) => !/^flashgra/.test(slugOf(k.facility)));
+  assert.ok(known.length < KNOWN.length, "the directory carries Flash Grain, so removing it is a real test");
   const url = "https://flashgrains.com/index.cfm?show=11&mid=3";
   const html = fix("flashgrain-cashbids-2026-08-19.html");
   const rows = adapterFor("aghost")(html, url);
   const plan = planSite({ html, url, site: "https://flashgrains.com/", platform: "aghost",
-                          rows, known: KNOWN, byZip: BYZIP, existingIds: new Set(), have: new Set() });
+                          rows, known, byZip: BYZIP, existingIds: new Set(), have: new Set() });
   assert.equal(plan.write.length, 0, "no town, no manifest");
   assert.equal(plan.unmatched.length, 2);
   for (const u of plan.unmatched) {
@@ -420,11 +425,26 @@ test("a directory match with no state writes nothing", () => {
   assert.equal(p1.write.length, 0, "no state, no manifest");
   assert.equal(p1.unmatched.length, 1, "and it goes on the worklist instead");
 
+  /* A ROW WITH NO BRANCH IS NAMED BY ITS TOWN. This used to assert "no branch,
+     no id worth writing". That was true while every directory row carried a
+     branch; the 2026-09-22 roster rebuild dropped it from 970 of 2,493 rows and
+     the rule refused every one of them, so a board whose towns were all in the
+     directory wrote nothing. The town is the name such a row has and the id is
+     built from it. A row with neither has nothing to be named by. */
   const noBranch = [{ facility: "Testing Grain Co", branch: "", city: "Nowhere",
                       state: "IA", zip: "50001", phone: null }];
   const p2 = planSite({ html, url: "https://x/b", site: "https://x/", platform: "aghost",
                         rows, known: noBranch, byZip: BYZIP, existingIds: new Set(), have: new Set() });
-  assert.equal(p2.write.length, 0, "no branch, no id worth writing");
+  assert.equal(p2.write.length, 1, "no branch, but a town: named by the town");
+  assert.equal(p2.write[0].json.location, "Nowhere");
+  assert.match(p2.write[0].id, /-nowhere$/);
+
+  const noName = [{ facility: "Testing Grain Co", branch: "", city: "", state: "IA", zip: "50001",
+                   phone: null }];
+  const p3 = planSite({ html, url: "https://x/b", site: "https://x/", platform: "aghost",
+                        rows: [{ location: "", locationId: "1", commodity: "Corn" }], known: noName,
+                        byZip: BYZIP, existingIds: new Set(), have: new Set() });
+  assert.equal(p3.write.length, 0, "neither branch nor town, no id worth writing");
 });
 
 test("a board that names no operator is refused rather than filed under a guess", () => {
@@ -573,7 +593,20 @@ test("both directories are asked, and the ones we wrote ourselves are excluded",
     `the registries add only ${onlyWide.length} pairs Barchart cannot place`);
   /* Eldridge, as the merge left it: gone from the wide set, still in the
      directory, and still ours. */
-  assert.equal(joinDirectory(wide, "Country Grain Cooperative", "Eldridge"), null,
+  /* WHICH ROW IS MEANT. The wide set also carries Barchart's own rows, and the
+     roster rebuild of 2026-09-22 added Country Grain Cooperative / Eldridge to
+     it (source "barchart", no phone, flagged duplicateSuspect). That row is
+     Barchart's and is supposed to be there. The row this assertion is about is
+     the STATE REGISTRY's, which the build must merge into the board we read.
+     Asked of the registry-sourced rows only, and only after checking the
+     registry input still carries the row, so a passing test means the merge
+     dropped something rather than that there was nothing to drop. */
+  const regInput = JSON.parse(readFileSync(join(ROOT, "geocodes/places.json"), "utf8")).registry ?? {};
+  assert.ok(regInput["ND|countrygraincooperativeinc|eldridge"],
+            "the registry input no longer carries Eldridge, so the merge below is not being exercised");
+  const registryRows = wide.filter((r) => /^registry/.test(String(r.source)));
+  assert.ok(registryRows.length > 1000, `only ${registryRows.length} registry rows in the wide set`);
+  assert.equal(joinDirectory(registryRows, "Country Grain Cooperative", "Eldridge"), null,
     "the Eldridge registry row is back in the wide set — the merge has stopped working");
   assert.ok(dir.elevators.some((e) => e.id === "countrygraincooperative-eldridge"
                                       && e.status === "read"),

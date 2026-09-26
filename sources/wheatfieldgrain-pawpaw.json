@@ -1,0 +1,39 @@
+{
+  "id": "wheatfieldgrain-pawpaw",
+  "operator": "Wheatfield Grain",
+  "location": "Paw Paw",
+  "state": "MI",
+  "platform": "agricharts",
+  "url": "https://wheatfieldgrain.mobile.agricharts.com/cash/prices.php",
+  "locationId": "84201",
+  "identityAlternative": "agricharts:board-agrees+quotes-agree",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "GENERATED WITH manifestFor() of scripts/agricharts-sweep.mjs from their own mobile board at https://wheatfieldgrain.mobile.agricharts.com/cash/prices.php. locationId 84201 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 27 row(s) in Corn, Soybeans.\n\nidentityAlternative: this board publishes cash, basis and a futures CHANGE and no futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp from the adapter. The board was read and both of the adapter's checks passed before this file was written: every location on it implies the same futures for one commodity and one delivery code, and every row sits within 5c of a real quoted CBOT contract. futuresPriceCents publishes as null, because there is no quote to republish.\n\nCompany is the sibling manifests'; branch is this board's own label; town, state, ZIP and phone are the Barchart roster row cited below (not data/known-elevators.json, which has no row for this location). Website is the \"Visit Our Main Website\" link on their own mobile board.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: fixtures/agricharts-wheatfieldgrain.html is a captured Wheatfield Grain mobile board; read through readBoard() it carries l=84201 \"Paw Paw\" with 27 rows (Corn and others). ROSTER IDENTITY: Barchart roster row 1196: Wheatfield Grain, Paw Paw MI 49079, 63600 MI-51, locationId 84201 -- the same number as this board's l= parameter. Coordinate: neither geocodes/places.json nor zip-candidates.json holds Paw Paw MI, so the roster's own point is used (see _pending); test/state-outliers.test.mjs needs one because Paw Paw is out of Wheatfield's home state. test/agricharts-sweep.test.mjs already reports this location as the one the wheatfieldgrain board 'reports without a town'.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "49079",
+  "lat": 42.187424,
+  "lon": -85.968511,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://www.wheatfieldgrain.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the point the Barchart roster row carries for this facility (42.187424, -85.968511); nothing in this repository's geocodes/ holds this town. It was copied, not derived or checked, so treat it as EVIDENCE, NOT A FACT, and labelled town precision on purpose: it can be miles from the yard. Replace it when geocode-fill resolves the ZIP."
+}

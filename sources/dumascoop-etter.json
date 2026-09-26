@@ -1,0 +1,40 @@
+{
+  "id": "dumascoop-etter",
+  "operator": "Dumas Co-op Elevators",
+  "location": "Etter",
+  "state": "TX",
+  "platform": "agricharts-cashgrid",
+  "url": "https://www.dumascoop.com/markets/cashgrid.php",
+  "locationId": "3974",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "GENERATED WITH manifestFor() of scripts/agricharts-sweep.mjs from their own cashgrid board at https://www.dumascoop.com/markets/cashgrid.php. locationId 3974 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. This location's own rows were NOT seen when this file was written; see the offline-proof paragraph below.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against — writeBidCell(-34, ..., quotes['ZCZ26']) — and the browser adds them up. We do the same arithmetic from the same quote pages, which means cash - basis = futures is true by construction here and would be checking our own subtraction against itself. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp. Those checks were NOT run on this location: its rows were not seen. The poll runs them at its first read, and a wrong declaration is refused there.\n\nCompany is the sibling manifests'; branch is this board's own label; town, state, ZIP and phone are the Barchart roster row cited below (not data/known-elevators.json, which has no row for this location). Website is the site the sweep was pointed at.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: data/dumascoop-dumas.json, dumascoop-morton.json and dumascoop-mwell.json (committed poll captures, checked 2026-09-26) each list \"Etter (3974)\" in otherLocationsOnPage, built from rows the adapter parsed off https://www.dumascoop.com/markets/cashgrid.php. No HTML of this board is committed. ROSTER IDENTITY: Barchart roster row 2094: Dumas Co-op Elevators, branch Etter, address 600 S Twichall Ave, Dumas TX 79029, locationId 3974 -- the same number as this board's l= parameter. Town and coordinate are the roster city's (Dumas), exactly as sources/dumascoop-morton.json and dumascoop-mwell.json already carry them.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "79029",
+  "lat": 35.8823,
+  "lon": -101.968,
+  "latPrecision": "town",
+  "phone": "18069356440",
+  "email": null,
+  "website": "https://dumascoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else, so the interval is closed at both ends. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Dumas, TX, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
+}

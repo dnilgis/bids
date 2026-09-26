@@ -1,0 +1,40 @@
+{
+  "id": "scoularview-grainton",
+  "operator": "ScoularView",
+  "location": "Grainton",
+  "state": "NE",
+  "platform": "cashbidssingle",
+  "url": "https://scoularview.com/cashbidssingle-",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
+  "locationId": "1903",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "GENERATED WITH manifestFor() of scripts/board-sweep.mjs for the ScoularView board at https://scoularview.com/cashbidssingle-, platform cashbidssingle, which this repository already reads for 21 sibling locations on the same page. This location's own rows were NOT seen when this file was written.\n\nfuturesUnits \"dollars\" and cashRounding \"round-cent-both\" are the board-level facts every one of the 21 sibling sources on this same page already declares (measured 2026-09-16 and recorded in their notes); nothing is fitted to this location. The identity guard refuses a wrong declaration at the first poll.\n\nHOW THIS PLACE WAS PLACED: the Barchart roster row whose branch is this board's own label, verbatim.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: data/scoularview-*.json (committed poll captures, checked 2026-09-26) list \"Grainton Cash Bids (1903)\" in otherLocationsOnPage, built from rows the adapter parsed off https://scoularview.com/cashbidssingle-. No HTML of this board is committed. ROSTER IDENTITY: The Scoular Company -- roster row 1759 (branch \"Grainton Cash Bids\", 75857 Road 351, Wallace NE 69169); data/known-elevators.json carries the same branch string, and places.json holds the coordinate under \"The Scoular Company|Grainton Cash Bids|Wallace|NE\" (town, zip-centroid) -- the roster city Wallace's, not Grainton's. The board's label equals the roster branch exactly and the roster gives the state. This is the case lib/place.mjs normaliseLabel() leaves without a state (the label carries none), which is why scripts/board-sweep.mjs never wrote it; here the state comes from the roster row, not from a guess.",
+  "publicNote": "Their publicly posted cash board.",
+  "address": null,
+  "zip": "69169",
+  "lat": 40.8304,
+  "lon": -101.1738,
+  "latPrecision": "town",
+  "phone": "13082282417",
+  "email": null,
+  "website": "https://scoularview.com/cashbidssingle-",
+  "inMerge": true,
+  "_pending": "lat/lon is the roster city's ZIP centroid as geocodes/places.json holds it, and can be miles from the yard. Bands are the repo default for corn, soybean and wheat; Scoular writes commodities as Yc, Ysb, Hww, Sor, which bandFor() resolves by name."
+}

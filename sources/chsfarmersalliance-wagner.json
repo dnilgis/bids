@@ -1,0 +1,43 @@
+{
+  "id": "chsfarmersalliance-wagner",
+  "operator": "CHS Farmers Alliance",
+  "location": "Wagner",
+  "state": "SD",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chsfarmersalliance.com/grain/cash-bids/",
+  "locationId": "99a49ed3-6426-4aa0-8a66-6fa7d6a61010",
+  "labelInFeed": "Wagner",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "note": "BUILT OFFLINE 2026-09-26 from committed evidence, on the shape of chsfarmersalliance-mitchell. BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS, so state, ZIP and phone are the roster's. bands are the repo's default per-commodity values, not measured on this location.\n\nPROOF THE LOCATION IS ON THE BOARD: fixtures/bushel-chsfarmersalliance.json is a captured Bushel GetBidsList response for this exact board (chsfarmersalliance.com); it carries location 99a49ed3-6426-4aa0-8a66-6fa7d6a61010 \"Wagner\" with 6 rows (Corn, Soybeans, Wheat HRW). Measured on those 6 rows: residuals {0, +0.25, +0.5, +0.75} cents, which floor-cent explains 6 of 6 -- the same signature, and the same mode, as the enabled Mitchell source on the same board.\n\nROSTER IDENTITY: Barchart roster row 2020: CHS Farmers Alliance, Wagner SD 57380, 310 W. Railroad St, phone 605-384-3671. The Bushel payload carries no state or address, so state and ZIP are the roster's. Coordinate is geocodes/places.json registry bucket SD|chsinc|wagner (town, zip-centroid) -- the state warehouse registry lists CHS Inc at Wagner SD, which agrees.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": "57380",
+  "lat": 43.0819,
+  "lon": -98.2819,
+  "latPrecision": "town",
+  "phone": "16053843671",
+  "email": null,
+  "website": "https://www.chsfarmersalliance.com/grain/cash-bids/",
+  "inMerge": true
+}

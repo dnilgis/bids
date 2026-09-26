@@ -1,0 +1,47 @@
+{
+  "id": "chs-texoma-frederick",
+  "operator": "CHS Texoma (Oklahoma/Texas)",
+  "location": "Frederick",
+  "state": "OK",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.chs-texoma.com/grain/cash-bids/",
+  "locationId": "4b83c408-7651-41ea-93c2-46d48cfc5531",
+  "labelInFeed": "Frederick",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "milo": [
+      2,
+      14
+    ],
+    "soybeans": [
+      6,
+      25
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "note": "BUILT OFFLINE 2026-09-26 from committed evidence, on the shape of chs-texoma-hinton. BUSHEL'S PAYLOAD CARRIES NO STATE AND NO ADDRESS, so state, ZIP and phone are the roster's. bands are the repo's default per-commodity values, not measured on this location.\n\nPROOF THE LOCATION IS ON THE BOARD: data/chs-texoma-kingfisher.json and data/chs-texoma-hinton.json (committed poll captures, checked 2026-09-26) list \"Frederick (4b83c408-7651-41ea-93c2-46d48cfc5531)\" in otherLocationsOnPage, built from rows the bushel adapter parsed off this board. No Bushel payload for this location is committed, so its rows and residuals were NOT seen; cashRounding floor-cent is the board-level mode both enabled CHS Texoma sources on this board declare.\n\nROSTER IDENTITY: Barchart roster row 1919: CHS Western Oklahama (Barchart's spelling), Frederick OK 73542, 21757 County Road EW 185, phone 580-335-2107, website chswesternok.com. The covered roster rows Hinton and Kingfisher of the same roster operator are already read by the chs-texoma-* sources, so the roster name and CHS Texoma are one business in this repo's own matching. Coordinate is geocodes/places.json registry bucket OK|chsinc|frederick (town, zip-centroid).\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": "73542",
+  "lat": 34.4012,
+  "lon": -99.0119,
+  "latPrecision": "town",
+  "phone": "15803352107",
+  "email": null,
+  "website": "https://www.chs-texoma.com/grain/cash-bids/",
+  "inMerge": true
+}

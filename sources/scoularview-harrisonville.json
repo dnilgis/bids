@@ -1,0 +1,40 @@
+{
+  "id": "scoularview-harrisonville",
+  "operator": "ScoularView",
+  "location": "Harrisonville",
+  "state": "MO",
+  "platform": "cashbidssingle",
+  "url": "https://scoularview.com/cashbidssingle-",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
+  "locationId": "1927",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "GENERATED WITH manifestFor() of scripts/board-sweep.mjs for the ScoularView board at https://scoularview.com/cashbidssingle-, platform cashbidssingle, which this repository already reads for 21 sibling locations on the same page. This location's own rows were NOT seen when this file was written.\n\nfuturesUnits \"dollars\" and cashRounding \"round-cent-both\" are the board-level facts every one of the 21 sibling sources on this same page already declares (measured 2026-09-16 and recorded in their notes); nothing is fitted to this location. The identity guard refuses a wrong declaration at the first poll.\n\nHOW THIS PLACE WAS PLACED: the Barchart roster row whose branch is this board's own label, verbatim.\n\nBUILT OFFLINE 2026-09-26, NOT BY A RUN. PROOF THE LOCATION IS ON THE BOARD: data/scoularview-*.json (committed poll captures, checked 2026-09-26) list \"Scoular Harrisonville Cash Bids (1927)\" in otherLocationsOnPage, built from rows the adapter parsed off https://scoularview.com/cashbidssingle-. No HTML of this board is committed. ROSTER IDENTITY: Scoular Company - Missouri -- roster row 1482 (location \"Scoular Harrisonville Cash Bids\", 1209 Industrial Blvd, Harrisonville MO 64701). geocodes/places.json holds Harrisonville MO only under another operator's registry row, so the roster's own point is used. The board's label equals the roster branch exactly and the roster gives the state. This is the case lib/place.mjs normaliseLabel() leaves without a state (the label carries none), which is why scripts/board-sweep.mjs never wrote it; here the state comes from the roster row, not from a guess.",
+  "publicNote": "Their publicly posted cash board.",
+  "address": null,
+  "zip": "64701",
+  "lat": 38.66163,
+  "lon": -94.357089,
+  "latPrecision": "town",
+  "phone": "18162974502",
+  "email": null,
+  "website": "https://scoularview.com/cashbidssingle-",
+  "inMerge": true,
+  "_pending": "lat/lon is the point the Barchart roster row carries for this facility, copied and not checked, and can be miles from the yard. Bands are the repo default for corn, soybean and wheat; Scoular writes commodities as Yc, Ysb, Hww, Sor, which bandFor() resolves by name."
+}
