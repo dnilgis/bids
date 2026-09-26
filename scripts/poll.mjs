@@ -44,10 +44,10 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
-import { capture } from "../lib/cdp.mjs";
+import { capture, captureRendered } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 
@@ -403,7 +403,13 @@ async function getPage(s) {
           + `window. Nothing about this source is known to be wrong.`);
       let got;
       try {
-        got = await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
+        /* A platform whose board is the DOM the page drew (StoneHedge) is read
+           by loading the customer's page, finding the widget address it embeds
+           and returning the rendered document; every other browser platform
+           returns the body of one response. See PLATFORM_CAPTURE. */
+        got = captureOf(s.platform) === "rendered"
+          ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
+          : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
       } catch (e) {
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of

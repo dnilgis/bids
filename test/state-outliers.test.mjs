@@ -44,6 +44,12 @@ const ACCOUNTED_FOR = {
     "Nebraska; Bunge's Emporia, Kansas plant is where it ships, and the co-op " +
     "posts a bid for hauling there. The braces in the board's own label — " +
     "{BUNGE - EMPORIA} — are how that board marks a destination.",
+  "scottequityexchange-decaturds":
+    "Scott Equity Exchange is Ohio. Its own StoneHedge board lists \"Decatur-DS\" " +
+    "(fixtures/stonehedge-scottequityexchange-component-rendered.html, picker id " +
+    "1GZ9WOI0PNU2IQ1TPAG3, 4 real rows) and the Barchart roster files a Scott " +
+    "Equity Exchange row at Decatur, IL 62526. A destination bid, like Emporia above; " +
+    "the coordinate is the roster's own.",
 };
 
 test("no source sits far from its operator without somebody having said why", () => {

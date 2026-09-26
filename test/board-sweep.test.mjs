@@ -395,7 +395,13 @@ test("a board whose operator is not in the directory writes nothing and says who
      is "no operator row, no manifest", and it is tested on any directory.
      The queue is a list of names, not a number. */
   const known = KNOWN.filter((k) => !/^flashgra/.test(slugOf(k.facility)));
-  assert.ok(known.length < KNOWN.length, "the directory carries Flash Grain, so removing it is a real test");
+  /* NO PRECONDITION ON THE LIVE DIRECTORY. This used to assert that the live
+     directory carried Flash Grain, so removing it was "a real test". The
+     2026-09-26 sync_known overwrite replaced known-elevators.json with a
+     directory that has no Flash Grain rows, and the assertion failed the
+     board-sweep guard step, which blocked every board sweep. The rule under
+     test does not need Flash Grain to be present: with no operator row in the
+     directory handed to the planner, nothing may be written. */
   const url = "https://flashgrains.com/index.cfm?show=11&mid=3";
   const html = fix("flashgrain-cashbids-2026-08-19.html");
   const rows = adapterFor("aghost")(html, url);

@@ -85,14 +85,14 @@ test("the browser is for platforms whose page fetches its own board", () => {
      and works either way; `fetch` on that reasoning would be a guess that fails
      as "0 bids" at six in the morning. One run proving a plain GET returns the
      same JSON moves it, and saves the load. */
-  for (const p of ["dtn-cs", "bushel", "gradable"])
+  for (const p of ["dtn-cs", "bushel", "gradable", "stonehedge"])
     assert.equal(transportOf(p), "browser", p);
   for (const p of ["cashbidssingle", "aghost", "fragment", "graindesk", "first-party"])
     assert.equal(transportOf(p), "fetch", p);
   /* Still a closed set: a platform is on the browser deliberately or not at
      all, because the browser is slow and a page we do not need to run is a
      page we should not run. */
-  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs", "gradable"]);
+  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs", "gradable", "stonehedge"]);
 });
 
 /* ---- end to end, against a server that enforces DTN's own rule ----------- */
@@ -656,8 +656,9 @@ test("both Page.navigate call sites are given the page budget, not the per-call 
   const primary = found
     .filter((m) => !/within\(\s*rescueNavMs/.test(src.slice(Math.max(0, m.index - 120), m.index)))
     .map((m) => m[0]);
-  assert.equal(primary.length, 2,
-    `expected exactly two unwrapped navigate calls, found ${primary.length}`);
+  /* two in capture()/captureAll(), plus captureRendered()'s single `go` helper */
+  assert.equal(primary.length, 3,
+    `expected exactly three unwrapped navigate calls, found ${primary.length}`);
   for (const s of primary)
     assert.match(s, /callTimeoutMs:\s*timeoutMs/,
       "a Page.navigate is still capped at the per-call ceiling — this is what broke eight " +
