@@ -48,7 +48,7 @@ import { loadSources, toConfig, urlsFor, wireOf, transportOf } from "../lib/sour
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture } from "../lib/cdp.mjs";
-import { Breaker, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
+import { Breaker, Backoff, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -164,6 +164,11 @@ const BREAKER_STRIKES = Number(process.env.BREAKER_STRIKES ?? 3);
 const SOURCE_FETCH_MS = Number(process.env.SOURCE_FETCH_MS ?? SOURCE_FETCH_MS_DEFAULT);
 const passStarted = Date.now();
 const breaker = new Breaker({ strikes: BREAKER_STRIKES });
+/* Refusals (403/429) from this many different hosts in a row on one platform
+   end that platform's plain-HTTP reads for the rest of the pass. See
+   lib/breaker.mjs. */
+const BACKOFF_STRIKES = Number(process.env.BACKOFF_STRIKES ?? 4);
+const backoff = new Backoff({ strikes: BACKOFF_STRIKES });
 
 /* READ ORDER IS A POLICY, AND IT IS THE ONLY THING THAT STOPS ONE OPERATOR
  * STARVING A PLATFORM.
@@ -454,13 +459,28 @@ async function getPage(s) {
        measured 2026-09-16, Node's own connect timeout spent 10,487 of 12,000ms
        on the bare hostname and left the www twin 1,513. shareOf() divides what
        is left by the attempts still to make. */
+    if (backoff.blocked(s.platform))
+      throw new Skipped(`not attempted: ${BACKOFF_STRIKES} different hosts in a row refused us `
+        + `(403 or 429) on ${s.platform} (${backoff.culprits(s.platform).join(", ")}), so the rest of `
+        + `that platform is left for the next pass. Its last good file is untouched and still `
+        + `published while it is inside the withdrawal window. Nothing about this source is `
+        + `known to be wrong.`);
     const deadline = fetchDeadline();
     const urls = urlsFor(s);
     for (const [i, url] of urls.entries()) {
       try {
         const res = await fetchWithin(url, { headers, redirect: "follow" },
                                       shareOf(deadline, urls.length - i));
-        if (!res.ok) { problems.push(`${url} -> HTTP ${res.status}`); continue; }
+        if (!res.ok) {
+          problems.push(`${url} -> HTTP ${res.status}`);
+          let host = url; try { host = new URL(url).host; } catch {}
+          if (backoff.note(s.platform, res.status, host))
+            console.error(`::error title=${s.platform} is refusing us::${BACKOFF_STRIKES} different `
+              + `hosts answered 403 or 429 in a row (${backoff.culprits(s.platform).join(", ")}). `
+              + `The rest of ${s.platform} is left for the next pass.`);
+          continue;
+        }
+        backoff.ok(s.platform);
         const html = await res.text();
         /* THE 500-BYTE FLOOR IS AN HTML ASSUMPTION. It exists to catch a shell
            page served in place of a board. A JSON feed for a one-location

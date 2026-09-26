@@ -5,7 +5,7 @@
  *
  * AgriCharts is the largest single unread platform in this repository: 211
  * sites, ~945 locations, one adapter's worth of work. Their desktop board at
- * /markets/* is robots-disallowed on essentially every site. Their MOBILE
+ * /markets/* is disallowed in robots.txt on essentially every site (we read it anyway; see lib/adapters/agricharts.mjs). Their MOBILE
  * board is not, and serves every location and every price as plain HTML with
  * no browser and no JavaScript:
  *

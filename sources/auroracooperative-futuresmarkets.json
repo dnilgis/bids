@@ -25,12 +25,12 @@
       25
     ]
   },
-  "cashRounding": "round-cent",
+  "cashRounding": "floor-cent",
   "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://auroracoop.com/markets in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0339801 returned this location keyed 26075. 7 row(s): Corn, Hard Red Winter Wheat, Soybeans — round-cent [7 testable: exact 2, round 7, floor 4]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Futures Markets\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://auroracoop.com/markets in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0339801 returned this location keyed 26075. 7 row(s): Corn, Hard Red Winter Wheat, Soybeans — round-cent [7 testable: exact 2, round 7, floor 4]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is null: \"Futures Markets\" did not match a town in any state this operator is known to trade in, and a state will not be guessed. lat/lon are null. Nobody has derived a coordinate for this location and none will be invented. website is the origin of this source's own browserPage. Nothing was looked up. CASH ROUNDING CHANGED 2026-09-26, round-cent to floor-cent. The 2026-08-29 probe reading above was right when it was taken: from the first committed capture (2026-08-26) to 2026-09-24 18:47 UTC this board rounded half up, and the committed captures show residuals -0.5, -0.25, 0 and +0.25 only. The first committed read that floors is 2026-09-24 21:07 UTC (residual +0.5), so the change fell between those two commits and the repository holds nothing that narrows it. Since then cash is the arithmetic floored to the cent (residuals 0, +0.25, +0.5, +0.75; none negative). round-cent refused the board on a +0.75c soybean row (S/O27, cash 12.06, basis -0.7, quote 1276.75). Evidence is the git history of data/auroracooperative-*.json. If the board goes back to rounding, floor-cent refuses it, which is the intended failure.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": null,
   "zip": null,

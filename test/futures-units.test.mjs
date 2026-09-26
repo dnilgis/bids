@@ -143,9 +143,9 @@ test("every captured cashbidssingle board decides its own units", () => {
 
 test("the four sources whose boards are captured actually publish now", () => {
   /* The point of the whole change. Before it, all four refused with residuals
-     of 500-1300 cents. Berthold is DELIBERATELY not here: its canola rows are
-     quoted per tonne against a per-hundredweight cash bid, they are out by
-     70,000c, and it must go on refusing until that is dealt with. */
+     of 500-1300 cents. Berthold was DELIBERATELY not here: its canola rows are
+     quoted per tonne against a per-hundredweight cash bid and are out by
+     70,000c. It is dealt with by foreignQuote, in the test below. */
   for (const id of ["agassizvalleygrain-avgbarnesville", "countrygraincooperative-eldridge",
                     "hillsdaleelevator-clinton", "aceethanol-stanley"]) {
     const s = src(id);
@@ -156,13 +156,22 @@ test("the four sources whose boards are captured actually publish now", () => {
   }
 });
 
-test("Berthold still refuses, and on the canola rows only", () => {
+test("Berthold refuses on the canola rows only, and publishes once foreignQuote names them", () => {
+  /* Changed 2026-09-26: the manifest now declares foreignQuote ["Canola"], so
+     the three per-tonne rows are withheld and the other 15 publish. Without
+     the declaration the board still refuses, and on those three rows alone. */
   const s = src("bertholdfarmers-berthold");
+  const bare = { ...s };
+  delete bare.foreignQuote;
   assert.throws(
     () => buildFile(fx(PROVED["bertholdfarmers-berthold"]),
-                    { now: new Date("2026-09-07T21:25:00Z"), sourceUrl: s.url, source: s }),
+                    { now: new Date("2026-09-07T21:25:00Z"), sourceUrl: bare.url, source: bare }),
     (e) => /3 of 15 testable row\(s\) fail/.test(e.message) && /Canola|canola|823\.8/.test(e.message + " canola"),
     "its wheat and corn balance; its canola is a per-tonne contract and is not a units problem");
+  const r = buildFile(fx(PROVED["bertholdfarmers-berthold"]),
+                      { now: new Date("2026-09-07T21:25:00Z"), sourceUrl: s.url, source: s });
+  assert.equal(r.file.bids.length, 15);
+  assert.equal(r.withheld.filter((w) => /canola/i.test(w.commodity)).length, 3);
 });
 
 /* ------------------------------------------------------------------ *
