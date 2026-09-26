@@ -39,7 +39,7 @@ on:
         type: boolean
         default: false
       platform:
-        description: "PLATFORM ONLY — one of exactly: aghost, cashbidssingle, dtn-cs, graindesk. Blank asks all four. An operator's name does NOT go here; it goes in the last box. (bushel is scripts/bushel-probe.mjs's — its board is a keyed runtime call.)"
+        description: "PLATFORM ONLY — one of exactly: aghost, cashbidssingle, dtn-cs, graindesk. Blank asks all four. An operator's name does NOT go here; it goes in the last box. dtn-cs is read through a browser (DTN answers a server 403) and costs about a minute a site; the sweep stops asking after 40 minutes and says where to resume with the start box. (bushel is scripts/bushel-probe.mjs's — its board is a keyed runtime call.)"
         required: false
         default: ""
       limit:
@@ -69,7 +69,7 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,6 +78,13 @@ jobs:
       # It writes source manifests; it does not get to run untested.
       - name: Test the guards
         run: node --test test/board-sweep.test.mjs test/sources.test.mjs
+
+      # GitHub's ubuntu image ships Google Chrome, which is all lib/cdp.mjs needs
+      # (poll.yml and dtn-probe.yml rely on the same). Said out loud before the
+      # first site, so a runner without one fails here and not 34 times.
+      - name: Which browser
+        continue-on-error: true
+        run: node -e "import('./lib/cdp.mjs').then(m => console.log('browser:', m.findBrowser()))"
 
       - name: Sweep
         # Inputs go through env, never into the command line — a co-op's URL
