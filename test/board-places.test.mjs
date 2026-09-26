@@ -5,7 +5,7 @@
  * identity guard. A place that only looks right on paper fails here. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { planSite, placeFromPlaces } from "../scripts/board-sweep.mjs";
@@ -16,7 +16,6 @@ import { validateSource } from "../lib/sources.mjs";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const PLACES = JSON.parse(readFileSync(join(ROOT, "geocodes/board-places.json"), "utf8")).places;
 const KNOWN = JSON.parse(readFileSync(join(ROOT, "data/known-elevators.json"), "utf8")).elevators;
-const IDS = new Set(readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));
 
 const BOARDS = [
   ["cashbidssingle-adellcoopcom", "cashbidssingle", "https://adellcoop.com/", "Adell Cooperative"],
@@ -36,11 +35,12 @@ for (const [fixture, platform, url, operator] of BOARDS) {
     const html = readFileSync(join(ROOT, "fixtures/board-sweep", `${fixture}.html`), "utf8");
     const rows = adapterFor(platform)(html, url);
     const plan = planSite({ html, url, site: new URL(url).origin + "/", platform, rows, known: KNOWN,
-                            byZip: new Map(), existingIds: new Set(IDS), places: PLACES });
+                            byZip: new Map(), existingIds: new Set(), places: PLACES });
     assert.equal(plan.write.length, 1, JSON.stringify(plan.unmatched.concat(plan.skip)));
     const m = plan.write[0].json;
     assert.deepEqual(validateSource(m, new Set()), []);
     assert.equal(m.cashRounding, "round-cent-both");
+    assert.match(m.url, /^https:\/\//, "a manifest must never be written on http");
     assert.match(m.note, /geocodes\/board-places\.json/);
     const out = buildFile(html, { now: new Date(), sourceUrl: url, source: m, extract: adapterFor(platform) });
     assert.ok(out.file, "the guard refused a board it should accept");

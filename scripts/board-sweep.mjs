@@ -356,7 +356,11 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
   const held = browserPage && rounding && !rounding.confident;
   return {
     id, operator, location: dir.branch, state: dir.state,
-    platform, url,
+    platform,
+    /* THIS REPOSITORY REFUSES A CASH BOARD ON AN UNAUTHENTICATED WIRE
+       (test/sources.test.mjs), and two POET boards were found over http. The
+       manifest is written https and says so; the first poll proves it. */
+    url: String(url).replace(/^http:\/\//i, "https://"),
     ...(browserPage ? { browserPage } : {}),
     ...(siteId ? { siteId: String(siteId) } : {}),
     /* THE UNITS OF THE FUTURES COLUMN, MEASURED FROM THE BOARD THIS RUN READ.
