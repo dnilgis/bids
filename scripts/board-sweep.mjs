@@ -370,10 +370,15 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
      * Only ever written when the board's own rows decide it. Nothing is
      * written for a cents board, so this changes not one existing manifest. */
     ...(units?.units && units.units !== "cents" ? { futuresUnits: units.units } : {}),
-    ...(loc.locationId != null ? { locationId: String(loc.locationId) } : {}),
+    /* NULL, NOT ABSENT, WHEN THE PAGE KEYS NOTHING. validateSource() refuses a
+       manifest with no locationId and says "or null if the page carries exactly
+       one location and does not key its rows". Omitting it wrote nothing at all
+       for a board like POET Ashton's. */
+    locationId: loc.locationId != null ? String(loc.locationId) : null,
     bands,
     ...(browserPage && rounding?.confident && rounding.confident !== "exact"
-        ? { cashRounding: rounding.confident } : {}),
+        ? { cashRounding: rounding.confident }
+        : (dir.cashRounding ? { cashRounding: dir.cashRounding } : {})),
     cadence: "grain-day", provenance: "scraped", enabled: !held,
     note: `WRITTEN BY scripts/board-sweep.mjs${runId ? ` (run ${runId})` : ""} from the board `
       + `page discover recorded for this operator: ${url}. The platform is ${platform}, which `
@@ -531,6 +536,27 @@ export function townInState(known, town, state) {
              + (zips.length === 1 ? ` agreeing on ZIP ${zips[0]}` : "; they disagree on the ZIP, so none is taken") };
 }
 
+/* A TOWN DECIDED BY HAND, WITH ITS EVIDENCE, IN geocodes/board-places.json.
+ *
+ * Tried first because a person looked at the board and wrote down why. It
+ * matches on the operator name exactly as the board titles itself, and on the
+ * locationId when the entry has one; an entry with no id matches only a board
+ * with a single location. It never guesses a neighbour, and it only ever
+ * supplies the place: the guard, the bands and the rounding are untouched. */
+export function placeFromPlaces(places, operator, loc, { soleLocation = false } = {}) {
+  const want = slug(operator);
+  for (const p of places ?? []) {
+    if (slug(p.operator) !== want) continue;
+    if (p.locationId != null) { if (String(loc?.locationId ?? "") !== String(p.locationId)) continue; }
+    else if (!soleLocation) continue;
+    return { facility: operator, branch: p.town, city: p.town, state: p.state,
+             zip: p.zip ?? null, phone: null, clean: null,
+             ...(p.cashRounding ? { cashRounding: p.cashRounding } : {}),
+             placedBy: `a place decided by hand in geocodes/board-places.json: ${p.evidence}` };
+  }
+  return null;
+}
+
 export function placeFromBoard(known, operator, label, { soleLocation = false } = {}) {
   const clean = normaliseLabel(label, operator);
   const direct = joinDirectory(known, operator, label, { soleLocation });
@@ -632,7 +658,8 @@ export function boardUnits(rows) {
 }
 
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,
-                           have = new Set(), runId = null, browserPage = null, siteId = null }) {
+                           have = new Set(), runId = null, browserPage = null, siteId = null,
+                           places = [] }) {
   const homeAddress = operatorAddress(html);
   const operator = operatorNameFrom(html);
   /* THE ID COMES FROM THE OPERATOR'S HOST. For a browser platform `url` is the
@@ -679,7 +706,8 @@ export function planSite({ html, url, site, platform, rows, known, byZip, existi
      * IS the branch name Barchart records for that elevator — a directory hit
      * on the raw label is better evidence than a peeled guess, so the peel is
      * the fallback, not the replacement. */
-    const dir = placeFromBoard(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
+    const dir = placeFromPlaces(places, operator, loc, { soleLocation: byLoc.size === 1 })
+      ?? placeFromBoard(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
     const clean = dir?.clean ?? normaliseLabel(loc.label, operator);
     if (!dir || !dir.state || !dir.branch) {
       unmatched.push({ operator, label: loc.label ?? "(unnamed)", locationId: loc.locationId,
@@ -806,6 +834,9 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   try { wide = wideDirectory(JSON.parse(io.readText("data/directory.json"))); }
   catch { wide = []; }
   const known = barchart.concat(wide);
+  let places = [];
+  try { places = JSON.parse(io.readText("geocodes/board-places.json")).places ?? []; }
+  catch { places = []; }
   console.log(`directory: ${barchart.length} from known-elevators + ${wide.length} from the merged `
     + `directory that this repository did not write = ${known.length} rows`);
   const byZip = new Map(JSON.parse(io.readText("geocodes/zip-candidates.json")).zips.map((z) => [z.zip, z]));
@@ -959,7 +990,7 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     /* A BROWSER PLATFORM'S BODY IS JSON: THE OPERATOR IS NAMED BY THE PAGE THAT ASKED. */
     const plan = planSite({ html: viaBrowser ? hit.pageHtml : hit.body, url: hit.url, site: s.site,
                             platform: s.platform, rows: hit.rows, known, byZip, existingIds: seenIds,
-                            have, runId,
+                            have, runId, places,
                             ...(viaBrowser ? { browserPage: hit.browserPage, siteId: hit.siteId } : {}) });
     if (!plan.ok) {
       unreadable.push({ ...s, why: plan.why, tried });

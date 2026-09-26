@@ -1,0 +1,101 @@
+{
+  "note": "Towns decided by hand for boards that name no usable town. Read by scripts/board-sweep.mjs (placeFromPlaces) BEFORE the directory. A board is matched on its operator name exactly as the board's own title spells it, plus its locationId; a board with one location and no id matches on the operator alone. Each entry names its evidence. Where the operator has several yards and the board does not say which, the entry says so and the town is the operator's headquarters. Scranton Equity Exchange is absent too: its canola is quoted in USD per cwt against a per-tonne futures quote, the guard refuses the whole board on it, and a manifest would publish nothing. Boards that are price sheets for several plants (Glacial Lakes Energy, Michael Foods, Pomeroy Grain, Northwest Grain Growers) are deliberately absent: one town would be wrong for them. Canadian boards (Sunderland, Sharpe) are absent: they are quoted in tonnes and need the CA manifest fields first.",
+  "places": [
+    {
+      "operator": "POET Grain - Ashton",
+      "town": "Ashton",
+      "state": "IA",
+      "zip": "51232",
+      "evidence": "poet.com/ashton lists 4970 260th St, Ashton IA 51232; the board host is poetbiorefining-ashton. Directory row POET Biorefining, Ashton IA 51232 agrees.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board: residuals between 0c and +0.75c, all inside round-cent-both's open (-1, +1) bound. A board with an exact cash cell would show 0c throughout; none does."
+    },
+    {
+      "operator": "POET Grain - Bingham Lake",
+      "town": "Bingham Lake",
+      "state": "MN",
+      "zip": "56118",
+      "evidence": "The board host is poetbiorefining-binghamlake; its page gives 40212 510th Ave, Bingham Lake MN 56118. Directory row agrees.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board: residuals between 0c and +0.75c, all inside round-cent-both's open (-1, +1) bound. A board with an exact cash cell would show 0c throughout; none does."
+    },
+    {
+      "operator": "Adell Cooperative",
+      "locationId": "2451",
+      "town": "Adell",
+      "state": "WI",
+      "zip": "53001",
+      "evidence": "The board page's own footer prints 606 Tower Ave, Adell WI 53001. Whether the co-op has other yards is not known; this board is the operator's only one captured.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    },
+    {
+      "operator": "Central Farm Service",
+      "town": "Truman",
+      "state": "MN",
+      "zip": "56088",
+      "evidence": "The board page's default weather is Truman MN; cfscoop.com lists Truman as the main site (233 W Ciro St). Directory row Central Farm Service, Truman MN 56088 agrees. The page does not say which of the co-op's locations the board is for.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board: residuals between 0c and +0.75c, all inside round-cent-both's open (-1, +1) bound. A board with an exact cash cell would show 0c throughout; none does."
+    },
+    {
+      "operator": "Elkhart Grain Company",
+      "locationId": "3436",
+      "town": "Elkhart",
+      "state": "IL",
+      "zip": "62634",
+      "evidence": "The board page prints Elkhart, IL 62634 (headquarters). The operator may also have a yard at Mount Pulaski; the board does not say which it is. Directory row agrees on the ZIP.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    },
+    {
+      "operator": "Farmers Grain Company of Roseville",
+      "locationId": "3357",
+      "town": "Roseville",
+      "state": "IL",
+      "zip": "61473",
+      "evidence": "The board page prints 285 E Broadway St, Roseville. The operator's other office is Sciota; the board label 'FGC Cash Bids' does not choose between them.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    },
+    {
+      "operator": "Graymont Co-op",
+      "locationId": "3404",
+      "town": "Graymont",
+      "state": "IL",
+      "zip": "61743",
+      "evidence": "Headquarters, 403 N Main St, from the operator's homepage. Branches at Rooks Creek and Long Point exist; the board does not say which it prices. Directory row Graymont Co-op Association, Graymont IL 61743 agrees.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    },
+    {
+      "operator": "Harmony Agri Services, Inc.",
+      "town": "Harmony",
+      "state": "MN",
+      "zip": "55939",
+      "evidence": "harmonyagri.com: 25 2nd St NE, Harmony MN; the page's weather is Harmony MN. Directory row agrees.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board: residuals between 0c and +0.75c, all inside round-cent-both's open (-1, +1) bound. A board with an exact cash cell would show 0c throughout; none does."
+    },
+    {
+      "operator": "North Prairie Ag - NPA Coop",
+      "locationId": "1595",
+      "town": "Nekoma",
+      "state": "ND",
+      "zip": "58355",
+      "evidence": "The board page prints 103 Dakota St, which is the Nekoma address in local business listings (103 S Dakota St, Nekoma ND 58355). The board's own label reads 'Nekoma / Osnabrock'. ZIP is from the listing only; no directory row for Nekoma.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    },
+    {
+      "operator": "One Earth Energy",
+      "locationId": "3643",
+      "town": "Gibson City",
+      "state": "IL",
+      "zip": "60936",
+      "evidence": "The board page prints 202 N. Jordan Dr., IL 60936 (the town is cut to 'City' in the page's markup); ZIP 60936 is Gibson City. Directory rows for Gibson City IL agree on the ZIP.",
+      "cashRounding": "round-cent-both",
+      "roundingEvidence": "cash minus basis against the futures quote on the captured board, corn/soy/wheat rows: every residual within 0.5c either way. All 33 existing cashbidssingle manifests that declare a mode use round-cent-both."
+    }
+  ]
+}
