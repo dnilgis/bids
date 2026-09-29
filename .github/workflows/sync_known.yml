@@ -20,13 +20,21 @@
 # all exit non-zero and leave the existing file alone. Proven against all five
 # before shipping. A stale directory is safe; a silently emptied one is not.
 
+# STATUS 2026-09-26 and 2026-09-27: the Sunday cron below fired and replaced
+# data/known-elevators.json even though build_known.mjs's own union was
+# current — the stand-down guard keyed on a free-text `from` field that a
+# stray dispatch (09-26) had already overwritten with no mark, so by Sunday
+# it looked stale when it was not, and every Sunday after would have repeated
+# it. build_known.mjs now writes a structural `writer` field that survives
+# that, closing the immediate hole (see sync_known.py). But the header above
+# already says what this workflow is for: "a second way in" for if the local
+# fetch breaks for a long stretch — a decision a person makes on purpose, not
+# a schedule making it for them every week whether anything is wrong or not.
+# So the schedule is gone; workflow_dispatch stays as that second way in,
+# used when someone has a reason to reach for it.
 name: sync known elevators
 
 on:
-  schedule:
-    # Sunday 06:40 UTC — nothing else in this repository wants that minute, and
-    # the harvest it follows runs on the 2nd of the month.
-    - cron: "40 6 * * 0"
   workflow_dispatch:
 
 permissions:
