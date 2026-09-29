@@ -63,14 +63,24 @@ STAND_DOWN_AFTER_DAYS = 10
 
 
 def _local_build_is_current():
-    """True when known-elevators.json was written here, recently, by our fetch."""
+    """True when known-elevators.json was written here, recently, by our fetch.
+
+    STATUS 2026-09-26 and 2026-09-27: this used to check only the free-text
+    `from` field. sync_known.py itself overwrites that field with something
+    that carries no mark, so the very act this guard exists to prevent also
+    erases the guard's own evidence that it should have fired — and it stayed
+    erased until the next weekday build_known.mjs run, with no run in between
+    on a weekend. build_known.mjs now also writes a structural `writer` field
+    that only it ever sets; that field survives no matter what `from` says,
+    so a stale mark can no longer wipe the guard's memory of who wrote last.
+    The old text check is kept as a fallback for a file built before this."""
     if not OUT.exists():
         return None
     try:
         d = json.loads(OUT.read_text())
     except Exception:
         return None
-    if LOCAL_SOURCE_MARK not in (d.get("from") or ""):
+    if d.get("writer") != "build_known.mjs" and LOCAL_SOURCE_MARK not in (d.get("from") or ""):
         return None
     stamp = d.get("generated") or ""
     try:

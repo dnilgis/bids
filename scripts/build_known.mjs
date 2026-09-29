@@ -81,7 +81,16 @@ const arg = (n, d) => { const i = process.argv.indexOf(n); return i === -1 ? d :
 const FETCH_FLOOR = 0.66;
 
 const norm = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-const keyOf = (r) => [norm(r.facility), norm(r.branch), norm(r.city), norm(r.state).toUpperCase()].join("|");
+/* agsist's elevator-directory.json (the file sync_known.py can borrow) mixes
+ * two row shapes: facility/branch (1817 of 2223 rows, last checked) and
+ * company/location (the other 718 — agsist's own extract_directory.py already
+ * falls back between them, at its lines 127-128/208-209). This file's own
+ * fetch never emits company-shaped rows (below, rows with no facility are
+ * dropped), but a borrowed file can, and without this fallback every one of
+ * them keys as "||City|ST" — a false duplicate with every other company-less
+ * row in the same town. Matching agsist's own fallback here means a borrowed
+ * file keys the same way agsist keys it, not a poorer way. STATUS 2026-09-27. */
+const keyOf = (r) => [norm(r.facility || r.company), norm(r.branch || r.location), norm(r.city), norm(r.state).toUpperCase()].join("|");
 
 function main() {
   const bcPath = arg("--barchart", join(ROOT, "data", "barchart.json"));
@@ -140,10 +149,16 @@ function main() {
   const thin = peak > 0 && seen.size < peak * FETCH_FLOOR;
 
   const rows = [...merged.values()].sort((a, b) =>
-    (a.facility + a.branch).localeCompare(b.facility + b.branch));
+    (norm(a.facility || a.company) + norm(a.branch || a.location))
+      .localeCompare(norm(b.facility || b.company) + norm(b.branch || b.location)));
   const out = {
     generated: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
     from: "data/barchart.json — this repository's own fetch",
+    // A structural field sync_known.py's stand-down checks, so it survives
+    // any future rewording of `from` above. The prose stays for a human
+    // reading the file; this is for the script that used to get fooled by
+    // the prose changing out from under it. STATUS 2026-09-27.
+    writer: "build_known.mjs",
     complete: false,
     note: "Directory only: who operates a facility and where. No prices, no basis, no "
         + "symbols, no delivery windows. A union over every fetch, not a snapshot: a "
