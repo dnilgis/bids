@@ -109,7 +109,9 @@ jobs:
     runs-on: ubuntu-latest
     # The watchdog shares the reader's concurrency group, so it can hold it
     # too. A watchdog that hangs would be the redundancy causing the outage.
-    timeout-minutes: 12
+    # 12 -> 14, 2026-09-29, alongside PASS_TIMEOUT 480 -> 600 in
+    # scripts/pass-with-retries.sh — see the call site below.
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
 
@@ -213,10 +215,12 @@ jobs:
           # ONE PASS THAT FITS, NOT THREE THAT DO NOT. Three eight-minute
           # attempts under this job's twelve-minute ceiling could never finish,
           # and a job killed by its ceiling skips the email and the issue that
-          # follow this step. Nine minutes buys exactly one attempt and leaves
-          # those steps their time. See scripts/pass-with-retries.sh.
+          # follow this step. Eleven minutes buys exactly one attempt at the
+          # current PASS_TIMEOUT and leaves those steps their time (raised
+          # from 9, alongside PASS_TIMEOUT 480 -> 600, 2026-09-29 — see
+          # scripts/pass-with-retries.sh).
           ok=0
-          bash scripts/pass-with-retries.sh "watchdog" $(( 9 * 60 )) && ok=1
+          bash scripts/pass-with-retries.sh "watchdog" $(( 11 * 60 )) && ok=1
           [ $ok -eq 1 ] || echo "::error title=watchdog pass failed::the feed is down, not just late"
           [ $ok -eq 1 ]
 

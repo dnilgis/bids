@@ -32,14 +32,22 @@ name: discover
 #     56, spent                              Not spent. Nowhere near.
 #   limit — "the list is 56"               no list is 56
 #
-# And gd-candidates.txt — 237 undecided Grain Desk pages, the largest untouched
-# list in the repository — had no menu entry at all, so there was no way to ask
-# for it from this screen.
-#
 # So: `list` is a DROPDOWN, which needs no prose because the options are the
 # labels. NO COUNTS ARE WRITTEN INTO THE FORM — that is what went stale. The
 # first step of every run prints the counts instead, from the lists and the
 # ledger, where they cannot be wrong.
+#
+# gd-candidates.txt DOES NOT BELONG ON THIS DROPDOWN — fixed 2026-09-29.
+# It was added here on 2026-09-07 on the same mistake this comment used to
+# describe: assuming an untouched list must be a list of PAGES. It is 300
+# company NAMES (its own header says so — "for scripts/gd-sweep.mjs --file …
+# --as-names"), and this workflow's `--list` only knows how to ask an http(s)
+# url. Every run selecting it since has failed identically: "300 of 300
+# entries are not a page. Nothing was asked." Ten such runs burned Action
+# minutes on 2026-09-29 before anyone read the log instead of just re-running
+# it. The correct home for this file is the dedicated `grain desk sweep`
+# workflow (gd-sweep.yml), which already runs it through --as-names. Do not
+# add gd-candidates back here; add it to gd-sweep.yml's own input instead.
 on:
   workflow_dispatch:
     inputs:
@@ -52,7 +60,6 @@ on:
           - gradable             # the POET and ADM pages. NOT for the bootstrap any more:
                                  # ADM's is over 700 KB and captureAll's own 400,000-byte
                                  # ceiling cuts it. Use the `gradable bootstrap` workflow.
-          - gd-candidates        # Grain Desk
           - national             # the whole country
           - discover-candidates
           - everything-unasked
@@ -189,7 +196,6 @@ jobs:
             unfinished)          node scripts/unfinished_sites.mjs data/platforms.json > /tmp/unfinished.txt
                                  FILE=/tmp/unfinished.txt ;;
             gradable)            FILE=probe-lists/gradable-sites.txt ;;
-            gd-candidates)       FILE=probe-lists/gd-candidates.txt ;;
             national)            FILE=probe-lists/national-2026-08-26.txt ;;
             discover-candidates) FILE=probe-lists/discover-candidates.txt ;;
             everything-unasked)  FILE=probe-lists/everything-unasked-20260829.txt ;;

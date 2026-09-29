@@ -345,7 +345,10 @@ jobs:
     needs: read
     if: failure()
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # 12 -> 14, 2026-09-29, alongside PASS_TIMEOUT 480 -> 600 in
+    # scripts/pass-with-retries.sh. Same 3-minutes-for-checkout-and-alerts
+    # shape as before, just built on the new, larger pass ceiling.
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
 
@@ -379,7 +382,11 @@ jobs:
           set -uo pipefail
           echo "the read job could not read; running one recovery pass now"
           ok=0
-          bash scripts/pass-with-retries.sh "backup" $(( 9 * 60 )) && ok=1
+          # 9 -> 11 minutes, 2026-09-29: one attempt at the new 600s
+          # PASS_TIMEOUT plus its 30s slack needs 630s; this leaves it 660,
+          # and the job's own ceiling grew alongside it to keep the alert
+          # steps their time. See scripts/pass-with-retries.sh.
+          bash scripts/pass-with-retries.sh "backup" $(( 11 * 60 )) && ok=1
           {
             echo "### backup run"
             echo ""
