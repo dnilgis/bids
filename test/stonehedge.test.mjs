@@ -434,11 +434,11 @@ test("a period with no year on the board is passed through as written, never giv
 test("every manifest passes validateSource and its picker id and name are on the captured board", () => {
   const dir = join(ROOT, "sources");
   const files = readdirSync(dir).filter((f) => new RegExp(`^(${SITES.join("|")})-`).test(f));
-  assert.equal(files.length, 72);
+  assert.equal(files.length, 73);
   const rows = files.map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));
   const { sources, errors } = loadSources(rows);
   assert.equal(errors.length, 0, JSON.stringify(errors));
-  assert.equal(sources.length, 72);
+  assert.equal(sources.length, 73);
   for (const m of rows) {
     assert.equal(m.platform, "stonehedge");
     assert.equal(validateSource(m).length ?? 0, 0);
@@ -457,7 +457,7 @@ test("every manifest passes validateSource and its picker id and name are on the
 
 test("manifests are what the generator produces from the evidence, and coordinates are never invented", () => {
   const { manifests } = buildManifests();
-  assert.equal(manifests.length, 72);
+  assert.equal(manifests.length, 73);
   const roster = JSON.parse(readFileSync(join(ROOT, "data/roster/barchart-roster-2026-09-24.json"), "utf8"));
   const text = JSON.stringify(roster);
   let nulls = 0;
@@ -475,7 +475,7 @@ test("operators not proven in the roster have no manifest", () => {
   assert.equal(files.filter((f) => /^(cendakcooperative|unitedcooperative)-/.test(f)).length, 0);
 });
 
-test("all 72 manifests build a valid board file through buildFile", () => {
+test("all 73 manifests build a valid board file through buildFile", () => {
   const files = readdirSync(join(ROOT, "sources")).filter((f) => new RegExp(`^(${SITES.join("|")})-`).test(f));
   let ok = 0;
   for (const f of files) {
@@ -485,7 +485,7 @@ test("all 72 manifests build a valid board file through buildFile", () => {
     assert.ok(b.file.count > 0, m.id);
     ok++;
   }
-  assert.equal(ok, 72);
+  assert.equal(ok, 73);
 });
 
 /* ---------------- 8. the platform tables ---------------- */

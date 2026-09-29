@@ -22,8 +22,14 @@ const sources = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".js
 const declaring = sources.filter((s) => s.sameAsKnown !== undefined);
 
 test("the two Emmert elevators declare their Barchart rows", () => {
+  // badgergrain-wheeler moved to Barchart's own facility ids on 2026-09-29
+  // (STATUS-2026-09-29): the piped name|branch|city|state key it used to
+  // declare stopped matching once geocodes/places.json got re-keyed to bare
+  // ids for this state, which is exactly the drift the next test exists to
+  // catch. midwestcommodity-baldwin's piped key still matches as of writing
+  // and is left alone -- re-point only what actually broke.
   const by = Object.fromEntries(declaring.map((s) => [s.id, s.sameAsKnown]));
-  assert.deepEqual(by["badgergrain-wheeler"], ["Badger Grain Supply|Badger Grain Supply|Wheeler|WI"]);
+  assert.deepEqual(by["badgergrain-wheeler"], ["1460", "2573"]);
   assert.deepEqual(by["midwestcommodity-baldwin"], ["Midwest Commodity Services Inc.|Baldwin|Baldwin|WI"]);
 });
 
@@ -36,14 +42,28 @@ test("EVERY DECLARED KEY STILL EXISTS, so no grey pin can come back unnoticed", 
 });
 
 test("a declared row is in the manifest's own state and town", () => {
-  /* The key is facility|branch|city|state. A declaration naming another town
-     is a typo that would hide a real elevator somewhere else. */
+  /* Two key shapes now exist. The piped shape is facility|branch|city|state,
+     written by a person, so the town is checked from the string itself -- a
+     declaration naming another town would be a typo hiding a real elevator
+     somewhere else. A bare Barchart facility id (2026-09-29: the shape
+     known rows now carry for some states, see STATUS-2026-09-29) carries no
+     town in the key, so the check reads it from the known row instead --
+     except Barchart's own location field for the Wheeler yard's two rows
+     says "Badger Grain Supply" / "Badger Grain", not "Wheeler" (that gap is
+     the whole reason a human declared these instead of the phone/town match
+     doing it), so a bare id only gets a state check here, not a town check. */
   const t = (x) => String(x || "").toLowerCase().replace(/[^a-z]/g, "");
   for (const s of declaring)
     for (const k of s.sameAsKnown) {
-      const parts = k.split("|");
-      assert.equal(parts.at(-1), s.state, `${s.id}: "${k}" is in another state`);
-      assert.equal(t(parts.at(-2)), t(s.location), `${s.id}: "${k}" is in another town`);
+      if (k.includes("|")) {
+        const parts = k.split("|");
+        assert.equal(parts.at(-1), s.state, `${s.id}: "${k}" is in another state`);
+        assert.equal(t(parts.at(-2)), t(s.location), `${s.id}: "${k}" is in another town`);
+      } else {
+        const row = known[k];
+        if (!row) continue; // the "still exists" test above already fails this case
+        assert.equal(row.state, s.state, `${s.id}: known["${k}"] is in another state`);
+      }
     }
 });
 
