@@ -44,9 +44,23 @@
 # is not started, so the caller always gets its remaining steps back.
 set -uo pipefail
 
+# PASS_TIMEOUT WAS 480 (8 MINUTES) AND THE FLEET HAS GROWN PAST IT -- 2026-09-29.
+# The 6.5-to-7.3-minute measurement above is from 09-19/09-20, over 1,094
+# boards, before rounding_audit.mjs, the directory/coverage bake, and
+# merged-all.json existed. The directory is 8,559 elevators over 1,203 sources
+# now. Every backup run on 2026-09-29 shows the same shape: poll.mjs finishes
+# (the read succeeds, e.g. "1105 ok, 9 refused, 17 broken | wrote 1105"),
+# status.mjs/build_directory.mjs/coverage.mjs all run and finish, and then
+# `timeout 480s` fires -- at exactly 8:00 from the pass's own start line --
+# mid commit-and-push, which throws the whole pass away. It is reported and
+# alerted as "the feed is down, not flaky" and reopens the "read X is
+# failing" issue, but the read never failed; the wall clock ran out after it.
+# Raised with headroom rather than to the exact observed ceiling, because the
+# fleet is still growing and the failure mode (silently discarding a pass
+# that succeeded) is worse than a slightly longer one that finishes.
 label="${1:-pass}"
 available="${2:?seconds available is required}"
-PASS_TIMEOUT="${PASS_TIMEOUT:-480}"   # 8 minutes: a pass measures 6.5 to 7.3
+PASS_TIMEOUT="${PASS_TIMEOUT:-600}"   # 10 minutes: see 2026-09-29 note above
 SLACK="${PASS_SLACK:-30}"             # what `timeout` and a clean exit need
 here="$(cd "$(dirname "$0")" && pwd)"
 
