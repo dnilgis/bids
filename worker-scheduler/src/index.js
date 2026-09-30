@@ -86,9 +86,25 @@ const REF = "main";
  * registries.yml was on `10 7 3 * *`: monthly, on GitHub cron, which at 17.4%
  * is an expected run about twice a year. It is the harvest that took the
  * directory from 1,939 to 2,295 businesses and put 426 of them on real street
- * points, and it was scheduled on the one component measured not to fire. It
- * shares the daily slot with sync_known.yml, which wants the same overnight
- * hour and costs nothing extra.
+ * points, and it was scheduled on the one component measured not to fire.
+ *
+ * UPDATE 2026-09-30: sync_known.yml used to share this daily slot too,
+ * "wants the same overnight hour and costs nothing extra." It was not free.
+ * sync_known.yml re-keys geocodes/places.json and data/known-elevators.json
+ * on every run, and a daily rewrite of those two files broke two separate
+ * guards within a week of each other: test/declared-same.test.mjs on
+ * 2026-09-23 (badgergrain-wheeler's sameAsKnown pointed at a key the re-key
+ * had already erased) and test/stonehedge.test.mjs on 2026-09-29 (a new
+ * known-elevators row let the manifest generator produce a 73rd board
+ * sources/ had never been told about). Both were traced back to this exact
+ * line — see STATUS-2026-09-29-the-declared-key-broke-six-days-ago and
+ * STATUS-2026-09-29-the-dispatch-outlived-its-cron. sync_known.yml's own
+ * header already says what it wants: "a decision a person makes on purpose,
+ * not a schedule making it for them every week." A Worker cron is exactly
+ * that kind of schedule. Dropped it from the route below; the workflow keeps
+ * its workflow_dispatch trigger for whenever Sig has a reason to reach for it
+ * by hand. registries.yml stays — it is the one still measured not to fire on
+ * its own GitHub cron, which is the entire reason this Worker exists.
  *
  * Cloudflare hands `event.cron` back as the exact string from wrangler.toml,
  * so routing on it is an equality test and cannot drift.
@@ -102,7 +118,7 @@ const REF = "main";
 const ROUTES = {
   "*/10 * * * *":              ["poll.yml"],
   "35 */2 * * *":              ["discover-sweep.yml"],
-  "10 7 * * *":                ["registries.yml", "sync_known.yml"],
+  "10 7 * * *":                ["registries.yml"],
 };
 
 const DEFAULT_WORKFLOW = "poll.yml";

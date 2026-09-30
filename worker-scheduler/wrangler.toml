@@ -66,8 +66,14 @@ crons = [
   # OVERNIGHT, ONCE. registries.yml was on `10 7 3 * *` -- monthly, on GitHub
   # cron, which at the 17.4% measured in src/index.js is an expected run about
   # twice a year. It is the harvest that took the directory to 2,295
-  # businesses and put 426 of them on real street points. sync_known.yml wants
-  # the same quiet hour and rides along for nothing.
-  #                          -> registries.yml, sync_known.yml
+  # businesses and put 426 of them on real street points.
+  #
+  # UPDATE 2026-09-30: sync_known.yml used to ride along on this same slot.
+  # Dropped -- it was re-keying geocodes/places.json and
+  # data/known-elevators.json every night, and that daily rewrite broke two
+  # separate guards in the same week (test/declared-same.test.mjs,
+  # test/stonehedge.test.mjs). sync_known.yml keeps its workflow_dispatch
+  # trigger in the repo for a manual run; see src/index.js for the full trail.
+  #                                                       -> registries.yml
   "10 7 * * *",
 ]
