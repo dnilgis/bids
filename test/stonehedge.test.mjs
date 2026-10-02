@@ -434,11 +434,16 @@ test("a period with no year on the board is passed through as written, never giv
 test("every manifest passes validateSource and its picker id and name are on the captured board", () => {
   const dir = join(ROOT, "sources");
   const files = readdirSync(dir).filter((f) => new RegExp(`^(${SITES.join("|")})-`).test(f));
-  assert.equal(files.length, 73);
+  // A floor, not an exact count. The generator reads data/known-elevators.json,
+  // which a bot grows every day; on 2026-09-30 it learned Frontier's
+  // "David City - Elevator" branch, the generator identified one more board
+  // label, and a literal 73 here turned the daily suite red for two days.
+  // The exact set is checked against the generator in the next test.
+  assert.ok(files.length >= 73, `only ${files.length} stonehedge manifests on disk`);
   const rows = files.map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));
   const { sources, errors } = loadSources(rows);
   assert.equal(errors.length, 0, JSON.stringify(errors));
-  assert.equal(sources.length, 73);
+  assert.equal(sources.length, files.length);
   for (const m of rows) {
     assert.equal(m.platform, "stonehedge");
     assert.equal(validateSource(m).length ?? 0, 0);
@@ -457,7 +462,13 @@ test("every manifest passes validateSource and its picker id and name are on the
 
 test("manifests are what the generator produces from the evidence, and coordinates are never invented", () => {
   const { manifests } = buildManifests();
-  assert.equal(manifests.length, 73);
+  // The generator and sources/ must hold exactly the same set. When the
+  // evidence grows, the fix is `node scripts/stonehedge-manifests.mjs --write`,
+  // which this message names, not a new literal.
+  const onDisk = readdirSync(join(ROOT, "sources")).filter((f) => new RegExp(`^(${SITES.join("|")})-`).test(f)).map((f) => f.replace(/\.json$/, "")).sort();
+  const generated = manifests.map((x) => x.manifest.id).sort();
+  assert.deepEqual(generated, onDisk, "sources/ is out of step with the generator: run node scripts/stonehedge-manifests.mjs --write");
+  assert.ok(manifests.length >= 73);
   const roster = JSON.parse(readFileSync(join(ROOT, "data/roster/barchart-roster-2026-09-24.json"), "utf8"));
   const text = JSON.stringify(roster);
   let nulls = 0;
@@ -475,7 +486,7 @@ test("operators not proven in the roster have no manifest", () => {
   assert.equal(files.filter((f) => /^(cendakcooperative|unitedcooperative)-/.test(f)).length, 0);
 });
 
-test("all 73 manifests build a valid board file through buildFile", () => {
+test("every stonehedge manifest builds a valid board file through buildFile", () => {
   const files = readdirSync(join(ROOT, "sources")).filter((f) => new RegExp(`^(${SITES.join("|")})-`).test(f));
   let ok = 0;
   for (const f of files) {
@@ -485,7 +496,8 @@ test("all 73 manifests build a valid board file through buildFile", () => {
     assert.ok(b.file.count > 0, m.id);
     ok++;
   }
-  assert.equal(ok, 73);
+  assert.equal(ok, files.length);
+  assert.ok(ok >= 73);
 });
 
 /* ---------------- 8. the platform tables ---------------- */
