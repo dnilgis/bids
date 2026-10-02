@@ -84,7 +84,13 @@ import { captureAll, looksLikeData } from "../lib/cdp.mjs";
  * 92318597788 were calling poet.gradable.com the whole time, four endpoints
  * each, and this probe had no name for it. Same rule as every bump before it:
  * a verdict reached by a weaker test is not a verdict. */
-export const PROBE_VERSION = 6;
+/* v7 — 2026-10-02. The cashbidssingle vendor's sites that publish at /cash-bids
+ * load no "cashbidssingle" path, only the vendor stylesheet, which findFeeds
+ * threw away with every other stylesheet. Eleven of the 259 "no-platform" sites
+ * were this vendor when captured (runs 37051023446, 37051659428); five of them
+ * now publish. Same rule as every bump: a verdict reached by a weaker test is
+ * not a verdict, so the remaining no-platform sites are asked again. */
+export const PROBE_VERSION = 7;
 
 const VALUE_FLAGS = new Set(["--dump", "--patience", "--start", "--limit",
                              "--budget", "--list", "--ledger", "--follow",
