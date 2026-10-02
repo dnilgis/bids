@@ -94,8 +94,12 @@ if XLS.exists():
         check(src.get("route") == "xls", "the Texas source is no longer on the xls route")
         diag = {}
         recs, text = fr.read_xls(XLS.read_bytes(), diag, src.get("columns"))
-        check(len(recs) == 139,
-              "the Texas sheet gave %d records, not the 139 it held on 2026-09-04" % len(recs))
+        # A FLOOR, NOT A COUNT. The registries job re-captures this sheet, and
+        # Texas adds licensees: 139 on 2026-09-04, 140 on 2026-10-01 (FARMERS
+        # COOP GIN OF MALONE, HILL county). A literal 139 turned the daily suite
+        # red for a new licence. What must hold is that nothing is LOST.
+        check(len(recs) >= 139,
+              "the Texas sheet gave %d records, fewer than the 139 it held on 2026-09-04" % len(recs))
         check(diag["sheet"]["cols"] == 14, "the sheet's shape changed: %s" % diag["sheet"])
         check(not diag.get("errors"), "errors reading the sheet: %s" % diag.get("errors"))
         first = recs[0]
@@ -110,7 +114,7 @@ if XLS.exists():
         # description of it — the same rule the CSV and PDF routes follow.
         check(text and "CLI_LEGAL_NAME" in text.splitlines()[0],
               "read_xls kept no text for the run to commit")
-        check(len(text.splitlines()) == 140, "the kept text is not the whole sheet")
+        check(len(text.splitlines()) == len(recs) + 1, "the kept text is not the whole sheet (one header line plus a line per record)")
 else:
     print("no captured Texas sheet at %s; the route checks are skipped" % XLS)
 
