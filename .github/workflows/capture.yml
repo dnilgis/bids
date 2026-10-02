@@ -1,0 +1,45 @@
+# CAPTURE PAGES: what does this board actually show a visitor today?
+#
+# Loads each page in the runner's browser (lib/cdp.mjs captureAll, the same
+# identity discover uses), and attaches the rendered document plus every data
+# response the page received as a run artifact named "captures". Nothing is
+# committed: permissions are read-only. A capture is evidence for whoever is
+# writing a parser, never a claim about anybody's business.
+#
+# Started from the API by the assistant, or by hand from the Actions tab with
+# the pages pasted into the box, space separated.
+name: capture pages
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Pages to capture, space separated"
+        required: true
+        default: ""
+permissions:
+  contents: read
+concurrency:
+  group: capture-pages
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Capture
+        env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          set -u
+          # shellcheck disable=SC2086 -- the box is a space-separated list on purpose
+          node scripts/capture-pages.mjs --out captures $URLS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures
+          path: captures
+          retention-days: 14
