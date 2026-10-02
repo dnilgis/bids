@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { extract, htmlOf, cards, contractMonth, widgetUrl, siteIdOf, num, CihRefused } from "../lib/adapters/cih.mjs";
 import { ADAPTERS } from "../lib/adapters/index.mjs";
-import { PLATFORMS, wireOf, transportOf } from "../lib/sources.mjs";
+import { PLATFORMS, wireOf, transportOf, methodOf } from "../lib/sources.mjs";
 
 const fx = (n) => readFileSync(new URL(`../fixtures/cih-${n}-2026-10-02.json`, import.meta.url), "utf8");
 
@@ -71,6 +71,11 @@ test("the platform is registered everywhere a source is loaded", () => {
   assert.equal(typeof ADAPTERS.cih, "function");
   assert.equal(wireOf("cih"), "json");
   assert.equal(transportOf("cih"), "fetch");
+  /* The widget POSTs; a GET to the same address answers 405 (first live poll, 2026-10-02). */
+  assert.equal(methodOf("cih"), "POST");
+  assert.equal(methodOf("graindesk"), "GET");
+  assert.match(readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8"), /method: methodOf\(s\.platform\)/,
+    "poll.mjs must ask each platform with its own method");
 });
 
 /* ---------------- the manifests ---------------- */

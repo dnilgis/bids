@@ -44,7 +44,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered } from "../lib/cdp.mjs";
@@ -475,7 +475,7 @@ async function getPage(s) {
     const urls = urlsFor(s);
     for (const [i, url] of urls.entries()) {
       try {
-        const res = await fetchWithin(url, { headers, redirect: "follow" },
+        const res = await fetchWithin(url, { method: methodOf(s.platform), headers, redirect: "follow" },
                                       shareOf(deadline, urls.length - i));
         if (!res.ok) {
           problems.push(`${url} -> HTTP ${res.status}`);
