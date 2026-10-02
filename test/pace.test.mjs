@@ -49,3 +49,28 @@ test("NEW Coop: a response is the board only when it carries the location headin
   const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
   assert.match(poll, /capture\(\{ pageUrl: s\.browserPage, target: s\.url, timeoutMs: browserMs, accept: acceptOf\(s\.platform\) \}\)/);
 });
+
+import { extract as dtnExtract, DtnCsEmpty, DtnCsRefused } from "../lib/adapters/dtn-cs.mjs";
+test("an empty DTN board is still refused, and says it is empty so the poll can count it apart (2026-10-02)", () => {
+  let err = null;
+  try { dtnExtract("[]", "https://api.dtn.com/markets/sites/e0013301/cash-bids?units=us"); } catch (e) { err = e; }
+  assert.ok(err instanceof DtnCsEmpty && err instanceof DtnCsRefused);
+  assert.equal(err.empty, true);
+  let other = null;
+  try { dtnExtract("not json", "u"); } catch (e) { other = e; }
+  assert.ok(other instanceof DtnCsRefused);
+  assert.notEqual(other.empty, true, "a malformed body is a refusal, not an empty board");
+  const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  assert.match(poll, /if \(e\?\.empty === true\) r\.emptyBoard = true;/);
+  assert.match(poll, /posting nothing/);
+});
+
+test("a Cloudflare challenge in front of a browser board is a skip, never an attempt to get past it", () => {
+  const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  const i = poll.indexOf("A BOT CHECK IS THE SITE SAYING NO");
+  assert.ok(i > 0);
+  const block = poll.slice(i, i + 1200);
+  assert.ok(block.includes("challenge-platform|challenges"), "the challenge hosts are what it looks for");
+  assert.match(block, /throw new Skipped\(/);
+  assert.ok(i < poll.indexOf("if (breaker.fail(s.platform, e.message, operatorOf(s)))"), "checked before the breaker counts a failure");
+});

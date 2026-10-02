@@ -420,6 +420,16 @@ async function getPage(s) {
             ? await captureFetched({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
             : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, accept: acceptOf(s.platform) });
       } catch (e) {
+        /* A BOT CHECK IS THE SITE SAYING NO -- 2026-10-02. newcoop.com started
+           answering our browser with a Cloudflare challenge page every time.
+           We do not try to get past a site's bot check. The pass is recorded as
+           not attempted: last price, streak and timestamps carry, and the
+           14-hour withdrawal still applies if it never lets us back in. */
+        if (/challenge-platform|challenges\.cloudflare\.com/.test(e.message))
+          throw new Skipped(`not read: ${new URL(s.browserPage).host} answered our browser with a Cloudflare `
+            + `challenge page instead of its board. We do not try to get past a site's bot check, so this `
+            + `pass is not attempted. Its last good file is untouched and still published while it is inside `
+            + `the withdrawal window.`);
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
              this said "bushel is not answering" in a pass where 193 Bushel
@@ -734,6 +744,7 @@ async function readOne(s) {
        the full message first, then the summary. */
     const full = e.message.replace(/\s+/g, " ").trim();
     r.error = full.slice(0, 300);
+    if (e?.empty === true) r.emptyBoard = true;
     console.error(`  ${r.health.padEnd(7)} ${s.id.padEnd(24)} ${full}`);
     console.error(`::warning title=${s.id} ${r.health}::${full.slice(0, 900)}`);
   }
@@ -866,6 +877,8 @@ const index = {
     refused: results.filter((r) => r.health === "refused").length,
     broken: results.filter((r) => r.health === "broken").length,
     skipped: results.filter((r) => r.health === "skipped").length,
+    /* Of the refused: boards whose operator is posting nothing right now. */
+    emptyBoard: results.filter((r) => r.emptyBoard).length,
   },
   sources: withCarried(results.map(({ wrote, ...keep }) => keep)),
 };
@@ -882,7 +895,8 @@ const moved = movedSources(results);
 if (!dryRun) writeFileSync(join(ROOT, ".changed-sources"), moved.join("\n") + (moved.length ? "\n" : ""));
 
 const wrote = results.filter((r) => r.wrote);
-const summary = `${ok.length} ok, ${index.counts.refused} refused, ${index.counts.broken} broken`;
+const summary = `${ok.length} ok, ${index.counts.refused - index.counts.emptyBoard} refused, `
+  + `${index.counts.emptyBoard} posting nothing, ${index.counts.broken} broken`;
 if (!dryRun)
   writeFileSync(MSG, wrote.length
     ? `bids: ${wrote.map((r) => r.id).join(", ")} (${summary})\n`
