@@ -57,8 +57,11 @@ test("the live tree is REPORTED, not asserted — and the audit says so out loud
 
 test("the corpus is big enough for the audit to mean something", () => {
   /* A band, not a figure: 814 on 2026-09-08 and it moves with every poll. If it
-     collapses, the audit is running over an empty set and proving nothing. */
-  assert.ok(AUDIT.length >= 600 && AUDIT.length <= 1200,
+     collapses, the audit is running over an empty set and proving nothing.
+     2026-10-02: 1,207, after one night added 171 agricharts, 19 cih and 100
+     own-board sources. The ceiling is raised to 3,000; the floor, which is the
+     part that catches an empty audit, is unchanged. */
+  assert.ok(AUDIT.length >= 600 && AUDIT.length <= 3000,
     `${AUDIT.length} enabled sources have a testable committed capture`);
 });
 

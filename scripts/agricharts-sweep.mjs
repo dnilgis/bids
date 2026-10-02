@@ -49,6 +49,7 @@ import { extract as extractCashgrid } from "../lib/adapters/agricharts-cashgrid.
 import { VERIFIED_BY as CASHGRID_VERIFIED_BY } from "../lib/adapters/agricharts-cashgrid.mjs";
 import { validateSource } from "../lib/sources.mjs";
 import { urlsFrom } from "./agricharts-probe.mjs";
+import { plausible, platformHost } from "../lib/agricharts-published.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SOURCES = join(ROOT, "sources");
@@ -523,8 +524,13 @@ export function manifestFor({ id, operator, website, url, loc, dir, zipCoord, ru
           + `commodity and one delivery code, and every row sits within 5c of a real quoted CBOT `
           + `contract. futuresPriceCents publishes as null, because there is no quote to `
           + `republish.`)
-      + `\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from `
-      + `data/known-elevators.json. Website is `
+      + (dir.via === "published"
+        ? `\n\nPLACE: the directory has no row for this location. Town, state, ZIP, phone`
+          + `${dir.coord ? " and coordinate" : ""} are the operator's own, as published for location ${loc.locationId} `
+          + `in ${(() => { try { return new URL(url).origin; } catch { return url; } })()}/inc/cashbids/cashbids-js.php`
+          + ` (${[dir.published?.street, dir.city, dir.state, dir.zip].filter(Boolean).join(", ")}); the location's name is the board's own heading. Website is `
+        : `\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from `
+          + `data/known-elevators.json. Website is `)
       + (kind === "cashgrid" ? `the site the sweep was pointed at.` 
                              : `the "Visit Our Main Website" link on their own mobile board.`),
     publicNote: PUBLIC_NOTE,
@@ -627,7 +633,7 @@ export function readSiblingDirectory(root = ROOT) {
 }
 
 export function planBoard({ html, url, site, rows, known, byZip, existingIds, runId = null,
-                            kind = "mobile" }) {
+                            kind = "mobile", published = null }) {
   const operator = operatorFrom(html);
   const website = websiteFrom(html, site);
   const op = operatorSlug(url);
@@ -646,7 +652,22 @@ export function planBoard({ html, url, site, rows, known, byZip, existingIds, ru
   const write = [], skip = [], unmatched = [];
   const seen = new Set(existingIds);
   for (const loc of byLoc.values()) {
-    const dir = joinDirectory(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
+    let dir = joinDirectory(known, operator, loc.label, { soleLocation: byLoc.size === 1 });
+    /* THE BOARD'S OWN ADDRESS, WHERE THE DIRECTORY HAS NONE. 2026-10-02: 791
+       locations across two sweeps read "NO DIRECTORY MATCH". Every AgriCharts
+       board publishes each location's street, town, state, ZIP and coordinate
+       under the same id (lib/agricharts-published.mjs, saved by
+       scripts/agricharts-published.mjs). Used ONLY when the directory has no
+       row, and the manifest's note says so. The directory still wins. */
+    if ((!dir || !dir.state || !dir.branch) && published) {
+      const p = published[String(loc.locationId)];
+      if (p && p.city && p.state && String(loc.label ?? "").trim()) {
+        dir = { facility: operator, branch: String(loc.label).replace(/\s+/g, " ").trim(), city: p.city, state: p.state,
+                zip: p.zip ?? null, phone: p.phone ?? null, via: "published",
+                ...(plausible(p) ? { coord: { lat: p.lat, lon: p.lon, precision: p.street ? "street" : "town" } } : {}),
+                published: p };
+      }
+    }
     if (!dir || !dir.state || !dir.branch) {
       unmatched.push({ operator, label: loc.label ?? "(unnamed)", locationId: loc.locationId,
                        rows: loc.rows, url });
@@ -838,6 +859,10 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   known.push(...siblingRows);
   const zipRows = JSON.parse(readFileSync(join(ROOT, "geocodes/zip-candidates.json"), "utf8")).zips;
   const byZip = new Map(zipRows.map((z) => [z.zip, z]));
+  /* Each board's own published location list, when scripts/agricharts-published.mjs
+     has saved one. Absent file: nothing changes. */
+  const published = existsSync(join(ROOT, "geocodes/agricharts-published.json"))
+    ? JSON.parse(readFileSync(join(ROOT, "geocodes/agricharts-published.json"), "utf8")) : { hosts: {} };
   const existing = new Set(readdirSync(SOURCES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)));
 
   const found = [], noBoard = [], unreadable = [], wrote = [], skipped = [], unmatched = [], captured = [];
@@ -899,7 +924,8 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     const rows = board.rows;
 
     const plan = planBoard({ html: hit.body, url: hit.url, site, rows, known, byZip,
-                             existingIds: seenIds, runId, kind: board.kind });
+                             existingIds: seenIds, runId, kind: board.kind,
+                             published: published.hosts?.[platformHost(hit.url)]?.locations ?? null });
     if (!plan.ok) { unreadable.push({ site: hit.url, why: plan.why }); continue; }
     found.push({ site, url: hit.url, operator: plan.operator, locations: plan.locations,
                  rows: rows.length, kind: board.kind });

@@ -1,0 +1,49 @@
+# AGRICHARTS: EACH BOARD'S OWN LOCATION LIST, SAVED, AND THE COORDINATES IT FILLS.
+#
+# Asks every AgriCharts host this repository reads or sweeps for its
+# /inc/cashbids/cashbids-js.php once, and saves each location the operator
+# published (name, street, town, state, ZIP, phone, coordinate) to
+# geocodes/agricharts-published.json. The agricharts sweep then places a
+# location the directory does not know from that file, and says so in the
+# manifest's note. With write ticked it also fills a coordinate on any
+# AgriCharts manifest that has none, when the published state agrees. It never
+# overwrites a coordinate. See scripts/agricharts-published.mjs.
+#
+# Dry run by default.
+name: agricharts published places
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Save the file and fill missing coordinates, and commit. Leave OFF for a dry run."
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: agricharts-published
+  cancel-in-progress: false
+jobs:
+  published:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Test the guards
+        run: node --test test/agricharts-published.test.mjs test/geocodes.test.mjs test/sources.test.mjs
+      - name: Ask every host
+        run: node scripts/agricharts-published.mjs ${{ inputs.write && '--write' || '' }}
+      - name: Validate every manifest
+        if: ${{ inputs.write }}
+        run: node --test test/sources.test.mjs test/geocodes.test.mjs
+      - name: Commit
+        if: ${{ inputs.write }}
+        run: |
+          git config user.name "bids bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add geocodes/agricharts-published.json sources
+          n=$(git diff --staged --name-only -- sources | wc -l)
+          bash scripts/commit-and-push.sh "agricharts: published location lists saved, $n coordinate(s) filled [skip ci]"
