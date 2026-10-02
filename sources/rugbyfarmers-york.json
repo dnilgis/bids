@@ -1,0 +1,39 @@
+{
+  "id": "rugbyfarmers-york",
+  "operator": "Rugby Farmers Elevator",
+  "location": "YORK",
+  "state": "ND",
+  "platform": "cashbidssingle",
+  "url": "https://rugbyfarmers.com/",
+  "futuresUnits": "dollars",
+  "locationId": "1527",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cashRounding": "round-cent-both",
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37079097448) from the board page discover recorded for this operator: https://rugbyfarmers.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 11 row(s) in Spring Wheat, Soybeans, Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at \"& York\". The board writes this location as \"Rugby & York Bids\"; the operator's own name, the cash-bid boilerplate and the state code were peeled off it by normaliseLabel() in lib/place.mjs, leaving \"& York\". Nothing was added to it.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://rugbyfarmers.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-both, set by scripts/board-sweep.mjs from this run's own board: 11 row(s), every residual inside the open (-1, +1) bound. It is the widest cent mode and a claim about the bound, not the tie-break. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: -0.25c x3, 0c x3, +0.25c x3, +0.5c x2. That is the evidence for the bound declared above; the exact mode (floor, nearest, which tie-break) is not claimed, because this many rows cannot tell them apart."
+}
