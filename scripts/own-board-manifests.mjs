@@ -29,6 +29,7 @@ import { fileURLToPath } from "node:url";
 import { extract as newcoop, BOARD_URL as NEWCOOP_URL } from "../lib/adapters/newcoop.mjs";
 import { extract as nexus, BOARD_URL as NEXUS_URL } from "../lib/adapters/nexus.mjs";
 import { bidsUrl as landusUrl, VERIFIED_BY as LANDUS_VERIFIED } from "../lib/adapters/landus.mjs";
+import { extract as cpicoop, BOARD_URL as CPI_URL } from "../lib/adapters/cpicoop.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const rd = (p) => readFileSync(ROOT + p, "utf8");
@@ -39,6 +40,10 @@ export const SITES = {
              names: ["NEW Cooperative, Inc.", "New Cooperative, Inc."], operator: "NEW Cooperative, Inc.", website: "https://www.newcoop.com/", homeStates: ["IA"], browserPage: NEWCOOP_URL },
   nexus:   { platform: "nexus", url: NEXUS_URL, extract: nexus, fixture: `fixtures/nexus-cashbids-${CAPTURED}.html`,
              names: ["Nexus Cooperative"], operator: "Nexus Cooperative", website: "https://www.nexus.coop/", homeStates: ["IA", "MN"] },
+  /* Cooperative Producers, Inc. bids milo per bushel as well, so its manifests carry a milo band. */
+  cpicoop: { platform: "cpicoop", url: CPI_URL, extract: cpicoop, fixture: `fixtures/cpicoop-bids-${CAPTURED}.html`,
+             names: ["Cooperative Producers, Inc.", "Cooperative Producers Inc", "Cooperative Producers, Inc"], operator: "Cooperative Producers, Inc.",
+             website: "https://www.cpicoop.com/", homeStates: ["NE", "KS"], extraBands: { milo: [1.5, 12] } },
 };
 
 const norm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -214,7 +219,7 @@ export function build() {
         url: cfg.url,
         ...(cfg.browserPage ? { browserPage: cfg.browserPage } : {}),
         locationId,
-        bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] },
+        bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20], ...(cfg.extraBands ?? {}) },
         cadence: "grain-day",
         provenance: "scraped",
         enabled: roundingOk,

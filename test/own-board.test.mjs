@@ -78,10 +78,10 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   const { manifests, skipped } = build();
   const onDisk = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")))
-    .filter((m) => m.platform === "newcoop" || m.platform === "nexus" || m.platform === "landus");
+    .filter((m) => ["newcoop", "nexus", "landus", "cpicoop"].includes(m.platform));
   assert.deepEqual(onDisk.map((m) => m.id).sort(), manifests.map((x) => x.manifest.id).sort(),
     "sources/ is out of step: run node scripts/own-board-manifests.mjs --write");
-  const fixtureOf = { newcoop: NC, nexus: NX };
+  const fixtureOf = { newcoop: NC, nexus: NX, cpicoop: readFileSync(join(ROOT, "fixtures/cpicoop-bids-2026-10-02.html"), "utf8") };
   for (const x of manifests) {
     const m = x.manifest;
     if (m.platform === "landus") {               // one captured location; see the Landus tests
@@ -98,7 +98,8 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   }
   assert.ok(manifests.length >= 150);
   /* The three left out are left out for a reason that is printed. */
-  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
+  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["cpicoop: AGP David City", "cpicoop: AGP Hastings", "cpicoop: Hayland", "cpicoop: Juniata", "cpicoop: Lewis",
+    "landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
 });
 
 /* ---------------- Landus ---------------- */
@@ -144,4 +145,17 @@ test("Landus's manifest for Adair publishes through the guards on tonight's quot
   const b = buildFile(LANDUS_109, { now: new Date("2026-10-02T02:30:00Z"), sourceUrl: m.url, source: toConfig(m),
     extract: (h, u) => landus(h, u, { contracts: TONIGHT }) });
   assert.equal(b.file.count, 12);
+});
+
+/* ---------------- Cooperative Producers, Inc. ---------------- */
+import { extract as cpicoop, CpiRefused } from "../lib/adapters/cpicoop.mjs";
+
+test("CPI: 27 locations by their own slugs, futures in ticks, every row within a cent", () => {
+  const rows = cpicoop(readFileSync(join(ROOT, "fixtures/cpicoop-bids-2026-10-02.html"), "utf8"), "u");
+  assert.equal(new Set(rows.map((r) => r.locationId)).size, 27);
+  assert.equal(rows.length, 145);
+  const ax = rows.find((r) => r.locationId === "axtell" && /^Corn/.test(r.commodity));
+  assert.deepEqual([ax.delivery, ax.basis, ax.futuresPrice, ax.cash, ax.futures], ["Oct 2026", -0.32, 498.75, 4.67, "ZCZ26"]);
+  for (const r of rows) assert.ok(Math.abs(r.futuresPrice - (r.cash - r.basis) * 100) < 1, r.raw);
+  assert.throws(() => cpicoop("<html></html>", "u"), CpiRefused);
 });
