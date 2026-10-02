@@ -120,3 +120,14 @@ test("a label with no identity is reported, never written: Ladd Elevator and Rus
   assert.ok(skipped.some((s) => s.tag.startsWith("laddelevator:")));
   assert.ok(skipped.some((s) => s.tag.startsWith("russellgrain:")));
 });
+
+test("the older CIH widget (St. Ansgar Mills, Whitewater Milling): same columns, a heading per location", () => {
+  const rows = extract(fx("stamills"), "https://www.cihedging.com/cih/api/index.cfm/origination/cashbids/213009");
+  assert.ok(rows.length >= 6);
+  assert.deepEqual([...new Set(rows.map((r) => r.locationId))], ["St. Ansgar Mills, Inc"]);
+  assert.deepEqual([...new Set(rows.map((r) => r.commodity))].sort(), ["Corn", "Soybeans"]);
+  const a = rows[0];
+  assert.deepEqual([a.delivery, a.futures, a.futuresPrice, a.basis, a.cash], ["Oct 2026", "ZCZ26", 498.75, -0.46, 4.53]);
+  for (const r of [...rows, ...extract(fx("whitewatermilling"), "u")])
+    assert.ok(Math.abs(r.futuresPrice - (r.cash - r.basis) * 100) < 1, r.raw);
+});

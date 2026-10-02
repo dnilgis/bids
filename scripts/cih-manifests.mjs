@@ -26,7 +26,7 @@
  * bound or the manifest is held disabled with the numbers in _pending. */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { extract, widgetUrl } from "../lib/adapters/cih.mjs";
+import { extract, widgetUrl, legacyUrl } from "../lib/adapters/cih.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const rd = (p) => readFileSync(ROOT + p, "utf8");
@@ -52,6 +52,8 @@ export const SITES = {
   norfolkcrush:              { siteId: "132225", operator: "Norfolk Crush",                    page: "https://norfolkcrush.com/bid-offers-soybeans/" },
   redriverenergy:            { siteId: "22569",  operator: "Red River Energy",                 page: "https://redriverenergy.com/" },
   russellgrain:              { siteId: "23074",  operator: "Russell Grain, Inc.",              page: "https://russellgrain.com/" },
+  stamills:                  { siteId: "213009", legacy: true, operator: "St. Ansgar Mills",  page: "https://stamills.net/" },
+  whitewatermilling:         { siteId: "1244",   legacy: true, operator: "Whitewater Milling LLC", page: "https://whitewatermilling.com/" },
   sandhillsrenewables:       { siteId: "146145", operator: "Sandhills Renewable Energy, LLC",  page: "https://sandhillsrenewables.com/current-cash-bids/" },
   shellrocksoyprocessing:    { siteId: "113526", operator: "Shell Rock Soy Processing LLC",    page: "https://shellrocksoyprocessing.com/soybean-bids/" },
   siouxlandethanol:          { siteId: "15601",  operator: "Siouxland Ethanol LLC",            page: "https://siouxlandethanol.com/" },
@@ -101,7 +103,7 @@ export function build() {
   const manifests = [], skipped = [];
   for (const [site, cfg] of Object.entries(SITES)) {
     if (!existsSync(ROOT + fixture(site))) { skipped.push({ tag: site, why: `no capture at ${fixture(site)}` }); continue; }
-    const url = widgetUrl(cfg.siteId);
+    const url = cfg.legacy ? legacyUrl(cfg.siteId) : widgetUrl(cfg.siteId);
     let rows;
     try { rows = extract(rd(fixture(site)), url); }
     catch (e) { skipped.push({ tag: site, why: `the capture does not read: ${e.message}` }); continue; }
