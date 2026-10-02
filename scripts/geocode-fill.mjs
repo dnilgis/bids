@@ -38,12 +38,15 @@ const PLACES = new URL("../geocodes/places.json", import.meta.url);
 /* THE SENTENCE THAT GOES IN THE NOTE. Same shape dtn-build.mjs uses when it
    fills a coordinate while writing a manifest, so a reader cannot tell which
    tool put the pin there and does not need to. */
-export function noteFor(id, p) {
+/* THE DATE IS THE DAY OF THE FILL. It was the literal "2026-08-29" until
+   2026-10-02, so every fill since then claimed to have happened on the day the
+   script was written. */
+export function noteFor(id, p, today = new Date().toISOString().slice(0, 10)) {
   const how = p.precision === "street"
     ? `a STREET-level fix on the elevator itself`
     : `the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard`;
   return ` COORDINATE filled ${p.lat},${p.lon} from geocodes/places.json on ` +
-    `2026-08-29, keyed on this source's own id and resolved from ` +
+    `${today}, keyed on this source's own id and resolved from ` +
     `"${p.resolvedFrom}" via ${p.via}. It is ${how}. EVIDENCE, NOT A FACT: ` +
     `check it against the operator's own published address before anything ` +
     `depends on the distance.`;
