@@ -31,20 +31,32 @@ const { findings } = analyse();
    Each of these was checked against the operator's OWN board — the list of
    towns it publishes — not against a guess about how far a co-op might reach. */
 const ACCOUNTED_FOR = {
-  "ceagrain-apache":
-    "CoMark Equity Alliance is Kansas, and its own cashgrid publishes Apache, " +
-    "Braman, Chickasha, Fort Cobb, Newkirk, Tuttle and Union City — Oklahoma " +
-    "towns, on the board, under its own name. A co-op reaching south.",
-  "ceagrain-fortcobb": "as ceagrain-apache: on CoMark's own Oklahoma list.",
+  /* 2026-10-02: CoMark's six Oklahoma declarations (Apache, Fort Cobb, Banner,
+     Chickasha, Tuttle, Union City) were removed here. The sweep placed 40-odd
+     more CoMark locations from CoMark's own published addresses, many of them
+     in Oklahoma, the operator's centre moved south, and none of the six is far
+     from it any more. */
+  "primientgrain-loudon":
+    "Primient Grain is Illinois. Its own AgriCharts board publishes location \"Loudon\" at " +
+    "198 Blair Bend Drive, Loudon, TN 37774 (geocodes/agricharts-published.json), the corn " +
+    "processing plant there. A plant far from the operator's Illinois yards, on its own list.",
+  "agrowstar-conwaysc":
+    "AGrowStar is Georgia. Its own board publishes CONWAY, SC at 284 W Willow Grove Rd, Conway, SC 29526.",
+  "agrowstar-kingstreesc":
+    "AGrowStar's own board publishes KINGSTREE, SC at 16 County Camp Rd, Kingstree, SC 29556.",
+  "agrowstar-lynchburgsc":
+    "AGrowStar's own board publishes LYNCHBURG, SC (Lynchburg, SC 29080, its own coordinate " +
+    "34.056, -80.080). The street it gives repeats Conway's, a slip on their board; the town, " +
+    "ZIP, phone (803-459-1005) and coordinate are Lynchburg's.",
+  "nutritionservice-riceville":
+    "Nutrition Service Co. is Wisconsin. Its own AgriCharts board lists Riceville and " +
+    "data/known-elevators.json files the row at Riceville, IA; it became an outlier when the " +
+    "operator's other placed locations moved its centre on 2026-10-02.",
   "landus-rushville":
     "Landus Cooperative is Iowa. Its OWN location list (www.landus.ag/api/locations, " +
     "fixtures/landus-locations-2026-10-02.json) names \"Rushville\", state IN, location number 165, " +
     "and the Barchart roster and known-elevators both file a Landus Cooperative row at Rushville, IN " +
     "(765-932-2981). A yard far from home, on the operator's own list.",
-  "ceagrain-banner": "as ceagrain-apache: BANNER is on CoMark's own cashgrid (l=19565). It crossed the line on 2026-10-01, when the sweep wrote CoMark's northern Kansas yards and moved the operator's centre north; the source itself did not change.",
-  "ceagrain-chickasha": "as ceagrain-apache: on CoMark's own Oklahoma list.",
-  "ceagrain-tuttle": "as ceagrain-apache: on CoMark's own Oklahoma list.",
-  "ceagrain-unioncity": "as ceagrain-apache: on CoMark's own Oklahoma list.",
   "farmerscooperative-bungeemporia":
     "A DELIVERY POINT, NOT A YARD. Farmers Cooperative of Dorchester is " +
     "Nebraska; Bunge's Emporia, Kansas plant is where it ships, and the co-op " +
