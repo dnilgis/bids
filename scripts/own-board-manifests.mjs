@@ -35,7 +35,7 @@ const CAPTURED = "2026-10-02";
 
 export const SITES = {
   newcoop: { platform: "newcoop", url: NEWCOOP_URL, extract: newcoop, fixture: `fixtures/newcoop-cashbids-${CAPTURED}.html`,
-             names: ["NEW Cooperative, Inc.", "New Cooperative, Inc."], operator: "NEW Cooperative, Inc.", website: "https://www.newcoop.com/", homeStates: ["IA"] },
+             names: ["NEW Cooperative, Inc.", "New Cooperative, Inc."], operator: "NEW Cooperative, Inc.", website: "https://www.newcoop.com/", homeStates: ["IA"], browserPage: NEWCOOP_URL },
   nexus:   { platform: "nexus", url: NEXUS_URL, extract: nexus, fixture: `fixtures/nexus-cashbids-${CAPTURED}.html`,
              names: ["Nexus Cooperative"], operator: "Nexus Cooperative", website: "https://www.nexus.coop/", homeStates: ["IA", "MN"] },
 };
@@ -145,6 +145,7 @@ export function build() {
         state: p.state,
         platform: cfg.platform,
         url: cfg.url,
+        ...(cfg.browserPage ? { browserPage: cfg.browserPage } : {}),
         locationId,
         bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] },
         cadence: "grain-day",

@@ -57,9 +57,12 @@ test("both platforms are registered, fetched with a plain GET, read as html", ()
     assert.ok(PLATFORMS.includes(p));
     assert.equal(typeof adapterFor(p), "function");
     assert.equal(wireOf(p), "html");
-    assert.equal(transportOf(p), "fetch");
     assert.equal(methodOf(p), "GET");
   }
+  /* newcoop.com answers a plain fetch with 403 and a browser with the board
+     (first live poll, 2026-10-02). Nexus answered the plain fetch. */
+  assert.equal(transportOf("newcoop"), "browser");
+  assert.equal(transportOf("nexus"), "fetch");
 });
 
 test("a buyer's plant is a destination: its own town, never a coordinate", () => {
