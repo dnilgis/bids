@@ -4,9 +4,9 @@
   "location": "Gibson City - West",
   "state": "IL",
   "platform": "cashbidssingle",
-  "url": "https://alliance-grain.com/",
+  "url": "https://alliance-grain.com/cashbidsterminal.aspx?cbcntloc=1003",
   "futuresUnits": "dollars",
-  "locationId": "1003",
+  "locationId": null,
   "bands": {
     "corn": [
       2,
@@ -24,7 +24,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37056332999) from the board page discover recorded for this operator: https://alliance-grain.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 8 row(s) in Corn, Soybeans.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label. The board writes this location as \"Gibson City - West\"; the operator's own name, the cash-bid boilerplate and the state code were peeled off it by normaliseLabel() in lib/place.mjs, leaving \"Gibson City West\". Nothing was added to it.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 40.4659,-88.3609 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"Gibson City -\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37056332999) from the board page discover recorded for this operator: https://alliance-grain.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 8 row(s) in Corn, Soybeans.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label. The board writes this location as \"Gibson City - West\"; the operator's own name, the cash-bid boilerplate and the state code were peeled off it by normaliseLabel() in lib/place.mjs, leaving \"Gibson City West\". Nothing was added to it.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 40.4659,-88.3609 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"Gibson City -\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.\n\nMOVED 2026-10-02 to this location's own terminal page: the board page's default view shows another location, and poll 37058924715 refused \"none for location 1003\". The vendor serves one location per cashbidsterminal.aspx?cbcntloc=<id>, so the request names the location and locationId is null on purpose. Passed lib/board.mjs against capture.yml run 37060970275 before this was written.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": "60936",
