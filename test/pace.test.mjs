@@ -51,17 +51,22 @@ test("NEW Coop: a response is the board only when it carries the location headin
 });
 
 import { extract as dtnExtract, DtnCsEmpty, DtnCsRefused } from "../lib/adapters/dtn-cs.mjs";
+import { isRefusal } from "../lib/board.mjs";
 test("an empty DTN board is still refused, and says it is empty so the poll can count it apart (2026-10-02)", () => {
   let err = null;
   try { dtnExtract("[]", "https://api.dtn.com/markets/sites/e0013301/cash-bids?units=us"); } catch (e) { err = e; }
   assert.ok(err instanceof DtnCsEmpty && err instanceof DtnCsRefused);
   assert.equal(err.empty, true);
+  /* and the poll must classify it REFUSED, which it decides by name */
+  assert.equal(isRefusal(err), true, "an empty board was classified broken: isRefusal() reads the class name");
   let other = null;
   try { dtnExtract("not json", "u"); } catch (e) { other = e; }
   assert.ok(other instanceof DtnCsRefused);
   assert.notEqual(other.empty, true, "a malformed body is a refusal, not an empty board");
   const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
   assert.match(poll, /if \(e\?\.empty === true\) r\.emptyBoard = true;/);
+  assert.match(poll, /emptyBoard: results\.filter\(\(r\) => r\.health === "refused" && r\.emptyBoard\)\.length/,
+    "only refused results count as empty boards, or the summary goes negative");
   assert.match(poll, /posting nothing/);
 });
 

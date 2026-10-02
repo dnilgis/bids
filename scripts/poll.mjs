@@ -878,7 +878,7 @@ const index = {
     broken: results.filter((r) => r.health === "broken").length,
     skipped: results.filter((r) => r.health === "skipped").length,
     /* Of the refused: boards whose operator is posting nothing right now. */
-    emptyBoard: results.filter((r) => r.emptyBoard).length,
+    emptyBoard: results.filter((r) => r.health === "refused" && r.emptyBoard).length,
   },
   sources: withCarried(results.map(({ wrote, ...keep }) => keep)),
 };
