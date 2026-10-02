@@ -350,6 +350,29 @@ export function hostOf(u) {
   try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
 }
 
+/* THE CENT BOUND, MEASURED ON THIS RUN'S OWN BOARD -- decided by Sig 2026-10-02.
+ *
+ * The sweep used to hand over the residuals and declare nothing, on the ground
+ * that a few rows cannot tell floor-cent, round-cent, round-cent-either and
+ * round-cent-both apart. True of the MODES. But every batch then refused on its
+ * first poll, under exact, on quarter-cent futures, and was fixed by hand from
+ * that poll: 29 sources on 2026-10-02, every residual inside (-1, +1).
+ *
+ * So when every residual this run measured sits inside the open (-1, +1) bound
+ * and at least one is not zero, the manifest declares round-cent-both: the
+ * widest cent mode, the one the vendor's other sources declare, and a claim
+ * about the BOUND, not the tie-break. All zero declares nothing (exact holds).
+ * Any residual of a cent or more declares nothing: that board is not a cent
+ * rounding and its first poll should say so. Browser boards keep their own
+ * confident-evidence rule above this. */
+export function centBound(units) {
+  const v = units?.residualValues;
+  if (!Array.isArray(v) || !v.length) return null;
+  if (!v.every((x) => Math.abs(x) < 1)) return null;
+  if (v.every((x) => x === 0)) return null;
+  return "round-cent-both";
+}
+
 export function manifestFor({ id, platform, operator, website, url, loc, dir, zipCoord, runId,
                               units = null, browserPage = null, siteId = null, rounding = null }) {
   const bands = { corn: [2.0, 12.0], soybean: [6.0, 32.0], wheat: [3.0, 20.0] };
@@ -358,6 +381,7 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
      refuses most rows at the identity guard. Enabled only when the evidence
      is confident; otherwise written disabled and saying why. */
   const held = browserPage && rounding && !rounding.confident;
+  const bound = !browserPage && !dir.cashRounding ? centBound(units) : null;
   return {
     id, operator, location: dir.branch, state: dir.state,
     platform,
@@ -389,7 +413,7 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
     bands,
     ...(browserPage && rounding?.confident && rounding.confident !== "exact"
         ? { cashRounding: rounding.confident }
-        : (dir.cashRounding ? { cashRounding: dir.cashRounding } : {})),
+        : (dir.cashRounding ? { cashRounding: dir.cashRounding } : bound ? { cashRounding: bound } : {})),
     cadence: "grain-day", provenance: "scraped", enabled: !held,
     note: `WRITTEN BY scripts/board-sweep.mjs${runId ? ` (run ${runId})` : ""} from the board `
       + `page discover recorded for this operator: ${url}. The platform is ${platform}, which `
@@ -424,9 +448,14 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
       ? `HELD DISABLED — ROUNDING UNRESOLVED. ${describeEvidence(rounding)}. A board is not enabled `
         + `on a rounding nobody could state; re-run on another day's prices and set cashRounding `
         + `from the residuals.\n\n` : "")
-      + "cashRounding is NOT set and must not be guessed; it is measured from a real "
-      + "board against real futures. lat/lon is the centroid of the town's ZIP and can be "
-      + "miles from the yard."
+      + (bound
+          ? `cashRounding is ${bound}, set by scripts/board-sweep.mjs from this run's own board: `
+            + `${units.residualValues.length} row(s), every residual inside the open (-1, +1) bound. `
+            + `It is the widest cent mode and a claim about the bound, not the tie-break. `
+            + "lat/lon is the centroid of the town's ZIP and can be miles from the yard."
+          : "cashRounding is NOT set and must not be guessed; it is measured from a real "
+            + "board against real futures. lat/lon is the centroid of the town's ZIP and can be "
+            + "miles from the yard.")
       /* THE MEASUREMENT, NOT THE DECISION. The units above can be read off two
          rows because the two answers are a hundred apart. A rounding MODE
          cannot: floor-cent, round-cent, round-cent-either and round-cent-both
@@ -436,9 +465,12 @@ export function manifestFor({ id, platform, operator, website, url, loc, dir, zi
          exactly what the sentence above forbids. */
       + (units?.residuals
           ? `\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as `
-            + `${units.units}: ${units.residuals}. That is the evidence for cashRounding and `
-            + `it is NOT a declaration -- the modes differ at their boundaries and this many `
-            + `rows cannot tell them apart.`
+            + `${units.units}: ${units.residuals}. `
+            + (bound
+              ? `That is the evidence for the bound declared above; the exact mode (floor, nearest, `
+                + `which tie-break) is not claimed, because this many rows cannot tell them apart.`
+              : `That is the evidence for cashRounding and it is NOT a declaration -- the modes `
+                + `differ at their boundaries and this many rows cannot tell them apart.`)
           : ""),
   };
 }
@@ -665,7 +697,8 @@ export function boardUnits(rows) {
   }
   const residuals = [...hist.entries()].sort((a, b) => a[0] - b[0])
     .map(([v, n]) => `${v > 0 ? "+" : ""}${v}c x${n}`).join(", ");
-  return { ...u, residuals };
+  const residualValues = [...hist.entries()].flatMap(([v, n]) => Array(n).fill(v));
+  return { ...u, residuals, residualValues };
 }
 
 export function planSite({ html, url, site, platform, rows, known, byZip, existingIds,

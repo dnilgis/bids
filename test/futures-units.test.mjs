@@ -283,9 +283,17 @@ test("the sweep declares the units of the board it just read", async () => {
   const m = manifestFor({ ...base, units });
   assert.equal(m.futuresUnits, "dollars");
   assert.match(m._pending, /THE RESIDUALS THIS RUN MEASURED/);
-  assert.match(m._pending, /cashRounding is NOT set and must not be guessed/,
-    "the sweep hands over the measurement and still refuses to pick the mode");
-  assert.ok(!/"cashRounding"/.test(JSON.stringify(m)), "the sweep must not declare a rounding mode");
+  /* 2026-10-02 (Sig): every residual this run measured is inside (-1, +1), so
+     the sweep declares the cent BOUND, round-cent-both, and still does not
+     claim the mode: the note says the tie-break is not claimed. */
+  assert.equal(m.cashRounding, "round-cent-both");
+  assert.match(m._pending, /set by scripts\/board-sweep\.mjs from this run's own board/);
+  assert.match(m._pending, /the exact mode \(floor, nearest, which tie-break\) is not claimed/,
+    "the sweep declares the bound and still refuses to pick the mode");
+  /* and a board with a residual of a cent or more declares nothing */
+  const wide = manifestFor({ ...base, units: { ...units, residualValues: [0.25, 1.5] } });
+  assert.ok(!/"cashRounding"/.test(JSON.stringify(wide)), "not a cent rounding: no mode declared");
+  assert.match(wide._pending, /cashRounding is NOT set and must not be guessed/);
 
   /* A cents board gets NO field, so no existing manifest changes shape. */
   const cents = boardUnits(extractBids(fx("bigriver-2121.html"), "br"));

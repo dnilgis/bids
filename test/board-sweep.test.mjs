@@ -25,7 +25,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
+import { centBound, boardUnits, operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
          NOT_SWEEPABLE, boardCandidates, linkedBoards, navEvidence, readHostsOf, readKeysOf,
          siteKeyOf, WANTS_JSON, wideDirectory, townInState, placeFromBoard }
   from "../scripts/board-sweep.mjs";
@@ -387,7 +387,11 @@ test("a planned manifest is valid, and says which platform it is", () => {
     assert.equal(w.json.platform, "cashbidssingle");
     assert.ok(w.json.location && w.json.state && w.json.zip, `${w.id} has no town`);
     assert.match(w.json.note, /board-sweep\.mjs/);
-    assert.match(w.json._pending, /cashRounding is NOT set/,
+    /* Measured from this run's own board, never inherited (2026-10-02: the
+       cent bound is declared when every residual sits inside (-1, +1)). */
+    const bound = centBound(boardUnits(rows));
+    assert.equal(w.json.cashRounding ?? null, bound);
+    assert.match(w.json._pending, bound ? /set by scripts\/board-sweep\.mjs from this run's own board/ : /cashRounding is NOT set/,
                  "a rounding mode must be measured, never inherited");
   }
 });
@@ -1066,4 +1070,12 @@ test("two states in a footer name no home state", async () => {
   assert.equal(operatorAddress("<p>Acme Supply, XX 60601</p>"), null);
   assert.equal(operatorAddress("<p>Suite 3, AB 60601</p>"), null);
   assert.equal(operatorAddress("<p>Peoria, IL 61601</p>").state, "IL");
+});
+
+test("the cent bound: declared only when every measured residual is inside (-1, +1) and not all zero", () => {
+  assert.equal(centBound({ residualValues: [-0.5, -0.25, 0.25, 0.75] }), "round-cent-both");
+  assert.equal(centBound({ residualValues: [0, 0, 0] }), null, "all exact: nothing declared, the identity stays exact");
+  assert.equal(centBound({ residualValues: [0.25, 1] }), null, "a cent or more is not a cent rounding");
+  assert.equal(centBound({ residualValues: [] }), null);
+  assert.equal(centBound(null), null);
 });
