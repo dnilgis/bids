@@ -232,7 +232,9 @@ test("a cashbidssingle prefix with the id cut off is not offered as a URL", () =
   const c = boardCandidates("https://adellcoop.com/",
     { boardPage: "https://adellcoop.com/cashbidssingle-" }, "cashbidssingle");
   assert.ok(!c.some((x) => x.url.endsWith("cashbidssingle-")));
-  assert.deepEqual(c.map((x) => x.url), ["https://adellcoop.com/"]);
+  /* /cash-bids comes after the root (2026-10-02): the same vendor's sites with no
+     cashbidssingle page publish the table there. */
+  assert.deepEqual(c.map((x) => x.url), ["https://adellcoop.com/", "https://adellcoop.com/cash-bids"]);
   /* When the id IS there it is the first thing asked. */
   const d = boardCandidates("https://npacoop.com/",
     { boardPage: "https://npacoop.com/cashbidssingle-1595" }, "cashbidssingle");

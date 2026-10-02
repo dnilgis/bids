@@ -119,6 +119,7 @@ export const SIGNATURES = [
      /ajax/. Stating it here so the next reader does not read the absence as the
      oversight it was for aghost. */
   { platform: "cashbidssingle", adapter: "lib/parse.mjs",
+    /* The same vendor's stylesheet-only sites are recognised in findFeeds. */
     test: (u) => /cashbidssingle/i.test(path(u)),
     id: (u) => ({ board: path(u).match(/cashbidssingle-?(\w+)?/i)?.[1] ?? null }) },
 
@@ -421,6 +422,20 @@ export const isAsset = (url, mime = "") =>
 export function findFeeds(result) {
   const out = [];
   for (const r of result.responses ?? []) {
+    /* THE VENDOR'S OWN STYLESHEET, AS A MARKER -- 2026-10-02. A stylesheet is
+       not a board (see above), but this vendor's sites that publish the table
+       at /cash-bids load no "cashbidssingle" path at all, only
+       /style/templates/controls/(main|side)CashbidsResponsive.css. Ten of the
+       259 "no-platform" sites were this vendor (capture.yml run 37051659428).
+       The marker names the platform and points at the page the sweep reads; it
+       carries no body and claims none. */
+    const vm = /^(https?:\/\/[^/]+)\/style\/templates\/controls\/(main|side)cashbidsresponsive\.css(\?|$)/i.exec(String(r.url));
+    if (vm) {
+      out.push({ platform: "cashbidssingle", adapter: "lib/parse.mjs", board: null, url: `${vm[1]}/cash-bids`,
+                 status: null, mime: null, bytes: null, truncated: false, body: null,
+                 bodyError: null, bodyNote: "vendor stylesheet seen; the board page is inferred, not fetched", rescue: null });
+      continue;
+    }
     const f = fingerprint(r.url);
     if (!f) continue;
     if (isAsset(r.url, r.mime)) continue;

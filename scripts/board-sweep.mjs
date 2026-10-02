@@ -280,6 +280,10 @@ export function boardCandidates(site, rec, platform) {
     add(/cashbidssingle-\d+$/.test(board) ? board : null, "the location page discover recorded");
     add(board.endsWith("cashbidssingle-") ? null : board, "the board page discover recorded");
     add(site, "the site root");
+    /* The vendor's sites that carry no cashbidssingle-<id> page publish the same
+       table at /cash-bids, NO trailing slash (2026-10-02, ten sites). Asked only
+       after the root, so no existing site's first answer changes. */
+    { const o = origin(board) || origin(site); if (o) add(`${o}/cash-bids`, "the vendor's /cash-bids page"); }
     return out;
   }
 

@@ -957,3 +957,12 @@ test("a flag whose value box was left blank asks for the default, not for zero",
   setArgs(["--patience", "180"]);
   assert.equal(flagValue("patience", "45"), "180", "a real value must still win");
 });
+
+test("the vendor stylesheet marks a cashbidssingle site whose board is at /cash-bids (2026-10-02)", async () => {
+  const { findFeeds } = await import("../scripts/discover.mjs");
+  const feeds = findFeeds({ responses: [
+    { url: "https://townsendgrain.com/style/templates/controls/mainCashbidsResponsive.css", status: 200, mime: "text/css", body: "x" },
+    { url: "https://example.test/assets/site.css", status: 200, mime: "text/css", body: "x" },
+  ] });
+  assert.deepEqual(feeds.map((f) => [f.platform, f.url, f.body]), [["cashbidssingle", "https://townsendgrain.com/cash-bids", null]]);
+});
