@@ -300,8 +300,11 @@ test("the repository's own platforms.json yields the sites it claims", () => {
   /* MEASURED, NOT ASPIRATIONAL. This asserted >100 and passed on 172, and 78
      of that 172 were boards this repository already polls — the number was
      the fault, not the evidence for it. The floor is now a real one: the
-     38 aghost sites alone have never been read. */
-  assert.ok(got.length >= 38, `only ${got.length} unread sweepable sites`);
+     38 aghost sites alone have never been read.
+     2026-10-01: 31, measured. Most of those "aghost" sites turned out to run
+     the CIH widget, and scripts/cih-manifests.mjs now reads 19 locations at
+     18 of them, so they left this list by being read, which is the point. */
+  assert.ok(got.length >= 25, `only ${got.length} unread sweepable sites`);
   const byPlatform = {};
   for (const s of got) byPlatform[s.platform] = (byPlatform[s.platform] || 0) + 1;
   /* THIS ASSERTION WAS `=== 38` AND WAS FAILING ON MAIN — 2026-09-07.

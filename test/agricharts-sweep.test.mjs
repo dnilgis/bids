@@ -1172,6 +1172,7 @@ test("the captured boards publish through the real guard, and refuse without the
      it, never by the file name. Every skip is named and asserted, because a
      silent skip is exactly how a real refusal would be absorbed by this fix. */
   const notItsBoard = new Set();
+  const newerThanCapture = [];
   for (const f of readdirSync(join(ROOT, "sources")).filter((x) => x.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"));
     if (s.platform !== "agricharts-cashgrid") continue;
@@ -1184,7 +1185,13 @@ test("the captured boards publish through the real guard, and refuse without the
     const html = bytes;
     const opts = (cfg) => ({ now: new Date(), sourceUrl: s.url, source: cfg,
                              extract: (h, u) => extractCashgrid(h, u, { contracts: CONTRACTS }) });
-    try { buildFile(html, opts(toConfig(s))); withRule++; } catch { /* counted below */ }
+    /* A LOCATION ADDED TO THE BOARD AFTER THE CAPTURE CANNOT BE REPLAYED AGAINST
+       IT. 2026-10-01: the sweep wrote agtegra-agpwest and
+       archercoopgrain-directshipagpsheldon from the live boards; the committed
+       captures predate both locations. That is a stale fixture, not a refusal,
+       so it is counted apart and capped, never absorbed into withRule. */
+    try { buildFile(html, opts(toConfig(s))); withRule++; }
+    catch (e) { if (/none for location/.test(e.message)) { tried--; newerThanCapture.push(s.id); continue; } }
     try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined }))); withoutRule++; } catch { /* ditto */ }
   }
   assert.deepEqual([...notItsBoard].sort(),
@@ -1192,6 +1199,8 @@ test("the captured boards publish through the real guard, and refuse without the
     "a capture under the cashgrid prefix that is not a cashgrid board — declare it here "
     + "with what it actually is, or fix the capture");
   assert.ok(tried > 200, `only ${tried} sources had a capture to replay against`);
+  assert.ok(newerThanCapture.length <= 10,
+    `${newerThanCapture.length} sources are on boards newer than their capture: ${newerThanCapture.join(", ")}. Refresh the captures.`);
   assert.equal(withRule, tried, `${tried - withRule} still refuse WITH round-cent`);
   assert.ok(withoutRule < tried / 4,
     `${withoutRule} of ${tried} published WITHOUT the declaration — then it is not doing the work`);

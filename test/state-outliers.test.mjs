@@ -36,6 +36,7 @@ const ACCOUNTED_FOR = {
     "Braman, Chickasha, Fort Cobb, Newkirk, Tuttle and Union City — Oklahoma " +
     "towns, on the board, under its own name. A co-op reaching south.",
   "ceagrain-fortcobb": "as ceagrain-apache: on CoMark's own Oklahoma list.",
+  "ceagrain-banner": "as ceagrain-apache: BANNER is on CoMark's own cashgrid (l=19565). It crossed the line on 2026-10-01, when the sweep wrote CoMark's northern Kansas yards and moved the operator's centre north; the source itself did not change.",
   "ceagrain-chickasha": "as ceagrain-apache: on CoMark's own Oklahoma list.",
   "ceagrain-tuttle": "as ceagrain-apache: on CoMark's own Oklahoma list.",
   "ceagrain-unioncity": "as ceagrain-apache: on CoMark's own Oklahoma list.",
