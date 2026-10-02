@@ -4,9 +4,9 @@
   "location": "AMBOY",
   "state": "IL",
   "platform": "cashbidssingle",
-  "url": "https://maplehurstfarms.com/",
+  "url": "https://maplehurstfarms.com/cashbidsterminal.aspx?cbcntloc=2938",
   "futuresUnits": "dollars",
-  "locationId": "2938",
+  "locationId": null,
   "bands": {
     "corn": [
       2,
@@ -24,7 +24,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37072424858) from the board page discover recorded for this operator: https://maplehurstfarms.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 12 row(s) in Beans, Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 41.7042,-89.3472 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"AMBOY\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37072424858) from the board page discover recorded for this operator: https://maplehurstfarms.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 12 row(s) in Beans, Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 41.7042,-89.3472 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"AMBOY\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.\n\nMOVED 2026-10-02 to this location's own terminal page: the site root shows another location by default and poll 37072925672 refused \"none for location 2938\". The request names the location (cbcntloc), so locationId is null on purpose. Passed lib/board.mjs against capture.yml run 37073781424 under round-cent-both before this was written.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": null,
@@ -35,5 +35,6 @@
   "website": "https://maplehurstfarms.com/",
   "inMerge": true,
   "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: -0.25c x4, +0.25c x2, +0.5c x6. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.",
-  "latPrecision": "town"
+  "latPrecision": "town",
+  "cashRounding": "round-cent-both"
 }
