@@ -1,0 +1,37 @@
+{
+  "id": "deerfieldagservices-deerfield",
+  "operator": "Deerfield Ag Services",
+  "location": "DEERFIELD",
+  "state": "OH",
+  "platform": "cashbidssingle",
+  "url": "https://deerfieldagservices.com/",
+  "locationId": "2485",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37056332999) from the board page discover recorded for this operator: https://deerfieldagservices.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 14 row(s) in Corn, Plenish, Soybeans, Wheat.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "publicNote": "Their publicly posted cash board.",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "email": null,
+  "website": "https://deerfieldagservices.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as cents: -0.5c x4, -0.25c x5, 0c x1, +0.25c x4. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.\n\nWILL NOT PUBLISH AS WRITTEN. 1 of this location's 4 commodities match no band, so the poller will withhold every one of their rows:\n  Plenish — 2 row(s), futures \"Nov 26 Soybeans / Mar 27 Soybeans\"\n\nA band is a misplaced-decimal guard, not a taxonomy. Add the name to this source's own bands once somebody has established what the board means by it, or add it to DEFAULT_BANDS in lib/board.mjs if it is a commodity rather than one operator's abbreviation. Do not copy a neighbour's band to make the refusal stop."
+}
