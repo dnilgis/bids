@@ -221,9 +221,28 @@ for (const [kid, sid] of declaredSame)
 let declaredDropped = 0;
 
 let merged = 0;
+/* ── THE SAME BUSINESS, IN THE SAME TOWN, BY NAME — added 2026-10-02 ─────
+   The registry rows below have been merged on orgKey (state + town + operator,
+   legal forms folded) since 2026-09-09, with the phone allowed to veto it. The
+   Barchart rows never were: they were only flagged "may be the same yard".
+   Measured 2026-10-02: 617 Barchart rows carried exactly the orgKey of a board
+   we read and no disagreeing phone (Farmers Coop of Dorchester at Pawnee City,
+   Allied Cooperative at Stratford, ...), each a second pin on a yard already on
+   the map and a second count in the "known, not read" figure agsist prints.
+   The same rule now applies here, with the same veto: two ten-digit phones
+   that differ keep the row (16 on that data). A different spelling of the name
+   is NOT matched (420 same-town rows on that data); those keep the flag. */
+let knownMergedByName = 0, knownKeptOnADifferentPhone = 0;
 const known = Object.entries(knownRaw).filter(([kid]) => {
   if (!declaredSame.has(kid)) return true;
   declaredDropped++;
+  return false;
+}).filter(([, k]) => {
+  const key = orgKey(k.state, k.location, k.operator);
+  if (!key || !ourOrgs.has(key)) return true;
+  const ph = digits(k.phone), theirs = ourOrgs.get(key);
+  if (ph.length === 10 && theirs.size && !theirs.has(ph)) { knownKeptOnADifferentPhone++; return true; }
+  knownMergedByName++;
   return false;
 }).map(([kid, k]) => {
   const ph = digits(k.phone);
@@ -413,6 +432,10 @@ const counts = {
   /* Barchart rows a manifest declared it is, by key. Not in duplicateSuspects:
      they are not suspected, they are settled, and they are not on the map. */
   knownDeclaredSame: declaredDropped,
+  /* Barchart rows dropped as the same operator in the same town as a board we
+     read, and the ones kept because their phone says otherwise. */
+  knownMergedByName,
+  knownKeptOnADifferentPhone,
   operators: new Set(elevators.map((e) => e.operator)).size,
 };
 
@@ -440,6 +463,8 @@ if (unknownHealth.size) {
 console.log("  precision:", JSON.stringify(counts.byPrecision));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);
+console.log("  barchart:   %d dropped as the same operator in the same town as a board we read, " +
+  "%d kept because their phone differs", counts.knownMergedByName, counts.knownKeptOnADifferentPhone);
 console.log("  registries: %d added, %d dropped as the same elevator by phone, " +
   "%d by name-and-town against what we already hold, %d against another registry",
   counts.fromRegistries, counts.registryMergedByPhone,

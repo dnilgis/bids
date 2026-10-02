@@ -191,3 +191,23 @@ test("a row says what its own document says about it", () => {
   assert.match(src, /r\.licenceStatus && !\/issued\/i\.test\(r\.licenceStatus\)/,
     "a suspended licence no longer says so");
 });
+
+test("the Barchart rows get the same rule, with the same phone veto (2026-10-02)", () => {
+  /* 617 Barchart rows carried exactly the orgKey of a board we read and were
+     left on the map as a second, grey pin on the same yard. Measured by
+     rebuilding the 2026-10-02 data with and without this branch: exactly those
+     617 rows left, none was added and no other row changed. */
+  const src = readFileSync(join(ROOT, "scripts/build_directory.mjs"), "utf8");
+  const k = src.indexOf("let knownMergedByName");
+  assert.ok(k > 0, "the Barchart rows are no longer keyed");
+  const branch = src.slice(k, src.indexOf("}).map(([kid, k]) => {", k));
+  assert.match(branch, /const key = orgKey\(k\.state, k\.location, k\.operator\);/);
+  assert.match(branch, /if \(ph\.length === 10 && theirs\.size && !theirs\.has\(ph\)\) \{ knownKeptOnADifferentPhone\+\+; return true; \}/,
+    "a Barchart row with its own phone number is merged away on a name match");
+  /* ORDER IS THE WHOLE RULE. If the Barchart rows were added to ourOrgs before
+     this filter ran, every one of them would match itself and the map would
+     lose all 2,201. The set must still hold only the boards we read here. */
+  assert.ok(k < src.indexOf("for (const k of Object.values(knownRaw)) addOrg("),
+    "the Barchart rows are added to the merge set before they are filtered against it");
+  assert.match(src, /knownMergedByName,\n\s*knownKeptOnADifferentPhone,/, "and both counts are published");
+});
