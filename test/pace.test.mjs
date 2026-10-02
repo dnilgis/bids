@@ -37,3 +37,15 @@ test("captureFetched will not fetch across origins: their page makes same-origin
     captureFetched({ pageUrl: "https://www.landus.ag/businesses/grain/grain-bids", target: "https://evil.example/api" }),
     /different origins/);
 });
+
+import { acceptOf } from "../lib/sources.mjs";
+import { readFileSync as rf } from "node:fs";
+test("NEW Coop: a response is the board only when it carries the location headings (2026-10-02)", () => {
+  const accept = acceptOf("newcoop");
+  assert.equal(accept(rf(new URL("../fixtures/newcoop-cashbids-2026-10-02.html", import.meta.url), "utf8")), true);
+  assert.equal(accept("<html><head><title>Just a moment...</title></head><body></body></html>"), false);
+  assert.equal(acceptOf("dtn-cs"), null);
+  /* and poll hands it to capture() */
+  const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  assert.match(poll, /capture\(\{ pageUrl: s\.browserPage, target: s\.url, timeoutMs: browserMs, accept: acceptOf\(s\.platform\) \}\)/);
+});

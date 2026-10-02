@@ -4,9 +4,9 @@
   "location": "WNYE",
   "state": "NY",
   "platform": "cashbidssingle",
-  "url": "https://bushel.agrexinc.com/cash-bids",
+  "url": "https://bushel.agrexinc.com/cashbidsterminal.aspx?cbcntloc=3575",
   "futuresUnits": "dollars",
-  "locationId": "3575",
+  "locationId": null,
   "bands": {
     "corn": [
       2,
@@ -24,7 +24,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37056332999) from the board page discover recorded for this operator: https://bushel.agrexinc.com/cash-bids. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 8 row(s) in Yellow Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 37056332999) from the board page discover recorded for this operator: https://bushel.agrexinc.com/cash-bids. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 8 row(s) in Yellow Corn.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.\n\nMOVED 2026-10-02 to this location's own terminal page. The first live poll (run 37056777079) read the board page's default view, which shows another location, and refused \"none for location 3575\". The vendor serves one location per cashbidsterminal.aspx?cbcntloc=<id> (WNY Energy's own site embeds exactly that for its plant), so the request names the location and the page carries no id: locationId is null on purpose. Passed lib/board.mjs against capture.yml run 37057934374 under round-cent-either before this was written.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": null,
@@ -34,5 +34,6 @@
   "email": null,
   "website": "https://agrexinc.com/",
   "inMerge": true,
-  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x8. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart."
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x8. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.",
+  "cashRounding": "round-cent-either"
 }

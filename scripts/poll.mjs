@@ -44,7 +44,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
@@ -418,7 +418,7 @@ async function getPage(s) {
           ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
           : how === "fetched"
             ? await captureFetched({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
-            : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
+            : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, accept: acceptOf(s.platform) });
       } catch (e) {
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
