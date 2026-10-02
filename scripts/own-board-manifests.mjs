@@ -191,6 +191,10 @@ export function buildLandus() {
 }
 
 export function build() {
+  const r = buildRaw();
+  return { ...r, manifests: r.manifests.map((x) => ({ ...x, manifest: withDecisions(x.manifest) })) };
+}
+function buildRaw() {
   const manifests = [], skipped = [];
   { const l = buildLandus(); manifests.push(...l.manifests); skipped.push(...l.skipped); }
   for (const [site, cfg] of Object.entries(SITES)) {
@@ -285,6 +289,17 @@ export function build() {
   return { manifests, skipped };
 }
 
+/* A PERSON'S DECISIONS SURVIVE A REGENERATION. data/same-yard-decisions.json
+ * records Barchart roster rows Sig confirmed are the same elevator as one of
+ * ours (Same Yard Review, 2026-10-02). They are applied here as sameAsKnown,
+ * with a note, so a rebuilt manifest keeps them. */
+const DECISIONS = existsSync(ROOT + "data/same-yard-decisions.json") ? JSON.parse(rd("data/same-yard-decisions.json")) : { sources: {} };
+export function withDecisions(m) {
+  const kids = DECISIONS.sources?.[m.id];
+  if (!kids?.length) return m;
+  return { ...m, sameAsKnown: [...kids],
+    note: `${m.note}\n\nSAME AS KNOWN (${DECISIONS.decided}): Sig confirmed in the Same Yard Review page that the Barchart roster row(s) ${kids.join(", ")} are this elevator (data/same-yard-decisions.json), so build_directory.mjs does not draw them as a second, grey pin.` };
+}
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { manifests, skipped } = build();
   const by = {}; for (const x of manifests) by[x.site] = (by[x.site] ?? 0) + 1;
