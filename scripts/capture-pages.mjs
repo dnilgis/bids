@@ -36,7 +36,7 @@ export function slugFor(url) {
 }
 
 export function parseArgs(argv) {
-  const out = { urls: [], list: null, dir: null, maxBody: 300000, timeoutMs: 45000 };
+  const out = { urls: [], list: null, dir: null, maxBody: 3000000, timeoutMs: 45000 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--out") out.dir = argv[++i];
