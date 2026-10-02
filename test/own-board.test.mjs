@@ -138,9 +138,10 @@ test("Landus without quotes, or with stale ones, is refused rather than proved b
 test("Landus's manifest for Adair publishes through the guards on tonight's quotes", () => {
   const m = build().manifests.find((x) => x.manifest.id === "landus-adair").manifest;
   assert.equal(m.identityAlternative, LANDUS_VERIFIED);
-  /* Held: 429 from www.landus.ag on all 50 at the first live poll. */
-  assert.equal(m.enabled, false);
-  assert.match(m._pending, /429/);
+  /* Read through their own page: a plain request gets 429. */
+  assert.equal(m.enabled, true);
+  assert.equal(m.browserPage, "https://www.landus.ag/businesses/grain/grain-bids");
+  assert.match(m.note, /429/);
   assert.deepEqual(validateSource(m), []);
   const b = buildFile(LANDUS_109, { now: new Date("2026-10-02T02:30:00Z"), sourceUrl: m.url, source: toConfig(m),
     extract: (h, u) => landus(h, u, { contracts: TONIGHT }) });

@@ -44,10 +44,10 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
-import { capture, captureRendered } from "../lib/cdp.mjs";
+import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 
@@ -353,6 +353,12 @@ const pages = new Map();
 async function getPage(s) {
   if (fixtures.has(s.id))
     return { html: readFileSync(fixtures.get(s.id), "utf8"), url: `file://${fixtures.get(s.id)}` };
+  const pace = paceOf(s.platform);
+  if (pace && !PACED_IN.has(s.id))
+    throw new Skipped(`not asked this pass: ${s.platform} is paced at ${pace.perPass} source(s) a pass, least `
+      + `recently asked first (PLATFORM_PACE in lib/sources.mjs), and this one is waiting its turn. Its last `
+      + `good file is untouched and still published while it is inside the withdrawal window. Nothing `
+      + `about this source is known to be wrong.`);
   /* Both urls in the key. Thirteen Ag Partners sources share one API url AND
      one page, so they share one browser load; a fourteenth on the same API url
      but a different page must not silently reuse it. */
@@ -407,9 +413,12 @@ async function getPage(s) {
            by loading the customer's page, finding the widget address it embeds
            and returning the rendered document; every other browser platform
            returns the body of one response. See PLATFORM_CAPTURE. */
-        got = captureOf(s.platform) === "rendered"
+        const how = captureOf(s.platform);
+        got = how === "rendered"
           ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
-          : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
+          : how === "fetched"
+            ? await captureFetched({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
+            : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs });
       } catch (e) {
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
@@ -587,6 +596,8 @@ const now = new Date().toISOString();
 const results = [];
 
 let skippedForTime = 0;
+/* PACED PLATFORMS: which of their sources this pass asks. See PLATFORM_PACE. */
+const PACED_IN = pacedIn(todo, prevSeen);
 async function readOne(s) {
   const out = join(DATA, `${s.id}.json`);
   /* THE BUDGET IS CHECKED BEFORE EACH SOURCE, NOT AFTER. Checking afterwards

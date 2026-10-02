@@ -29,6 +29,7 @@ import { fileURLToPath } from "node:url";
 import { extract as newcoop, BOARD_URL as NEWCOOP_URL } from "../lib/adapters/newcoop.mjs";
 import { extract as nexus, BOARD_URL as NEXUS_URL } from "../lib/adapters/nexus.mjs";
 import { bidsUrl as landusUrl, VERIFIED_BY as LANDUS_VERIFIED } from "../lib/adapters/landus.mjs";
+const LANDUS_PAGE = "https://www.landus.ag/businesses/grain/grain-bids";
 import { extract as cpicoop, BOARD_URL as CPI_URL } from "../lib/adapters/cpicoop.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -134,14 +135,15 @@ export function buildLandus() {
       identityAlternative: LANDUS_VERIFIED,
       bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] },
       cadence: "grain-day", provenance: "scraped",
-      /* HELD. The first live poll (run 36964162657, 2026-10-02) asked all 50
-         locations and www.landus.ag answered every one with HTTP 429. Fifty
-         requests a pass is more than their API will take from us, and asking
-         again every pass would be hammering it. The manifests are kept so the
-         work is not lost; they go live with a reader that paces itself. */
-      enabled: false,
-      _pending: "HELD DISABLED: www.landus.ag answered HTTP 429 (too many requests) to all 50 locations on the first live poll, 2026-10-02. "
-        + "One request per location per pass is more than their API accepts. Needs a paced reader (a few locations per pass, or the page's own single request) before it is enabled.",
+      /* READ THROUGH THEIR OWN PAGE, FIVE A PASS. The first live poll (run
+         36964162657) asked all 50 with a plain request and www.landus.ag
+         answered all 100 attempts HTTP 429, the first included: it refuses
+         non-browser clients. Their page loads in a real browser, but asks for
+         location 109 whatever its URL says, so lib/cdp.mjs captureFetched loads
+         the page and fetches this location from inside it (PLATFORM_CAPTURE).
+         PLATFORM_PACE limits a pass to five Landus locations. */
+      browserPage: LANDUS_PAGE,
+      enabled: true,
       note: null,
       publicNote: "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. "
         + "Their board names the futures contract and prints no price, so no futures price is republished; the CBOT quote is used only to check that the two columns were read correctly.",
@@ -154,7 +156,9 @@ export function buildLandus() {
       + `PLACE: ${p.how === "directory" ? `matches ${p.hits.length} row(s) for Landus (${[...new Set(p.hits.map((h) => h.src))].join(", ")}) at ${p.city}, ${p.state}` : `Landus's own list names the town and state; no directory row for it, so no ZIP is taken`}. `
       + (coord ? `Coordinate is the roster's own for ${p.city}, ${p.state} (${coord.precision ?? "town"} precision). ` : `NO COORDINATE: ${coordWhy}. Read and published, kept off the distance map. `)
       + `IDENTITY: the board names its basis month and prints no futures price, so it publishes on identityAlternative "${LANDUS_VERIFIED}": `
-      + `each row's cash - basis must land within 5c of the CBOT quote for the contract it names, from the shared quote pages.`;
+      + `each row's cash - basis must land within 5c of the CBOT quote for the contract it names, from the shared quote pages. `
+      + `TRANSPORT: read by loading ${LANDUS_PAGE} in a browser and fetching this location's /api/cash-bids from inside the page, the request their own location picker makes; `
+      + `a plain server request is refused (HTTP 429 to all 100 attempts of the first poll, 2026-10-02). Five Landus locations are asked a pass, least recently asked first.`;
     manifests.push({ site: "landus", manifest: m, coordWhy });
   }
   return { manifests, skipped };

@@ -89,14 +89,18 @@ test("the browser is for platforms whose page fetches its own board", () => {
      board IS the page, server-rendered, but newcoop.com answers a plain fetch
      with HTTP 403 and serves the same page to a browser (first live poll, 66 of
      66 refused). One page load per pass covers its 66 locations. */
-  for (const p of ["dtn-cs", "bushel", "gradable", "stonehedge", "newcoop"])
+  /* Landus joined 2026-10-02: www.landus.ag answered all 100 plain requests
+     of its first poll HTTP 429, the first one included, and a page load in a
+     browser passes. Its page asks for one location only, so the one wanted is
+     fetched from inside it (captureFetched), five locations a pass. */
+  for (const p of ["dtn-cs", "bushel", "gradable", "stonehedge", "newcoop", "landus"])
     assert.equal(transportOf(p), "browser", p);
   for (const p of ["cashbidssingle", "aghost", "fragment", "graindesk", "first-party"])
     assert.equal(transportOf(p), "fetch", p);
   /* Still a closed set: a platform is on the browser deliberately or not at
      all, because the browser is slow and a page we do not need to run is a
      page we should not run. */
-  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs", "gradable", "newcoop", "stonehedge"]);
+  assert.deepEqual(Object.keys(PLATFORM_TRANSPORT).sort(), ["bushel", "dtn-cs", "gradable", "landus", "newcoop", "stonehedge"]);
 });
 
 /* ---- end to end, against a server that enforces DTN's own rule ----------- */
@@ -660,9 +664,10 @@ test("both Page.navigate call sites are given the page budget, not the per-call 
   const primary = found
     .filter((m) => !/within\(\s*rescueNavMs/.test(src.slice(Math.max(0, m.index - 120), m.index)))
     .map((m) => m[0]);
-  /* two in capture()/captureAll(), plus captureRendered()'s single `go` helper */
-  assert.equal(primary.length, 3,
-    `expected exactly three unwrapped navigate calls, found ${primary.length}`);
+  /* two in capture()/captureAll(), captureRendered()'s single `go` helper, and
+     captureFetched()'s one load of the page it fetches from (2026-10-02) */
+  assert.equal(primary.length, 4,
+    `expected exactly four unwrapped navigate calls, found ${primary.length}`);
   for (const s of primary)
     assert.match(s, /callTimeoutMs:\s*timeoutMs/,
       "a Page.navigate is still capped at the per-call ceiling — this is what broke eight " +
