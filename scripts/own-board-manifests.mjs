@@ -128,7 +128,16 @@ export function buildLandus() {
       platform: "landus", url: landusUrl(l.locationNumber), locationId: String(l.locationNumber),
       identityAlternative: LANDUS_VERIFIED,
       bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] },
-      cadence: "grain-day", provenance: "scraped", enabled: true, note: null,
+      cadence: "grain-day", provenance: "scraped",
+      /* HELD. The first live poll (run 36964162657, 2026-10-02) asked all 50
+         locations and www.landus.ag answered every one with HTTP 429. Fifty
+         requests a pass is more than their API will take from us, and asking
+         again every pass would be hammering it. The manifests are kept so the
+         work is not lost; they go live with a reader that paces itself. */
+      enabled: false,
+      _pending: "HELD DISABLED: www.landus.ag answered HTTP 429 (too many requests) to all 50 locations on the first live poll, 2026-10-02. "
+        + "One request per location per pass is more than their API accepts. Needs a paced reader (a few locations per pass, or the page's own single request) before it is enabled.",
+      note: null,
       publicNote: "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. "
         + "Their board names the futures contract and prints no price, so no futures price is republished; the CBOT quote is used only to check that the two columns were read correctly.",
       address: null, zip, lat: coord ? coord.lat : null, lon: coord ? coord.lon : null,
