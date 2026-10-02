@@ -31,6 +31,7 @@ import { extract as nexus, BOARD_URL as NEXUS_URL } from "../lib/adapters/nexus.
 import { bidsUrl as landusUrl, VERIFIED_BY as LANDUS_VERIFIED } from "../lib/adapters/landus.mjs";
 const LANDUS_PAGE = "https://www.landus.ag/businesses/grain/grain-bids";
 import { extract as cpicoop, BOARD_URL as CPI_URL } from "../lib/adapters/cpicoop.mjs";
+import { parseTable as fivestarTable, BOARD_URL as FIVESTAR_URL, VERIFIED_BY as FIVESTAR_VERIFIED } from "../lib/adapters/fivestar.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const rd = (p) => readFileSync(ROOT + p, "utf8");
@@ -45,6 +46,15 @@ export const SITES = {
   cpicoop: { platform: "cpicoop", url: CPI_URL, extract: cpicoop, fixture: `fixtures/cpicoop-bids-${CAPTURED}.html`,
              names: ["Cooperative Producers, Inc.", "Cooperative Producers Inc", "Cooperative Producers, Inc"], operator: "Cooperative Producers, Inc.",
              website: "https://www.cpicoop.com/", homeStates: ["NE", "KS"], extraBands: { milo: [1.5, 12] } },
+  /* Five Star prints cash and basis and NO futures: its rows publish on the
+     board-agreement + quote-fit checks (lib/adapters/fivestar.mjs), so the
+     generator measures agreement instead of cash - basis = futures. */
+  fivestar: { platform: "fivestar", url: FIVESTAR_URL, verified: FIVESTAR_VERIFIED,
+              extract: (html, url) => fivestarTable(html).filter((r) => r.locationId && r.cash != null && r.basis != null)
+                .map((r) => ({ ...r, impliedFuturesCents: Math.round((r.cash - r.basis) * 1000000) / 10000 })),
+              fixture: "fixtures/fivestar-bids-2026-10-01.html",
+              names: ["Five Star Cooperative", "Five Star Coop", "Five Star Co-op"], operator: "Five Star Cooperative",
+              website: "https://www.fivestarcoop.com/", homeStates: ["IA", "MN"] },
 };
 
 const norm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -72,7 +82,11 @@ export function zipCentroid(id, city) {
 }
 const tidy = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 const title = (s) => tidy(s).toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
-export const BUYER = /\b(agp|cargill|poet|valero|adm|golden grain|bunge|cgb)\b/i;
+/* 2026-10-02, Five Star: GGE (Golden Grain Energy), Green Plains, Shell Rock Soy
+   Processing, Reicks View Milling and Christensen Farms feed mill are delivery
+   points at other businesses' plants. The roster files them as Five Star
+   "branches"; they are not Five Star yards. */
+export const BUYER = /\b(agp|cargill|poet|valero|adm|golden grain|gge|green plains|soy processing|reicks|christensen farms|bunge|cgb)\b/i;
 const STATES = new Set("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" "));
 
 export function evidence(names) {
@@ -237,9 +251,17 @@ function buildRaw() {
         skipped.push({ tag, why: `${p.city}, ${p.state} is outside ${cfg.operator}'s home state(s) (${home.join(", ")}) and has no coordinate in the roster or the repo's ZIP table, so nothing can check it` });
         continue;
       }
-      const res = loc.rows.map((r) => Math.round((r.futuresPrice - (r.cash - r.basis) * 100) * 10000) / 10000);
+      /* A board with no futures column is measured against ITSELF: each row's
+         implied futures against the median of its commodity/delivery group across
+         the whole board, the check its adapter runs (MAX 3c). */
+      const groupMid = cfg.verified ? (() => { const g = new Map();
+        for (const r of rows) { const k = `${r.commodity}|${r.delivery}`; (g.get(k) ?? g.set(k, []).get(k)).push(r.impliedFuturesCents); }
+        const mid = new Map(); for (const [k, v] of g) { v.sort((a, b) => a - b); mid.set(k, v[Math.floor(v.length / 2)]); } return mid; })() : null;
+      const res = cfg.verified
+        ? loc.rows.map((r) => Math.round((r.impliedFuturesCents - groupMid.get(`${r.commodity}|${r.delivery}`)) * 10000) / 10000)
+        : loc.rows.map((r) => Math.round((r.futuresPrice - (r.cash - r.basis) * 100) * 10000) / 10000);
       const lo = Math.min(...res), hi = Math.max(...res);
-      const roundingOk = res.every((x) => Math.abs(x) < 1);
+      const roundingOk = cfg.verified ? res.every((x) => Math.abs(x) <= 3) : res.every((x) => Math.abs(x) < 1);
       const zip = p.hits.map((h) => h.zip).find(Boolean) ?? null;
       const phone = p.hits.map((h) => h.phone).find(Boolean) ?? null;
       let id = `${site}-${norm(loc.name)}`;
@@ -262,10 +284,11 @@ function buildRaw() {
         cadence: "grain-day",
         provenance: "scraped",
         enabled: roundingOk,
-        ...(roundingOk ? { cashRounding: "round-cent-both" } : {}),
+        ...(cfg.verified ? { identityAlternative: cfg.verified } : roundingOk ? { cashRounding: "round-cent-both" } : {}),
         note: null,
         publicNote: `Their publicly posted cash board, read from their own website. Cash and basis are their own commercial numbers. `
-          + `The futures price is printed on their board too and is carried only so a consumer can re-check cash minus basis.`,
+          + (cfg.verified ? `Their board prints no futures price, so none is republished; CBOT quotes are used only to check that the columns were read correctly.`
+            : `The futures price is printed on their board too and is carried only so a consumer can re-check cash minus basis.`),
         address: null,
         zip,
         lat: coord ? coord.lat : null,
@@ -280,8 +303,13 @@ function buildRaw() {
         + `PROOF THE LOCATION IS ON THE BOARD: "${loc.name}" (locationId ${locationId}) with ${loc.rows.length} readable row(s). `
         + `PLACE: ${how}. `
         + (coord ? coordText(coord, p) : `NO COORDINATE: ${coordWhy}. Read and published, kept off the distance map. `)
-        + `ROUNDING, measured on the capture: futures - (cash - basis) runs ${lo} to ${hi} cents across ${res.length} row(s)`
-        + (roundingOk ? `, inside round-cent-both's open (-1, +1) bound.` : `, outside round-cent-both. Held disabled.`);
+        + (cfg.verified
+          ? `IDENTITY: the board names no contract and prints no futures price, so it publishes on identityAlternative "${cfg.verified}": `
+            + `each commodity/delivery group must imply one futures price across the whole board (within 3c), and each row must sit within 5c of a quoted CBOT contract. `
+            + `On the capture this location's rows sit ${lo} to ${hi} cents from their group's board-wide figure across ${res.length} row(s)`
+            + (roundingOk ? `.` : `. Held disabled.`)
+          : `ROUNDING, measured on the capture: futures - (cash - basis) runs ${lo} to ${hi} cents across ${res.length} row(s)`
+            + (roundingOk ? `, inside round-cent-both's open (-1, +1) bound.` : `, outside round-cent-both. Held disabled.`));
       if (!roundingOk) m._pending = `HELD DISABLED: residuals ${lo} to ${hi} cents on the ${CAPTURED} capture.`;
       manifests.push({ site, manifest: m, coordWhy });
     }

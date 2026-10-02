@@ -78,10 +78,11 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   const { manifests, skipped } = build();
   const onDisk = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")))
-    .filter((m) => ["newcoop", "nexus", "landus", "cpicoop"].includes(m.platform));
+    .filter((m) => ["newcoop", "nexus", "landus", "cpicoop", "fivestar"].includes(m.platform));
   assert.deepEqual(onDisk.map((m) => m.id).sort(), manifests.map((x) => x.manifest.id).sort(),
     "sources/ is out of step: run node scripts/own-board-manifests.mjs --write");
-  const fixtureOf = { newcoop: NC, nexus: NX, cpicoop: readFileSync(join(ROOT, "fixtures/cpicoop-bids-2026-10-02.html"), "utf8") };
+  const fixtureOf = { newcoop: NC, nexus: NX, cpicoop: readFileSync(join(ROOT, "fixtures/cpicoop-bids-2026-10-02.html"), "utf8"),
+    fivestar: readFileSync(join(ROOT, "fixtures/fivestar-bids-2026-10-01.html"), "utf8") };
   for (const x of manifests) {
     const m = x.manifest;
     if (m.platform === "landus") {               // one captured location; see the Landus tests
@@ -92,13 +93,15 @@ test("sources/ holds exactly what the generator produces, and every one publishe
     assert.deepEqual(JSON.parse(readFileSync(join(ROOT, "sources", `${m.id}.json`), "utf8")), m, `${m.id} differs on disk`);
     assert.deepEqual(validateSource(m), [], m.id);
     if (m.lat == null) assert.equal(m.lon, null);
-    const b = buildFile(fixtureOf[m.platform], { now: new Date("2026-10-02T02:00:00Z"), sourceUrl: m.url, source: toConfig(m), extract: adapterFor(m.platform) });
+    const b = buildFile(fixtureOf[m.platform], { now: new Date("2026-10-02T02:00:00Z"), sourceUrl: m.url, source: toConfig(m), extract: adapterFor(m.platform, m.platform === "fivestar" ? { contracts: TONIGHT } : undefined) });
     assert.ok(b.file.count > 0, m.id);
     assert.equal((b.file.withheld ?? []).length, 0, `${m.id} withheld rows`);
   }
   assert.ok(manifests.length >= 150);
   /* The three left out are left out for a reason that is printed. */
   assert.deepEqual(skipped.map((s) => s.tag).sort(), ["cpicoop: AGP David City", "cpicoop: AGP Hastings", "cpicoop: Hayland", "cpicoop: Juniata", "cpicoop: Lewis",
+    "fivestar: AGP Mason City", "fivestar: Christensen Farms FC", "fivestar: GGE Mason City", "fivestar: Reicks View Milling",
+    "fivestar: Shell Rock Soy Processing", "fivestar: Valero Charles City",
     "landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
 });
 
@@ -114,7 +117,7 @@ import { extract as landus, bidsUrl as landusUrl, VERIFIED_BY as LANDUS_VERIFIED
 const TONIGHT = [
   ["ZCZ26", 499], ["ZCH27", 513.5], ["ZCN27", 524.5], ["ZCZ27", 515.25],
   ["ZSX26", 1277], ["ZSF27", 1293.25], ["ZSH27", 1303.25], ["ZSN27", 1318], ["ZSX27", 1250],
-].map(([symbol, lastCents]) => ({ symbol, lastCents, priced: true }));
+].map(([symbol, lastCents]) => ({ symbol, lastCents, priced: true, root: symbol.slice(0, 2), grain: symbol.startsWith("ZC") ? "corn" : "soybeans" }));
 const LANDUS_109 = readFileSync(join(ROOT, "fixtures/landus-cashbids-109-2026-10-02.json"), "utf8");
 
 test("Landus at Adair: every row fits the contract it names within 5c, and is stamped", () => {
@@ -183,4 +186,35 @@ test("every ZIP-pinned manifest says so, and none is a buyer's plant", () => {
     assert.ok(m.lat != null && m.lon != null, m.id);
     assert.doesNotMatch(m.note, /DESTINATION|NO COORDINATE/, m.id);
   }
+});
+
+/* ---------------- Five Star Cooperative ---------------- */
+import { extract as fivestar, parseTable as fivestarTable, VERIFIED_BY as FIVESTAR_VERIFIED, FiveStarRefused } from "../lib/adapters/fivestar.mjs";
+const FS = readFileSync(join(ROOT, "fixtures/fivestar-bids-2026-10-01.html"), "utf8");
+
+test("Five Star: the board agrees with itself to the cent, and rows publish only once they fit a quote", () => {
+  const all = fivestarTable(FS);
+  assert.equal(new Set(all.map((r) => r.locationId)).size, 22);
+  const ionia = all.find((r) => r.location === "Ionia" && r.commodity === "Corn");
+  assert.deepEqual([ionia.delivery, ionia.cash, ionia.basis, ionia.locationId], ["By Oct 2", 4.53, -0.49, "7TZJ7E2012ZHMUBKRLVJ"]);
+  /* Overnight quotes against a 1:15 PM board: corn sits within 3c (502 vs ZCZ26 499),
+     soybeans 7c out (1284 vs ZSX26 1277). The corn publishes; the soybean rows are
+     refused one by one as a minority, never the whole board, and say why. */
+  const rows = fivestar(FS, "u", { contracts: TONIGHT });
+  assert.ok(rows.length > 150);
+  for (const r of rows) { assert.equal(r.verifiedBy, FIVESTAR_VERIFIED); assert.equal(r.futuresPrice, null); }
+  assert.ok(rows.unreconciled.length > 0 && rows.unreconciled.every((u) => /Soybeans/.test(u.commodity)));
+  assert.ok(rows.some((r) => r.commodity === "Corn"));
+  /* Deferred soybeans (Jan 1300c vs ZSF27 1293.25, 6.75c) and nearby (1284c vs ZSX26 1277, 7c) are both
+     refused here; only soybean rows within 5c of some quoted soybean contract survive. */
+  for (const r of rows.filter((x) => x.commodity === "Soybeans"))
+    assert.ok(TONIGHT.some((c) => c.root === "ZS" && Math.abs(c.lastCents - r.impliedFuturesCents) <= 5), r.raw);
+});
+
+test("Five Star refuses without quotes, and refuses a basis read in the wrong units", () => {
+  assert.throws(() => fivestar(FS, "u"), FiveStarRefused);
+  assert.throws(() => fivestar("<html></html>", "u", { contracts: TONIGHT }), FiveStarRefused);
+  /* Basis read as cents instead of dollars: every implied future lands hundreds of cents out. */
+  const wrong = FS.replace(/<td([^>]*)>(-?0\.\d+)<\/td>/g, (m, a, v) => `<td${a}>${(Number(v) * 100).toFixed(0)}</td>`);
+  assert.throws(() => fivestar(wrong, "u", { contracts: TONIGHT }), FiveStarRefused);
 });
