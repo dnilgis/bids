@@ -160,3 +160,27 @@ test("CPI: 27 locations by their own slugs, futures in ticks, every row within a
   for (const r of rows) assert.ok(Math.abs(r.futuresPrice - (r.cash - r.basis) * 100) < 1, r.raw);
   assert.throws(() => cpicoop("<html></html>", "u"), CpiRefused);
 });
+
+/* ---------------- ZIP-table pins (2026-10-02) ---------------- */
+import { zipCentroid } from "../scripts/own-board-manifests.mjs";
+
+test("a ZIP-table pin is taken only from the ZIP table, for the same town, at town precision", () => {
+  const ax = zipCentroid("cpicoop-axtell", "Axtell");
+  assert.deepEqual(ax && [ax.precision, ax.via], ["town", "zip"]);
+  assert.equal(zipCentroid("cpicoop-axtell", "Bladen"), null, "a different town is not this town's pin");
+  /* An entry that only echoes a manifest's own earlier coordinate is not evidence. */
+  assert.equal(zipCentroid("nexus-adamsmn", "Adams"), null, "a source-file echo is not the ZIP table");
+  assert.equal(zipCentroid("no-such-id", "Axtell"), null);
+});
+
+test("every ZIP-pinned manifest says so, and none is a buyer's plant", () => {
+  const all = readdirSync(join(ROOT, "sources")).filter((f) => /^(landus|cpicoop|newcoop|nexus)-/.test(f))
+    .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")));
+  const zipped = all.filter((m) => /ZIP-table centroid/.test(m.note));
+  assert.ok(zipped.length >= 60, `${zipped.length} ZIP-pinned`);
+  for (const m of zipped) {
+    assert.equal(m.latPrecision, "town", m.id);
+    assert.ok(m.lat != null && m.lon != null, m.id);
+    assert.doesNotMatch(m.note, /DESTINATION|NO COORDINATE/, m.id);
+  }
+});
