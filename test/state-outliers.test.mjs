@@ -36,6 +36,11 @@ const ACCOUNTED_FOR = {
     "Braman, Chickasha, Fort Cobb, Newkirk, Tuttle and Union City — Oklahoma " +
     "towns, on the board, under its own name. A co-op reaching south.",
   "ceagrain-fortcobb": "as ceagrain-apache: on CoMark's own Oklahoma list.",
+  "landus-rushville":
+    "Landus Cooperative is Iowa. Its OWN location list (www.landus.ag/api/locations, " +
+    "fixtures/landus-locations-2026-10-02.json) names \"Rushville\", state IN, location number 165, " +
+    "and the Barchart roster and known-elevators both file a Landus Cooperative row at Rushville, IN " +
+    "(765-932-2981). A yard far from home, on the operator's own list.",
   "ceagrain-banner": "as ceagrain-apache: BANNER is on CoMark's own cashgrid (l=19565). It crossed the line on 2026-10-01, when the sweep wrote CoMark's northern Kansas yards and moved the operator's centre north; the source itself did not change.",
   "ceagrain-chickasha": "as ceagrain-apache: on CoMark's own Oklahoma list.",
   "ceagrain-tuttle": "as ceagrain-apache: on CoMark's own Oklahoma list.",

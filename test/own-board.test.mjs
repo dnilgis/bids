@@ -78,12 +78,17 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   const { manifests, skipped } = build();
   const onDisk = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")))
-    .filter((m) => m.platform === "newcoop" || m.platform === "nexus");
+    .filter((m) => m.platform === "newcoop" || m.platform === "nexus" || m.platform === "landus");
   assert.deepEqual(onDisk.map((m) => m.id).sort(), manifests.map((x) => x.manifest.id).sort(),
     "sources/ is out of step: run node scripts/own-board-manifests.mjs --write");
   const fixtureOf = { newcoop: NC, nexus: NX };
   for (const x of manifests) {
     const m = x.manifest;
+    if (m.platform === "landus") {               // one captured location; see the Landus tests
+      assert.deepEqual(JSON.parse(readFileSync(join(ROOT, "sources", `${m.id}.json`), "utf8")), m, `${m.id} differs on disk`);
+      assert.deepEqual(validateSource(m), [], m.id);
+      continue;
+    }
     assert.deepEqual(JSON.parse(readFileSync(join(ROOT, "sources", `${m.id}.json`), "utf8")), m, `${m.id} differs on disk`);
     assert.deepEqual(validateSource(m), [], m.id);
     if (m.lat == null) assert.equal(m.lon, null);
@@ -91,7 +96,49 @@ test("sources/ holds exactly what the generator produces, and every one publishe
     assert.ok(b.file.count > 0, m.id);
     assert.equal((b.file.withheld ?? []).length, 0, `${m.id} withheld rows`);
   }
-  assert.ok(manifests.length >= 100);
+  assert.ok(manifests.length >= 150);
   /* The three left out are left out for a reason that is printed. */
-  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
+  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
+});
+
+/* ---------------- Landus ---------------- */
+import { extract as landus, bidsUrl as landusUrl, VERIFIED_BY as LANDUS_VERIFIED, LandusRefused } from "../lib/adapters/landus.mjs";
+
+/* TONIGHT'S QUOTES, NOT A GUESS. The committed agricharts-quotes-* pages are from
+   September and would refuse every row, which is the guard working. These are
+   the futures NEW Cooperative printed on its own board in the same hour
+   (fixtures/newcoop-cashbids-2026-10-02.html: "499-0", "513-4", "524-4",
+   "515-2", "1277-0", "1293-2", "1303-2", "1318-0", "1250-0"), in the shape the
+   shared quote pages produce. */
+const TONIGHT = [
+  ["ZCZ26", 499], ["ZCH27", 513.5], ["ZCN27", 524.5], ["ZCZ27", 515.25],
+  ["ZSX26", 1277], ["ZSF27", 1293.25], ["ZSH27", 1303.25], ["ZSN27", 1318], ["ZSX27", 1250],
+].map(([symbol, lastCents]) => ({ symbol, lastCents, priced: true }));
+const LANDUS_109 = readFileSync(join(ROOT, "fixtures/landus-cashbids-109-2026-10-02.json"), "utf8");
+
+test("Landus at Adair: every row fits the contract it names within 5c, and is stamped", () => {
+  const rows = landus(LANDUS_109, landusUrl(109), { contracts: TONIGHT });
+  assert.equal(rows.length, 12);
+  for (const r of rows) {
+    assert.equal(r.verifiedBy, LANDUS_VERIFIED);
+    assert.equal(r.locationId, "109");
+    assert.equal(r.futuresPrice, null, "no futures price is printed, so none is published");
+  }
+  assert.deepEqual([rows[0].commodity, rows[0].delivery, rows[0].cash, rows[0].basis, rows[0].futures], ["Corn", "By 10/15/26", 4.54, -0.45, "ZCZ26"]);
+});
+
+test("Landus without quotes, or with stale ones, is refused rather than proved by its own subtraction", () => {
+  assert.throws(() => landus(LANDUS_109, landusUrl(109), null), LandusRefused);
+  const stale = TONIGHT.map((c) => ({ ...c, lastCents: c.lastCents + 40 }));
+  assert.throws(() => landus(LANDUS_109, landusUrl(109), { contracts: stale }), /do not fit/);
+  assert.throws(() => landus(LANDUS_109, "https://www.landus.ag/api/cash-bids", { contracts: TONIGHT }), /no location number/);
+});
+
+test("Landus's manifest for Adair publishes through the guards on tonight's quotes", () => {
+  const m = build().manifests.find((x) => x.manifest.id === "landus-adair").manifest;
+  assert.equal(m.identityAlternative, LANDUS_VERIFIED);
+  assert.deepEqual(validateSource(m), []);
+  const b = buildFile(LANDUS_109, { now: new Date("2026-10-02T02:30:00Z"), sourceUrl: m.url, source: toConfig(m),
+    extract: (h, u) => landus(h, u, { contracts: TONIGHT }) });
+  assert.equal(b.file.count, 12);
 });
