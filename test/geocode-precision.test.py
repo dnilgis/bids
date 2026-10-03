@@ -91,6 +91,18 @@ lat, lon, prec, via, note = BG.locate(
 check(prec == "town", "a declared-town pin on the centroid is still town", str(prec))
 check("centroid this build derives" not in str(note),
       "and does not claim to have been demoted", str(note))
+# AND IT KEEPS ITS PROVENANCE. 2026-10-03: the monthly rebuild relabelled 111
+# such pins "source-file" because the ZIP pins had been written into the
+# manifests the day before; own-board-manifests.mjs zipCentroid() then refused
+# them and 70 yards regenerated with no coordinate. The ZIP table is named only
+# because this build derives the same point from it, independently.
+check(via == "zip-centroid", "a declared-town pin that IS the centroid names the ZIP table", str(via))
+check(note == "Amboy", "with the town it resolved from, as zipCentroid() requires", str(note))
+# ...and a declared-town pin that is NOT the centroid stays the manifest's.
+lat, lon, prec, via, note = BG.locate(
+    {"id": "x", "state": "IN", "location": "Amboy", "lat": amboy[0] + 0.02, "lon": amboy[1],
+     "latPrecision": "town"}, TOWNS, ZIPS)
+check(via == "source-file", "a declared-town pin 2 km off the centroid is not credited to the ZIP table", str(via))
 
 # The demotion is ONE-DIRECTIONAL. A manifest that says town must never be
 # promoted by this check, and a coordinate 2 km out must never be demoted.
@@ -182,7 +194,11 @@ check(prec == "town" and lat == amboy[0], "no match keeps the centroid", str(pre
 
 # ...and with no geocoder reachable at all, nothing changes.
 lat, lon, prec, via, note = BG.locate(dict(town_pin), TOWNS, ZIPS, use_census=False)
-check(prec == "town" and via == "source-file", "NO_CENSUS=1 keeps the centroid", str(via))
+# The coordinate and precision do not change. The label is the ZIP table's,
+# because town_pin sits on the centroid this build derives (2026-10-03 rule
+# above); it said "source-file" before, which was the relabel bug.
+check(prec == "town" and lat == amboy[0] and lon == amboy[1] and via == "zip-centroid",
+      "NO_CENSUS=1 keeps the centroid", "%s %s %s" % (prec, lat, via))
 
 # THE DEMOTED SEVEN GET THE SAME UPGRADE PATH, IF THEY EVER GET AN ADDRESS.
 # The demotion in the section above sets prec to "town", which is what step 1b

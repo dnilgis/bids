@@ -322,6 +322,23 @@ def locate(s, towns, zips, use_census=False, census_fn=None):
         if prec != "town" and derived and km(lat, lon, derived[0], derived[1]) < SAME_POINT_KM:
             prec = "town"
             note = "no precision on file, and it matches the centroid this build derives from %s (%s)" % (derived[3], derived[4])
+        # A TOWN PIN THAT IS THIS BUILD'S OWN CENTROID KEEPS ITS PROVENANCE.
+        #
+        # Measured 2026-10-03: the monthly rebuild (registries.yml, commit
+        # 553d204) relabelled 111 entries from "zip-centroid" to "source-file"
+        # and dropped resolvedFrom, with zero coordinates moved. On Oct 2 the
+        # ZIP pins had been written into sources/*.json; this step then saw
+        # them on the manifests and recorded the manifest as their origin.
+        # The table was echoing its own output, and own-board-manifests.mjs
+        # zipCentroid() correctly refused the echo, so 70 Landus/CPI/NEW Coop
+        # yards regenerated as NO COORDINATE and two tests went red.
+        #
+        # The evidence is not the manifest. It is that the centroid this build
+        # derives, independently, from its own ZIP table, sits on the same
+        # point (SAME_POINT_KM). Only then is the ZIP table named as the
+        # source. A coordinate that is not that centroid stays "source-file".
+        elif prec == "town" and derived and km(lat, lon, derived[0], derived[1]) < SAME_POINT_KM:
+            via, note = derived[3], derived[4]
 
     # 1b. A TOWN CENTROID WITH A STREET ADDRESS IS AN UPGRADE WAITING TO HAPPEN.
     #
