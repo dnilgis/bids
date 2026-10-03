@@ -12,7 +12,9 @@ import { fileURLToPath } from "node:url";
 import { scriptUrl, VERIFIED_BY } from "../lib/adapters/qtmarket.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
-const known = JSON.parse(readFileSync(ROOT + "geocodes/places.json", "utf8")).known ?? {};
+const places = JSON.parse(readFileSync(ROOT + "geocodes/places.json", "utf8"));
+const known = places.known ?? {}, registry = places.registry ?? {};
+const title = (s) => String(s ?? "").toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
 
 export const SITES = [
   { id: "christiancountygrain-pembroke", loc: "441", knownId: "2681", website: "https://www.christiancountygrain.com/",
@@ -21,26 +23,60 @@ export const SITES = [
   { id: "hudsongrain-franklin", loc: "438", knownId: "3143", website: "https://www.hudsongraincompany.com/",
     page: "https://www.hudsongraincompany.com/cash-bids/",
     why: "The board page prints Hudson Grain Company, 1865 Springfield Road, Franklin, KY 42134, (270) 586-4412: the Barchart roster row's own street and phone." },
+  /* 2026-10-02: the next four QT sites (capture.yml run 37084029562). Each loc is
+     named by the heading above its table on the operator's own page; the row is
+     the Barchart roster (known) or a state licence roll (registry) entry for that
+     operator in that town, the most precise one available. Not written: Premier's
+     "Buckley Elevator" (no row), Home City's "Falls City / Dawson, NE" (two towns)
+     and "AGP - St. Joseph, MO" (a buyer's plant). */
+  { id: "premiergrain-melvin", operator: "Premier Grain, LLC", loc: "442", registryId: "OH|premiergrainllc|melvin", website: "https://premiergrainllc.com/",
+    page: "https://premiergrainllc.com/cash-bids/", location: "Melvin",
+    why: "The page heads this table \"Melvin Elevator\"; Ohio's licence roll lists Premier Grain, LLC at 238 Melvin Road, Melvin (county-precision coordinate). The Barchart roster files this branch under Wilmington, so it is not declared the same row: a declaration must name the elevator's own town (test/declared-same.test.mjs)." },
+  { id: "premiergrain-sabina", operator: "Premier Grain, LLC", loc: "443", knownId: "Premier Grain, LLC|SABINA|Sabina|OH", website: "https://premiergrainllc.com/",
+    page: "https://premiergrainllc.com/cash-bids/", why: "The page heads this table \"Sabina Elevator\"; the Barchart roster lists Premier Grain, LLC at Sabina, OH." },
+  { id: "premiergrain-leesburg", operator: "Premier Grain, LLC", loc: "444", registryId: "OH|premiergrainllc|leesburg", website: "https://premiergrainllc.com/",
+    page: "https://premiergrainllc.com/cash-bids/", why: "The page heads this table \"Leesburg Elevator\"; Ohio's licence roll lists Premier Grain, LLC at 116 South Fairfield Street, Leesburg." },
+  { id: "premiergrain-jamestown", operator: "Premier Grain, LLC", loc: "445", registryId: "OH|premiergrainllc|jamestown", website: "https://premiergrainllc.com/",
+    page: "https://premiergrainllc.com/cash-bids/", why: "The page heads this table \"Jamestown Elevator\"; Ohio's licence roll lists Premier Grain, LLC at 25 South Church Street, Jamestown (the roster lists Jamestown too)." },
+  { id: "premiergrain-lyndon", operator: "Premier Grain, LLC", loc: "446", knownId: "2881", website: "https://premiergrainllc.com/",
+    page: "https://premiergrainllc.com/cash-bids/", why: "The page heads this table \"Lyndon Elevator\"; the Barchart roster lists Premier Grain, LLC at 3540 OH-28, Lyndon, with the page's own 800-521-5600." },
+  { id: "qualityroasting-valders", operator: "Quality Roasting, Inc.", loc: "454", registryId: "WI|qualityroastinginc|valders", website: "https://qualityroasting.com/",
+    page: "https://www.qualityroasting.com/cash-bids/", why: "The page heads this table \"Valders\"; Wisconsin's licence roll lists Quality Roasting, Inc. at 2514 Marken Rd., Valders." },
+  { id: "qualityroasting-owen", operator: "Quality Roasting, Inc.", loc: "455", knownId: "Quality Roasting, Inc.|Owen|Owen|WI", website: "https://qualityroasting.com/",
+    page: "https://www.qualityroasting.com/cash-bids/", why: "The page heads this table \"Owen\"; the Barchart roster and Wisconsin's licence roll both list Quality Roasting, Inc. at Owen, WI." },
+  { id: "qualityroasting-reese", operator: "Quality Roasting, Inc.", loc: "453", knownId: "2719", website: "https://qualityroasting.com/",
+    page: "https://www.qualityroasting.com/cash-bids/", why: "The page heads this table \"Reese\"; the Barchart roster lists Quality Roasting, Inc. at 135 S Bradleyville Road, Reese, MI, with the page's own 920-775-9279." },
+  { id: "homecitygrain-home", operator: "Home City Grain, Inc.", loc: "449", registryId: "KS|homecitygraininc|home", website: "https://homecitygrain.com/",
+    page: "https://www.homecitygrain.com/cash-bids/", why: "The page heads this table \"Home, KS\"; Kansas's licence roll lists Home City Grain, Inc. at Home." },
+  { id: "homecitygrain-wakefield", operator: "Home City Grain, Inc.", loc: "450", knownId: "Home City Grain, Inc.|WAKEFIELD, KS|Wakefield|KS", website: "https://homecitygrain.com/",
+    page: "https://www.homecitygrain.com/cash-bids/", why: "The page heads this table \"Wakefield, KS\"; the Barchart roster lists Home City Grain, Inc. at Wakefield, KS." },
+  { id: "centralmissouriagriservice-marshall", operator: "Central Missouri AgriService, LLC", loc: "cmas001", registryId: "MO|centralmissouriagriservicellc|marshall", website: "https://cm-as.com/",
+    page: "https://cm-as.com/cash-bids/", why: "The page's one board is headed \"CMAS LOCATION\" and prints 660-886-6976; Missouri's licence roll lists Central Missouri AgriService at 211 N Lyon, Marshall, with that phone." },
 ];
 
 export function build() {
   return SITES.map((x) => {
-    const k = known[x.knownId];
-    if (!k) throw new Error(`${x.id}: known["${x.knownId}"] is not in geocodes/places.json any more`);
+    const k = x.knownId ? known[x.knownId] : registry[x.registryId];
+    if (!k) throw new Error(`${x.id}: ${x.knownId ? `known["${x.knownId}"]` : `registry["${x.registryId}"]`} is not in geocodes/places.json any more`);
+    const rowRef = x.knownId ? `geocodes/places.json known["${x.knownId}"]` : `geocodes/places.json registry["${x.registryId}"]`;
     return {
-      id: x.id, operator: k.operator, location: k.location, state: k.state,
+      id: x.id, operator: x.operator ?? k.operator, location: x.location ?? (k.location === k.location?.toUpperCase() ? title(k.location) : k.location), state: k.state,
       platform: "qtmarket", url: scriptUrl(x.loc), locationId: x.loc,
       identityAlternative: VERIFIED_BY,
       bands: { corn: [2, 12], soybean: [6, 32], wheat: [3, 20] },
       cadence: "grain-day", provenance: "scraped", enabled: true,
       note: `GENERATED by scripts/qtmarket-manifests.mjs. Read from ${scriptUrl(x.loc)}, the QT Market Center script their own page ${x.page} loads (capture.yml run 37051659428). `
-        + `PLACE: ${x.why} Town, street, phone and coordinate are copied from that roster row (geocodes/places.json known["${x.knownId}"], ${k.precision} precision). `
+        + `PLACE: ${x.why} Town, street, phone and coordinate are copied from that row (${rowRef}, ${k.precision} precision${k.precision === "street" || k.precision === "town" ? "" : "; not street or town, so no coordinate is taken and it stays off the distance map"}). `
         + `IDENTITY: the board names its futures month and prints no price, so it publishes on identityAlternative "${VERIFIED_BY}": each row's cash - basis must land within 5c of the CBOT quote for the contract it names. `
-        + `On the capture, corn and soybean rows sat -0.25 to +0.5c from quotes printed on DTN boards 35 minutes earlier.`,
+        + (x.loc === "441" || x.loc === "438" ? `On the capture, corn and soybean rows sat -0.25 to +0.5c from quotes printed on DTN boards 35 minutes earlier.` : `Its first live poll is the check.`),
       publicNote: "Their publicly posted cash board. Cash and basis are their own commercial numbers. Their board prints no futures price, so none is republished; CBOT quotes are used only to check that the columns were read correctly.",
-      address: k.address ?? null, zip: null, lat: k.lat, lon: k.lon, latPrecision: k.precision,
+      /* Only a street or town fix goes on the map (test/geocodes.test.mjs). A
+         county-precision row gives the town and no pin. */
+      address: k.address ?? null, zip: null,
+      ...(k.lat != null && (k.precision === "street" || k.precision === "town")
+        ? { lat: k.lat, lon: k.lon, latPrecision: k.precision } : { lat: null, lon: null }),
       phone: k.phone ?? null, email: null, website: x.website, inMerge: true,
-      sameAsKnown: [x.knownId],
+      ...(x.knownId ? { sameAsKnown: [x.knownId] } : {}),
     };
   });
 }

@@ -46,7 +46,9 @@ test("no quotes, a page that is not the script, and a request with no loc are re
 });
 
 test("the manifests on disk are exactly what the generator writes", () => {
-  assert.equal(SITES.length, 2);
+  /* 2 on 2026-10-02 afternoon; 13 after the next four QT sites the same evening. */
+  assert.equal(SITES.length, 13);
+  assert.ok(SITES.every((x) => x.knownId || x.registryId), "every yard names the row it is");
   for (const m of build())
     assert.deepEqual(JSON.parse(readFileSync(new URL(`../sources/${m.id}.json`, import.meta.url), "utf8")), m, m.id);
 });
