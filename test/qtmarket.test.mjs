@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { extract, scriptUrl, contractOf, VERIFIED_BY, QtRefused } from "../lib/adapters/qtmarket.mjs";
+import { extract, scriptUrl, contractOf, VERIFIED_BY, QtRefused, QtEmptyRefused } from "../lib/adapters/qtmarket.mjs";
 import { build, SITES } from "../scripts/qtmarket-manifests.mjs";
 
 const fx = (loc) => readFileSync(new URL(`../fixtures/qtmarket-${loc}-2026-10-02.js`, import.meta.url), "utf8");
@@ -51,4 +51,17 @@ test("the manifests on disk are exactly what the generator writes", () => {
   assert.ok(SITES.every((x) => x.knownId || x.registryId), "every yard names the row it is");
   for (const m of build())
     assert.deepEqual(JSON.parse(readFileSync(new URL(`../sources/${m.id}.json`, import.meta.url), "utf8")), m, m.id);
+});
+
+import { isRefusal } from "../lib/board.mjs";
+test("Premier Grain Leesburg: 'Call in for Cash Bids.' is an empty board, refused and counted as posting nothing", () => {
+  let err = null;
+  try { extract(fx("444"), scriptUrl("444"), { contracts: SAME_HOUR }); } catch (e) { err = e; }
+  assert.ok(err instanceof QtEmptyRefused && err instanceof QtRefused);
+  assert.equal(err.empty, true);
+  assert.equal(isRefusal(err), true);
+  assert.match(err.message, /Call in for Cash Bids/);
+  let other = null;
+  try { extract("<html></html>", scriptUrl("444"), { contracts: SAME_HOUR }); } catch (e) { other = e; }
+  assert.notEqual(other.empty, true, "a body that is not the script is not an empty board");
 });
