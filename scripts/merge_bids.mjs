@@ -346,6 +346,9 @@ function row(o) {
     place: o.place,
     operator: o.operator, branch: o.branch || null,
     city: o.city || null, state: o.state || null, zip: o.zip || null,
+    /* Display only, filled per place in main() -- see displayTown(). null
+       unless `city` is an elevator's name and a table names the town. */
+    town: null,
     lat: r5(o.lat), lon: r5(o.lon), precision: o.precision || null,
 
     /* WHICH MONEY, AND HOW WE KNOW -- 2026-09-06. `cash` and `basis` below are
@@ -1055,6 +1058,9 @@ function main() {
     const f = bids[0];
     const slug = shardName(place);
     const town = displayTown(f, places, tt);
+    /* On every row as well, so merged-all.json and the shard rows carry it:
+       agsist's build reads merged-all.json, not the index. */
+    for (const b of bids) b.town = town.town;
     if (town.town) townLog.set.push(`${f.city}, ${f.state} -> ${town.town} (${town.townVia})`);
     else if (town.townWhy) townLog.empty.push(`${f.city}, ${f.state}: ${town.townWhy}`);
     placeRows.push({

@@ -103,3 +103,13 @@ test("the committed ZIP table names the four Sig asked about", () => {
   assert.deepEqual(zt["54727"], ["Cadott", "WI"]);
   assert.deepEqual(zt["54006"], ["Cushing", "WI"]);
 });
+
+test("every merged row carries `town`, null by default", async () => {
+  const { row } = await import("../scripts/merge_bids.mjs");
+  const r = row({ place: "p", operator: "Walsh Grain", city: "Walsh Grain", state: "WI",
+                  commodity: "Corn", delivery: "Oct 26", cash: 4.2, basis: -0.6, via: "scrape",
+                  asOf: "2026-10-06T12:00:00Z" });
+  assert.ok("town" in r);
+  assert.equal(r.town, null);
+  assert.equal(r.city, "Walsh Grain");
+});
