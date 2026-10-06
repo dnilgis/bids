@@ -202,8 +202,54 @@ class Tally {
  */
 const periodEnd = (p) => String(p).split("/").pop();
 
-export function nearestOpen(bids) {
+/* THE MONTH A PERIOD CAN BE DELIVERED IN, AS SEEN FROM `asOf`.
+ *
+ * Comparing raw keys as strings put "2027-01" before "newcrop-2026" ("2" sorts
+ * before "n"), so Allied Cooperative's ten-odd Wisconsin boards, which quote
+ * exactly those two, published their January forward ($4.46) as today's cash
+ * on 2026-10-06 while the harvest bid sat beside it. Every key is turned into
+ * a month first, then compared:
+ *
+ *   YYYY-MM, YYYY-MM/YYYY-MM   the month, or the end of the window (as before)
+ *   spot                       the current month
+ *   newcrop-YYYY               harvest: Sep-Dec for corn, soybeans and sorghum,
+ *                              Jun-Sep for wheat. Inside it, the current month;
+ *                              before it, its first month; after it, expired.
+ *   oldcrop-YYYY               the current month, until YYYY-09; then expired
+ *
+ * Anything that lands before the current month is not a candidate. null means
+ * "cannot be placed", and a row that cannot be placed is not the nearest
+ * anything. */
+const NEWCROP = { wheat: [6, 9] };
+const NEWCROP_DEFAULT = [9, 12];
+const ym = (y, m) => `${y}-${String(m).padStart(2, "0")}`;
+
+export function deliveryMonth(period, cropName, asOf) {
+  const d = asOf instanceof Date ? asOf : new Date(asOf ?? Date.now());
+  if (Number.isNaN(d.getTime())) return null;
+  const cy = d.getUTCFullYear(), cm = d.getUTCMonth() + 1;
+  const cur = ym(cy, cm);
+  const p = String(period ?? "");
+  let m = null;
+  if (p === "spot") m = cur;
+  else if (/^\d{4}-\d{2}(\/\d{4}-\d{2})?$/.test(p)) m = periodEnd(p);
+  else {
+    const s = /^(newcrop|oldcrop)-(\d{4})$/.exec(p);
+    if (!s) return null;
+    const y = +s[2];
+    if (s[1] === "oldcrop") m = cur < ym(y, 9) ? cur : null;
+    else {
+      const [a, b] = NEWCROP[cropName] || NEWCROP_DEFAULT;
+      const start = ym(y, a), end = ym(y, b);
+      m = cur < start ? start : cur <= end ? cur : null;
+    }
+  }
+  return m != null && m >= cur ? m : null;
+}
+
+export function nearestOpen(bids, asOf = Date.now()) {
   const out = {};
+  const when = new Map();
   for (const b of bids || []) {
     if (b.cash == null || b.period == null || b.periodPast === true) continue;
     /* AN UNCONFIRMED PRICE IS NOT TODAY'S CASH. A board this repo could not
@@ -219,12 +265,13 @@ export function nearestOpen(bids) {
        question, and `currency` is on the place row for it to ask. */
     if (b.stale === true) continue;
     if ((b.sourceStatus || "ok") !== "ok") continue;
-    const cur = out[b.crop];
-    if (!cur
-        || periodEnd(b.period) < periodEnd(cur.period)
-        || (periodEnd(b.period) === periodEnd(cur.period) && b.cash > cur.cash)) {
+    const m = deliveryMonth(b.period, b.crop, asOf);
+    if (m == null) continue;
+    const cur = out[b.crop], cm = when.get(b.crop);
+    if (!cur || m < cm || (m === cm && b.cash > cur.cash)) {
       out[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
                       period: b.period, commodity: b.commodity, delivery: b.delivery };
+      when.set(b.crop, m);
     }
   }
   return out;
@@ -824,7 +871,7 @@ function main() {
     }
 
     /* See nearestOpen() above for why this is not `best`. */
-    const now = nearestOpen(bids);
+    const now = nearestOpen(bids, nowMs);
 
     const f = bids[0];
     const slug = shardName(place);

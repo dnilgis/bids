@@ -8,7 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf,
-         isBoardFile, nearestOpen } from "../scripts/merge_bids.mjs";
+         isBoardFile, nearestOpen, deliveryMonth } from "../scripts/merge_bids.mjs";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -416,6 +416,12 @@ test("data/gaps/ IS WHERE A REPORT GOES, and barchart_gap.mjs writes it there", 
 
 /* ── the number a cash card prints ──────────────────────────────────────── */
 
+/* THESE CASES WERE WRITTEN AGAINST SEPTEMBER 2026 FILES, AND NOW SAY SO.
+   nearestOpen() reckons spot, new crop and expiry from a clock; without one
+   pinned here these tests would start failing on their own as the months
+   named in them went by. */
+const SEPT = "2026-09-15";
+
 const B = (crop, period, cash, past = false, delivery = "") =>
   ({ crop, period, cash, periodPast: past, basis: null, basisCents: null,
      commodity: crop, delivery });
@@ -428,7 +434,7 @@ test("nearestOpen takes the soonest window, not the biggest number", () => {
   const got = nearestOpen([
     B("wheat", "2027-06/2027-07", 7.185),
     B("wheat", "2026-09/2026-11", 7.05),
-  ]);
+  ], SEPT);
   assert.equal(got.wheat.cash, 7.05);
   assert.equal(got.wheat.period, "2026-09/2026-11");
 });
@@ -437,7 +443,7 @@ test("inside one window the better price wins", () => {
   const got = nearestOpen([
     B("corn", "2026-10/2026-11", 4.90),
     B("corn", "2026-10/2026-11", 5.10),
-  ]);
+  ], SEPT);
   assert.equal(got.corn.cash, 5.10);
 });
 
@@ -448,24 +454,24 @@ test("a window that has closed is never the nearest one", () => {
   const got = nearestOpen([
     B("corn", "2026-08", 9.99, true),
     B("corn", "2026-12", 5.00, false),
-  ]);
+  ], SEPT);
   assert.equal(got.corn.cash, 5.00, "the expired row must not win on price");
 });
 
 test("a row with no readable period cannot be the nearest anything", () => {
-  const got = nearestOpen([{ crop: "corn", period: null, cash: 9.99, periodPast: false }]);
+  const got = nearestOpen([{ crop: "corn", period: null, cash: 9.99, periodPast: false }], SEPT);
   assert.equal(got.corn, undefined);
 });
 
 test("a row with no price is not a bid", () => {
-  const got = nearestOpen([B("corn", "2026-12", null)]);
+  const got = nearestOpen([B("corn", "2026-12", null)], SEPT);
   assert.equal(got.corn, undefined);
 });
 
 test("each crop is answered on its own, and nothing else is invented", () => {
   const got = nearestOpen([
     B("corn", "2026-12", 5.00), B("soybeans", "2026-11", 13.00),
-  ]);
+  ], SEPT);
   assert.deepEqual(Object.keys(got).sort(), ["corn", "soybeans"]);
 });
 
@@ -475,7 +481,7 @@ test("a bare month sorts against a range on the end of the range", () => {
   const got = nearestOpen([
     B("corn", "2026-08/2026-11", 5.50),
     B("corn", "2026-09", 5.00),
-  ]);
+  ], SEPT);
   assert.equal(got.corn.period, "2026-09", "the bare September closes first");
 });
 
@@ -486,22 +492,136 @@ test("a price the board could not confirm this pass is not today's cash", () => 
   const stale = nearestOpen([
     { ...B("corn", "2026-10", 9.99), stale: true },
     B("corn", "2026-12", 5.00),
-  ]);
+  ], SEPT);
   assert.equal(stale.corn.cash, 5.00, "a stale row must not win on nearness");
 
   for (const st of ["broken", "refused"]) {
     const got = nearestOpen([
       { ...B("corn", "2026-10", 9.99), sourceStatus: st },
       B("corn", "2026-12", 5.00),
-    ]);
+    ], SEPT);
     assert.equal(got.corn.cash, 5.00, `a ${st} source must not win on nearness`);
   }
+});
+
+/* ── NEW CROP, OLD CROP AND SPOT ARE MONTHS, NOT STRINGS ──────────────────
+   Allied Cooperative (Tomah, Mauston and ten-odd more WI boards) quotes
+   "newcrop-2026" and "2027-01". As strings "2027-01" sorts first, so on
+   2026-10-06 its January forward ($4.46) was published as today's cash with
+   the harvest bid beside it. */
+
+test("October: the harvest bid beats a later forward (Allied, 2026-10-06)", () => {
+  const got = nearestOpen([
+    B("corn", "2027-01", 4.46),
+    B("corn", "newcrop-2026", 4.40),
+    B("soybeans", "2027-01", 12.05),
+    B("soybeans", "newcrop-2026", 11.88),
+  ], "2026-10-06");
+  assert.equal(got.corn.period, "newcrop-2026");
+  assert.equal(got.corn.cash, 4.40);
+  assert.equal(got.soybeans.period, "newcrop-2026");
+});
+
+test("October: spot is this month, and a range ending later loses to it", () => {
+  const got = nearestOpen([
+    B("corn", "2026-10/2026-11", 4.50),
+    B("corn", "spot", 4.20),
+  ], "2026-10-06");
+  assert.equal(got.corn.period, "spot");
+});
+
+test("October: wheat's new crop window (Jun-Sep) has closed, so it is not a candidate", () => {
+  const got = nearestOpen([
+    B("wheat", "newcrop-2026", 6.00),
+    B("wheat", "2026-12", 5.50),
+  ], "2026-10-06");
+  assert.equal(got.wheat.period, "2026-12");
+  const only = nearestOpen([B("wheat", "newcrop-2026", 6.00)], "2026-10-06");
+  assert.equal(only.wheat, undefined, "an expired harvest window is not today's cash");
+});
+
+test("October: old crop is expired once new crop has begun", () => {
+  const got = nearestOpen([
+    B("corn", "oldcrop-2026", 4.80),
+    B("corn", "2026-12", 4.50),
+  ], "2026-10-06");
+  assert.equal(got.corn.period, "2026-12");
+});
+
+test("May: old crop is today, new crop opens at its window start", () => {
+  const got = nearestOpen([
+    B("corn", "newcrop-2026", 4.40),   // Sep 2026
+    B("corn", "2026-07", 4.60),
+    B("corn", "oldcrop-2026", 4.70),   // May 2026
+  ], "2026-05-12");
+  assert.equal(got.corn.period, "oldcrop-2026");
+
+  const noOld = nearestOpen([
+    B("corn", "newcrop-2026", 4.40),   // Sep 2026
+    B("corn", "2026-12", 4.30),
+  ], "2026-05-12");
+  assert.equal(noOld.corn.period, "newcrop-2026", "Sep beats Dec");
+
+  const fwd = nearestOpen([
+    B("corn", "newcrop-2026", 4.40),   // Sep 2026
+    B("corn", "2026-07", 4.60),
+  ], "2026-05-12");
+  assert.equal(fwd.corn.period, "2026-07", "July comes before the September window");
+
+  const wheat = nearestOpen([
+    B("wheat", "newcrop-2026", 6.10),  // Jun 2026
+    B("wheat", "2026-07", 6.30),
+  ], "2026-05-12");
+  assert.equal(wheat.wheat.period, "newcrop-2026", "wheat harvest opens in June");
+});
+
+test("December: still inside the row-crop window; next year's new crop is a forward", () => {
+  const got = nearestOpen([
+    B("soybeans", "2027-01", 12.10),
+    B("soybeans", "newcrop-2026", 11.90),  // Dec 2026, inside Sep-Dec
+    B("soybeans", "newcrop-2027", 11.50),  // Sep 2027
+  ], "2026-12-03");
+  assert.equal(got.soybeans.period, "newcrop-2026");
+
+  const later = nearestOpen([
+    B("soybeans", "2027-01", 12.10),
+    B("soybeans", "newcrop-2027", 11.50),
+  ], "2026-12-03");
+  assert.equal(later.soybeans.period, "2027-01");
+
+  const tie = nearestOpen([
+    B("corn", "spot", 4.10),
+    B("corn", "newcrop-2026", 4.25),
+  ], "2026-12-03");
+  assert.equal(tie.corn.cash, 4.25, "same month: the better price wins, as before");
+});
+
+test("a month already gone is not a candidate even if periodPast was not set", () => {
+  const got = nearestOpen([
+    B("corn", "2026-09", 9.99),
+    B("corn", "2026-11", 4.50),
+  ], "2026-10-06");
+  assert.equal(got.corn.period, "2026-11");
+});
+
+test("deliveryMonth maps each key the way the comment says", () => {
+  const oct = "2026-10-06";
+  assert.equal(deliveryMonth("spot", "corn", oct), "2026-10");
+  assert.equal(deliveryMonth("newcrop-2026", "corn", oct), "2026-10");
+  assert.equal(deliveryMonth("newcrop-2026", "sorghum", oct), "2026-10");
+  assert.equal(deliveryMonth("newcrop-2026", "wheat", oct), null);
+  assert.equal(deliveryMonth("newcrop-2027", "wheat", oct), "2027-06");
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", oct), null);
+  assert.equal(deliveryMonth("oldcrop-2027", "corn", oct), "2026-10");
+  assert.equal(deliveryMonth("2026-10/2026-11", "corn", oct), "2026-11");
+  assert.equal(deliveryMonth("2027-01", "corn", oct), "2027-01");
+  assert.equal(deliveryMonth("whenever", "corn", oct), null);
 });
 
 test("a Canadian board is not stale and is not dropped here", () => {
   /* Whether a page can draw CAD is that page's question. The place row carries
      `currency` so it can ask without fetching the shard. */
-  const got = nearestOpen([{ ...B("corn", "2026-12", 5.00), currency: "CAD" }]);
+  const got = nearestOpen([{ ...B("corn", "2026-12", 5.00), currency: "CAD" }], SEPT);
   assert.equal(got.corn.cash, 5.00);
 });
 

@@ -151,3 +151,15 @@ test("a scraped row's own two basis fields survive the round trip", () => {
   assert.equal(basisCents(-0.6), -60);
   assert.equal(basisDollars(-60), -0.6);
 });
+
+test("ScoularView's bare crop codes reach their crops", () => {
+  /* Live labels from scoularview-* boards, 2026-10-06. Before this mapping all
+     three fell into "other": 16 Ysb, 26 Hrww and 8 Sor rows. */
+  assert.equal(crop("Ysb"), "soybeans");
+  assert.equal(crop("Hrww"), "wheat");
+  assert.equal(crop("Sor"), "sorghum");
+  assert.equal(crop("Yc"), "corn", "the code beside them already worked");
+  /* Whole label only: a word that merely contains the code is not the code. */
+  assert.equal(crop("Sorry"), "other");
+  assert.equal(crop("Sunflowers"), "other");
+});
