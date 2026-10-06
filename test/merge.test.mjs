@@ -540,9 +540,11 @@ test("October: wheat's new crop window (Jun-Sep) has closed, so it is not a cand
   assert.equal(only.wheat, undefined, "an expired harvest window is not today's cash");
 });
 
-test("October: old crop is expired once new crop has begun", () => {
+test("October: last year's corn is expired once its crop year has ended", () => {
+  /* oldcrop-YYYY is the harvest year. 2025 corn's crop year ran Sep 2025 to
+     Aug 2026. */
   const got = nearestOpen([
-    B("corn", "oldcrop-2026", 4.80),
+    B("corn", "oldcrop-2025", 4.80),
     B("corn", "2026-12", 4.50),
   ], "2026-10-06");
   assert.equal(got.corn.period, "2026-12");
@@ -552,9 +554,9 @@ test("May: old crop is today, new crop opens at its window start", () => {
   const got = nearestOpen([
     B("corn", "newcrop-2026", 4.40),   // Sep 2026
     B("corn", "2026-07", 4.60),
-    B("corn", "oldcrop-2026", 4.70),   // May 2026
+    B("corn", "oldcrop-2025", 4.70),   // May 2026, inside 2025's crop year
   ], "2026-05-12");
-  assert.equal(got.corn.period, "oldcrop-2026");
+  assert.equal(got.corn.period, "oldcrop-2025");
 
   const noOld = nearestOpen([
     B("corn", "newcrop-2026", 4.40),   // Sep 2026
@@ -611,11 +613,70 @@ test("deliveryMonth maps each key the way the comment says", () => {
   assert.equal(deliveryMonth("newcrop-2026", "sorghum", oct), "2026-10");
   assert.equal(deliveryMonth("newcrop-2026", "wheat", oct), null);
   assert.equal(deliveryMonth("newcrop-2027", "wheat", oct), "2027-06");
-  assert.equal(deliveryMonth("oldcrop-2026", "corn", oct), null);
-  assert.equal(deliveryMonth("oldcrop-2027", "corn", oct), "2026-10");
+  assert.equal(deliveryMonth("oldcrop-2025", "corn", oct), null);
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", oct), "2026-10");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", oct), "2026-10");
   assert.equal(deliveryMonth("2026-10/2026-11", "corn", oct), "2026-11");
   assert.equal(deliveryMonth("2027-01", "corn", oct), "2027-01");
   assert.equal(deliveryMonth("whenever", "corn", oct), null);
+});
+
+/* ── OLD CROP IS THE HARVEST YEAR, INSIDE ITS CROP YEAR ────────────────────
+   2026-10-06: ADM Plains KS posted "Old Crop Wheat (2026-12)" at $6.75 and
+   the old rule ("current until YYYY-09") dropped it as expired. Wheat's crop
+   year starts June 1, corn's September 1; YYYY is the year it was harvested
+   (see the comment on deliveryMonth for the boards that show it). */
+
+test("old-crop wheat: October and May are inside the crop year, July is not", () => {
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2026-10-06"), "2026-10");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2027-05-12"), "2027-05");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2027-07-01"), null);
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2027-06-01"), null, "June 1 starts the next crop year");
+  assert.equal(deliveryMonth("oldcrop-2026", "oats", "2027-05-12"), "2027-05");
+  assert.equal(deliveryMonth("oldcrop-2026", "barley", "2027-07-01"), null);
+});
+
+test("old-crop corn: October and May are inside the crop year, July too; September is not", () => {
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", "2026-10-06"), "2026-10");
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", "2027-05-12"), "2027-05");
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", "2027-07-01"), "2027-07");
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", "2027-08-31"), "2027-08");
+  assert.equal(deliveryMonth("oldcrop-2026", "corn", "2027-09-01"), null);
+  assert.equal(deliveryMonth("oldcrop-2025", "corn", "2026-07-01"), "2026-07");
+  assert.equal(deliveryMonth("oldcrop-2025", "soybeans", "2026-10-06"), null);
+  assert.equal(deliveryMonth("oldcrop-2025", "sorghum", "2026-05-12"), "2026-05");
+});
+
+test("an old crop not yet harvested is placed at its crop year's first month", () => {
+  assert.equal(deliveryMonth("oldcrop-2027", "wheat", "2026-10-06"), "2027-06");
+  assert.equal(deliveryMonth("oldcrop-2027", "corn", "2026-10-06"), "2027-09");
+});
+
+test("ADM Plains KS, 2026-10-06: old-crop wheat is today's wheat again", () => {
+  const got = nearestOpen([
+    B("wheat", "oldcrop-2026", 6.7475, false, "Old Crop Wheat (2026-12)"),
+    B("wheat", "2027-07", 6.9325, false, "2027 HRW Wheat (2027-07)"),
+  ], "2026-10-06");
+  assert.equal(got.wheat.period, "oldcrop-2026");
+  assert.equal(got.wheat.cash, 6.7475);
+});
+
+test("a real start/end on the row beats the season key", () => {
+  const r = { start: "2026-12-01", end: "2026-12-31" };
+  assert.equal(deliveryMonth("oldcrop-2025", "corn", "2026-10-06", r), "2026-12");
+  assert.equal(deliveryMonth("newcrop-2026", "wheat", "2026-10-06", r), "2026-12");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2027-07-01", { end: "2027-07-31" }), "2027-07");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2026-10-06", { end: "2026-09-30" }), null, "a window that has closed");
+});
+
+test("the gradable \"(YYYY-MM)\" suffix is the futures contract and is NOT read as delivery", () => {
+  /* "Old Crop Wheat (2026-12)" is priced off KEZ6. If the suffix were a
+     delivery month, July 2027 would see December 2026 and still drop it,
+     and October would see a later month than the bid means. The label is
+     not consulted; only a start/end is. */
+  const row = { delivery: "Old Crop Wheat (2026-12)" };
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2026-10-06", row), "2026-10");
+  assert.equal(deliveryMonth("oldcrop-2026", "wheat", "2027-05-12", row), "2027-05");
 });
 
 test("a Canadian board is not stale and is not dropped here", () => {

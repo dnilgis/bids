@@ -67,3 +67,11 @@ wrong one when a farmer asks which elevator is nearest.
    file; if you find yourself reading the original paste, stop.
 4. Operator-embedded map pins are NOT ground truth — Allied's own Hixton pin is
    about 700 m out, further off than the coordinate we are checking.
+
+## `zip-towns.json`
+
+ZIP -> [primary city, state], from the same `zipcodes` package that builds
+`places.json`. Static; rebuilt by `scripts/build_zip_towns.py` when that package
+is updated. Read by `scripts/merge_bids.mjs` to fill a display-only `town` on a
+place whose `city` is an elevator's name ("Walsh Grain" -> Mauston). `city`
+itself is never rewritten: it is part of the place key and the shard filename.

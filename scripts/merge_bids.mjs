@@ -215,30 +215,77 @@ const periodEnd = (p) => String(p).split("/").pop();
  *   newcrop-YYYY               harvest: Sep-Dec for corn, soybeans and sorghum,
  *                              Jun-Sep for wheat. Inside it, the current month;
  *                              before it, its first month; after it, expired.
- *   oldcrop-YYYY               the current month, until YYYY-09; then expired
+ *   oldcrop-YYYY               the crop harvested in YYYY, inside its crop year:
+ *                              Jun YYYY to May YYYY+1 for wheat, oats and barley,
+ *                              Sep YYYY to Aug YYYY+1 for everything else. Inside
+ *                              it, the current month; before it, its first
+ *                              month; after it, expired. (Rewritten 2026-10-06;
+ *                              it was "the current month until YYYY-09", which
+ *                              dropped ADM Plains KS's $6.75 old-crop HRW wheat
+ *                              on 2026-10-06 as expired.)
+ *
+ * WHAT YYYY MEANS IN oldcrop-YYYY: THE HARVEST YEAR. Measured 2026-10-06 on the
+ * raw boards, not assumed:
+ *   - Cooperative Elevator Co. (Bushel) names the crop year in its commodity:
+ *     "Corn 2025" is its O/C Corn and "Corn 2026" its N/C Corn; "White Wheat
+ *     2026" and "Red Wheat 2026" are O/C, the 2027s are N/C. Old crop in
+ *     October 2026 is the 2025 corn and the 2026 wheat -- the year it was cut.
+ *   - FMN1 (London, Burgessville ON) posts "HRW Old Crop Wheat" and "SRW Old
+ *     Crop Wheat" for delivery 10/01/2026: 2026 wheat, called old crop in Oct.
+ *   - ADM Plains KS posts "Old Crop Wheat (2026-12)" on 2026-10-06 beside
+ *     "2027 HRW Wheat (2027-07)". The one oldcrop key in merged-all.json that
+ *     day is this row, oldcrop-2026, and it is the 2026 harvest.
+ * So a year-the-window-ends reading would call 2026 wheat "oldcrop-2027"; no
+ * board writes that, and the old rule expired the real one.
+ *
+ * AN EXPLICIT DELIVERY MONTH IS ALREADY THE KEY. A board that names a month
+ * ("Nov26 Soybeans", "01 Jun 2027 to 31 Jul 2027") gets a YYYY-MM key from
+ * lib/delivery.mjs and never reaches the season rules. THE "(YYYY-MM)" SUFFIX
+ * ON A GRADABLE LABEL IS NOT A DELIVERY MONTH: lib/adapters/gradable.mjs builds
+ * it from `contract_month`, the futures contract. Measured: 1,458 merged rows
+ * carry the suffix and on 734 of them it is not a month of the delivery key
+ * ("Feb 2027 (2027-03)", "October (2026-12)"), and the POET fixture's "Sept 26"
+ * row is delivery 2026-09-01..30 on contract 2026-12-01. So it is not read as
+ * one here. Only a real start/end on the row (`start`/`end`, ISO dates, which
+ * no merged row carries today) would override a season.
  *
  * Anything that lands before the current month is not a candidate. null means
  * "cannot be placed", and a row that cannot be placed is not the nearest
  * anything. */
 const NEWCROP = { wheat: [6, 9] };
 const NEWCROP_DEFAULT = [9, 12];
+/* The month a crop year begins: June for the small grains, September for the
+   row crops (and anything unnamed, as NEWCROP_DEFAULT does). */
+const CROP_YEAR_START = { wheat: 6, oats: 6, barley: 6 };
+const CROP_YEAR_START_DEFAULT = 9;
+const ISO_MONTH = /^(\d{4}-\d{2})(-\d{2})?$/;
 const ym = (y, m) => `${y}-${String(m).padStart(2, "0")}`;
 
-export function deliveryMonth(period, cropName, asOf) {
+export function deliveryMonth(period, cropName, asOf, row = null) {
   const d = asOf instanceof Date ? asOf : new Date(asOf ?? Date.now());
   if (Number.isNaN(d.getTime())) return null;
   const cy = d.getUTCFullYear(), cm = d.getUTCMonth() + 1;
   const cur = ym(cy, cm);
   const p = String(period ?? "");
   let m = null;
+  /* A real delivery window on the row wins over any key: its end month, as
+     a YYYY-MM/YYYY-MM key is read. */
+  const xs = ISO_MONTH.exec(String(row?.start ?? "")), xe = ISO_MONTH.exec(String(row?.end ?? ""));
+  if (xe || xs) {
+    m = (xe || xs)[1];
+    return m >= cur ? m : null;
+  }
   if (p === "spot") m = cur;
   else if (/^\d{4}-\d{2}(\/\d{4}-\d{2})?$/.test(p)) m = periodEnd(p);
   else {
     const s = /^(newcrop|oldcrop)-(\d{4})$/.exec(p);
     if (!s) return null;
     const y = +s[2];
-    if (s[1] === "oldcrop") m = cur < ym(y, 9) ? cur : null;
-    else {
+    if (s[1] === "oldcrop") {
+      const a = CROP_YEAR_START[cropName] || CROP_YEAR_START_DEFAULT;
+      const start = ym(y, a), end = ym(y + 1, a - 1);
+      m = cur < start ? start : cur <= end ? cur : null;
+    } else {
       const [a, b] = NEWCROP[cropName] || NEWCROP_DEFAULT;
       const start = ym(y, a), end = ym(y, b);
       m = cur < start ? start : cur <= end ? cur : null;
@@ -265,7 +312,7 @@ export function nearestOpen(bids, asOf = Date.now()) {
        question, and `currency` is on the place row for it to ask. */
     if (b.stale === true) continue;
     if ((b.sourceStatus || "ok") !== "ok") continue;
-    const m = deliveryMonth(b.period, b.crop, asOf);
+    const m = deliveryMonth(b.period, b.crop, asOf, b);
     if (m == null) continue;
     const cur = out[b.crop], cm = when.get(b.crop);
     if (!cur || m < cm || (m === cm && b.cash > cur.cash)) {
@@ -277,10 +324,11 @@ export function nearestOpen(bids, asOf = Date.now()) {
   return out;
 }
 
-export function shardOf(place, bids) {
+export function shardOf(place, bids, town = null) {
   const f = bids[0];
   return { schema: SHARD_SCHEMA, place,
-           operator: f.operator, city: f.city, state: f.state,
+           operator: f.operator, city: f.city, town: town?.town ?? null,
+           townVia: town?.townVia ?? null, state: f.state,
            lat: f.lat, lon: f.lon,
            pricedAt: f.pricedAt, checkedAt: f.checkedAt, bids };
 }
@@ -379,6 +427,135 @@ function coordOf(s, places) {
     return { lat: s.lat, lon: s.lon, precision: s.latPrecision || null, via: "index.json" };
   }
   return { lat: null, lon: null, precision: null, via: null };
+}
+
+/* ── A TOWN TO SHOW, BESIDE A `city` THAT IS AN ELEVATOR'S NAME ─────────────
+ * 2026-10-06. About 150 places carry the vendor's location label in `city`:
+ * "Walsh Grain" (Mauston), "Melrose Farm Service", "Cadott Grain", "Cushing
+ * Coop". `city` is part of the place key and the shard filename, so it is not
+ * touched. `town` is added beside it, for display only, and only from a table:
+ *
+ *   1. "geocode-zip"   geocodes/places.json resolved this source from its ZIP
+ *                      and wrote the ZIP's town: resolvedFrom "54642 (Melrose)".
+ *   2. "zip"           the place's own ZIP in geocodes/zip-towns.json (the same
+ *                      `zipcodes` table), in the same state, AND the reverse
+ *                      lookup agrees: when the place has a pin, that ZIP's
+ *                      centroid is the nearest ZIP centroid to it, or within
+ *                      TOWN_ZIP_SLACK_KM of the nearest, or the nearest is
+ *                      another ZIP of the same town (Rapid City has several). A head-office ZIP on
+ *                      a branch board is the failure this guards. Measured
+ *                      2026-10-06: Farmward's Clements board carries Wabasso's
+ *                      ZIP (pin 6.4 km from Clements' centroid, 10.8 from
+ *                      Wabasso's); Hedrick IA carries Fremont's (2.9 km from
+ *                      North English's, 42.9 from Fremont's). Both refused.
+ *   3. "geocode-town"  places.json placed it on a town centroid by name and
+ *                      says which town matched ("Cadott" for "Cadott Grain").
+ *
+ * Anything else leaves `town` null with the reason in `townWhy`. Nothing is
+ * read out of the name itself.
+ *
+ * ONLY A NAME GETS ONE. The rule is the words, nothing cleverer. The other
+ * reading offered -- "city does not match the geocoded town" -- was measured on
+ * 2026-10-06 and refused: 254 places differ from their ZIP's town and most are
+ * real hamlets on a neighbour's post office (Pauline KS on a Topeka ZIP,
+ * Edgerton IN on Woodburn's). Swapping those would print the wrong town. */
+export const NAMEY_CITY = /\b(grains?|co-?op|cooperative|elevators?|farm\s+service|mills?|feed|supply|llc|inc)\b/i;
+const normTown = (x) => String(x ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+function kmApart(a, b, c, d) {
+  const R = 6371, r = Math.PI / 180;
+  const x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+export const TOWN_ZIP_SLACK_KM = 1;
+
+/** @param f   a place's first row (city, state, zip, lat, lon, via, source)
+ *  @param geo geocodes/places.json, parsed
+ *  @param t   { zipTown(zip) -> [town, state]|null, zipCoord(zip) -> [lat, lon]|null,
+ *               nearestZip(lat, lon) -> {zip, km}|null, canon(town, state) -> string|null }
+ *  @returns {{town:string|null, townVia:string|null, townWhy:string|null}} */
+export function displayTown(f, geo, t = {}) {
+  const none = (why) => ({ town: null, townVia: null, townWhy: why });
+  const city = String(f?.city ?? "").trim();
+  if (!city || !NAMEY_CITY.test(city)) return none(null);
+  const st = String(f.state ?? "").toUpperCase();
+  const g = f.via === "scrape" ? (geo?.places || {})[f.source] : null;
+  const rf = String(g?.resolvedFrom ?? "");
+  const ok = (town, via) => {
+    const raw = String(town).trim();
+    const tn = (t.canon && t.canon(raw, st)) || raw;
+    if (!tn || normTown(tn) === normTown(city)) return null;
+    return { town: tn, townVia: via, townWhy: null };
+  };
+  let hit = null;
+  const why = [];
+  const zn = /^(\d{5}) \((.+)\)$/.exec(rf);
+  if (zn) hit = ok(zn[2], "geocode-zip");
+  const z5 = String(f.zip ?? "").replace(/\D/g, "").slice(0, 5);
+  if (!hit) {
+    if (z5.length !== 5) why.push("no US ZIP on file");
+    else {
+      const zt = t.zipTown ? t.zipTown(z5) : null;
+      if (!zt) why.push(`ZIP ${z5} is not in the ZIP table`);
+      else if (zt[1] !== st) why.push(`ZIP ${z5} is in ${zt[1]}, the place is in ${st || "no state"}`);
+      else {
+        const pin = typeof f.lat === "number" && typeof f.lon === "number";
+        const zc = pin && t.zipCoord ? t.zipCoord(z5) : null;
+        const near = pin && t.nearestZip ? t.nearestZip(f.lat, f.lon) : null;
+        const dz = zc ? kmApart(f.lat, f.lon, zc[0], zc[1]) : null;
+        if (pin && (!zc || !near)) why.push(`ZIP ${z5} has no centroid to check against the pin`);
+        else if (pin && dz - near.km > TOWN_ZIP_SLACK_KM
+                 && (t.zipTown(near.zip) || [])[0] !== zt[0]) {
+          const nt = t.zipTown(near.zip);
+          why.push(`ZIP ${z5} (${zt[0]}) is ${dz.toFixed(1)} km from the pin; ${near.zip}`
+            + `${nt ? ` (${nt[0]})` : ""} is ${near.km.toFixed(1)} km`);
+        } else hit = ok(zt[0], "zip");
+      }
+    }
+  }
+  if (!hit && g?.via === "zip-centroid" && rf && !zn) {
+    hit = ok(rf.replace(/[\s\-–,\/]+$/, ""), "geocode-town");
+  }
+  if (hit) return hit;
+  if (!g) why.unshift(f.via === "scrape" ? "not in geocodes/places.json" : `a ${f.via} place, no geocode note`);
+  else if (!rf) why.unshift(`geocode is ${g.via} with no town note`);
+  return none(why.join("; ") || "no table names a town");
+}
+
+/* The tables displayTown reads, loaded once. A missing file is not an error:
+   every place then falls back to the geocode note or to null. */
+function townTables() {
+  let zt = {};
+  try { zt = JSON.parse(readFileSync(join(ROOT, "geocodes", "zip-towns.json"), "utf8")).zips || {}; }
+  catch { /* no table: step 2 names nothing */ }
+  const coords = {};
+  const zdir = join(ROOT, "data", "zips");
+  if (existsSync(zdir)) {
+    for (const f of readdirSync(zdir).filter((x) => /^\d\d\.json$/.test(x))) {
+      try { Object.assign(coords, JSON.parse(readFileSync(join(zdir, f), "utf8"))); } catch { /* skip */ }
+    }
+  }
+  const pts = Object.entries(coords);
+  /* The table's own spelling of a town ("HERNDON" -> "Herndon"), when the
+     geocode note echoed a manifest's capitals. Same table, nothing new. */
+  const canonMap = new Map();
+  for (const [, [c, s]] of Object.entries(zt)) {
+    const k = `${normTown(c)}|${s}`;
+    if (!canonMap.has(k)) canonMap.set(k, c);
+  }
+  return {
+    zipTown: (z) => zt[z] || null,
+    zipCoord: (z) => coords[z] || null,
+    nearestZip: (lat, lon) => {
+      let best = null, bd = Infinity;
+      for (const [z, c] of pts) {
+        if (Math.abs(c[0] - lat) > 1.5) continue;
+        const d = kmApart(lat, lon, c[0], c[1]);
+        if (d < bd) { bd = d; best = z; }
+      }
+      return best ? { zip: best, km: bd } : null;
+    },
+    canon: (town, st) => canonMap.get(`${normTown(town)}|${st}`) || null,
+  };
 }
 
 /* Ids whose source file says they are retired or switched off. Read here so
@@ -853,6 +1030,8 @@ function main() {
 
   const placeRows = [];
   let shardsWritten = 0, shardsUnchanged = 0;
+  const tt = townTables();
+  const townLog = { set: [], empty: [] };
   for (const [place, bids] of byPlace) {
     /* BEST IS PER CROP AND PER PLACE, AND IT IS NOT A COMPARISON ACROSS
        PERIODS. A October bid and a July-next-year bid are different markets;
@@ -875,9 +1054,14 @@ function main() {
 
     const f = bids[0];
     const slug = shardName(place);
+    const town = displayTown(f, places, tt);
+    if (town.town) townLog.set.push(`${f.city}, ${f.state} -> ${town.town} (${town.townVia})`);
+    else if (town.townWhy) townLog.empty.push(`${f.city}, ${f.state}: ${town.townWhy}`);
     placeRows.push({
       place, shard: `merged/${slug}.json`,
-      operator: f.operator, branch: f.branch, city: f.city, state: f.state,
+      operator: f.operator, branch: f.branch, city: f.city,
+      /* For display only; see displayTown(). null unless `city` is a name. */
+      town: town.town, townVia: town.townVia, state: f.state,
       lat: f.lat, lon: f.lon, precision: f.precision, mappable: f.mappable,
       via: f.via, source: f.source, bids: bids.length,
       /* FOR A CONSUMER THAT RENDERS A DOLLAR SIGN. 16 of the 11,797 rows in
@@ -890,7 +1074,7 @@ function main() {
       periods: [...new Set(bids.map((b) => b.period))].sort(),
       best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
-    const shard = shardOf(place, bids);
+    const shard = shardOf(place, bids, town);
     const path = join(outDir, `${slug}.json`);
     const text = JSON.stringify(shard, null, 1);
     /* Compare before writing. An identical rewrite still updates the mtime and
@@ -912,6 +1096,12 @@ function main() {
 
   out.shards = { dir: "data/merged", written: shardsWritten, unchanged: shardsUnchanged,
                  orphaned: orphanShards };
+  /* Every display town named, and every name left without one and why, so the
+     list can be read without re-running anything. */
+  out.counts.displayTown = { set: townLog.set.length, empty: townLog.empty.length };
+  out.displayTown = { set: townLog.set.sort(), empty: townLog.empty.sort() };
+  console.log(`\ndisplay town: ${townLog.set.length} place(s) whose city is a name got a town; `
+    + `${townLog.empty.length} left empty`);
   const indexOut = { ...out, bids: undefined, places: placeRows };
   delete indexOut.bids;
 
