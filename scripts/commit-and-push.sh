@@ -78,8 +78,18 @@ else
   git commit -m "$msg" || { echo "::error::commit failed"; exit 1; }
 fi
 
+# A HUNG NETWORK CALL IS NOT A LOST RACE — 2026-10-07.
+# The 21:40 pass read 1,981 boards in 338s, lost the push race, and then sat in
+# `git pull --rebase` for 4m21s until the 600s pass limit killed it with the
+# commit unpushed. The same rebase, replayed against GitHub from a depth-1
+# checkout, takes under 3 seconds, so the time went to a network call that
+# never answered (GitHub was returning 500s on pushes that afternoon). git
+# itself has no deadline on that, so each network step gets one here: a hang
+# costs NET_TIMEOUT seconds and another attempt, not the whole pass.
+net_timeout="${NET_TIMEOUT:-60}"
+
 for i in $(seq 1 "$tries"); do
-  if git push; then
+  if timeout "$net_timeout" git push; then
     [ "$i" -gt 1 ] && echo "pushed on attempt $i"
     exit 0
   fi
@@ -105,7 +115,19 @@ for i in $(seq 1 "$tries"); do
       echo "stashed untracked files so the rebase can check out"
     fi
   fi
-  if ! git pull --rebase --autostash; then
+  t0=$SECONDS
+  timeout "$net_timeout" git fetch origin
+  fetch_rc=$?
+  echo "fetch took $((SECONDS - t0))s (exit $fetch_rc)"
+  if [ "$fetch_rc" -ne 0 ]; then
+    echo "::warning title=fetch did not finish::exit $fetch_rc after $((SECONDS - t0))s; trying again"
+    [ "$UNTRACKED_STASHED" = "1" ] && { git stash pop --quiet 2>/dev/null || true; }
+    sleep $(( i * 5 ))
+    continue
+  fi
+  # The fetch above already brought the remote tip, so this rebase is local
+  # work only and cannot hang on the network.
+  if ! git rebase --autostash "@{upstream}"; then
     # SAY WHICH FILES. The 2026-09-07 loss printed "the work is committed
     # locally and NOT on the remote" and one stray line of git's own output;
     # working out that data/directory.json was the file, and that two jobs
