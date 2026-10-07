@@ -6,7 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Breaker, loadedNothing, Skipped, isSkip } from "../lib/breaker.mjs";
+import { Breaker, loadedNothing, Skipped, isSkip, carriesStreak } from "../lib/breaker.mjs";
 
 /* Verbatim from the run that started this. */
 const EMPTY = "no readable response matching https://api.bushelpowered.com/api/markets/"
@@ -166,4 +166,15 @@ test("not attempted is its own class, and it is not an Error we sniff for", () =
   assert.equal(isSkip(new Error("not attempted")), false);
   assert.equal(isSkip(null), false);
   assert.ok(new Skipped("x") instanceof Error, "it still behaves as an Error at the throw site");
+});
+
+/* A re-pointed source must not inherit the old address's failures (2026-10-07:
+   flashgrain-* moved from a dead DTN board with streak 524 to its own feed and
+   was never attempted). Unchanged or unknown addresses keep their streak. */
+test("a streak stays with the address it was earned at", () => {
+  const dtn = "https://flashgrains.com/index.cfm?show=11&mid=3";
+  assert.equal(carriesStreak(dtn, dtn), true, "same url keeps its streak");
+  assert.equal(carriesStreak(dtn, "https://flshgrn.com/feed/thorp.json"), false, "a new url starts clean");
+  assert.equal(carriesStreak(undefined, dtn), true, "an old row with no url recorded keeps its streak");
+  assert.equal(carriesStreak(dtn, undefined), true, "no current url: nothing to compare, keep it");
 });

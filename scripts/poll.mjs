@@ -48,7 +48,7 @@ import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodO
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
-import { Breaker, Backoff, Skipped, isSkip, nextStreak } from "../lib/breaker.mjs";
+import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -218,10 +218,14 @@ const backoff = new Backoff({ strikes: BACKOFF_STRIKES });
 const prevFails = new Map(), prevSeen = new Map(), prevRow = new Map();
 try {
   const pi = JSON.parse(readFileSync(join(DATA, "index.json"), "utf8"));
+  const urlNow = new Map(enabled.map((s) => [s.id, s.url]));
   for (const p of pi.sources ?? []) {
-    if (Number.isFinite(p.fails)) prevFails.set(p.id, p.fails);
+    /* Re-pointed source: the old address's streak and attempt stamp stay behind
+       (lib/breaker.mjs carriesStreak). The row itself still carries forward. */
+    const same = carriesStreak(p.url, urlNow.get(p.id));
+    if (same && Number.isFinite(p.fails)) prevFails.set(p.id, p.fails);
     const t = Date.parse(p.attemptedAt ?? "");
-    if (Number.isFinite(t)) prevSeen.set(p.id, t);
+    if (same && Number.isFinite(t)) prevSeen.set(p.id, t);
     /* THE WHOLE ROW, NOT JUST THE TWO COUNTERS. A source the pass runs out of
        time for used to vanish from the manifest, and merge_bids drops any board
        file with no manifest row. See the carry-forward at the index write. */
