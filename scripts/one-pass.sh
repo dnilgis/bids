@@ -22,6 +22,8 @@
 set -euo pipefail
 
 echo "── pass starting $(date -u +%H:%M:%SZ)"
+# Where a pass spends its 600s, printed as it goes, so a slow pass names its stage.
+stage() { echo "── $1 at +${SECONDS}s"; }
 
 # ---- READ EVERY ENABLED SOURCE -------------------------------------------
 # poll.mjs SUPERSEDES fetch.mjs. Both write data/boyceville.json, so only one
@@ -33,6 +35,7 @@ echo "── pass starting $(date -u +%H:%M:%SZ)"
 # because DTN answered a direct call with "The api key is valid, but it is
 # valid to be used within a browser only". Their page carries their key in the
 # clear, as it must for a browser widget to work, so we hold none.
+stage "read"
 node scripts/poll.mjs
 
 # ---- COMMIT IF THE PRICE MOVED, AND REBAKE THE DASHBOARD ------------------
@@ -47,15 +50,17 @@ git config user.email "bot@agsist.com"
 git add data/
 git diff --cached --quiet && { echo "nothing moved"; exit 0; }
 
-# THE DEEP FETCH HAPPENS HERE, NOT AT CHECKOUT.
-#
-# The dashboard's basis chart is drawn from this repo's git history,
-# so baking it needs the full log. But checkout runs on every poll --
-# about 1,650 a month -- while a commit happens only on a price
-# change or a six-hourly heartbeat, a few dozen times a month. Doing
-# the unshallow here means the expensive clone is paid on the runs
-# that need it and no others.
-git fetch --deepen=1000 --quiet || true
+# NO DEEP FETCH (removed 2026-10-07). This used to run
+# `git fetch --deepen=1000` because the old dashboard drew its basis chart from
+# this repo's history. status.mjs superseded that dashboard and reads no git
+# history; nothing else in a pass does either (only lib/cdp.mjs spawns a
+# process, and that is the browser). The fetch was written for "a few dozen"
+# commits a month; every pass commits now, so every pass downloaded up to 1,000
+# commits of ~1,800 changed files each. The 600s pass limit then landed inside
+# the push: on 2026-10-07 21:00 a pass committed at 21:10:17, lost the push race,
+# rebased, and was killed at 21:10:27 with its commit unpushed. 7 of ~100 runs
+# that day ended the same way. commit-and-push.sh's rebase needs only the commit
+# the checkout started from, which a shallow checkout has.
 
 # THE DASHBOARD MUST NEVER BLOCK THE PRICE.
 #
@@ -71,6 +76,7 @@ git fetch --deepen=1000 --quiet || true
 # READ-ME-FIRST calls the dashboard optional and deletable. This makes
 # the workflow agree with that.
 # status.mjs SUPERSEDES dashboard.mjs -- both write index.html.
+stage "dashboard"
 if node scripts/status.mjs; then
   git add index.html
 else
@@ -83,6 +89,7 @@ fi
 # over files already in the checkout -- no network, milliseconds -- so it costs
 # nothing to keep exact. Same fail-open rule as the dashboard: a map that
 # cannot be rebuilt must never stop a price reaching the repo.
+stage "directory"
 if node scripts/build_directory.mjs; then
   git add data/directory.json
 else
@@ -95,6 +102,7 @@ fi
 # wrote, so it runs after it. It must never fail the pass: a coverage number is
 # a report, and a report that can stop the prices going out has the priority
 # backwards.
+stage "coverage"
 if node scripts/coverage.mjs; then
   git add data/coverage.json 2>/dev/null || true
 else
@@ -119,6 +127,7 @@ fi
 # It runs here because this is the job that rewrites the captures it measures,
 # and it costs 0.13s over 814 of them. Same fail-open rule as the three blocks
 # above: a worklist must never stop a price reaching the repo.
+stage "rounding"
 if node scripts/rounding_audit.mjs --write; then
   # The residual store too. It is what makes the verdict stable: one capture
   # measures the day, not the board, and four of the nine manifests corrected
@@ -159,6 +168,7 @@ fi
 # NOTE: this comment must not name the merge script, because
 # known-and-sequence.test.mjs reads the 400 characters after the FIRST mention
 # of it looking for the fail-open ::warning:: below.
+stage "merge"
 if node scripts/merge_bids.mjs; then
   git add data/merged-index.json data/merged data/merged-all.json
 else
@@ -183,6 +193,7 @@ fi
 # everything and then could not push, because reading 1,094 boards again cannot
 # fix a refusal in this repository. Before this line said which was which, every
 # rebase conflict cost three full re-reads and a 33-minute red run.
+stage "commit and push"
 bash "$(dirname "$0")/commit-and-push.sh" .commit-message || exit 3
 
 # ---- AND THAT IS THE PASS -----------------------------------------------
@@ -213,4 +224,4 @@ bash "$(dirname "$0")/commit-and-push.sh" .commit-message || exit 3
 # the `ping_sites` input on poll.yml and watchdog.yml is gone, and a pass can no
 # longer end in the "published, but the sites were not told" state that
 # scripts/pass-with-retries.sh called exit 4.
-echo "── pass done $(date -u +%H:%M:%SZ)"
+echo "── pass done $(date -u +%H:%M:%SZ) after ${SECONDS}s"
