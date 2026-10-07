@@ -115,19 +115,21 @@ for i in $(seq 1 "$tries"); do
       echo "stashed untracked files so the rebase can check out"
     fi
   fi
+  # A timeout here leaves the clone mid-rebase at worst; the failure branch
+  # below runs `git rebase --abort`, so the runner is never left half-done.
   t0=$SECONDS
-  timeout "$net_timeout" git fetch origin
-  fetch_rc=$?
-  echo "fetch took $((SECONDS - t0))s (exit $fetch_rc)"
-  if [ "$fetch_rc" -ne 0 ]; then
-    echo "::warning title=fetch did not finish::exit $fetch_rc after $((SECONDS - t0))s; trying again"
+  timeout "$net_timeout" git pull --rebase --autostash
+  pull_rc=$?
+  if [ "$pull_rc" -eq 124 ]; then
+    # Out of time, not a conflict: undo whatever half-step it reached and try
+    # the whole round again.
+    echo "::warning title=pull did not finish::gave up after $((SECONDS - t0))s; trying again"
+    git rebase --abort 2>/dev/null || true
     [ "$UNTRACKED_STASHED" = "1" ] && { git stash pop --quiet 2>/dev/null || true; }
     sleep $(( i * 5 ))
     continue
   fi
-  # The fetch above already brought the remote tip, so this rebase is local
-  # work only and cannot hang on the network.
-  if ! git rebase --autostash "@{upstream}"; then
+  if [ "$pull_rc" -ne 0 ]; then
     # SAY WHICH FILES. The 2026-09-07 loss printed "the work is committed
     # locally and NOT on the remote" and one stray line of git's own output;
     # working out that data/directory.json was the file, and that two jobs
