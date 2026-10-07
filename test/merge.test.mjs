@@ -690,3 +690,78 @@ test("nearestOpen copes with nothing at all", () => {
   assert.deepEqual(nearestOpen([]), {});
   assert.deepEqual(nearestOpen(null), {});
 });
+
+/* ── DIFFERENT FACILITIES, ONE TOWN, NO LABEL ──────────────────────────────
+   2026-10-07. ADM's three Fremont NE boards keyed to one place and dedupe()
+   dropped two of them a crop and period at a time, with nothing in the run to
+   say so: Lincoln Premium Poultry's Dec corn ($4.87) behind the elevator's
+   $4.67, the soy plant's Dec beans ($13.145) gone. */
+import { facilityName, facilityBranches, summariseSameFeed } from "../scripts/merge_bids.mjs";
+
+test("a facility's name is read from its own market page address", () => {
+  const n = (u, loc) => facilityName({ id: "x", browserPage: u }, loc);
+  assert.equal(n("https://adm.gradable.com/market/Fremont--NE-Lincoln-Premium-Poultry", "Fremont"), "Lincoln Premium Poultry");
+  assert.equal(n("https://adm.gradable.com/market/Mt-Vernon--IN-Wheat-Milling", "Mount Vernon"), "Wheat Milling");
+  assert.equal(n("https://adm.gradable.com/market/Mendota-Wheat-Milling", "Mendota"), "Wheat Milling");
+  assert.equal(n("https://adm.gradable.com/market/Country-Store--KS", "Copeland"), "Country Store");
+  assert.equal(n("https://adm.gradable.com/market/Copeland--KS", "Copeland"), "", "nothing beyond the town");
+  assert.equal(facilityName({ id: "x" }, "Fremont"), "");
+});
+
+test("different locationIds in one key each get a branch; the same one twice does not", () => {
+  const idx = [
+    { id: "a-el", operator: "ADM", location: "Fremont", usState: "NE", labelInFeed: null },
+    { id: "a-soy", operator: "ADM", location: "Fremont", usState: "NE", labelInFeed: null },
+    { id: "a-cs", operator: "ADM", location: "Copeland", usState: "KS" },
+    { id: "a-cs2", operator: "ADM", location: "Copeland", usState: "KS" },
+    { id: "m-1", operator: "AgMark", location: "Agra", usState: "KS" },
+    { id: "m-2", operator: "AgMark", location: "Agra", usState: "KS" },
+    { id: "lone", operator: "Acme", location: "Thorp", usState: "WI" },
+  ];
+  const files = new Map([
+    ["a-el", { id: "a-el", locationId: "1", browserPage: "https://x/market/Fremont--NE-Elevator" }],
+    ["a-soy", { id: "a-soy", locationId: "2", browserPage: "https://x/market/Fremont--NE-Soy-Processing" }],
+    ["a-cs", { id: "a-cs", locationId: "3", browserPage: "https://x/market/Copeland--KS" }],
+    ["a-cs2", { id: "a-cs2", locationId: "4", browserPage: "https://x/market/Country-Store--KS" }],
+    ["m-1", { id: "m-1", locationId: "9" }], ["m-2", { id: "m-2", locationId: "9" }],
+    ["lone", { id: "lone", locationId: "5" }],
+  ]);
+  const b = facilityBranches(idx, files);
+  assert.equal(b.get("a-el"), "Elevator");
+  assert.equal(b.get("a-soy"), "Soy Processing");
+  assert.equal(b.get("a-cs"), "", "the one that says only the town keeps the plain key");
+  assert.equal(b.get("a-cs2"), "Country Store");
+  assert.equal(b.has("m-1"), false, "one elevator filed twice is left to dedupe");
+  assert.equal(b.has("lone"), false);
+  assert.notEqual(placeKey("ADM", b.get("a-el"), "Fremont", "NE"), placeKey("ADM", b.get("a-soy"), "Fremont", "NE"));
+});
+
+test("two facilities whose pages name nothing new fall back to their ids, not one key", () => {
+  const idx = [{ id: "p", operator: "X", location: "T", usState: "IA" }, { id: "q", operator: "X", location: "T", usState: "IA" }];
+  const files = new Map([["p", { id: "p", locationId: "1" }], ["q", { id: "q", locationId: "2" }]]);
+  const b = facilityBranches(idx, files);
+  assert.equal(b.get("p"), "p");
+  assert.equal(b.get("q"), "q");
+});
+
+test("a drop inside one feed is recorded, not silent", () => {
+  const rows = [
+    mk({ commodity: "Corn", delivery: "DEC 2026", cash: 4.67, basis: -0.3, source: "a-el" }),
+    mk({ commodity: "Corn", delivery: "DEC 2026", cash: 4.87, basis: -0.1, source: "a-lpp" }),
+  ];
+  const { rows: kept, collisions, sameFeed } = dedupe(rows);
+  assert.equal(kept.length, 1);
+  assert.equal(collisions.length, 0);
+  assert.equal(sameFeed.length, 1);
+  assert.deepEqual([sameFeed[0].kept, sameFeed[0].dropped, sameFeed[0].droppedCash], ["a-el", "a-lpp", 4.87]);
+  const s = summariseSameFeed(sameFeed);
+  assert.deepEqual(s, [{ place: base.place, kept: "a-el", dropped: "a-lpp", rows: 1, priceDiffers: 1 }]);
+});
+
+test("the shard header carries the branch and the phone", () => {
+  const b = mk({ commodity: "Corn", delivery: "DEC 2026", cash: 4.67, basis: -0.3, branch: "Elevator" });
+  const s = shardOf(b.place, [b], null, "(402) 555-0100");
+  assert.equal(s.phone, "(402) 555-0100");
+  assert.equal(s.branch, "Elevator");
+  assert.equal(shardOf(b.place, [b]).phone, null);
+});

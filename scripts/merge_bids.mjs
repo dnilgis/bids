@@ -324,10 +324,11 @@ export function nearestOpen(bids, asOf = Date.now()) {
   return out;
 }
 
-export function shardOf(place, bids, town = null) {
+export function shardOf(place, bids, town = null, phone = null) {
   const f = bids[0];
   return { schema: SHARD_SCHEMA, place,
-           operator: f.operator, city: f.city, town: town?.town ?? null,
+           operator: f.operator, branch: f.branch ?? null, phone: phone || null,
+           city: f.city, town: town?.town ?? null,
            townVia: town?.townVia ?? null, state: f.state,
            lat: f.lat, lon: f.lon,
            pricedAt: f.pricedAt, checkedAt: f.checkedAt, bids };
@@ -565,22 +566,34 @@ function townTables() {
    the drop above can tell a leftover file apart from a source the poll missed;
    an unreadable sources/ simply means every orphan is reported as the bug,
    which is the safe direction. */
-function retiredSourceIds() {
-  const dir = join(ROOT, "sources");
+function retiredSourceIds(files = sourceFiles()) {
   const out = new Set();
+  for (const d of files.values()) {
+    if (d.retired || d.enabled === false || d.inMerge === false) out.add(d.id);
+  }
+  return out;
+}
+
+/* Every sources/<id>.json, parsed once, by id. The index is the poller's copy
+   of a few of these fields; the source file is the owner of the rest
+   (locationId, the market page, the phone). */
+function sourceFiles() {
+  const dir = join(ROOT, "sources");
+  const out = new Map();
   if (!existsSync(dir)) return out;
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".json"))) {
     try {
       const d = JSON.parse(readFileSync(join(dir, f), "utf8"));
-      if (d && d.id && (d.retired || d.enabled === false || d.inMerge === false)) out.add(d.id);
+      if (d && d.id) out.set(d.id, d);
     } catch { /* a malformed source file is validation's problem, not this one's */ }
   }
   return out;
 }
 
-function readScraped(index, places, tally, nowMs, withdrawn = []) {
+function readScraped(index, places, tally, nowMs, withdrawn = [], files = sourceFiles()) {
   const byId = new Map(index.sources.map((s) => [s.id, s]));
-  const retiredIds = retiredSourceIds();
+  const retiredIds = retiredSourceIds(files);
+  const branches = facilityBranches(index.sources, files);
   const out = [];
   for (const f of readdirSync(join(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
     if (NOT_A_BOARD.has(f)) continue;
@@ -682,8 +695,8 @@ function readScraped(index, places, tally, nowMs, withdrawn = []) {
     for (const b of j.bids || []) {
       out.push(row({
         currency: cur.currency, currencyVia: cur.currencyVia,
-        place: placeKey(s.operator, branchOf(s), s.location, s.usState),
-        operator: s.operator, branch: branchOf(s) || null,
+        place: placeKey(s.operator, branches.get(id) ?? branchOf(s), s.location, s.usState),
+        operator: s.operator, branch: (branches.get(id) ?? branchOf(s)) || null,
         city: s.location, state: s.usState, zip: s.zip,
         lat: g.lat, lon: g.lon, precision: g.precision,
         commodity: b.commodity, delivery: b.delivery,
@@ -731,6 +744,84 @@ const branchOf = (s) => {
   if (!label) return "";
   return strongNorm(label) === strongNorm(s.location) ? "" : label;
 };
+
+/* ── SAME OPERATOR, SAME TOWN, DIFFERENT FACILITY, NO LABEL ───────────────
+ *
+ * 2026-10-07. branchOf() above only reads labelInFeed, and the gradable boards
+ * carry none. ADM files three different facilities at Fremont NE -- the
+ * elevator, the soy plant and Lincoln Premium Poultry, three market ids -- and
+ * all three keyed to "ADM||Fremont|NE". dedupe() then kept whichever board was
+ * read first for each crop and period and dropped the others without a word:
+ * Lincoln Premium Poultry's Dec corn at $4.87 was lost behind the elevator's
+ * $4.67, and the soy plant's Dec beans at $13.145 went the same way. Twelve
+ * towns, 31 boards (Fremont, Mendota, Ottawa, St. Louis, Mt Vernon IN, ...).
+ *
+ * THE TEST IS THE VENDOR'S OWN ID. Two sources in one key whose source files
+ * carry DIFFERENT locationIds are different facilities, and every one of them
+ * gets a branch. The same locationId twice is one elevator filed twice
+ * (AgMark LLC / AgMark RESP, FS Grain / Northern Grain Marketing) and is left
+ * alone: dropping the copy is correct. A source with no locationId cannot be
+ * told apart, so its group is left alone too.
+ *
+ * THE BRANCH IS THEIR NAME FOR IT, from their own market page address:
+ * ".../market/Fremont--NE-Lincoln-Premium-Poultry" -> "Lincoln Premium Poultry",
+ * ".../market/Mendota-Wheat-Milling" -> "Wheat Milling", ".../Country-Store--KS"
+ * -> "Country Store". Nothing is made up. A page whose address says nothing
+ * more than the town ("Copeland--KS") keeps the plain town key, and if two in
+ * one group say nothing more, or say the same thing, the source id is used so
+ * the rows are at least not lost. */
+export function facilityName(src, location) {
+  const town = strongNorm(location);
+  for (const u of [src?.browserPage, src?.website]) {
+    let seg = "";
+    try { seg = decodeURIComponent(new URL(String(u)).pathname.split("/").filter(Boolean).pop() || ""); }
+    catch { continue; }
+    if (!seg) continue;
+    const [head, ...rest] = seg.split("--");
+    let words;
+    if (rest.length) {
+      words = rest.join("-").split("-").filter(Boolean);
+      if (words.length && /^[A-Z]{2}$/.test(words[0])) words.shift();
+      if (!words.length && strongNorm(head) !== town) words = head.split("-").filter(Boolean);
+    } else {
+      words = seg.split("-").filter(Boolean);
+      /* Drop the town from the front, however many words it takes. */
+      for (let n = words.length; n > 0; n--) {
+        if (strongNorm(words.slice(0, n).join("")) === town) { words = words.slice(n); break; }
+      }
+    }
+    const name = words.join(" ").trim();
+    if (name && strongNorm(name) !== town) return name;
+  }
+  return "";
+}
+
+export function facilityBranches(indexSources, files) {
+  const groups = new Map();
+  for (const s of indexSources || []) {
+    if (s.inMerge === false) continue;
+    const k = placeKey(s.operator, branchOf(s), s.location, s.usState);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(s);
+  }
+  const out = new Map();
+  for (const members of groups.values()) {
+    if (members.length < 2) continue;
+    const ids = members.map((s) => files.get(s.id)?.locationId ?? null);
+    if (ids.some((x) => x == null || x === "")) continue;
+    if (new Set(ids.map(String)).size < 2) continue;
+    const named = members.map((s) => [s, facilityName(files.get(s.id), s.location)]);
+    /* Two facilities must not end up sharing a name either. */
+    const seen = new Map();
+    for (const [, n] of named) seen.set(strongNorm(n), (seen.get(strongNorm(n)) || 0) + 1);
+    for (const [s, n] of named) {
+      const lbl = branchOf(s);
+      const name = seen.get(strongNorm(n)) > 1 ? s.id : n;
+      out.set(s.id, lbl && name ? `${lbl} ${name}` : (lbl || name));
+    }
+  }
+  return out;
+}
 
 /* ── BARCHART ───────────────────────────────────────────────────────────────*/
 function readBarchart(bc, places, tally) {
@@ -819,9 +910,16 @@ function keepable(b, tally) {
  * is a redistributor and can be a refresh behind. The loser is kept in the file
  * under `supersededBy` rather than deleted, because a silently discarded
  * disagreement is the one nobody ever finds. */
+/* A DROP INSIDE ONE FEED WAS THE SILENT ONE -- 2026-10-07. Only a drop
+ * between the two feeds was recorded, so when two scraped boards shared a key
+ * (ADM's three Fremont facilities, before facilityBranches()) the loser's row
+ * vanished with `collisions` reading zero. Every same-feed drop is now listed
+ * in `sameFeed` with both sources and both prices, so a key that still joins
+ * two boards shows up in the run instead of on a farmer's screen. */
 function dedupe(rows) {
   const seen = new Map();
   const collisions = [];
+  const sameFeed = [];
   for (const b of rows) {
     const k = [b.place, b.crop, b.period, b.commodity].join("␟");
     const prev = seen.get(k);
@@ -831,10 +929,26 @@ function dedupe(rows) {
       collisions.push({ place: b.place, crop: b.crop, period: b.period,
                         kept: win.via, dropped: lose.via,
                         keptCash: win.cash, droppedCash: lose.cash });
+    } else {
+      sameFeed.push({ place: b.place, crop: b.crop, period: b.period, commodity: b.commodity,
+                      kept: win.source, dropped: lose.source,
+                      keptCash: win.cash, droppedCash: lose.cash });
     }
     seen.set(k, win);
   }
-  return { rows: [...seen.values()], collisions };
+  return { rows: [...seen.values()], collisions, sameFeed };
+}
+
+export function summariseSameFeed(sameFeed) {
+  const by = new Map();
+  for (const c of sameFeed) {
+    const k = [c.place, c.kept, c.dropped].join("␟");
+    const e = by.get(k) || { place: c.place, kept: c.kept, dropped: c.dropped, rows: 0, priceDiffers: 0 };
+    e.rows++;
+    if (c.keptCash !== c.droppedCash) e.priceDiffers++;
+    by.set(k, e);
+  }
+  return [...by.values()].sort((a, b) => b.priceDiffers - a.priceDiffers || b.rows - a.rows);
 }
 
 function main() {
@@ -859,7 +973,19 @@ function main() {
   const scrapeTally = new Tally(), bcTally = new Tally(), keepTally = new Tally();
   console.log("reading the scraped boards…");
   const withdrawn = [];
-  let rows = readScraped(index, places, scrapeTally, nowMs, withdrawn);
+  const files = sourceFiles();
+  let rows = readScraped(index, places, scrapeTally, nowMs, withdrawn, files);
+  /* THE PHONE IS A FACT ABOUT THE ELEVATOR, NOT ABOUT A BID, so it rides on
+     the shard header, never on 20,000 rows -- and not on the index either:
+     merged-index.json is the one file every phone downloads before it can draw
+     anything, and 1,000 phone numbers cost it 8 KB gzipped for a field no
+     index reader needs. The index carries the poller's copy; the source file
+     is the owner and fills a gap. */
+  const phoneOf = new Map();
+  for (const s of index.sources) {
+    const ph = String(s.phone || files.get(s.id)?.phone || "").trim();
+    if (ph) phoneOf.set(s.id, ph);
+  }
   const liveBoards = index.sources.filter((s) => s.status === "ok").length;
   const held = new Set(rows.filter((r) => r.stale).map((r) => r.source)).size;
   console.log(`  ${rows.length} bids from ${liveBoards} live boards` +
@@ -922,8 +1048,16 @@ function main() {
   rows = rows.filter((b) => keepable(b, keepTally));
   keepTally.report("guards");
 
-  const { rows: kept, collisions } = dedupe(rows);
+  const { rows: kept, collisions, sameFeed } = dedupe(rows);
   console.log(`\ndedupe: ${rows.length} -> ${kept.length}`);
+  if (sameFeed.length) {
+    const otherBoard = sameFeed.filter((c) => c.kept !== c.dropped);
+    console.log(`  ${sameFeed.length} row(s) dropped inside one feed (same place, crop, period and label); `
+      + `${otherBoard.length} of them from a DIFFERENT board than the one kept:`);
+    for (const c of otherBoard.slice(0, 10)) {
+      console.log(`     ${c.place} ${c.commodity} ${c.period}  kept ${c.kept} ${c.keptCash} over ${c.dropped} ${c.droppedCash}`);
+    }
+  }
   if (collisions.length) {
     console.log(`  ${collisions.length} place/crop/period quoted by BOTH feeds; the first-party read wins:`);
     for (const c of collisions.slice(0, 10)) {
@@ -977,6 +1111,9 @@ function main() {
       rows: kept.length, places: placesSeen.size,
       byCrop, byVia, byState, byPeriodVia, byCurrency, byCurrencyVia,
       collisionsBetweenFeeds: collisions.length,
+      /* See dedupe(). Rows dropped because another row of the SAME feed held
+         the same place, crop, period and label; listed in `sameFeedDrops`. */
+      droppedSameFeed: sameFeed.length,
       /* Rows whose delivery month had already gone when the board was read.
          The label is the board's own words, so a repeat offender is named. */
       periodAlreadyPast: pastPeriod,
@@ -988,6 +1125,11 @@ function main() {
     },
     dropped: { scrape: scrapeTally.n, barchart: bcTally.n, guards: keepTally.n },
     collisions,
+    /* One line per pair of boards, not per row: this file is what a phone
+       downloads, and 818 rows of detail cost it 20 KB gzipped. The rows count
+       and how many disagreed on price say whether a pair is one elevator filed
+       twice (every price equal) or two elevators wrongly sharing a key. */
+    sameFeedDrops: summariseSameFeed(sameFeed),
     /* Named so the directory job can pick them up. A facility Barchart prices
      * that we cannot place is a gap with an address, not a mystery. */
     facilitiesNotYetInDirectory: [...unknownPlaces.entries()]
@@ -1032,7 +1174,7 @@ function main() {
   }
 
   const placeRows = [];
-  let shardsWritten = 0, shardsUnchanged = 0;
+  let shardsWritten = 0, shardsUnchanged = 0, phonesSet = 0;
   const tt = townTables();
   const townLog = { set: [], empty: [] };
   for (const [place, bids] of byPlace) {
@@ -1063,6 +1205,8 @@ function main() {
     for (const b of bids) b.town = town.town;
     if (town.town) townLog.set.push(`${f.city}, ${f.state} -> ${town.town} (${town.townVia})`);
     else if (town.townWhy) townLog.empty.push(`${f.city}, ${f.state}: ${town.townWhy}`);
+    const phone = bids.map((b) => phoneOf.get(b.source)).find(Boolean) || null;
+    if (phone) phonesSet++;
     placeRows.push({
       place, shard: `merged/${slug}.json`,
       operator: f.operator, branch: f.branch, city: f.city,
@@ -1080,7 +1224,7 @@ function main() {
       periods: [...new Set(bids.map((b) => b.period))].sort(),
       best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
-    const shard = shardOf(place, bids, town);
+    const shard = shardOf(place, bids, town, phone);
     const path = join(outDir, `${slug}.json`);
     const text = JSON.stringify(shard, null, 1);
     /* Compare before writing. An identical rewrite still updates the mtime and
@@ -1105,6 +1249,7 @@ function main() {
   /* Every display town named, and every name left without one and why, so the
      list can be read without re-running anything. */
   out.counts.displayTown = { set: townLog.set.length, empty: townLog.empty.length };
+  out.counts.placesWithPhone = phonesSet;
   out.displayTown = { set: townLog.set.sort(), empty: townLog.empty.sort() };
   console.log(`\ndisplay town: ${townLog.set.length} place(s) whose city is a name got a town; `
     + `${townLog.empty.length} left empty`);
