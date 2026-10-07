@@ -6,9 +6,9 @@
   "country": "US",
   "currency": "USD",
   "countryVia": "state",
-  "platform": "aghost",
-  "url": "https://flashgrains.com/index.cfm?show=11&mid=3",
-  "locationId": "Thorp",
+  "platform": "emmert-cash-bids",
+  "url": "https://flshgrn.com/feed/thorp.json",
+  "locationId": null,
   "bands": {
     "corn": [
       2,
@@ -22,16 +22,14 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "DTN AgHost. Board carries both Thorp and Granton; Granton is a separate source row. Prices are offset-encoded per page load - the adapter derives the offset from the page, never from the comment. Shipped disabled: enable once the fetch cadence is agreed. Cash is displayed to 2dp while beans settle on a quarter-cent, so bean rows sit up to half a cent off the identity permanently - cashRoundingCents declares that. COORDINATE CORRECTED 2026-08-20. The previous pin was the TOWN, not the elevator: 44.9573,-90.8029 sits 6.5 km from the yard. The value now here was cross-checked against the operator's own published street address and geocoded independently by the US Census geocoder and the ArcGIS World GeocodeServer, which agree to within 131 m of the rooftop point for 8576 County Highway N. It came from a list of Sig's own earlier basis1st project, whose high-precision rows were sampled eight ways on 2026-08-20 and came back facility-accurate seven times out of eight, median 123 m from the operator's published address -- close enough to tell Allied's Auburndale East site from its West site 3.2 km away, and United's Beaver Dam grain site from its corporate office 6.5 km away. A pin six kilometres out is the difference between the right answer and the wrong one when a farmer asks which elevator is nearest.",
-  "cashRoundingCents": 0.5,
-  "publicNote": "Their publicly posted cash board at Thorp, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "Their own published feed, not a scraped board. Since 2026-10-07 Flash Grain sets its basis only on its own site (flshgrn.com, admin page) and no longer posts bids to DTN, so the old DTN AgHost board at flashgrains.com (down since early October) is not where its prices live. The site's harvester writes feed/thorp.json every 10 minutes in the emmert-cash-bids/2 schema, with cash computed by the public page's own code (dnilgis/flashgrain tools/feed.mjs), so this reads exactly what a farmer sees there.\n\nidentityAlternative: like the Badger Grain and Midwest Commodity feeds, this carries no futures price, so cash - basis = futures cannot run on it. The adapter's three checks stand in: status \"ok\" (the site publishes \"stale\" once its harvester has been silent 2 hours, the line its own page withholds cash at), `observed` inside the 14-hour line, and cash - basis inside the futures band.\n\nWhen the site moves from flshgrn.com to flashgrain.com, change `url` here; the dnilgis/flashgrain README launch checklist says so.\n\nCOORDINATE CORRECTED 2026-08-20. The previous pin was the TOWN, not the elevator: 44.9573,-90.8029 sits 6.5 km from the yard. The value now here was cross-checked against the operator's own published street address and geocoded independently by the US Census geocoder and the ArcGIS World GeocodeServer, which agree to within 131 m of the rooftop point for 8576 County Highway N. It came from a list of Sig's own earlier basis1st project, whose high-precision rows were sampled eight ways on 2026-08-20 and came back facility-accurate seven times out of eight, median 123 m from the operator's published address -- close enough to tell Allied's Auburndale East site from its West site 3.2 km away, and United's Beaver Dam grain site from its corporate office 6.5 km away. A pin six kilometres out is the difference between the right answer and the wrong one when a farmer asks which elevator is nearest.",
+  "publicNote": "Their own posted cash bids at Thorp, taken from the feed Flash Grain publishes on its website. Cash and basis are their own commercial numbers. The feed carries no futures price and none is republished.",
   "zip": "54771",
   "lat": 44.91635,
   "lon": -90.74426,
   "phone": "715-653-6585",
   "email": "Office@Flashgrain.com",
-  "website": "https://flashgrains.com/",
+  "website": "https://flshgrn.com/",
   "inMerge": true,
-  "cashRounding": "round-cent-either",
-  "_pending": "cashRounding is round-cent-either (nearest cent, closed at half a cent either way), declared 2026-10-02 from this source's own history in data/rounding-residuals.json: 2237 reads 2026-09-08 to 2026-10-02, residuals (cents) {-0.5: 3980, -0.25: 2816, 0: 3923, 0.25: 2703}, nothing outside +/-0.5. Undeclared, it was held to exact and refused whenever the futures quote sat off a whole cent."
+  "identityAlternative": "emmert:status-ok+observed-fresh+implied-futures-in-band"
 }

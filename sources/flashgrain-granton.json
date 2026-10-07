@@ -6,9 +6,9 @@
   "country": "US",
   "currency": "USD",
   "countryVia": "state",
-  "platform": "aghost",
-  "url": "https://flashgrains.com/index.cfm?show=11&mid=3",
-  "locationId": "Granton",
+  "platform": "emmert-cash-bids",
+  "url": "https://flshgrn.com/feed/granton.json",
+  "locationId": null,
   "bands": {
     "corn": [
       2,
@@ -22,16 +22,14 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Same page as flashgrain-thorp. Two sources, one fetch - the loop dedupes by url so the page is read once. Cash is displayed to 2dp while beans settle on a quarter-cent, so bean rows sit up to half a cent off the identity permanently - cashRoundingCents declares that.",
-  "cashRoundingCents": 0.5,
-  "publicNote": "Their publicly posted cash board at Granton, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "Their own published feed, not a scraped board. Since 2026-10-07 Flash Grain sets its basis only on its own site (flshgrn.com, admin page) and no longer posts bids to DTN, so the old DTN AgHost board at flashgrains.com (down since early October) is not where its prices live. The site's harvester writes feed/granton.json every 10 minutes in the emmert-cash-bids/2 schema, with cash computed by the public page's own code (dnilgis/flashgrain tools/feed.mjs), so this reads exactly what a farmer sees there.\n\nidentityAlternative: like the Badger Grain and Midwest Commodity feeds, this carries no futures price, so cash - basis = futures cannot run on it. The adapter's three checks stand in: status \"ok\" (the site publishes \"stale\" once its harvester has been silent 2 hours, the line its own page withholds cash at), `observed` inside the 14-hour line, and cash - basis inside the futures band.\n\nWhen the site moves from flshgrn.com to flashgrain.com, change `url` here; the dnilgis/flashgrain README launch checklist says so.",
+  "publicNote": "Their own posted cash bids at Granton, taken from the feed Flash Grain publishes on its website. Cash and basis are their own commercial numbers. The feed carries no futures price and none is republished.",
   "zip": "54436",
   "lat": 44.5606,
   "lon": -90.4484,
   "phone": "715-653-6585",
   "email": "Office@Flashgrain.com",
-  "website": "https://flashgrains.com/",
+  "website": "https://flshgrn.com/",
   "inMerge": true,
-  "cashRounding": "round-cent-either",
-  "_pending": "cashRounding is round-cent-either (nearest cent, closed at half a cent either way), declared 2026-10-02 from this source's own history in data/rounding-residuals.json: 2237 reads 2026-09-08 to 2026-10-02, residuals (cents) {-0.5: 4014, -0.25: 2790, 0: 3938, 0.25: 2680}, nothing outside +/-0.5. Undeclared, it was held to exact and refused whenever the futures quote sat off a whole cent."
+  "identityAlternative": "emmert:status-ok+observed-fresh+implied-futures-in-band"
 }
