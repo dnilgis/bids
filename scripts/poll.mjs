@@ -737,7 +737,8 @@ async function readOne(s) {
        carried forward exactly as they were. That is the whole difference between
        this and the "was it ok last pass" test it replaced, which read not-trying
        as a black mark and then could never take it back. */
-    r.fails = nextStreak(prevFails.get(s.id), r.health);
+    /* An empty board clears the streak: see nextStreak in lib/breaker.mjs. */
+    r.fails = nextStreak(prevFails.get(s.id), r.health, { emptyBoard: e?.empty === true });
     if (!isSkip(e)) r.attemptedAt = now;
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the

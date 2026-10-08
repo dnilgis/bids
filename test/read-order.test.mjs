@@ -255,8 +255,50 @@ test("an absent or nonsense previous streak starts at zero, never NaN", () => {
 
 test("poll.mjs computes the streak with nextStreak, not by hand", () => {
   const src = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
-  assert.match(src, /nextStreak\(prevFails\.get\(s\.id\), r\.health\)/,
-    "the failure path must go through the shared rule");
+  assert.match(src, /r\.fails = nextStreak\(prevFails\.get\(s\.id\), r\.health, \{ emptyBoard: e\?\.empty === true \}\);/,
+    "the failure path must go through the shared rule, and hand it the empty flag");
   assert.doesNotMatch(src, /r\.fails = \(prevFails[^\n]*\+ 1/,
     "an inline +1 here is how the skip case gets lost again");
+});
+
+/* ── AN EMPTY BOARD ─────────────────────────────────────────────────────────
+   2026-10-06. Every DTN site posts [] after about 18:30Z. Counting that as a
+   failed read gave Kanza, Aurora, Frontier Ag and a dozen more DTN operators
+   streaks of 18+ over the weekend, sorted them behind the 360s wall every
+   daytime pass hit, and left 149 boards unread through Monday's session. */
+import { isRefusal } from "../lib/board.mjs";
+import { DtnCsEmptyRefused, DtnCsRefused } from "../lib/adapters/dtn-cs.mjs";
+
+test("an empty board clears the streak: the reader worked, the board posts nothing", () => {
+  assert.equal(nextStreak(18, "refused", { emptyBoard: true }), 0);
+  assert.equal(nextStreak(undefined, "refused", { emptyBoard: true }), 0);
+});
+
+test("the empty flag rescues nothing else", () => {
+  assert.equal(nextStreak(3, "broken", { emptyBoard: true }), 4, "a crash is still a crash");
+  assert.equal(nextStreak(4, "skipped", { emptyBoard: true }), 4, "a skip still learns nothing");
+  assert.equal(nextStreak(3, "refused", { emptyBoard: false }), 4);
+  assert.equal(nextStreak(3, "refused", { emptyBoard: "yes" }), 4, "only a real true counts");
+});
+
+test("DTN's empty array is a refusal that says it is empty; its other refusals are not", () => {
+  const empty = new DtnCsEmptyRefused("the array is empty");
+  assert.ok(isRefusal(empty), "still refused, so nothing is published");
+  assert.equal(empty.empty, true);
+  assert.notEqual(new DtnCsRefused("the response is not JSON").empty, true);
+});
+
+test("a weekend of empty boards does not put an operator behind the wall on Monday", () => {
+  const dtn = [S("kanzacooperative-pratt", "Kanza Cooperative"), S("kanzacooperative-byers", "Kanza Cooperative")];
+  const failing = [S("deadhost-a", "Dead Host"), S("deadhost-b", "Dead Host")];
+  let dtnFails = 0, deadFails = 0;
+  for (let pass = 0; pass < 18; pass++) {           // Friday close to Monday open
+    dtnFails = nextStreak(dtnFails, "refused", { emptyBoard: true });
+    deadFails = nextStreak(deadFails, "broken");
+  }
+  const prev = Object.fromEntries([...dtn.map((s) => [s.id, dtnFails]), ...failing.map((s) => [s.id, deadFails])]);
+  const order = readOrder([...failing, ...dtn], prev).map((s) => s.id);
+  const lastDtn = Math.max(...dtn.map((s) => order.indexOf(s.id)));
+  const firstDead = Math.min(...failing.map((s) => order.indexOf(s.id)));
+  assert.ok(lastDtn < firstDead, `a quiet board must be read before a broken one — got ${order.join(", ")}`);
 });
