@@ -81,12 +81,19 @@ fi
 # A HUNG NETWORK CALL IS NOT A LOST RACE — 2026-10-07.
 # The 21:40 pass read 1,981 boards in 338s, lost the push race, and then sat in
 # `git pull --rebase` for 4m21s until the 600s pass limit killed it with the
-# commit unpushed. The same rebase, replayed against GitHub from a depth-1
-# checkout, takes under 3 seconds, so the time went to a network call that
-# never answered (GitHub was returning 500s on pushes that afternoon). git
-# itself has no deadline on that, so each network step gets one here: a hang
-# costs NET_TIMEOUT seconds and another attempt, not the whole pass.
+# commit unpushed. git has no deadline of its own on a network call, so each
+# one gets one here: a slow call costs NET_TIMEOUT seconds and another
+# attempt, not the whole pass. (The cause of THAT slow call is the next
+# paragraph; the deadline stays as the backstop.)
 net_timeout="${NET_TIMEOUT:-60}"
+
+# ONLY THIS BRANCH. A bare `git pull` uses the remote's fetch refspec, which
+# actions/checkout sets to every branch (+refs/heads/*). Into a depth-1 clone
+# that drags each other branch's whole history down: measured 2026-10-08, four
+# stale claude/* branches cost 1.9 GB and still had not finished after 120s.
+# That, not GitHub, is why every pull after a lost race ran out the clock.
+# Naming the branch fetches only the few commits the race actually added.
+branch="$(git rev-parse --abbrev-ref HEAD)"
 
 for i in $(seq 1 "$tries"); do
   if timeout "$net_timeout" git push; then
@@ -118,7 +125,7 @@ for i in $(seq 1 "$tries"); do
   # A timeout here leaves the clone mid-rebase at worst; the failure branch
   # below runs `git rebase --abort`, so the runner is never left half-done.
   t0=$SECONDS
-  timeout "$net_timeout" git pull --rebase --autostash
+  timeout "$net_timeout" git pull --rebase --autostash origin "$branch"
   pull_rc=$?
   if [ "$pull_rc" -eq 124 ]; then
     # Out of time, not a conflict: undo whatever half-step it reached and try
