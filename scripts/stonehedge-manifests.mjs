@@ -188,11 +188,23 @@ export function build() {
         + (kind === "priced"
           ? `The board prints a futures PRICE, so board.mjs's cash - basis = futures runs on every row; cashRounding round-cent-both was measured across 1,208 priced rows on four boards (residuals -0.5 to +0.75 cents).`
           : `The board prints ${kind === "named" ? "the contract MONTH and no price" : "cash and basis and no contract at all"}, so it publishes on identityAlternative "${kind === "named" ? VERIFIED_NAMED : VERIFIED_FIT}", which the adapter stamps only after the shared CBOT quote check passes on the whole board.`);
+      const fix = ZIP_FIX[m.id];
+      if (fix && m.zip === fix.from) {
+        m.zip = fix.zip;
+        m.note += `\n\nLOCATED (${fix.on}): ZIP ${fix.from} -> ${fix.zip}. ${fix.why}`;
+      }
       manifests.push({ site, place: p, manifest: m, coordWhy });
     }
   }
   return { manifests, skipped };
 }
+
+/* A ZIP THE ROW CARRIES THAT IS NOT A ZIP. Added 2026-10-08. Applied only while
+   the row still says `from`, so a corrected row wins. */
+export const ZIP_FIX = {
+  "frontiercooperative-stmary": { on: "2026-10-08", from: "68432", zip: "68443",
+    why: "68432 is not a ZIP in the USPS table this repository uses (geocodes/zip-towns.json, data/zips), so nothing could place this yard. Nebraska's warehouse capacity report lists Frontier Cooperative Company at Saint Mary, Johnson County, and the USPS city table (the zipcodes package behind geocodes/zip-towns.json) lists Saint Mary as a place name of ZIP 68443 (Sterling) and of no other Nebraska ZIP. No street address was found, so no coordinate is set." },
+};
 
 /* The one-location embed draws no picker, so its id is the embed's own `locs=`
    value on the customer's page. */

@@ -206,7 +206,55 @@ export function buildLandus() {
 
 export function build() {
   const r = buildRaw();
-  return { ...r, manifests: r.manifests.map((x) => ({ ...x, manifest: withDecisions(x.manifest) })) };
+  return { ...r, manifests: r.manifests.map((x) => ({ ...x, manifest: withLocated(withDecisions(x.manifest)) })) };
+}
+
+/* WHERE A YARD IS, WHEN THE EVIDENCE ABOVE DOES NOT SAY. Added 2026-10-08.
+ * place() takes a ZIP only from a directory row for this operator in the named
+ * town, so a hamlet with no post office of its own (Yetter, Knoke, Ulmer), a
+ * numbered yard ("Creston 1") and a buyer's plant came out with no ZIP, and
+ * nothing could put them on a town page. Each entry here is a street address
+ * and ZIP looked up for that one location and says where it was read. Only the
+ * address and ZIP are set: a coordinate still comes only from the rules above,
+ * and a buyer's plant still gets none. */
+const LOCATED_ON = "2026-10-08";
+export const LOCATED = {
+  "landus-sulphursprings": { address: "6173 158th Ave, Storm Lake, IA 50588", zip: "50588",
+    why: "Landus's own location listing gives Sulphur Springs at 6173 158th Ave, Storm Lake, IA 50588, (712) 732-2768. The USDA warehouse licence list in data/registries.json (registry-wcmd) has Landus licensed at Sulphur Springs, Buena Vista County." },
+  "landus-ulmer": { address: "3231 358th St, Lake View, IA 51450", zip: "51450",
+    why: "Landus's own Ulmer location page (landuscooperative.com/about-us/locations/ulmer) gives 3231 358th St, Lake View, IA 51450, (712) 657-8770; the World Grain directory gives the same street and phone, and the Iowa DNR facility list puts the Ulmer site at 3231 358th Street, Sac County." },
+  "landus-yetter": { address: "3265 Durant Ave, Yetter, IA 51433", zip: "51433",
+    why: "Landus's own Yetter location page (landuscooperative.com/about-us/locations/yetter) gives 3265 Durant Ave, Yetter, IA 51433, (712) 464-3688. The USPS city table this repository uses (the zipcodes package behind geocodes/zip-towns.json) lists Yetter as a place name of ZIP 51433 (Auburn)." },
+  "newcoop-creston1": { address: "1000 East Mills Street, Creston, IA 50801", zip: "50801",
+    why: "NEW Cooperative's own locations list gives Creston 1 at 1000 East Mills Street, Creston, IA 50801, (641) 782-7202, with grain services." },
+  "newcoop-creston2": { address: "1405 East Howard, Creston, IA 50801", zip: "50801",
+    why: "NEW Cooperative's own locations list gives Creston 2 at 1405 East Howard, Creston, IA 50801, (641) 782-9495, with grain services (its Creston 2 feed-mill page prints 1408 East Howard, same phone and ZIP)." },
+  "newcoop-knoke": { address: "1767 Knoke Drive, Pomeroy, IA 50575", zip: "50575",
+    why: "NEW Cooperative's own locations list gives Knoke at 1767 Knoke Drive, Pomeroy, IA 50575, (712) 468-3153; the USPS city table lists Knoke as a place name of ZIP 50575." },
+  "newcoop-langdon": { address: "2980 253rd Ave, Spencer, IA 51301", zip: "51301",
+    why: "NEW Cooperative's own Langdon page (newcoop.com/locations/langdon) gives 2980 253rd Ave., Langdon, IA 51301, 712-262-3102; its locations list gives the same street and ZIP under Spencer, the post office for 51301." },
+  "newcoop-rands": { address: "2784 320th Street, Rockwell City, IA 50579", zip: "50579",
+    why: "data/known-elevators.json has the Barchart row for NEW Cooperative's \"Rands\" branch at Rockwell City, IA 50579, 712-297-7579, and the Farmbucks directory lists Rands at 2784 320th Street, Rockwell City, IA 50579 with the same phone." },
+  "nexus-oaklandmn": { address: "89096 Oakland Avenue, Oakland, MN 56007", zip: "56007",
+    why: "the ZIP that was on file, 56076, came from the Barchart row and is not a ZIP in the USPS table (geocodes/zip-towns.json, data/zips). Nexus Cooperative's own locations page (nexus.coop/locations) gives 89096 Oakland Avenue, Oakland, MN 56007, 507-437-3219 -- this board's phone -- and the USPS city table lists Oakland as a place name of ZIP 56007 (Albert Lea)." },
+  "nexus-agpeaglegroveia": { address: "601-699 Eagle Ave, Eagle Grove, IA 50533", zip: "50533",
+    why: "AGP's Eagle Grove plant. Four Barchart rows in data/known-elevators.json file this plant at Eagle Grove, IA 50533 (AGP's own, Gold-Eagle's, Innovative Ag's and Pro Cooperative's, the last with the street 601-699 Eagle Ave). Nexus's own row files it under its Charles City office, which is why no ZIP was taken before." },
+  "nexus-agpmanningia": { address: "1000 300th St, Manning, IA 51455", zip: "51455",
+    why: "AGP's Manning plant. Three Barchart rows in data/known-elevators.json (21st Century Coop, Aspinwall Coop, FAC Coop) give 1000 300th St, Manning, IA 51455. Nexus's own row files it under its Charles City office." },
+  "nexus-agpmasoncityia": { address: "1605 19th Street SW, Mason City, IA 50401", zip: "50401",
+    why: "AGP's Mason City plant. Barchart rows in data/known-elevators.json from AGP, Farmers Win, Five Star, Gold-Eagle and Innovative Ag all file it at Mason City, IA 50401; Gold-Eagle's gives the street, 1605 19th Street SW. Nexus's own row files it under its Charles City office." },
+  "nexus-cargilliowafallsia": { address: null, zip: "50126",
+    why: "Cargill's Iowa Falls plant. Barchart rows in data/known-elevators.json from Cargill itself (\"Iowa Falls, GOS\"), Buckingham Coop, Key Cooperative and Mid-Iowa Cooperative all file it at Iowa Falls, IA 50126. No street address was found." },
+  "nexus-poetfairbankia": { address: null, zip: "50629",
+    why: "POET's Fairbank biorefinery. POET's own Barchart row in data/known-elevators.json (\"POET Biorefining\", Fairbank, IA 50629, (319) 326-0600), and those of Farmers Win, Innovative Ag and Mid-Iowa Cooperative, file it at Fairbank, IA 50629. No street address was found." },
+  "nexus-valerocharlescityia": { address: null, zip: "50616",
+    why: "Valero's Charles City ethanol plant. Farmers Win Coop's Barchart row in data/known-elevators.json files it at Charles City, IA 50616 (Five Star's row prints 50516, a transposition: 50516 is Badger, IA). No street address was found." },
+};
+export function withLocated(m) {
+  const x = LOCATED[m.id];
+  if (!x) return m;
+  return { ...m, address: x.address ?? m.address, zip: x.zip,
+    note: `${m.note}\n\nLOCATED (${LOCATED_ON}): ${x.why[0].toUpperCase()}${x.why.slice(1)}` };
 }
 function buildRaw() {
   const manifests = [], skipped = [];
