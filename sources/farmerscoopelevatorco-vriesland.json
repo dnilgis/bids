@@ -26,15 +26,16 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://fcelevator.com/feed-2/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0023001 returned this location keyed 3903. 7 row(s): Corn, Soybeans — round-cent [7 testable: exact 1, round 7, floor 4]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is MI, the one state where \"Vriesland\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for Vriesland, MI. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://fcelevator.com/feed-2/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0023001 returned this location keyed 3903. 7 row(s): Corn, Soybeans — round-cent [7 testable: exact 1, round 7, floor 4]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is MI, the one state where \"Vriesland\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for Vriesland, MI. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.\n\nLOCATED (2026-10-09): Data/known-elevators.json and geocodes/places.json known[\"2540\"] carry the Barchart row for Farmers Co-Op Elevator Co, location \"Vriesland\": 3302 Prospect St, Hudsonville, MI 49426, (616) 669-9596, Ottawa County -- the same street coordinate this file already had. Vriesland has no post office of its own; Hudsonville 49426 is the ZIP on the row.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
-  "address": null,
-  "zip": null,
+  "address": "3302 Prospect St, Hudsonville, MI 49426",
+  "zip": "49426",
   "lat": 42.86773,
   "lon": -85.86404,
   "phone": null,
   "email": null,
   "website": "https://fcelevator.com/",
   "inMerge": true,
-  "_pending": "address, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+  "_pending": "RESOLVED 2026-10-09: address and ZIP are now filled from repository data (see LOCATED in the note); phone stays null.\n\naddress, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements.",
+  "latPrecision": "street"
 }

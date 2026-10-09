@@ -75,8 +75,13 @@ test("an operator that spans two states cannot fill by sibling", () => {
   assert.match(out, /auroracooperative-futuresmarkets\s+REFUSED — this operator spans/);
 });
 
+/* chsbigsky-havre was the second case here until 2026-10-09, when Havre and
+ * Shelby were placed in MT from the USDA warehouse list (CHS Inc. licensed at
+ * HAVRE and SHELBY, MT) with that source in stateDerivedBy. With two MT
+ * siblings, chsbigsky-kershaw is now offered MT by the sibling rule on a dry
+ * run; it is not written until someone runs --write. */
 test("no coordinate and no agreeing sibling means no state, and it says so", () => {
-  for (const id of ["chsbigsky-havre", "chsprimeland-chsprimeland"]) {
+  for (const id of ["chsprimeland-chsprimeland"]) {
     assert.equal(rd(`sources/${id}.json`).state, null);
     assert.ok(out.includes(id + " ".repeat(Math.max(1, 45 - id.length)) + "REFUSED") ||
               new RegExp(id + "\\s+REFUSED").test(out), `${id} should be refused aloud`);
