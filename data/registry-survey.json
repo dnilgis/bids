@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-10T07:23:23Z",
+ "generated": "2026-10-11T07:23:55Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -64,7 +64,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 279420,
+   "bytes": 279419,
    "ua": "ours",
    "rows": 303,
    "headerCells": [
@@ -624,7 +624,7 @@
    "url": "http://agr.georgia.gov/warehouse.aspx",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 114042,
+   "bytes": 114092,
    "ua": "ours",
    "rows": 0,
    "headerCells": [],
@@ -634,7 +634,7 @@
    "expected": "state licensed warehouses",
    "confidence": "from grainjournal.com 2026-09-04; unopened",
    "kept": "debug/registries/survey/ga-state-licensed-warehouses.html",
-   "keptBytes": 108785
+   "keptBytes": 108835
   },
   {
    "url": "http://mda.maryland.gov/foodfeedquality/Pages/grain.aspx",
@@ -713,8 +713,12 @@
   {
    "url": "http://apps.ncagr.gov/LicenseSearch/Home/Search/015",
    "status": 0,
-   "ua": "ours",
-   "error": "HTTPError: HTTP Error 404: Not Found",
+   "ua": "ours, slow",
+   "error": "HTTPError: HTTP Error 504: Gateway Time-out",
+   "attempts": [
+    "TimeoutError: timed out",
+    "HTTPError: HTTP Error 504: Gateway Time-out"
+   ],
    "state": "NC",
    "expected": "licence search, grain dealers",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -866,7 +870,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 9721,
+   "bytes": 9724,
    "ua": "ours",
    "rows": 0,
    "headerCells": [],
@@ -991,7 +995,7 @@
    "url": "https://saltlake.sc.egov.usda.gov/approved_whses/uswa/approved_whses_USWA.asp",
    "status": 0,
    "ua": "ours",
-   "error": "URLError: <urlopen error [Errno -2] Name or service not known>",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "USWA licensed warehouses map",
    "confidence": "data.gov's only distribution for the USWA map; DNS fails from the sandbox"
@@ -1030,12 +1034,8 @@
   {
    "url": "http://www.fsa.usda.gov/Internet/FSA_File/whselst2010.pdf",
    "status": 0,
-   "ua": "ours, slow",
-   "error": "TimeoutError: timed out",
-   "attempts": [
-    "TimeoutError: timed out",
-    "TimeoutError: timed out"
-   ],
+   "ua": "ours",
+   "error": "URLError: <urlopen error [Errno -3] Temporary failure in name resolution>",
    "state": "US",
    "expected": "USWA licensed and bonded, 2010 snapshot",
    "confidence": "READ 2026-09-04: 'Licensed and Bonded Warehouses Licensed Under the U.S. Warehouse Act As of December 31, 2010'. Town / warehouse / operator, no street address. SIXTEEN YEARS OLD \u2014 the survey should look for a newer year"
