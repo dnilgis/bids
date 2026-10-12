@@ -6,6 +6,7 @@
   "platform": "cashbidssingle",
   "url": "https://wheatongrain.com/",
   "futuresUnits": "dollars",
+  "cashRounding": "floor-cent",
   "locationId": "2644",
   "bands": {
     "corn": [
@@ -24,7 +25,7 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/board-sweep.mjs (run 36250817934) from the board page discover recorded for this operator: https://wheatongrain.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 6 row(s) in Corn, Soybeans.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 44.9369,-91.3929 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"Chippewa Falls\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.",
+  "note": "WRITTEN BY scripts/board-sweep.mjs (run 36250817934) from the board page discover recorded for this operator: https://wheatongrain.com/. The platform is cashbidssingle, which this repository already reads elsewhere; nothing about the parsing is new here. At the time of writing this location showed 6 row(s) in Corn, Soybeans.\n\nTHE OPERATOR NAME was read from the board's own title.\n\nHOW THIS PLACE WAS PLACED: the directory row for this operator at this label.\n\nEVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance. COORDINATE filled 44.9369,-91.3929 from geocodes/places.json on 2026-10-02, keyed on this source's own id and resolved from \"Chippewa Falls\" via zip-centroid. It is the CENTROID OF THE TOWN's ZIPs, which can be miles from the yard. EVIDENCE, NOT A FACT: check it against the operator's own published address before anything depends on the distance.\n\nCASH ROUNDING MEASURED 2026-10-12: floor-cent. This board was refused on 1,636 of the 1,882 polls that listed it between 2026-09-30 and 2026-10-12, on rows failing cash - basis = futures by a fraction of a cent. Those refusals printed 267 distinct rows, and their residuals (quoted futures minus cash-plus-basis) were +0.25c x85, +0.5c x90 and +0.75c x92, never a negative one. The rows that published were exact. So the board posts cash TRUNCATED to the cent off a quarter-cent futures grid: 482.75c - 65c = 417.75c prints as 4.17, where rounding would print 4.18. floor-cent admits [0, 1) and explains every row; round-cent and round-cent-either are ruled out by the +0.5c and +0.75c rows. The rows are pinned in test/fixtures/wheatongrain-refusals-2026-10.json and checked by test/reader-repairs-2026-10-12.test.mjs.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
   "zip": "54729",
@@ -34,6 +35,6 @@
   "email": null,
   "website": "https://wheatongrain.com/",
   "inMerge": true,
-  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x3, +0.25c x3. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.",
+  "_pending": "cashRounding is floor-cent, measured from 267 refused rows (see note). lat/lon is the centroid of the town's ZIP and can be miles from the yard.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x3, +0.25c x3. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.",
   "latPrecision": "town"
 }
