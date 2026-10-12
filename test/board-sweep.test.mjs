@@ -22,7 +22,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { centBound, boardUnits, operatorNameFrom, sitesFor, planSite, alreadyHave, hostOf, parseArgs, SWEEPABLE,
@@ -623,8 +623,14 @@ test("both directories are asked, and the ones we wrote ourselves are excluded",
   assert.ok(registryRows.length > 1000, `only ${registryRows.length} registry rows in the wide set`);
   assert.equal(joinDirectory(registryRows, "Country Grain Cooperative", "Eldridge"), null,
     "the Eldridge registry row is back in the wide set — the merge has stopped working");
-  assert.ok(dir.elevators.some((e) => e.id === "countrygraincooperative-eldridge"
-                                      && e.status === "read"),
+  /* "A board this repository reads" means it has a source file and the map
+     shows our own price status for it: read, stale or down (MAP_STATUS in
+     scripts/build_directory.mjs). It used to require "read", which turned the
+     suite red on 2026-10-12 the day Eldridge's board went late: the merge
+     above was still working, only the yard's posting had slowed. */
+  assert.ok(existsSync(join(ROOT, "sources/countrygraincooperative-eldridge.json"))
+            && dir.elevators.some((e) => e.id === "countrygraincooperative-eldridge"
+                                         && ["read", "stale", "down"].includes(e.status)),
     "and it is a board this repository reads, which is why its registry row merged away");
   for (const [op, l] of [["Agassiz Valley Grain", "AVG Barnesville"],
                          ["ADM Edible Bean Specialties, Inc.", "Galesburg"],
