@@ -45,16 +45,19 @@ on:
         description: "raw — bytes of each response body to print. Blank = 40000. Put 400000 to read a whole page."
         required: false
         default: ""
-      dtn_key:
+      use_dtn_key:
         # A LICENSED DTN key, if one is ever bought. Their documented sample key
         # is browser-scoped and answers AGW-403=002 to everything — measured
         # 2026-08-22 on the elevator directory, on MN, and on commodities. With
         # a real key the directory returns every elevator in a state with city,
-        # county, postalCode, fips, latitude and longitude. Left blank, the step
-        # that uses it does not run.
-        description: "dtn_key — ADVANCED, usually blank. A licensed DTN Markets API key, to fetch the national elevator directory."
-        required: false
-        default: ""
+        # county, postalCode, fips, latitude and longitude.
+        #
+        # THE KEY IS A REPO SECRET, NOT AN INPUT. This repo is public: an input
+        # is shown in the run's event payload and printed unmasked in the log.
+        # Put the key in Settings > Secrets > Actions as DTN_API_KEY and tick this.
+        description: "use_dtn_key — ADVANCED, usually off. Use the DTN_API_KEY repo secret to fetch the national elevator directory. Never paste a paid key into any box here."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
 
@@ -181,15 +186,17 @@ jobs:
       # conversation, not a technical one.
       #
       # THE STEP STAYS, GATED ON A KEY. If a real one ever arrives, put it in
-      # the dtn_key box and this answers without anybody rediscovering the
+      # the DTN_API_KEY secret, tick use_dtn_key, and this answers without anybody rediscovering the
       # endpoint. Left blank it does not run, because running it again with the
       # sample key would print the same 403 and teach nobody anything.
       - name: DTN Markets Grain Bids — the elevator directory (needs a licensed key)
-        if: inputs.urls == '' && inputs.dtn_key != ''
+        if: inputs.urls == '' && inputs.use_dtn_key
         continue-on-error: true
         env:
-          DTN_KEY: ${{ inputs.dtn_key }}
+          DTN_KEY: ${{ secrets.DTN_API_KEY }}
         run: |
+          if [ -z "$DTN_KEY" ]; then echo "::warning::use_dtn_key is ticked but the DTN_API_KEY secret is not set"; exit 0; fi
+          echo "::add-mask::$DTN_KEY"
           BASE='https://api.dtn.com/markets/grain-bids/elevators'
           node scripts/probe.mjs --raw 400000 \
             "https://api.dtn.com/markets/grain-bids/commodities?apikey=$DTN_KEY" \

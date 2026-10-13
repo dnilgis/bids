@@ -126,7 +126,10 @@ jobs:
 
       - name: Write and commit
         if: ${{ inputs.commit }}
+        env:
+          IN_PARTNER: ${{ inputs.partner }}
         run: |
+          [ -z "$IN_PARTNER" ] || printf '%s' "$IN_PARTNER" | grep -Eq '^(adm|poet)$' || { echo "::error::input partner has an unexpected format"; exit 1; }
           node -e '
             const fs = require("fs");
             const all = JSON.parse(fs.readFileSync("/tmp/manifests.json", "utf8"));
@@ -138,4 +141,4 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add sources/
           if git diff --staged --quiet; then echo "the build matches what is committed; nothing to commit"; exit 0; fi
-          bash scripts/commit-and-push.sh "gradable: $WROTE ${{ inputs.partner }} manifest(s), $ENABLED enabled [skip ci]"
+          bash scripts/commit-and-push.sh "gradable: $WROTE $IN_PARTNER manifest(s), $ENABLED enabled [skip ci]"

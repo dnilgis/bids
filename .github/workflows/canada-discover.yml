@@ -65,13 +65,22 @@ jobs:
 
       - name: Ask them
         continue-on-error: true
+        env:
+          IN_LIST: ${{ inputs.list || 'probe-lists/canada-hosts.txt' }}
+          IN_LIMIT: ${{ inputs.limit || '26' }}
+          IN_BUDGET: ${{ inputs.budget || '25' }}
+          IN_PATIENCE: ${{ inputs.patience || '60' }}
         run: |
+          [ -z "$IN_LIST" ] || printf '%s' "$IN_LIST" | grep -Eq '^[A-Za-z0-9._/-]+$' || { echo "::error::input list has an unexpected format"; exit 1; }
+          [ -z "$IN_LIMIT" ] || printf '%s' "$IN_LIMIT" | grep -Eq '^[0-9]+$' || { echo "::error::input limit has an unexpected format"; exit 1; }
+          [ -z "$IN_BUDGET" ] || printf '%s' "$IN_BUDGET" | grep -Eq '^[0-9]+$' || { echo "::error::input budget has an unexpected format"; exit 1; }
+          [ -z "$IN_PATIENCE" ] || printf '%s' "$IN_PATIENCE" | grep -Eq '^[0-9]+$' || { echo "::error::input patience has an unexpected format"; exit 1; }
           node scripts/discover.mjs \
-            --list "${{ inputs.list || 'probe-lists/canada-hosts.txt' }}" \
+            --list "$IN_LIST" \
             --ledger data/platforms.json \
-            --limit "${{ inputs.limit || '26' }}" \
-            --budget "${{ inputs.budget || '25' }}" \
-            --patience "${{ inputs.patience || '60' }}" \
+            --limit "$IN_LIMIT" \
+            --budget "$IN_BUDGET" \
+            --patience "$IN_PATIENCE" \
             | tee /tmp/canada.txt
           tail -60 /tmp/canada.txt >> "$GITHUB_STEP_SUMMARY"
 

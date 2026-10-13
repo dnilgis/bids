@@ -116,7 +116,7 @@ jobs:
       # run never touched. Texas and Wisconsin were in the table for two of
       # those runs and neither was ever fetched.
       - name: Install the PDF and spreadsheet readers
-        run: pip install --quiet pypdf xlrd zipcodes
+        run: pip install --quiet pypdf==6.20.1 xlrd==2.0.2 zipcodes==3.0.0
 
       # ══════════════════════════════════════════════════════════════════
       #  THE GUARDS RUN BEFORE THE FETCH, NOT AFTER
@@ -183,10 +183,15 @@ jobs:
         id: fetch
         timeout-minutes: 15
         continue-on-error: true
+        env:
+          IN_PAGES: ${{ inputs.pages || '20' }}
+          IN_STATES: ${{ inputs.states || '' }}
         run: |
+          [ -z "$IN_PAGES" ] || printf '%s' "$IN_PAGES" | grep -Eq '^[0-9]+$' || { echo "::error::input pages has an unexpected format"; exit 1; }
+          [ -z "$IN_STATES" ] || printf '%s' "$IN_STATES" | grep -Eq '^[A-Za-z, ]*$' || { echo "::error::input states has an unexpected format"; exit 1; }
           python scripts/fetch_registries.py \
-            --pages "${{ inputs.pages || '20' }}" \
-            --states "${{ inputs.states || '' }}" \
+            --pages "$IN_PAGES" \
+            --states "$IN_STATES" \
             --dump-dir debug/registries
 
       # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
@@ -260,7 +265,7 @@ jobs:
         timeout-minutes: 12
         continue-on-error: true
         run: |
-          pip install --quiet zipcodes
+          pip install --quiet zipcodes==3.0.0
           python scripts/build_geocodes.py
           node scripts/build_directory.mjs
 

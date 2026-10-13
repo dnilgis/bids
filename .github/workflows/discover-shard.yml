@@ -78,6 +78,8 @@ jobs:
       left: ${{ steps.plan.outputs.left }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -94,8 +96,12 @@ jobs:
       - name: Work out the slices
         id: plan
         env:
+          IN_SHARDS: ${{ inputs.shards || '20' }}
+          IN_PER_SHARD: ${{ inputs.per_shard || '' }}
           LIST: ${{ inputs.list }}
         run: |
+          [ -z "$IN_SHARDS" ] || printf '%s' "$IN_SHARDS" | grep -Eq '^[0-9]+$' || { echo "::error::input shards has an unexpected format"; exit 1; }
+          [ -z "$IN_PER_SHARD" ] || printf '%s' "$IN_PER_SHARD" | grep -Eq '^[0-9]+$' || { echo "::error::input per_shard has an unexpected format"; exit 1; }
           set -euo pipefail
           # The name is taken from a fixed set rather than pasted into a path.
           # An input that reaches a filename is an input that can reach ../ .
@@ -126,7 +132,7 @@ jobs:
           # the slices are disjoint and complete, and fails the run if they are
           # not. It writes GITHUB_OUTPUT itself.
           node scripts/sweep-plan.mjs "$FILE" /tmp/plan/platforms.json /tmp/plan/sweep-list.txt \
-            "${{ inputs.shards || '20' }}" "${{ inputs.per_shard || '' }}" | tee /tmp/plan/plan.json
+            "$IN_SHARDS" "$IN_PER_SHARD" | tee /tmp/plan/plan.json
           {
             echo "### plan"
             echo '```json'
@@ -157,6 +163,8 @@ jobs:
         shard: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -169,9 +177,13 @@ jobs:
       - name: Ask this shard's slice
         continue-on-error: true
         env:
+          IN_BUDGET: ${{ inputs.budget || '40' }}
+          IN_PATIENCE: ${{ inputs.patience || '45' }}
           PER: ${{ needs.plan.outputs.per }}
           SHARD: ${{ matrix.shard }}
         run: |
+          [ -z "$IN_BUDGET" ] || printf '%s' "$IN_BUDGET" | grep -Eq '^[0-9]+$' || { echo "::error::input budget has an unexpected format"; exit 1; }
+          [ -z "$IN_PATIENCE" ] || printf '%s' "$IN_PATIENCE" | grep -Eq '^[0-9]+$' || { echo "::error::input patience has an unexpected format"; exit 1; }
           set -uo pipefail
           START=$(( SHARD * PER ))
           cp /tmp/base/platforms.json "/tmp/ledger-${SHARD}.json"
@@ -182,8 +194,8 @@ jobs:
             --resume \
             --start "$START" \
             --limit "$PER" \
-            --budget "${{ inputs.budget || '40' }}" \
-            --patience "${{ inputs.patience || '45' }}" \
+            --budget "$IN_BUDGET" \
+            --patience "$IN_PATIENCE" \
             | tee "/tmp/shard-${SHARD}.txt"
           {
             echo "### shard ${SHARD} — ${PER} host(s) from offset ${START}"

@@ -59,20 +59,30 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
       - name: Sweep
+        env:
+          IN_NAMES: ${{ inputs.names }}
+          IN_CONCURRENCY: ${{ inputs.concurrency }}
+          IN_DELAY: ${{ inputs.delay }}
+          IN_FILE: ${{ inputs.file }}
         run: |
-          if [ -n "${{ inputs.names }}" ]; then
+          [ -z "$IN_CONCURRENCY" ] || printf '%s' "$IN_CONCURRENCY" | grep -Eq '^[0-9]+$' || { echo "::error::input concurrency has an unexpected format"; exit 1; }
+          [ -z "$IN_DELAY" ] || printf '%s' "$IN_DELAY" | grep -Eq '^[0-9]+$' || { echo "::error::input delay has an unexpected format"; exit 1; }
+          [ -z "$IN_FILE" ] || printf '%s' "$IN_FILE" | grep -Eq '^[A-Za-z0-9._/-]+$' || { echo "::error::input file has an unexpected format"; exit 1; }
+          if [ -n "$IN_NAMES" ]; then
             node scripts/gd-sweep.mjs \
-              --names "${{ inputs.names }}" \
-              --concurrency "${{ inputs.concurrency }}" \
-              --delay "${{ inputs.delay }}"
+              --names "$IN_NAMES" \
+              --concurrency "$IN_CONCURRENCY" \
+              --delay "$IN_DELAY"
           else
             node scripts/gd-sweep.mjs \
-              --file "${{ inputs.file }}" \
+              --file "$IN_FILE" \
               ${{ inputs.as_names && '--as-names' || '' }} \
-              --concurrency "${{ inputs.concurrency }}" \
-              --delay "${{ inputs.delay }}"
+              --concurrency "$IN_CONCURRENCY" \
+              --delay "$IN_DELAY"
           fi
