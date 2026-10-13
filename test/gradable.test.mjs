@@ -4,7 +4,10 @@
  *   poet.gradable.com/api/commodities/v2/merchandising/instruments/market/331845223
  * captured in discover run 92448519432 on 2026-09-07, and
  * fixtures/gradable-poet-bootstrap.json is the 202,283-byte body of their
- * bootstrap from run 92448826700. Neither is edited.
+ * bootstrap from run 92448826700. Neither is edited, except that the
+ * bootstrap's staff contact lists were emptied and the phone numbers and
+ * addresses in its announcement text blanked (see redactContacts in
+ * scripts/gradable_bootstrap.mjs); nothing here reads them.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -326,7 +329,8 @@ test("the board URL is built from the market id, not typed", () => {
  * fixtures/gradable-adm-bootstrap.json is the 783,632-byte body of
  *   adm.gradable.com/api/commodities/merchandising/bootstrap
  * captured whole on 2026-09-15 by the `gradable bootstrap` workflow and
- * committed as d84e3de. It is not edited.
+ * committed as d84e3de. It is not edited, except for the same staff-contact
+ * redaction as POET's (redactContacts in scripts/gradable_bootstrap.mjs).
  *
  * It is here because POET alone could not have caught either of the two bugs
  * below. Both are the same shape: a field POET happens to carry on every one
