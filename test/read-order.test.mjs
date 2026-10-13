@@ -21,44 +21,14 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { nextStreak } from "../lib/breaker.mjs";
 
-/* The same three keys poll.mjs sorts by, kept here as the specification. If
-   this and poll.mjs ever disagree, THIS is what the behaviour was meant to be. */
-const spread = (id) => parseInt(createHash("sha1").update(id).digest("hex").slice(0, 8), 16);
-const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
-/* The unit of the penalty is the PAGE, which is what getPage() caches on.
-   See the block above poll.mjs's sort: every operator this was written to
-   protect has exactly one page, and the two that do not -- ADM and POET
-   Grain, one gradable market url per source -- are the two it was breaking. */
-const pageKeyOf = (s) => `${s.browserPage ?? ""}|${s.url}`;
-/* The way back, key ZERO. Without it the three keys below have no exit: a page
-   with any streak sorts last, the wall arrives first, and an unattempted source
-   keeps its streak. Measured on main 2026-09-18: of 143 sources unattempted for
-   ten hours, ZERO were on a page with a streak of zero. */
-export const STARVING_MS = 10 * 3600_000;
-export const REPRIEVE_PAGES = 4;
-function readOrder(sources, prevFails = {}, prevSeen = {}, now = Date.now()) {
-  const opFails = new Map(), opSeen = new Map(), lastSeen = new Map();
-  for (const s of sources) {
-    const k = pageKeyOf(s);
-    opFails.set(k, Math.max(opFails.get(k) ?? 0, prevFails[s.id] ?? 0));
-    opSeen.set(k, Math.max(opSeen.get(k) ?? 0, prevSeen[s.id] ?? 0));
-    const p = prevSeen[s.id];
-    if (p !== undefined) lastSeen.set(k, Math.max(lastSeen.get(k) ?? 0, p));
-  }
-  const reprieved = new Set(
-    [...lastSeen.entries()]
-      .filter(([, t]) => now - t > STARVING_MS)
-      .sort((a, b) => a[1] - b[1])
-      .slice(0, REPRIEVE_PAGES)
-      .map(([k]) => k));
-  return [...sources].sort((a, b) => {
-    const ka = pageKeyOf(a), kb = pageKeyOf(b);
-    return ((reprieved.has(kb) ? 1 : 0) - (reprieved.has(ka) ? 1 : 0))
-        || (opFails.get(ka) - opFails.get(kb))
-        || (opSeen.get(ka) - opSeen.get(kb))
-        || (spread(a.id) - spread(b.id));
-  });
-}
+/* THE ORDER POLL.MJS RUNS, IMPORTED. This file used to carry its own copy of
+   the sort "as the specification", which meant the tests passed against the
+   copy whatever the script did. Since 2026-10-13 both import
+   lib/read-order.mjs, and the last test below checks poll.mjs has no other. */
+import { readOrder as order, pageKeyOf, operatorOf, STARVING_MS, REPRIEVE_PAGES }
+  from "../lib/read-order.mjs";
+const readOrder = (sources, prevFails = {}, prevSeen = {}, now = Date.now(), prevHealth = {}) =>
+  order(sources, { prevFails, prevSeen, prevHealth, now }).order;
 
 /* A SHARED PAGE BY DEFAULT: every source of one operator lands on that
    operator's page, which is how all but two operators in the manifest are
@@ -204,30 +174,99 @@ test("a source never attempted at all is new, not starved — it does not spend 
   assert.equal(order[0], "starved-a", "the reprieve slot goes to the one we have actually neglected");
 });
 
-test("poll.mjs sorts by these three keys and in this order", () => {
-  /* The ordering above is a specification; this is the check that the script
-     actually implements it. A spec nothing is held to is a comment. */
+test("poll.mjs sorts with lib/read-order.mjs and has no order of its own", () => {
+  /* A spec nothing is held to is a comment. The tests above run the lib
+     function, so what is left to check is that the script runs it too, and
+     carries no second copy that could drift from it. */
   const src = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
-  const sort = src.slice(src.indexOf("todo.sort("), src.indexOf("todo.sort(") + 500);
-  /* The two constants live in both files. If they drift, the spec above stops
-     describing the script and this file goes back to being a comment. */
-  for (const [name, want] of [["STARVING_MS", STARVING_MS], ["REPRIEVE_PAGES", REPRIEVE_PAGES]]) {
-    const m = src.match(new RegExp(`const ${name} = ([^;]+);`));
-    assert.ok(m, `${name} must be declared in poll.mjs`);
-    assert.equal(eval(m[1]), want, `${name} disagrees between poll.mjs and this specification`);
-  }
-  assert.match(sort, /opFails\.get\(ka\) - opFails\.get\(kb\)/, "first key: the page's failure streak");
-  assert.match(sort, /opSeen\.get\(ka\) - opSeen\.get\(kb\)/, "second key: the page's last attempt");
+  assert.match(src, /import \{[^}]*\breadOrder\b[^}]*\} from "\.\.\/lib\/read-order\.mjs"/,
+    "poll.mjs imports readOrder from lib/read-order.mjs");
+  assert.match(src, /readOrder\(todo, \{ prevFails, prevSeen, prevHealth, now: Date\.now\(\) \}\)/,
+    "and calls it on the pass's sources with the last index's streaks, stamps and verdicts");
+  assert.match(src, /todo\.splice\(0, todo\.length, \.\.\.readFirst\)/, "and reads in the order it returns");
+  assert.doesNotMatch(src, /todo\.sort\(/, "no second sort in the script");
+  assert.doesNotMatch(src, /const (pageKeyOf|STARVING_MS|REPRIEVE_PAGES|spread) =/,
+    "no second copy of the key, the constants or the hash");
   /* ONE definition of the page key. getPage() built the same string inline for
      its cache; two copies of a key is how the sort and the fetch come to
      disagree about what a page is. */
-  assert.equal((src.match(/const pageKeyOf =/g) || []).length, 1, "pageKeyOf is defined once");
-  assert.doesNotMatch(src.replace(/const pageKeyOf =.*\n/, ""), /`\$\{s\.browserPage \?\? ""\}\|\$\{s\.url\}`/,
-    "nothing rebuilds the page key by hand");
+  assert.doesNotMatch(src, /`\$\{s\.browserPage \?\? ""\}\|\$\{s\.url\}`/,
+    "nothing in poll.mjs rebuilds the page key by hand");
+  const lib = readFileSync(new URL("../lib/read-order.mjs", import.meta.url), "utf8");
+  const sort = lib.slice(lib.indexOf("].sort("), lib.indexOf("].sort(") + 500);
   assert.match(sort, /reprieved\.has\(kb\).*reprieved\.has\(ka\)/, "key zero: the way back");
-  assert.match(sort, /spread\(a\.id\) - spread\(b\.id\)/, "third key: a hash, never the id");
+  assert.match(sort, /pageFails\.get\(ka\) - pageFails\.get\(kb\)/, "first key: the page's failure streak");
+  assert.match(sort, /seenOf\(ka\) - seenOf\(kb\)/, "second key: the page's last attempt");
+  assert.match(sort, /spread\(ka\) - spread\(kb\)/, "third key: a hash of the page");
+  assert.match(sort, /spread\(a\.id\) - spread\(b\.id\)/, "last key: a hash, never the id");
   assert.doesNotMatch(sort, /localeCompare/, "an alphabetical tiebreak is the bug this file exists for");
+  assert.equal(STARVING_MS, 10 * 3600_000);
+  assert.equal(REPRIEVE_PAGES, 4);
 });
+
+/* ── 2026-10-13: CENTRAL VALLEY AG ──────────────────────────────────────────
+   54 CVA sources on one cashgrid page. Hooper and Bancroft were refused for
+   two weeks ("parsed 574 bids but none for location 13901"), streak 1032, and
+   the page's streak was the worst of its sources, so all 54 sorted behind
+   every clean page. Polk and ADM Columbus were reached at the wall with 230ms
+   left and recorded broken. */
+const CVA = ["polk", "admcolumbus", "hooper", "bancroft", "tilden", "waco", "utica"]
+  .map((l) => S(`cvacoop365-${l}`, "Central Valley Ag"));
+const CLEAN = Array.from({ length: 8 }, (_, i) => S(`clean${i}-x`, `Clean${i}`));
+
+test("A REFUSED SOURCE DOES NOT SINK ITS PAGE: the page answered", () => {
+  const fails = { "cvacoop365-hooper": 1032, "cvacoop365-bancroft": 1032 };
+  const health = { "cvacoop365-hooper": "refused", "cvacoop365-bancroft": "refused" };
+  const now = 1_000_000_000_000, t = now - 3600_000;
+  const seen = Object.fromEntries([...CVA, ...CLEAN].map((s) => [s.id, t]));
+  const got = readOrder([...CLEAN, ...CVA], fails, seen, now, health).map((s) => s.id);
+  const lastClean = Math.max(...CLEAN.map((s) => got.indexOf(s.id)));
+  const firstCva = Math.min(...CVA.map((s) => got.indexOf(s.id)));
+  assert.ok(firstCva < lastClean,
+    `CVA has nothing against its page but two refusals; it must mix with the clean pages: got ${got.join(", ")}`);
+  /* and the refused rows do not get a pass of their own: the page is read as one */
+  const cva = got.filter((id) => id.startsWith("cvacoop365-"));
+  assert.equal(got.indexOf(cva.at(-1)) - got.indexOf(cva[0]), cva.length - 1, "the page's sources are read together");
+});
+
+test("the same streak, NOT refused, still sinks the page: a page that failed is a page that failed", () => {
+  const fails = { "cvacoop365-hooper": 5 };
+  const got = readOrder([...CLEAN, ...CVA], fails, {}, Date.now(), { "cvacoop365-hooper": "broken" }).map((s) => s.id);
+  const lastClean = Math.max(...CLEAN.map((s) => got.indexOf(s.id)));
+  for (const s of CVA) assert.ok(got.indexOf(s.id) > lastClean, `${s.id} sits behind a broken page`);
+});
+
+test("THE WALL CUTS ONE PAGE, NOT TWENTY: siblings are contiguous", () => {
+  /* With only the id hash after the tie, the seven CVA sources were spread
+     through the clean group, and a wall anywhere in it left some read and
+     some not although their one page had already been fetched. */
+  const all = [...CLEAN, ...CVA, ...["a", "b", "c"].map((x) => S(`other-${x}`, "Other"))];
+  const got = readOrder(all).map((s) => s.id);
+  for (const prefix of ["cvacoop365-", "other-"]) {
+    const idx = got.map((id, i) => (id.startsWith(prefix) ? i : -1)).filter((i) => i >= 0);
+    assert.equal(idx.at(-1) - idx[0], idx.length - 1, `${prefix}* must be read as one block: got ${got.join(", ")}`);
+  }
+});
+
+test("a page is as overdue as its longest-waiting source, not its latest", () => {
+  /* Polk and ADM Columbus were attempted at 16:31; the other CVA sources last
+     at 13:52. The page is fetched once for all of them, so it is due when the
+     13:52 ones are. */
+  const now = 1_000_000_000_000;
+  const seen = Object.fromEntries(CVA.map((s) => [s.id, now - 4 * 3600_000]));
+  seen["cvacoop365-polk"] = seen["cvacoop365-admcolumbus"] = now - 60_000;
+  const other = S("other-x", "Other");
+  seen["other-x"] = now - 2 * 3600_000;
+  const got = readOrder([other, ...CVA], {}, seen, now).map((s) => s.id);
+  assert.ok(got.indexOf("other-x") > got.indexOf("cvacoop365-waco"),
+    `CVA's page has waited four hours, other-x two: got ${got.join(", ")}`);
+  /* and the reprieve sees the same thing */
+  const old = Object.fromEntries(CVA.map((s) => [s.id, now - 12 * 3600_000]));
+  old["cvacoop365-polk"] = now - 60_000;
+  const r = order([other, ...CVA], { prevSeen: old, prevFails: { "cvacoop365-polk": 3 }, now });
+  assert.ok(r.reprieved.has(pageKeyOf(CVA[0])), "twelve hours unread is starving, whatever one sibling's stamp says");
+});
+
 import { readFileSync } from "node:fs";
 
 /* ── THE STREAK TRANSITION ─────────────────────────────────────────────────

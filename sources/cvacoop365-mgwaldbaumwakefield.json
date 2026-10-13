@@ -1,0 +1,40 @@
+{
+  "id": "cvacoop365-mgwaldbaumwakefield",
+  "operator": "Central Valley Ag",
+  "location": "MG Waldbaum - Wakefield",
+  "state": "NE",
+  "platform": "agricharts-cashgrid",
+  "url": "https://cvacoop365.agricharts.com/markets/cashgrid.php",
+  "locationId": "28840",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY HAND on 2026-10-13 from their own boards, the way scripts/agricharts-sweep.mjs writes a sibling, because the sweep could not place it (data/gaps/board-siblings.csv: \"no town of that name in data/directory.json\"). locationId 28840 is the l= parameter on this location's own rows (c=16574&l=28840&d=V26) on https://cvacoop365.agricharts.com/markets/cash.php, read through the probe workflow on 2026-10-13, and the same id every CVA source's otherLocationsOnPage has listed from the cashgrid board, so it is a page this repository already fetches every pass. At the time of writing this location showed 3 row(s) in DIRECT CORN (Oct, Nov, Dec 2026). It is NOT in the board's location drop-down and NOT in CVA's published location list (cashbids-js.php, as cached in geocodes/agricharts-published.json on 2026-10-02), so there is no published address for it.\n\nidentityAlternative: this board publishes a BASIS and the NAME of the CBOT contract it is against: writeBidRow('DIRECT CORN',-30, ..., quotes['ZCZ26']), and the browser adds them up. Same arrangement, same checks, as sources/cvacoop365-mgwaldbaumbloomfield.json, which reads DIRECT CORN off this same board.\n\nPLACE: the town is the board's own heading, \"MG Waldbaum - Wakefield\", and Wakefield is a CVA town this repository already reads (sources/cvacoop365-wakefield.json, location 13928). The coordinate is the one geocodes/places.json holds for Wakefield, NE, at town precision via zip-centroid. It is NOT the plant's address, which CVA does not publish. Website is the site the board is served from.",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": null,
+  "lat": 42.2733,
+  "lon": -96.8776,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://cvacoop365.agricharts.com/markets/cash.php",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either: nearest cent, tie-break not established. Measured across 6,228 rows on 45 captured boards: -0.5, -0.25, +0.25, +0.5 and nothing else, so the interval is closed at both ends. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for Wakefield, NE, at town precision via zip-centroid. A street address replaces it if CVA ever publishes one for location 28840."
+}
