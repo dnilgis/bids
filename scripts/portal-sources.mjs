@@ -1,0 +1,217 @@
+#!/usr/bin/env node
+/*
+ * portal-sources.mjs: one source file per elevator that keeps its own listing
+ * on agsist.com/post, written from the agsist Worker's public feed.
+ *
+ * Sig adds an elevator in the Worker (POST /elev/admin/create). Its listing
+ * shows up in GET /elev/feed, and this script, run at the start of every pass
+ * (scripts/one-pass.sh), writes sources/portal-<listing id>.json for it. No
+ * code change per elevator.
+ *
+ *   placed      by the listing's own lat/lon, town, state and ZIP
+ *   linked      to the state-licence registry row for the same business in
+ *               the same town, when exactly one matches: the source takes that
+ *               row's operator name, so build_directory.mjs merges the grey
+ *               "known, not read" pin into this one (orgKey), and the source
+ *               records the row as `registryId`
+ *   facts       hours, harvest hours, contact name, note and closed-until ride
+ *               in `portal`; the phone in `phone`. The listing's email is never
+ *               in the feed and never written here
+ *   gone        a listing that has left the feed (Sig set it inactive) has its
+ *               source switched to enabled:false, so the merge drops its board
+ *               at once; it comes back on its own if the listing does
+ *
+ * FEED DOWN OR MALFORMED: NOTHING IS TOUCHED. Every source file stays as it
+ * was, the pass goes on, and poll.mjs holds each portal board's last good file
+ * under the same age rule as every other board. This script never fails a
+ * pass: it prints a warning and exits 0.
+ *
+ *   node scripts/portal-sources.mjs                  read the live feed
+ *   node scripts/portal-sources.mjs --feed <file>    read a saved feed
+ *   node scripts/portal-sources.mjs --dry-run        say what would change
+ */
+import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { join, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { FEED_URL, VERIFIED_BY, PORTAL_BANDS, SOURCE_PREFIX, sourceIdOf,
+         parseFeed, listingProblem, listingInfo } from "../lib/adapters/agsist-portal.mjs";
+import { operatorKey, placeKey } from "../lib/orgkey.mjs";
+import { countryOfState, CURRENCY_OF_COUNTRY } from "../lib/currency.mjs";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+export const PLATFORM = "agsist-portal";
+const FETCH_MS = 15_000;
+const UA = "agsist-bidreader/1.0 (+https://agsist.com; posted bid)";
+
+/* THE REGISTRY ROW FOR THE SAME BUSINESS IN THE SAME TOWN.
+ *
+ * Same state and town by placeKey, and the listing's name, with the town taken
+ * off the end ("Bunge Ladoga" -> BUNGE), is the start of the registry operator's
+ * key (BUNGEUSAGRAIN) or the other way round. Four letters at least, so "Co-op"
+ * does not match every co-op in town. Exactly one row or no link: two
+ * candidates is a question for a person, and the note says so. */
+export function registryMatch(listing, registry = {}) {
+  const town = placeKey(listing.state, listing.town);
+  const tw = town.split("|")[1] ?? "";
+  let name = operatorKey(listing.name);
+  if (tw && name.endsWith(tw) && name.length > tw.length) name = name.slice(0, -tw.length);
+  if (name.length < 4) return { id: null, why: `listing name "${listing.name}" is too short to match on` };
+  const hits = [];
+  for (const [k, r] of Object.entries(registry)) {
+    if (!r || placeKey(r.state, r.location) !== town) continue;
+    const ok = operatorKey(r.operator);
+    if (ok.length >= 4 && (ok.startsWith(name) || name.startsWith(ok))) hits.push([k, r]);
+  }
+  if (hits.length === 1) return { id: `reg:${hits[0][0]}`, row: hits[0][1], why: null };
+  return { id: null, why: hits.length
+    ? `${hits.length} registry rows in ${listing.town}, ${listing.state} could be this one (${hits.map(([k]) => k).join(", ")}); not linked`
+    : `no registry row for this business in ${listing.town}, ${listing.state}` };
+}
+
+/** The source file for one listing. Pure: the same listing and registry give the same file. */
+export function sourceFor(listing, registry = {}, nowMs = Date.now()) {
+  const link = registryMatch(listing, registry);
+  const info = listingInfo(listing);
+  /* A closed-until already past says nothing; leaving it would only make a
+     reader compare clocks to find that out. */
+  if (info.closedUntil && Date.parse(info.closedUntil) <= nowMs) info.closedUntil = null;
+  const phone = String(listing.contact?.phone ?? "").trim() || null;
+  const zip = /^\d{5}$/.test(String(listing.zip ?? "")) ? String(listing.zip) : null;
+  const operator = link.row?.operator ?? listing.name.trim();
+  return {
+    id: sourceIdOf(listing.id),
+    operator,
+    location: listing.town.trim(),
+    state: listing.state,
+    platform: PLATFORM,
+    url: FEED_URL,
+    locationId: listing.id,
+    identityAlternative: VERIFIED_BY,
+    bands: PORTAL_BANDS,
+    cadence: "grain-day",
+    provenance: "posted-by-elevator",
+    enabled: true,
+    note: `GENERATED by scripts/portal-sources.mjs from the agsist portal feed (${FEED_URL}), listing `
+      + `"${listing.id}" ("${listing.name.trim()}", ${listing.town.trim()}, ${listing.state}). Do not edit: the next `
+      + `pass rewrites it from the feed. The elevator posts its own basis per crop and delivery period on `
+      + `agsist.com/post; cash is that basis on the CBOT quote for the contract it names, and pricedAt is when it `
+      + `last posted. PLACE: the listing's own lat/lon. REGISTRY: `
+      + (link.id ? `linked to ${link.id} (operator name taken from it).` : `${link.why}.`),
+    publicNote: "Posted by the elevator itself on AGSIST: their own basis, on the futures contract they name. "
+      + "The cash price is that basis on the CBOT quote for that contract when we last read it; the quote "
+      + "is not republished. Call to confirm before hauling.",
+    address: null,
+    zip,
+    lat: listing.lat,
+    lon: listing.lon,
+    latPrecision: "street",
+    /* Written here so scripts/stamp_country.mjs has nothing to add: a stamp on
+       a file this script rewrites every pass would churn both. */
+    country: countryOfState(listing.state) ?? null,
+    currency: CURRENCY_OF_COUNTRY[countryOfState(listing.state)] ?? null,
+    countryVia: countryOfState(listing.state) ? "state" : null,
+    phone,
+    email: null,
+    website: null,
+    inMerge: true,
+    registryId: link.id,
+    portal: info,
+  };
+}
+
+const ser = (o) => JSON.stringify(o, null, 2) + "\n";
+
+/**
+ * What to write, from a feed body and the portal source files already on disk.
+ * existing: Map(sourceId -> parsed file). Returns { ok, why, write: Map(id -> obj), notes }.
+ * A feed that will not parse gives ok:false and nothing to write.
+ */
+export function plan(body, existing = new Map(), registry = {}, nowMs = Date.now()) {
+  let feed;
+  try { feed = parseFeed(body); }
+  catch (e) { return { ok: false, why: e.message, write: new Map(), notes: [] }; }
+  const write = new Map(), notes = [], seen = new Set();
+  for (const l of feed.elevators) {
+    const bad = listingProblem(l);
+    if (bad) {
+      /* A listing that will not read is left as it was on disk: one bad
+         record is not the elevator leaving. */
+      const id = typeof l?.id === "string" ? sourceIdOf(l.id) : null;
+      if (id) seen.add(id);
+      notes.push(`listing ${JSON.stringify(l?.id ?? null)} skipped: ${bad}`);
+      continue;
+    }
+    if (l.active === false) continue;
+    const s = sourceFor(l, registry, nowMs);
+    seen.add(s.id);
+    const was = existing.get(s.id);
+    if (!was || ser(was) !== ser(s)) write.set(s.id, s);
+  }
+  for (const [id, was] of existing) {
+    if (seen.has(id) || was.enabled === false) continue;
+    write.set(id, { ...was, enabled: false,
+      note: `${String(was.note ?? "").replace(/ DISABLED .*$/, "")} DISABLED by scripts/portal-sources.mjs: `
+        + `the listing is no longer in the agsist portal feed (inactive), so its board leaves the merge.` });
+    notes.push(`${id}: no longer in the feed; disabled`);
+  }
+  return { ok: true, why: null, write, notes, listings: feed.elevators.length };
+}
+
+export function existingPortalSources(dir) {
+  const out = new Map();
+  if (!existsSync(dir)) return out;
+  for (const f of readdirSync(dir)) {
+    if (!f.startsWith(SOURCE_PREFIX) || !f.endsWith(".json")) continue;
+    try {
+      const d = JSON.parse(readFileSync(join(dir, f), "utf8"));
+      if (d?.platform === PLATFORM && d.id) out.set(d.id, d);
+    } catch { /* validation's problem, and loud there */ }
+  }
+  return out;
+}
+
+async function fetchFeed() {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), FETCH_MS);
+  try {
+    const res = await fetch(FEED_URL, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: ac.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally { clearTimeout(t); }
+}
+
+async function main(args) {
+  const flag = (n) => { const i = args.indexOf(n); return i === -1 ? null : args[i + 1] ?? null; };
+  const dry = args.includes("--dry-run");
+  const feedFile = flag("--feed");
+  const dir = join(ROOT, "sources");
+  let body;
+  try { body = feedFile ? readFileSync(feedFile, "utf8") : await fetchFeed(); }
+  catch (e) {
+    console.error(`::warning title=portal feed::could not read ${feedFile ?? FEED_URL} (${e.message}); `
+      + `portal sources left as they were, and their boards are held under the usual age rule`);
+    return 0;
+  }
+  let registry = {};
+  try { registry = JSON.parse(readFileSync(join(ROOT, "geocodes", "places.json"), "utf8")).registry ?? {}; }
+  catch { /* no registry: nothing links, everything else still works */ }
+  const p = plan(body, existingPortalSources(dir), registry);
+  if (!p.ok) {
+    console.error(`::warning title=portal feed::${p.why.slice(0, 300)}; portal sources left as they were`);
+    return 0;
+  }
+  for (const n of p.notes) console.log(`  portal: ${n}`);
+  for (const [id, s] of p.write) {
+    if (!dry) writeFileSync(join(dir, `${id}.json`), ser(s));
+    console.log(`  portal: ${dry ? "would write" : "wrote"} sources/${id}.json${s.enabled === false ? " (disabled)" : ""}`);
+  }
+  console.log(`  portal: ${p.listings} listing(s) in the feed, ${p.write.size} source file(s) changed`);
+  return 0;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main(process.argv.slice(2)).then((c) => process.exit(c), (e) => {
+    console.error(`::warning title=portal sources::${e?.message ?? e}; portal sources left as they were`);
+    process.exit(0);
+  });
+}

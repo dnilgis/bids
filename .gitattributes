@@ -66,3 +66,12 @@ geocodes/*.json        merge=generated
 probe-lists/*.txt      merge=generated
 index.html             merge=generated
 
+
+# sources/portal-*.json, ADDED 2026-10-13, AND WHY IT IS NOT THE EXCEPTION
+# ABOVE. These are the one kind of manifest nobody edits: scripts/
+# portal-sources.mjs writes each one in full from the agsist portal feed at
+# the start of every pass, and the next pass rewrites it again. Two passes
+# disagreeing about one is two snapshots of the same feed, which is the
+# definition of a file on this list. Every other file in sources/ still stops
+# and asks.
+sources/portal-*.json  merge=generated

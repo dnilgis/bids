@@ -35,6 +35,13 @@ stage() { echo "── $1 at +${SECONDS}s"; }
 # because DTN answered a direct call with "The api key is valid, but it is
 # valid to be used within a browser only". Their page carries their key in the
 # clear, as it must for a browser widget to work, so we hold none.
+# ---- ELEVATORS THAT POST ON agsist.com WRITE THEIR OWN SOURCE FILE ---------
+# One sources/portal-<id>.json per listing in the agsist Worker's /elev/feed,
+# so an elevator Sig adds is read this pass with no code change. It never fails
+# the pass: feed down or malformed, every file is left as it was.
+stage "portal listings"
+node scripts/portal-sources.mjs || echo "::warning title=portal::portal-sources.mjs failed; portal sources left as they were"
+
 stage "read"
 node scripts/poll.mjs
 
@@ -48,6 +55,7 @@ git config user.email "bot@agsist.com"
 # ever reaches the repo. The dashboard reads index.json, so it would
 # have gone stale while reporting everything healthy.
 git add data/
+git add sources/
 git diff --cached --quiet && { echo "nothing moved"; exit 0; }
 
 # NO DEEP FETCH (removed 2026-10-07). This used to run
