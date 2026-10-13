@@ -656,6 +656,9 @@ async function readOne(s) {
               labelInFeed: s.labelInFeed ?? null,
               zip: s.zip ?? null, lat: s.lat ?? null, lon: s.lon ?? null,
               phone: s.phone ?? null, email: s.email ?? null, website: s.website ?? null,
+              /* An elevator's own listing facts (agsist portal: hours, contact
+                 name, note, closed-until). Only on those sources. */
+              ...(s.portal ? { portal: s.portal } : {}),
               /* Whether this source belongs on the AGSIST map. Boyceville is
                  read for the Emmert sites, which consume data/boyceville.json
                  directly, but Barchart already carries it more fully -- so it
@@ -685,7 +688,9 @@ async function readOne(s) {
       for (const w of built.withheld)
         console.error(`::warning title=${s.id} withheld ${w.commodity}::${w.rows} row(s): ${w.why}`);
     }
-    const verdict = decide(prev, built.file);
+    /* postedAt: a board that states when it posted (the agsist portal) sets
+       pricedAt from that, not from when a number last moved. lib/decide.mjs. */
+    const verdict = decide(prev, built.file, { postedAt: built.postedAt ?? null });
     r.health = "live";
     /* A READ THAT WORKED CLEARS THE STREAK -- it counts CONSECUTIVE failures,
        and a source that works once has no case against it any more. */
@@ -842,7 +847,7 @@ function withCarried(rows) {
   for (const s of todo) {
     if (seen.has(s.id)) continue;
     const prev = prevRow.get(s.id);
-    if (prev) { carried.push({ ...prev, carried: true, carriedAt: now }); continue; }
+    if (prev) { carried.push({ ...prev, ...(s.portal ? { portal: s.portal } : {}), carried: true, carriedAt: now }); continue; }
     /* NO PREVIOUS ROW, BUT THERE MAY STILL BE A BOARD. Once a source has
        fallen out of the manifest it can never climb back in on its own: the
        carry above has nothing to copy, and the merge keeps dropping its board.
@@ -858,6 +863,7 @@ function withCarried(rows) {
       usState: s.state ?? null, labelInFeed: s.labelInFeed ?? null,
       zip: s.zip ?? null, lat: s.lat ?? null, lon: s.lon ?? null,
       phone: s.phone ?? null, email: s.email ?? null, website: s.website ?? null,
+      ...(s.portal ? { portal: s.portal } : {}),
       inMerge: s.inMerge !== false, platform: s.platform ?? null,
       url: s.url ?? null,
       status: b.status ?? "ok", health: b.status === "ok" ? "live" : (b.status ?? "unknown"),

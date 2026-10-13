@@ -324,13 +324,17 @@ export function nearestOpen(bids, asOf = Date.now()) {
   return out;
 }
 
-export function shardOf(place, bids, town = null, phone = null) {
+export function shardOf(place, bids, town = null, phone = null, info = null) {
   const f = bids[0];
   return { schema: SHARD_SCHEMA, place,
            operator: f.operator, branch: f.branch ?? null, phone: phone || null,
            city: f.city, town: town?.town ?? null,
            townVia: town?.townVia ?? null, state: f.state,
            lat: f.lat, lon: f.lon,
+           /* An elevator that keeps its own listing on agsist.com: hours,
+              contact name, note, closed-until. Only on those shards, so every
+              other shard is byte-identical to before. */
+           ...(info ? { info } : {}),
            pricedAt: f.pricedAt, checkedAt: f.checkedAt, bids };
 }
 
@@ -982,9 +986,14 @@ function main() {
      index reader needs. The index carries the poller's copy; the source file
      is the owner and fills a gap. */
   const phoneOf = new Map();
+  /* The same idea for a portal elevator's listing facts: the source file owns
+     them (scripts/portal-sources.mjs writes it from the agsist feed). */
+  const infoOf = new Map();
   for (const s of index.sources) {
     const ph = String(s.phone || files.get(s.id)?.phone || "").trim();
     if (ph) phoneOf.set(s.id, ph);
+    const pi = files.get(s.id)?.portal ?? s.portal;
+    if (pi && typeof pi === "object") infoOf.set(s.id, pi);
   }
   const liveBoards = index.sources.filter((s) => s.status === "ok").length;
   const held = new Set(rows.filter((r) => r.stale).map((r) => r.source)).size;
@@ -1224,7 +1233,8 @@ function main() {
       periods: [...new Set(bids.map((b) => b.period))].sort(),
       best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
-    const shard = shardOf(place, bids, town, phone);
+    const info = bids.map((b) => infoOf.get(b.source)).find(Boolean) || null;
+    const shard = shardOf(place, bids, town, phone, info);
     const path = join(outDir, `${slug}.json`);
     const text = JSON.stringify(shard, null, 1);
     /* Compare before writing. An identical rewrite still updates the mtime and
