@@ -312,7 +312,10 @@ const regOrgs = new Map();
    2026-10-13) owns that row outright: its pin replaces the grey one whatever
    name it goes by, so the listing can show the name the elevator chose
    ("Bunge Ladoga") rather than the licence's ("Bunge USA Grain, LLC"). */
-const claimedRegistry = new Set(active.map((s) => s.registryId).filter(Boolean));
+/* registryId may be a list: one yard can hold a licence under two names (Bunge's
+   Decatur, IN plant is on Indiana's roll as Bunge North America East, LLC and on
+   USDA's as Bunge North America, Inc.), and both grey pins are this one yard. */
+const claimedRegistry = new Set(active.flatMap((s) => [].concat(s.registryId ?? [])).filter(Boolean));
 let regClaimed = 0;
 const registry = regOrder.map(([rid, r]) => {
   if (claimedRegistry.has("reg:" + rid)) { regClaimed++; return null; }
