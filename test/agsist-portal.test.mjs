@@ -241,8 +241,8 @@ test("a source file per listing, valid, placed by the listing, and Bunge Ladoga 
   const b = p.write.get("portal-bunge-ladoga-in");
   assert.deepEqual(validateSource(b), []);
   assert.equal(b.registryId, "reg:IN|bungeusagrainllc|ladoga");
-  assert.equal(b.operator, "Bunge USA Grain, LLC",
-    "the registry's name, so build_directory merges its grey pin into this one");
+  assert.equal(b.operator, "Bunge Ladoga",
+    "the elevator's own name; the registry link (registryId) is what merges the grey pin");
   assert.equal(b.location, "Ladoga");
   assert.equal(b.zip, "47954");
   assert.deepEqual([b.lat, b.lon], [39.9132, -86.8031]);

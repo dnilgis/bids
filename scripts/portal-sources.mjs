@@ -77,7 +77,11 @@ export function sourceFor(listing, registry = {}, nowMs = Date.now()) {
   if (info.closedUntil && Date.parse(info.closedUntil) <= nowMs) info.closedUntil = null;
   const phone = String(listing.contact?.phone ?? "").trim() || null;
   const zip = /^\d{5}$/.test(String(listing.zip ?? "")) ? String(listing.zip) : null;
-  const operator = link.row?.operator ?? listing.name.trim();
+  /* The elevator's own name, as Sig entered it (Sig, 2026-10-13: "Bunge
+     Ladoga", not the licence's "Bunge USA Grain, LLC"). The registry link
+     still merges the grey pin: build_directory drops a row a source claims
+     by registryId. */
+  const operator = listing.name.trim();
   return {
     id: sourceIdOf(listing.id),
     operator,
@@ -96,7 +100,7 @@ export function sourceFor(listing, registry = {}, nowMs = Date.now()) {
       + `pass rewrites it from the feed. The elevator posts its own basis per crop and delivery period on `
       + `agsist.com/post; cash is that basis on the CBOT quote for the contract it names, and pricedAt is when it `
       + `last posted. PLACE: the listing's own lat/lon. REGISTRY: `
-      + (link.id ? `linked to ${link.id} (operator name taken from it).` : `${link.why}.`),
+      + (link.id ? `linked to ${link.id} (its grey pin is replaced by this one).` : `${link.why}.`),
     publicNote: "Posted by the elevator itself on AGSIST: their own basis, on the futures contract they name. "
       + "The cash price is that basis on the CBOT quote for that contract when we last read it; the quote "
       + "is not republished. Call to confirm before hauling.",

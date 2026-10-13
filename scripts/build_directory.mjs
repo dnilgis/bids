@@ -308,7 +308,14 @@ const regRank = (r) => (digits(r.phone).length === 10 ? 2 : 0) + (r.address ? 1 
 const regOrder = Object.entries(regRaw)
   .sort((a, b) => regRank(b[1]) - regRank(a[1]) || a[0].localeCompare(b[0]));
 const regOrgs = new Map();
+/* A source that names its registry row (registryId, e.g. a portal listing,
+   2026-10-13) owns that row outright: its pin replaces the grey one whatever
+   name it goes by, so the listing can show the name the elevator chose
+   ("Bunge Ladoga") rather than the licence's ("Bunge USA Grain, LLC"). */
+const claimedRegistry = new Set(active.map((s) => s.registryId).filter(Boolean));
+let regClaimed = 0;
 const registry = regOrder.map(([rid, r]) => {
+  if (claimedRegistry.has("reg:" + rid)) { regClaimed++; return null; }
   const ph = digits(r.phone);
   if (ph.length === 10 && (ourPhones.has(ph) || knownPhones.has(ph))) { regMergedPhone++; return null; }
   /* ── AND WHERE THERE IS NO PHONE TO ASK ────────────────────────────────
@@ -425,6 +432,7 @@ const counts = {
   fromRegistries: registry.length,
   registryMergedByPhone: regMergedPhone,
   registryMergedByName: regMergedByName,
+  registryClaimedBySource: regClaimed,
   registryMergedWithinRegistries: regMergedWithin,
   /* Kept BECAUSE of a phone, against a name-and-town match. */
   registryKeptOnADifferentPhone: regPhoneDisagreed,
