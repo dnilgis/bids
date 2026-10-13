@@ -200,3 +200,25 @@ test("and the same board with their status withdrawn publishes nothing at all", 
     extract: (b, u) => extract(b, u, { now: CAPTURED }),
   }), /withdrawn this price themselves/);
 });
+
+/* 2026-10-13: their feed used to carry months the office had not ticked to
+   show. Their tooling now drops those rows; this is the second guard, for a
+   row that ever arrives marked as not shown. */
+test("A ROW MARKED NOT SHOWN ON THEIR PAGE IS NOT PUBLISHED", () => {
+  const all = ex(BADGER);
+  for (const flag of ["publish", "shown", "show"]) {
+    const body = edit(BADGER, (j) => { j.bids[1][flag] = false; });
+    const rows = ex(body);
+    assert.equal(rows.length, all.length - 1, `${flag}: false drops exactly that row`);
+    assert.deepEqual(rows.map((r) => r.delivery),
+      all.filter((_, i) => i !== 1).map((r) => r.delivery), `${flag}: the hidden month is gone`);
+    assert.equal(rows.hidden.length, 1);
+  }
+  /* true, or no flag at all, is shown, which is every feed published so far. */
+  assert.equal(ex(edit(BADGER, (j) => { j.bids[1].publish = true; })).length, all.length);
+});
+
+test("a feed whose every row is marked not shown is refused, not published empty", () => {
+  const body = edit(BADGER, (j) => { for (const b of j.bids) b.publish = false; });
+  assert.throws(() => ex(body), (e) => e instanceof EmmertRefused && /not shown/.test(e.message));
+});
