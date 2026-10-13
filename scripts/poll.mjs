@@ -41,12 +41,12 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+import { readOrder, pageKeyOf, operatorOf, STARVING_MS } from "../lib/read-order.mjs";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
-         BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
+         BROWSER_FLOOR_MS, FETCH_FLOOR_MS, underFloor } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak } from "../lib/breaker.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
@@ -215,7 +215,7 @@ const backoff = new Backoff({ strikes: BACKOFF_STRIKES });
  *
  * Its own parse failure must not stop a pass: with no file every streak is zero
  * and the order is the hash, which is still uncorrelated with the fault. */
-const prevFails = new Map(), prevSeen = new Map(), prevRow = new Map();
+const prevFails = new Map(), prevSeen = new Map(), prevRow = new Map(), prevHealth = new Map();
 try {
   const pi = JSON.parse(readFileSync(join(DATA, "index.json"), "utf8"));
   const urlNow = new Map(enabled.map((s) => [s.id, s.url]));
@@ -226,6 +226,9 @@ try {
     if (same && Number.isFinite(p.fails)) prevFails.set(p.id, p.fails);
     const t = Date.parse(p.attemptedAt ?? "");
     if (same && Number.isFinite(t)) prevSeen.set(p.id, t);
+    /* The last verdict, so the page streak can leave refusals out
+       (lib/read-order.mjs: a refusal is not a page that failed). */
+    if (same && p.health) prevHealth.set(p.id, p.health);
     /* THE WHOLE ROW, NOT JUST THE TWO COUNTERS. A source the pass runs out of
        time for used to vanish from the manifest, and merge_bids drops any board
        file with no manifest row. See the carry-forward at the index write. */
@@ -233,7 +236,6 @@ try {
   }
 } catch { /* first run, or an unreadable index: every streak is zero */ }
 
-const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
 
 /* THE PENALTY IS PER PAGE, AND THE PAGE IS WHAT getPage() ALREADY CACHES ON.
  *
@@ -267,19 +269,10 @@ const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
  * of 31 hours, and merge dropped all 62 with "price is 30.6h old".
  *
  * Still the WORST CASE within a page, because that argument is untouched: the
- * sources behind one page stand or fall together. */
-const pageKeyOf = (s) => `${s.browserPage ?? ""}|${s.url}`;
-const opFails = new Map(), opSeen = new Map();
-/* Real timestamps only. A page with no row has never been attempted, which is
-   new, not starved -- and it already sorts near the front on key 3. */
-const lastSeen = new Map();
-for (const s of todo) {
-  const k = pageKeyOf(s);
-  opFails.set(k, Math.max(opFails.get(k) ?? 0, prevFails.get(s.id) ?? 0));
-  opSeen.set(k, Math.max(opSeen.get(k) ?? 0, prevSeen.get(s.id) ?? 0));
-  const t = prevSeen.get(s.id);
-  if (t !== undefined) lastSeen.set(k, Math.max(lastSeen.get(k) ?? 0, t));
-}
+ * sources behind one page stand or fall together -- when the page FAILS. A
+ * refusal is the page answering, and since 2026-10-13 it is left out of the
+ * page's streak: lib/read-order.mjs has the measurement (269 sources on 9
+ * pages sunk by one refused sibling each, the 54 CVA sources among them). */
 
 /* ---------- THE WAY BACK ----------
  *
@@ -326,26 +319,13 @@ for (const s of todo) {
  * so its attemptedAt moves and it is no longer starving next pass -- whether it
  * succeeded or not. The reprieve cannot latch on to one dead host, because the
  * dead host stops being the longest-waiting as soon as it is tried. */
-const STARVING_MS = 10 * 3600_000;
-const REPRIEVE_PAGES = 4;
-const reprieveAt = Date.now();
-const reprieved = new Set(
-  [...lastSeen.entries()]
-    .filter(([, t]) => reprieveAt - t > STARVING_MS)
-    .sort((a, b) => a[1] - b[1])
-    .slice(0, REPRIEVE_PAGES)
-    .map(([k]) => k));
+/* The keys above, the reprieve and STARVING_MS / REPRIEVE_PAGES are computed
+   in lib/read-order.mjs, the one copy test/read-order.test.mjs also imports. */
+const { order: readFirst, reprieved, pageFails: opFails } =
+  readOrder(todo, { prevFails, prevSeen, prevHealth, now: Date.now() });
 if (reprieved.size)
   console.log(`  reprieve: ${reprieved.size} page(s) unattempted for over ${STARVING_MS / 3600_000}h are read first this pass`);
-
-const spread = (id) => parseInt(createHash("sha1").update(id).digest("hex").slice(0, 8), 16);
-todo.sort((a, b) => {
-  const ka = pageKeyOf(a), kb = pageKeyOf(b);
-  return ((reprieved.has(kb) ? 1 : 0) - (reprieved.has(ka) ? 1 : 0))
-      || (opFails.get(ka) - opFails.get(kb))
-      || (opSeen.get(ka) - opSeen.get(kb))
-      || (spread(a.id) - spread(b.id));
-});
+todo.splice(0, todo.length, ...readFirst);
 
 const budgetLeftMs = () => PASS_BUDGET_MS - (Date.now() - passStarted);
 
@@ -494,6 +474,14 @@ async function getPage(s) {
         + `that platform is left for the next pass. Its last good file is untouched and still `
         + `published while it is inside the withdrawal window. Nothing about this source is `
         + `known to be wrong.`);
+    /* THE FLOOR, AS THE BROWSER BRANCH HAS ONE. See FETCH_FLOOR_MS: two CVA
+       sources were recorded broken for "no answer within 115ms". */
+    if (underFloor(budgetLeftMs()))
+      throw new Skipped(`not attempted: ${Math.round(Math.max(0, budgetLeftMs()))}ms of the pass budget `
+        + `were left, under the ${FETCH_FLOOR_MS}ms floor a page fetch is given. Asking would have `
+        + `failed on the clock rather than on the board, and been recorded against them. Its last `
+        + `good file is untouched and still published while it is inside the withdrawal window. `
+        + `Nothing about this source is known to be wrong.`);
     const deadline = fetchDeadline();
     const urls = urlsFor(s);
     for (const [i, url] of urls.entries()) {
@@ -546,6 +534,7 @@ async function getPage(s) {
  * publishing rows nothing checked -- is the one this whole file exists to
  * avoid. */
 const sharedCtx = new Map();
+const SHARED_UNDER_FLOOR = Symbol("shared pages not asked: under the fetch floor");
 /* THE PROMISE, NOT THE VALUE — and this is what the concurrency below forced.
  *
  * This cached `ctx` only after the seven quote pages had been fetched and
@@ -568,6 +557,10 @@ function sharedFor(platform) {
      one fetch and one parse. */
   const key = spec.urls.join("|");
   if (sharedCtx.has(key)) return sharedCtx.get(key);
+  /* UNDER THE FLOOR, NOT ASKED. Seven quote pages fetched with 200ms left all
+     fail, and every source on the platform then REFUSES for want of them,
+     which counts against each one's streak. A skip says nothing. */
+  if (underFloor(budgetLeftMs())) return Promise.resolve(SHARED_UNDER_FLOOR);
   const p = (async () => {
   const bodies = [], problems = [];
   /* A DEADLINE EACH, NOT ONE BETWEEN THEM. These are seven DIFFERENT pages
@@ -678,6 +671,11 @@ async function readOne(s) {
   try {
     const { html, url } = await getPage(s);
     const shared = await sharedFor(s.platform);
+    if (shared === SHARED_UNDER_FLOOR)
+      throw new Skipped(`not attempted: the board was read but the ${s.platform} quote pages it is `
+        + `checked against were not asked, because under ${FETCH_FLOOR_MS}ms of the pass budget was left. `
+        + `Its last good file is untouched and still published while it is inside the withdrawal `
+        + `window. Nothing about this source is known to be wrong.`);
     const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
     /* A withheld commodity is something the elevator IS buying that we are not

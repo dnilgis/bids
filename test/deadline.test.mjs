@@ -17,7 +17,7 @@ import net from "node:net";
 import { readFileSync } from "node:fs";
 import {
   fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
-  NODE_HEADERS_TIMEOUT_MS, BROWSER_FLOOR_MS,
+  NODE_HEADERS_TIMEOUT_MS, BROWSER_FLOOR_MS, FETCH_FLOOR_MS, underFloor,
 } from "../lib/deadline.mjs";
 
 /** A socket that completes the TCP handshake and then says nothing at all.
@@ -213,4 +213,37 @@ test("scripts/poll.mjs CLAMPS THE BROWSER READ TO THE BUDGET", () => {
       "every capture() in the live reader carries a budget-clamped timeout");
   assert.match(code, /BROWSER_FLOOR_MS/,
     "and it must skip rather than record a browser read it never gave time to");
+});
+
+/* ── THE FETCH FLOOR ─────────────────────────────────────────────────────── */
+
+test("THE PRODUCTION FAILURE THE FETCH FLOOR FIXES: 115ms is not CVA being down", () => {
+  /* cvacoop365-polk and -admcolumbus, data/index.json 2026-10-13T18:07Z:
+       cashgrid.php -> no answer within 115ms; www... -> no answer within 114ms
+     About 230ms of the pass were left when CVA's page was reached. Split
+     between the two hostnames that is what each got, and both were recorded
+     `broken` against a page the other 52 CVA sources had read fine. */
+  const now = 1_000_000;
+  const deadline = deadlineFrom(now, 230);
+  assert.equal(Math.round(shareOf(deadline, 2, now) - now), 115, "the 115ms in the index");
+  assert.ok(underFloor(230), "so a pass with 230ms left must not ask");
+  assert.ok(!underFloor(FETCH_FLOOR_MS), "at the floor it asks");
+  assert.ok(!underFloor(SOURCE_FETCH_MS_DEFAULT), "and with a full deadline left it asks");
+  assert.ok(underFloor(0) && underFloor(-5) && underFloor(NaN), "a spent or unreadable budget never asks");
+  assert.ok(FETCH_FLOOR_MS < SOURCE_FETCH_MS_DEFAULT, "a floor, not a second timeout");
+});
+
+test("scripts/poll.mjs SKIPS A FETCH, AND THE SHARED QUOTE PAGES, UNDER THE FLOOR", () => {
+  const src = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  /* In getPage's fetch branch, before the deadline is taken, and as a Skipped,
+     which nextStreak leaves alone. */
+  const fetchBranch = code.slice(code.indexOf("backoff.blocked(s.platform)"), code.indexOf("const deadline = fetchDeadline();"));
+  assert.match(fetchBranch, /if \(underFloor\(budgetLeftMs\(\)\)\)\s*throw new Skipped\(/,
+    "the fetch branch skips under the floor before it takes a deadline");
+  const shared = code.slice(code.indexOf("function sharedFor("), code.indexOf("const p = (async () => {", code.indexOf("function sharedFor(")));
+  assert.match(shared, /underFloor\(budgetLeftMs\(\)\)/, "sharedFor does not fetch the quote pages under the floor");
+  const read = code.slice(code.indexOf("async function readOne("));
+  assert.match(read, /shared === SHARED_UNDER_FLOOR\)\s*throw new Skipped\(/,
+    "and a source whose quote pages were not asked is skipped, not refused");
 });
