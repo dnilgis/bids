@@ -223,7 +223,7 @@ test("A REFUSED SOURCE DOES NOT SINK ITS PAGE: the page answered", () => {
   const lastClean = Math.max(...CLEAN.map((s) => got.indexOf(s.id)));
   const firstCva = Math.min(...CVA.map((s) => got.indexOf(s.id)));
   assert.ok(firstCva < lastClean,
-    `CVA has nothing against its page but two refusals; it must mix with the clean pages — got ${got.join(", ")}`);
+    `CVA has nothing against its page but two refusals; it must mix with the clean pages: got ${got.join(", ")}`);
   /* and the refused rows do not get a pass of their own: the page is read as one */
   const cva = got.filter((id) => id.startsWith("cvacoop365-"));
   assert.equal(got.indexOf(cva.at(-1)) - got.indexOf(cva[0]), cva.length - 1, "the page's sources are read together");
@@ -244,7 +244,7 @@ test("THE WALL CUTS ONE PAGE, NOT TWENTY: siblings are contiguous", () => {
   const got = readOrder(all).map((s) => s.id);
   for (const prefix of ["cvacoop365-", "other-"]) {
     const idx = got.map((id, i) => (id.startsWith(prefix) ? i : -1)).filter((i) => i >= 0);
-    assert.equal(idx.at(-1) - idx[0], idx.length - 1, `${prefix}* must be read as one block — got ${got.join(", ")}`);
+    assert.equal(idx.at(-1) - idx[0], idx.length - 1, `${prefix}* must be read as one block: got ${got.join(", ")}`);
   }
 });
 
@@ -259,7 +259,7 @@ test("a page is as overdue as its longest-waiting source, not its latest", () =>
   seen["other-x"] = now - 2 * 3600_000;
   const got = readOrder([other, ...CVA], {}, seen, now).map((s) => s.id);
   assert.ok(got.indexOf("other-x") > got.indexOf("cvacoop365-waco"),
-    `CVA's page has waited four hours, other-x two — got ${got.join(", ")}`);
+    `CVA's page has waited four hours, other-x two: got ${got.join(", ")}`);
   /* and the reprieve sees the same thing */
   const old = Object.fromEntries(CVA.map((s) => [s.id, now - 12 * 3600_000]));
   old["cvacoop365-polk"] = now - 60_000;
