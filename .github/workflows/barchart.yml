@@ -190,7 +190,7 @@ jobs:
       - name: Place anything new
         if: steps.key.outputs.have == 'yes'
         run: |
-          pip install --quiet zipcodes
+          pip install --quiet zipcodes==3.0.0
           NO_CENSUS=1 python scripts/build_geocodes.py
 
       #  build_grid.mjs REFUSES to write a grid that covers less than the one on

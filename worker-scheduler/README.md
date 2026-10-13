@@ -24,10 +24,10 @@ manage and the watchdog still covers.
 2. **Deploy.**
    ```
    cd worker-scheduler
-   npx wrangler login
-   npx wrangler secret put GH_PAT      # paste the token; it never touches a file
-   npx wrangler secret put FIRE_KEY    # any long random string, for the manual URL
-   npx wrangler deploy
+   npx wrangler@4.149.0 login
+   npx wrangler@4.149.0 secret put GH_PAT      # paste the token; it never touches a file
+   npx wrangler@4.149.0 secret put FIRE_KEY    # any long random string, for the manual URL
+   npx wrangler@4.149.0 deploy
    ```
 
 3. **Prove it before trusting it.**

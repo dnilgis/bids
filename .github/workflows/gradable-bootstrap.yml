@@ -98,9 +98,12 @@ jobs:
       # The fixture is an input to the adapter's own tests. If it does not read,
       # it does not get committed, however clean the capture looked.
       - name: The adapter must still read it
+        env:
+          IN_PARTNER: ${{ inputs.partner }}
         run: |
+          [ -z "$IN_PARTNER" ] || printf '%s' "$IN_PARTNER" | grep -Eq '^(adm|poet)$' || { echo "::error::input partner has an unexpected format"; exit 1; }
           node --test test/gradable.test.mjs
-          node scripts/gradable-markets.mjs fixtures/gradable-${{ inputs.partner }}-bootstrap.json --partner ${{ inputs.partner }} --json > /tmp/skeletons.json
+          node scripts/gradable-markets.mjs fixtures/gradable-"$IN_PARTNER"-bootstrap.json --partner "$IN_PARTNER" --json > /tmp/skeletons.json
           node -e '
             const s = JSON.parse(require("fs").readFileSync("/tmp/skeletons.json","utf8"));
             if (!Array.isArray(s) || s.length === 0) { console.error("::error::the skeleton builder returned nothing"); process.exit(1); }

@@ -54,8 +54,11 @@ jobs:
           node-version: 22
 
       - name: Stamp
+        env:
+          IN_WRITE: ${{ inputs.write }}
         run: |
-          if [ "${{ inputs.write }}" = "true" ]; then
+          [ -z "$IN_WRITE" ] || printf '%s' "$IN_WRITE" | grep -Eq '^(true|false)$' || { echo "::error::input write has an unexpected format"; exit 1; }
+          if [ "$IN_WRITE" = "true" ]; then
             node scripts/stamp_country.mjs --write | tee /tmp/stamp.txt
           else
             node scripts/stamp_country.mjs | tee /tmp/stamp.txt

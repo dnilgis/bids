@@ -102,8 +102,11 @@ jobs:
       # committed POET board with no network at all. If the path is broken it is
       # broken here, before 136 requests go out to somebody else's site.
       - name: Rehearse the walk offline
+        env:
+          IN_PARTNER: ${{ inputs.partner }}
         run: |
-          node scripts/gradable_boards.mjs --partner ${{ inputs.partner }} \
+          [ -z "$IN_PARTNER" ] || printf '%s' "$IN_PARTNER" | grep -Eq '^(adm|poet)$' || { echo "::error::input partner has an unexpected format"; exit 1; }
+          node scripts/gradable_boards.mjs --partner "$IN_PARTNER" \
             --rehearse fixtures/gradable-poet-bigstonecity.json
 
       - name: Read the boards

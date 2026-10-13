@@ -27,8 +27,8 @@
 # were the roster, and it skipped the AgriCharts test because a different
 # request had failed. All three are fixed; the script's header says how.
 #
-# The token box below is still EMPTY BY DEFAULT and no token is committed to
-# this repository. Fill it in to find out what the token buys.
+# No token is committed to this repository. Put one in the BARCHART_DEVICE_TOKEN
+# secret and tick use_device_token to find out what the token buys.
 #
 # ── AND THE BIGGER ONE ─────────────────────────────────────────────────────
 #
@@ -61,10 +61,14 @@ on:
         description: "Pages of 100 bid rows to read from the main company. 1 is enough to answer the access question; 5 is the cap."
         required: false
         default: "1"
-      device_token:
-        description: "An x-device-token from a browser. The secret rotates inside half an hour, so copy it and run within a couple of minutes. Needed for the bids and for the global table."
-        required: false
-        default: ""
+      use_device_token:
+        # THE TOKEN IS A REPO SECRET, NOT AN INPUT. This repo is public: an
+        # input is shown in the run's event payload and printed unmasked in the
+        # log. Copy the browser's x-device-token into the repo secret
+        # BARCHART_DEVICE_TOKEN (it rotates inside half an hour) and tick this.
+        description: "Send the x-device-token from the BARCHART_DEVICE_TOKEN repo secret (it rotates inside half an hour, so set it and run within a couple of minutes). Needed for the bids and for the global table. Never paste a token into a box here."
+        type: boolean
+        default: false
       global_pages:
         description: "Pages of 100 rows to read from the TOP-LEVEL cashBids table -- the one that is not company-scoped. 0 skips it. 25 is a sizing run. 200 is the cap."
         required: false
@@ -85,6 +89,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
@@ -93,13 +99,18 @@ jobs:
           COMPANY: ${{ inputs.company }}
           ALSO: ${{ inputs.also }}
           PAGES: ${{ inputs.pages }}
-          TOKEN: ${{ inputs.device_token }}
+          TOKEN: ${{ inputs.use_device_token && secrets.BARCHART_DEVICE_TOKEN || '' }}
           ROSTER: ${{ inputs.roster }}
           GLOBAL_PAGES: ${{ inputs.global_pages }}
           MINT: ${{ inputs.mint }}
         run: |
           # Through environment variables, never interpolated into the command
           # line: a workflow_dispatch input is a string a human typed.
+          [ -n "$TOKEN" ] && echo "::add-mask::$TOKEN"
+          printf '%s' "$PAGES" | grep -Eq '^[0-9]{1,3}$' || { echo "::error::pages must be a number"; exit 1; }
+          [ -z "$GLOBAL_PAGES" ] || printf '%s' "$GLOBAL_PAGES" | grep -Eq '^[0-9]{1,3}$' || { echo "::error::global_pages must be a number"; exit 1; }
+          [ -z "$ALSO" ] || printf '%s' "$ALSO" | grep -Eq '^[0-9, ]+$' || { echo "::error::also must be numbers, comma separated"; exit 1; }
+          printf '%s' "$COMPANY" | grep -Eq '^[A-Za-z0-9_-]{1,40}$' || { echo "::error::company must be a displayId or a number"; exit 1; }
           args=(--company "$COMPANY" --pages "$PAGES")
           [ -n "$ALSO" ]  && args+=(--also "$ALSO")
           [ -n "$TOKEN" ] && args+=(--device-token "$TOKEN")

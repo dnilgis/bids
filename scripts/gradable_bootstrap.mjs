@@ -60,9 +60,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    run-time string. */
 export const PARTNERS = ["poet", "adm"];
 
-/* Their body opens with an anti-hijack prefix, and the fixture keeps it: the
-   file on disk is the bytes the wire carried, not a cleaned copy of them.
-   lib/adapters/gradable.mjs strips it on read. */
+/* Their body opens with an anti-hijack prefix, and the fixture keeps it.
+   lib/adapters/gradable.mjs strips it on read. The body is the bytes the wire
+   carried with ONE change, redactContacts() below. */
 export const BOOTSTRAP_PATH = "/api/commodities/merchandising/bootstrap";
 
 export const pageUrlFor = (partner) => `https://${partner}.gradable.com/market`;
@@ -77,6 +77,35 @@ export function isBootstrapResponse(url, partner) {
   return u.protocol === "https:"
       && u.hostname === `${partner}.gradable.com`
       && u.pathname === BOOTSTRAP_PATH;
+}
+
+/* STAFF CONTACTS NEVER REACH THE REPO. This repo is public and is served as a
+   site. The bootstrap names each market's staff (name, title, work email,
+   cell phone, photo) and the announcements carry more numbers and addresses.
+   Nothing here reads any of it; the adapter builds a market from the address,
+   the office phone lines and the instruments. So the contact lists are
+   emptied and phone numbers and addresses in announcement text are blanked
+   before the file is written. Office phone_numbers stay: they are the
+   facility's published lines. Returns the body unchanged if it does not parse. */
+const PHONE_RE = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+export function redactContacts(body) {
+  const raw = String(body ?? "");
+  const m = raw.match(/^\s*while\s*\(\s*1\s*\)\s*;/);
+  const prefix = m ? m[0] : "";
+  let d;
+  try { d = JSON.parse(raw.slice(prefix.length)); } catch { return raw; }
+  for (const mk of Array.isArray(d?.markets) ? d.markets : []) {
+    if (!mk || typeof mk !== "object") continue;
+    if (Array.isArray(mk.contacts)) mk.contacts = [];
+    if (Array.isArray(mk.emails)) mk.emails = [];
+    for (const a of Array.isArray(mk.announcements) ? mk.announcements : []) {
+      const c = a?.content;
+      if (c && typeof c.value === "string")
+        c.value = c.value.replace(PHONE_RE, "[phone redacted]").replace(EMAIL_RE, "[email redacted]");
+    }
+  }
+  return prefix + JSON.stringify(d);
 }
 
 /** How many markets a body names, or null when it is not a bootstrap at all. */
@@ -175,7 +204,7 @@ async function main() {
     process.exit(1);
   }
 
-  const body = String(rec.body);
+  const body = redactContacts(String(rec.body));
   const n = marketCount(body);
   writeFileSync(out, body);
   console.log(`wrote ${outRel}: ${body.length} bytes, ${n} market(s)` +
@@ -243,6 +272,17 @@ function selftest() {
   t("the default ceiling clears POET's measured 5,619 bytes/market by 100 markets", maxBodyFrom("") / 5619 > 200);
 
   t("the fixture path is the partner's own", fixturePathFor("adm") === "fixtures/gradable-adm-bootstrap.json");
+  {
+    const withStaff = `while(1);${JSON.stringify({ intent: "adm", markets: [
+      { id: 1, display_name: "A, KS", contacts: [{ firstname: "Jo", email: "jo@adm.com", phone_number: "+15551234567" }],
+        emails: [{ email: "office@adm.com" }],
+        announcements: [{ content: { value: "<p>call Jo @ (517) 294-7681 or jo@adm.com</p>" } }],
+        phone_numbers: [{ name: "Office", phone_number: "+15559876543" }] }] })}`;
+    const r = redactContacts(withStaff);
+    t("STAFF CONTACTS ARE EMPTIED before the fixture is written", !/jo@adm\.com|office@adm\.com|5551234567|294-7681|"Jo"/.test(r));
+    t("the prefix, the market and the office line survive", r.startsWith("while(1);") && marketCount(r) === 1 && r.includes("+15559876543"));
+    t("an unparseable body is returned as it came", redactContacts("<html>") === "<html>");
+  }
   t("every partner on the menu is a bare slug", PARTNERS.every((p) => /^[a-z]+$/.test(p)));
 
   for (const n of ok) console.log(`  ok   ${n}`);
