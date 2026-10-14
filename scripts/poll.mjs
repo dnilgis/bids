@@ -45,7 +45,7 @@ import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
-         localPathOf } from "../lib/sources.mjs";
+         localPathOf, awaitingFirstFile } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
@@ -85,7 +85,13 @@ const rows = readdirSync(join(ROOT, "sources"))
   .filter((f) => f.endsWith(".json"))
   .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")));
 
-const { sources: enabled, errors, warnings } = loadSources(rows);
+const { sources: loaded, errors, warnings } = loadSources(rows);
+/* A source whose first file has not been written yet (Bunge's email before the
+   mailbox is set up) is not active: not read, not listed, nothing public. */
+const enabled = loaded.filter((s) => !awaitingFirstFile(s, ROOT, existsSync));
+if (enabled.length < loaded.length)
+  console.log(`  ${loaded.length - enabled.length} source(s) not active until their first file is written: `
+    + loaded.filter((s) => !enabled.includes(s)).map((s) => s.id).join(", "));
 for (const e of errors) console.error(`::error title=Bad source::${e}`);
 /* Things worth saying that must not cost an elevator its reading -- a source
    with no coordinates is read and published and simply cannot be placed on the

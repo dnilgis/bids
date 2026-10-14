@@ -18,7 +18,8 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import net from "node:net";
@@ -28,7 +29,7 @@ import { parseEmail, htmlToText, bidDate, readDelivery, calendarContract, grainO
          BungeEmailRefused, SENDER } from "../lib/adapters/bunge-email.mjs";
 import { ADAPTERS, SHARED_PAGES, adapterFor } from "../lib/adapters/index.mjs";
 import { PLATFORMS, PLATFORM_TRANSPORT, wireOf, transportOf, validateSource, toConfig, localPathOf,
-         loadSources } from "../lib/sources.mjs";
+         loadSources, awaitingFirstFile } from "../lib/sources.mjs";
 import { buildFile, isRefusal } from "../lib/board.mjs";
 import { decide } from "../lib/decide.mjs";
 import { quoteUrls } from "../lib/adapters/agricharts.mjs";
@@ -537,4 +538,65 @@ test("email-bids.yml: the secrets, a morning window, a hand button, chained to t
   assert.match(y, /node scripts\/email-bids\.mjs/);
   assert.match(y, /bash scripts\/commit-and-push\.sh/);
   assert.match(y, /timeout-minutes: \d+/);
+});
+
+/* ── NOT ACTIVE UNTIL THE FIRST SNAPSHOT EXISTS ────────────────────────────
+   Before the mailbox is set up there is no snapshot, and the email source must
+   leave nothing public: no red "down" pin on Bunge Ladoga, no claim on its
+   grey licence pin. Once a snapshot has been written it is an ordinary source. */
+
+test("awaitingFirstFile: a local source with no file yet is not active; with one it is; nothing else is affected", () => {
+  const seen = [];
+  const none = (p) => { seen.push(p); return false; };
+  assert.equal(awaitingFirstFile(SOURCE, "/repo", none), true);
+  assert.deepEqual(seen, ["/repo/data/email/bunge-ladoga-in.json"]);
+  assert.equal(awaitingFirstFile(SOURCE, "/repo/", () => true), false);
+  assert.equal(awaitingFirstFile({ ...SOURCE, platform: "bungeag", url: "https://www.bungeag.com/locations/decatur-in/" }, "/repo", none), false);
+  const poll = readFileSync(join(ROOT, "scripts/poll.mjs"), "utf8");
+  assert.match(poll, /const enabled = loaded\.filter\(\(s\) => !awaitingFirstFile\(s, ROOT, existsSync\)\);/,
+    "the poller must not list a source whose first file is not written: no index row, no status anywhere");
+});
+
+/* build_directory.mjs run for real, in a scratch tree holding only Ladoga. */
+function directoryFor({ snapshot, portal, index = [] }) {
+  const t = mkdtempSync(join(tmpdir(), "bunge-dir-"));
+  try {
+    cpSync(join(ROOT, "lib"), join(t, "lib"), { recursive: true });
+    mkdirSync(join(t, "scripts")); mkdirSync(join(t, "sources")); mkdirSync(join(t, "data")); mkdirSync(join(t, "geocodes"));
+    cpSync(join(ROOT, "scripts/build_directory.mjs"), join(t, "scripts/build_directory.mjs"));
+    const reg = JSON.parse(readFileSync(join(ROOT, "geocodes/places.json"), "utf8")).registry["IN|bungeusagrainllc|ladoga"];
+    const place = { lat: 39.8726546, lon: -86.8001052, precision: "street" };
+    writeFileSync(join(t, "geocodes/places.json"), JSON.stringify({ places: { "bunge-ladoga-email": place,
+      "portal-bunge-ladoga-in": place }, unplaced: {}, known: {}, registry: { "IN|bungeusagrainllc|ladoga": reg } }));
+    writeFileSync(join(t, "sources/bunge-ladoga-email.json"), JSON.stringify(SOURCE));
+    if (portal) writeFileSync(join(t, "sources/portal-bunge-ladoga-in.json"), JSON.stringify(portal));
+    if (snapshot) { mkdirSync(join(t, "data/email")); writeFileSync(join(t, "data/email/bunge-ladoga-in.json"), JSON.stringify(snapshot)); }
+    writeFileSync(join(t, "data/index.json"), JSON.stringify({ sources: index }));
+    execFileSync(process.execPath, [join(t, "scripts/build_directory.mjs")], { stdio: "pipe" });
+    const d = JSON.parse(readFileSync(join(t, "data/directory.json"), "utf8"));
+    return (d.elevators ?? d).filter((e) => /ladoga/i.test(e.location ?? ""))
+      .map((e) => [e.id, e.status]).sort();
+  } finally { rmSync(t, { recursive: true, force: true }); }
+}
+
+test("NO SNAPSHOT YET: the map keeps the grey licence pin, and the email source draws nothing", () => {
+  assert.deepEqual(directoryFor({}), [["reg:IN|bungeusagrainllc|ladoga", "known"]]);
+});
+
+test("NO SNAPSHOT YET, portal listing live: the portal pin alone, no second pin and no red one", () => {
+  const feed = JSON.parse(readFileSync(join(ROOT, "test/fixtures/agsist-portal/feed-one.json"), "utf8"));
+  const registry = JSON.parse(readFileSync(join(ROOT, "geocodes/places.json"), "utf8")).registry;
+  const portal = sourceFor(feed.elevators.find((e) => e.id === "bunge-ladoga-in"), registry, NOW);
+  const now = new Date().toISOString();
+  const got = directoryFor({ portal, index: [{ id: portal.id, health: "live", status: "ok", checkedAt: now, pricedAt: now }] });
+  assert.deepEqual(got, [["portal-bunge-ladoga-in", "read"]]);
+});
+
+test("ONCE A SNAPSHOT EXISTS: the email source is an ordinary source, and normal down rules apply", () => {
+  const now = new Date().toISOString();
+  assert.deepEqual(directoryFor({ snapshot: snap(), index: [{ id: "bunge-ladoga-email", health: "live", status: "ok", checkedAt: now, pricedAt: now }] }),
+    [["bunge-ladoga-email", "read"]], "it replaces the grey pin");
+  const old = "2026-01-01T00:00:00Z";
+  assert.deepEqual(directoryFor({ snapshot: snap(), index: [{ id: "bunge-ladoga-email", health: "refused", status: "refused", checkedAt: old, pricedAt: old }] }),
+    [["bunge-ladoga-email", "down"]], "a snapshot that went stale is reported, like any board");
 });

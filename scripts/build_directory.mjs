@@ -39,6 +39,7 @@
 import { stateOf as uiState } from "../lib/freshness.mjs";
 import { orgKey } from "../lib/orgkey.mjs";
 import { yardLosers } from "../lib/same-yard.mjs";
+import { awaitingFirstFile } from "../lib/sources.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,9 +56,12 @@ const noGeo = geoFile.unplaced || {};
    touched, so a source disabled or newly added between passes would silently
    appear or vanish from the map. The roster is the definitions on disk. */
 const dir = join(ROOT, "sources");
-const sources = existsSync(dir)
+const sourcesAll = existsSync(dir)
   ? readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => read(join(dir, f), null)).filter(Boolean)
   : [];
+/* NOT ACTIVE UNTIL ITS FIRST FILE EXISTS (lib/sources.mjs awaitingFirstFile):
+   no pin, no licence row claimed, so the yard keeps whatever pin it had. */
+const sources = sourcesAll.filter((s) => !awaitingFirstFile(s, ROOT, existsSync));
 
 const live = new Map((index.sources || []).map((s) => [s.id, s]));
 
