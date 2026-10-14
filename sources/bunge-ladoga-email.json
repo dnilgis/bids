@@ -1,0 +1,41 @@
+{
+  "id": "bunge-ladoga-email",
+  "operator": "Bunge Ladoga",
+  "location": "Ladoga",
+  "state": "IN",
+  "platform": "bunge-email",
+  "url": "https://raw.githubusercontent.com/dnilgis/bids/main/data/email/bunge-ladoga-in.json",
+  "locationId": "bunge-ladoga-in",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "emailed-by-operator",
+  "enabled": true,
+  "note": "Bunge's morning \"Cash Bids for Haw Creek\" email (Haw Creek is Bunge's own name for its Ladoga, IN yard), sent by noreply@mobile.bunge.us to Sig and auto-forwarded to the mailbox scripts/email-bids.mjs reads (.github/workflows/email-bids.yml, secrets BIDS_IMAP_USER and BIDS_IMAP_PASSWORD). That job writes data/email/bunge-ladoga-in.json; the poller reads it from the checkout (PLATFORM_LOCAL in lib/sources.mjs). Bid, basis and futures are all printed, so cash - basis = futures proves every row; the contract is inferred from the delivery month and checked against the email's own prices and the CBOT spreads (lib/adapters/bunge-email.mjs). Only the email's own date is published, or the business day after it; older is refused as stale. SAME YARD as the agsist portal listing bunge-ladoga-in (sources/portal-bunge-ladoga-in.json when the listing is active): the same operator name, locationId and registryId, so the map and the merge carry one Bunge Ladoga, whichever was priced most recently (lib/same-yard.mjs). bungeag.com's Haw Creek page posts no bids (test/bungeag.test.mjs). PLACE: Bunge's own page for Haw Creek, 11477 County Road 550 East, Ladoga 47954, at the coordinate it publishes (39.8726546,-86.8001052).",
+  "publicNote": "Bunge's own cash bids for its Ladoga (Haw Creek) location, from the morning bid email Bunge sends its customers. Cash, basis and the futures price are Bunge's numbers as of that morning; the futures price is carried only so a reader can re-check cash minus basis. Call to confirm before hauling.",
+  "address": "11477 County Road 550 East",
+  "zip": "47954",
+  "lat": 39.8726546,
+  "lon": -86.8001052,
+  "latPrecision": "street",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "phone": "7659467000",
+  "email": null,
+  "website": "https://www.bungeag.com/locations/hawcreek-in/",
+  "inMerge": true,
+  "registryId": "reg:IN|bungeusagrainllc|ladoga"
+}

@@ -44,7 +44,8 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
-import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf } from "../lib/sources.mjs";
+import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
+         localPathOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
@@ -357,6 +358,16 @@ const pages = new Map();
 async function getPage(s) {
   if (fixtures.has(s.id))
     return { html: readFileSync(fixtures.get(s.id), "utf8"), url: `file://${fixtures.get(s.id)}` };
+  /* A BOARD THIS REPOSITORY WROTE (Bunge's morning email, data/email/), read
+     from the checkout. No file yet means the mailbox job has not written one:
+     not attempted, nothing about the source is wrong. See PLATFORM_LOCAL. */
+  const local = localPathOf(s);
+  if (local) {
+    if (!existsSync(join(ROOT, local)))
+      throw new Skipped(`not attempted: ${local} has not been written yet. scripts/email-bids.mjs writes it from `
+        + `the mailbox once BIDS_IMAP_USER and BIDS_IMAP_PASSWORD are set (email bids: not set up yet).`);
+    return { html: readFileSync(join(ROOT, local), "utf8"), url: s.url };
+  }
   const pace = paceOf(s.platform);
   if (pace && !PACED_IN.has(s.id))
     throw new Skipped(`not asked this pass: ${s.platform} is paced at ${pace.perPass} source(s) a pass, least `
@@ -594,6 +605,8 @@ function sharedFor(platform) {
     console.error(`::warning title=${platform} shared page(s)::${problems.length} of `
       + `${spec.urls.length} failed — ${spec.why}. ${problems.slice(0, 4).join("; ")}`
       + `${ctx ? " The rest were read and the platform continues on those."
+              : spec.optional ? ` Nothing was read; ${platform} publishes on its own printed futures price `
+                + `this pass, without this cross-check.`
               : " Nothing was read, so every " + platform + " source will refuse this pass rather "
                 + "than publish unchecked."}`);
   else

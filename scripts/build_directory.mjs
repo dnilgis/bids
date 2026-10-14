@@ -38,6 +38,7 @@
  */
 import { stateOf as uiState } from "../lib/freshness.mjs";
 import { orgKey } from "../lib/orgkey.mjs";
+import { yardLosers } from "../lib/same-yard.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -139,6 +140,20 @@ const elevators = sources
     return e;
   })
   ;
+
+/* ONE YARD, ONE PIN. Sources that claim the same licence row (registryId) are
+   one elevator reached two ways -- Bunge Ladoga posting on agsist.com and
+   Bunge's morning email. The one priced most recently is the pin; a board past
+   the withdrawal age does not count as priced. The same rule as the merge, from
+   the same function, so the map and the feed name the same source. See
+   lib/same-yard.mjs. */
+const byIdSrc = new Map(sources.map((s) => [s.id, s]));
+const yardGone = yardLosers(elevators.map((e) => ({ id: e.id, registryId: byIdSrc.get(e.id)?.registryId ?? null,
+  pricedAt: e.status === "down" ? null : e.pricedAt })));
+for (let i = elevators.length - 1; i >= 0; i--) if (yardGone.has(elevators[i].id)) elevators.splice(i, 1);
+if (yardGone.size)
+  console.log(`  ${yardGone.size} source(s) share a yard with one priced more recently and draw no pin of their own: `
+    + [...yardGone].map(([a, b]) => `${a} -> ${b}`).join(", "));
 
 /* ── the ones we only know about ──────────────────────────────────────────
    THE JOIN KEY HAD TO BE EARNED, and it is the same one the 2026-08-20 design

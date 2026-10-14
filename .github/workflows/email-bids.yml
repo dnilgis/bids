@@ -1,0 +1,79 @@
+# Read Bunge's morning "Cash Bids for Haw Creek" email (Bunge at Ladoga, IN)
+# out of a dedicated mailbox and commit its bids as data/email/bunge-ladoga-in.json.
+# The poller reads that file on its next pass (sources/bunge-ladoga-email.json).
+#
+# SECRETS: BIDS_IMAP_USER (the Gmail address kept for this) and
+# BIDS_IMAP_PASSWORD (a Gmail app password for it). Until both are set the job
+# prints "email bids: not set up yet" and ends green.
+#
+# WHEN. Bunge sends the email early in the morning. This asks every fifteen
+# minutes from 5am to 1pm Central (11:00-18:59 UTC covers both CDT and CST),
+# AND after every run of the reader, because GitHub's own cron is best effort
+# and the reader is dispatched every ten minutes by worker-scheduler/. Outside
+# that window a chained run checks the clock and stops; a hand-fired run always
+# reads. Minutes are written out to dodge :00, like poll.yml.
+#
+# FAILURE. A mailbox that will not open, or a Bunge email that does not parse
+# (layout changed, a row where bid is not futures + basis), ends the run RED
+# with the reason and writes nothing; the email stays unread, so the next run
+# tries again. The log carries the parsed bid rows and never an address, a
+# header or a message body.
+
+name: email bids
+
+on:
+  schedule:
+    - cron: "4,19,34,49 11-18 * * *"
+  workflow_run:
+    workflows: ["read boyceville"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: email-bids
+  cancel-in-progress: false
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inside the morning window, or asked by hand
+        id: when
+        run: |
+          hour=$(TZ=America/Chicago date +%-H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || { [ "$hour" -ge 5 ] && [ "$hour" -lt 13 ]; }; then
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "outside 5am-1pm Central (it is ${hour}h there); nothing to do"
+            echo "go=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.when.outputs.go == '1'
+
+      - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == '1'
+        with:
+          node-version: 22
+
+      - name: Read the mailbox
+        id: read
+        if: steps.when.outputs.go == '1'
+        env:
+          BIDS_IMAP_USER: ${{ secrets.BIDS_IMAP_USER }}
+          BIDS_IMAP_PASSWORD: ${{ secrets.BIDS_IMAP_PASSWORD }}
+        run: node scripts/email-bids.mjs
+
+      # commit-and-push.sh exits 0 with no commit when nothing is staged, so an
+      # email whose bids did not change commits nothing.
+      - name: Commit the snapshot if it changed
+        if: steps.when.outputs.go == '1'
+        env:
+          MSG: ${{ steps.read.outputs.message }}
+        run: |
+          if [ -d data/email ]; then git add data/email; fi
+          bash scripts/commit-and-push.sh "${MSG:-bids: email snapshot}"

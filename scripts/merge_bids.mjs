@@ -47,6 +47,7 @@ import { crop, ppu, plausible, basisCents, basisDollars, PPU_BAND } from "../lib
 import { delivery } from "../lib/delivery.mjs";
 import { feedVerdict, WITHDRAW_H } from "../lib/freshness.mjs";
 import { resolveCurrency, countryOfCurrency } from "../lib/currency.mjs";
+import { yardLosers } from "../lib/same-yard.mjs";
 
 /* --root, SO THE MERGE CAN BE RUN END TO END AGAINST A SCRATCH TREE.
  *
@@ -712,7 +713,27 @@ function readScraped(index, places, tally, nowMs, withdrawn = [], files = source
       }));
     }
   }
-  return out;
+  return oneBoardPerYard(out, files, tally);
+}
+
+/* ONE YARD, ONE BOARD. Two sources that claim the same licence row
+   (registryId) are one elevator reached two ways -- Bunge Ladoga's own portal
+   posting and Bunge's morning email. Of the boards still being published, the
+   one priced most recently speaks for the yard and the other's rows are set
+   aside and counted. See lib/same-yard.mjs. */
+export function oneBoardPerYard(rows, files, tally) {
+  const pricedOf = new Map();
+  for (const r of rows) if (!pricedOf.has(r.source)) pricedOf.set(r.source, r.pricedAt ?? null);
+  const losers = yardLosers([...pricedOf].map(([id, pricedAt]) =>
+    ({ id, pricedAt, registryId: files.get(id)?.registryId ?? null })));
+  if (!losers.size) return rows;
+  return rows.filter((r) => {
+    const w = losers.get(r.source);
+    if (!w) return true;
+    tally.drop("same yard as a source that posted more recently (shared registryId); its board speaks for the yard",
+      `${r.source} gives way to ${w}`);
+    return false;
+  });
 }
 
 /* ── THE BRANCH THE SOURCE FILE ALREADY KNEW ────────────────────────────────
