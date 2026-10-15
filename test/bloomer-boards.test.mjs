@@ -99,3 +99,21 @@ test("Winchester Ag Service: two Ohio boards on Wheaton Grain's site, read by th
     }
   }
 });
+
+test("Synergy Cooperative: five locations found, held disabled until the rounding can be stated", () => {
+  const rows = bushel(read("fixtures/bushel-synergy.json"),
+    "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList");
+  assert.equal(rows.length, 20);
+  const ev = roundingEvidence(rows);
+  /* If this ever names a mode, the hold below is out of date: set cashRounding and enable. */
+  assert.equal(ev.confident, null, "floor-cent and round-cent-either both explain this snapshot");
+  const byId = new Map(rows.map((r) => [r.locationId, r.location]));
+  for (const town of ["almena", "cameron", "elkmound", "ricelake", "ridgeland"]) {
+    const s = src(`synergycoop-${town}`);
+    assert.equal(byId.get(s.locationId), `${s.location} Grain`, s.id);
+    assert.equal(s.enabled, false, `${s.id} must stay held while no mode is stated`);
+    assert.equal(s.cashRounding, undefined, `${s.id}: a rounding mode is measured, not guessed`);
+    for (const r of rows.filter((x) => x.locationId === s.locationId))
+      assert.ok(delivery(r.delivery, "2026-10-15T01:39:18Z").key, `"${r.delivery}" resolves`);
+  }
+});
