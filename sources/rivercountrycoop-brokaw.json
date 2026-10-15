@@ -1,0 +1,39 @@
+{
+  "id": "rivercountrycoop-brokaw",
+  "operator": "River Country Co-op",
+  "location": "Brokaw",
+  "state": "WI",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://portal.bushelpowered.com/rivercountry/cash-bids",
+  "locationId": "bfc1a91e-1d96-469b-a369-22662c98f630",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ]
+  },
+  "cashRounding": "floor-cent",
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY HAND 2026-10-15 from bushel probe run 38664482587 and discover run 38664963571 (whole GetBidsList body dumped, 14,212 bytes, lastUpdated 2026-10-15T01:20:08Z). River Country's own grain page, https://www.rivercountrycoop.com/grain/, loads Bushel's cash-bids widget script and never calls the board (probe-lists/bushel-candidates.txt has said so since 2026-08-29); their Bushel portal, https://portal.bushelpowered.com/rivercountry/cash-bids, does call it, from a real browser on the runner, and answers 30 rows across 8 locations: Athens, Bloomer, Boyd, Brokaw, Dorchester, Marathon, Owen, Sheldon. locationId is the location UUID the payload itself carries for \"Brokaw\". At the time of writing this location showed corn and soybean rows, delivery labelled \"HAR 26\" and \"HAR 27\" (harvest 2026 and 2027, against ZCZ26/ZCZ27 and ZSX26/ZSX27). Some soybean rows on this board carry the board's own words \"HAR 26- contract and feed usage only\" (or \"contract and feed only\"); the label is kept verbatim so a reader sees the restriction. \"HAR\" was unreadable to lib/delivery.mjs until this commit (every row would have been dropped at the merge as `delivery unreadable`); it now reads as the season it abbreviates, newcrop-2026 / newcrop-2027.\n\nCASH ROUNDING, MEASURED on the whole board (lib/rounding.mjs roundingEvidence over the dumped body, all 30 rows testable): floor-cent explains 30 of 30, round-cent 15, round-cent-either 23, exact 8; residuals 0, 0.25, 0.5 and 0.75 cents and nothing else -- the eighths remainder of the futures quote, the signature lib/adapters/bushel.mjs documents for this platform and the mode 142 enabled Bushel sources carry. Verdict floor-cent, margin 7. The probe called each location AMBIGUOUS only because each location has 2 to 4 rows of its own; across the board the 0.75c rows rule out round-cent-either. ONE SNAPSHOT: a wrong mode makes the board refuse loudly on the next read rather than publish a misread price.\n\nPLACE: the centroid of ZIP 54417 (Brokaw), from the Wisconsin licence row for River Country at Brokaw in geocodes/places.json. data/known-elevators.json files this yard as \"Brokaw\" with city Wausau and ZIP 54401; the board and the state licence both say Brokaw, so the town is Brokaw. Phone is copied verbatim from data/known-elevators.json (\"River Country Co-Op\", branch Brokaw). registryId names River Country's Wisconsin licence row for this town so the grey licence pin becomes this read pin.",
+  "publicNote": "Their publicly posted cash board, read from the same Bushel feed their own customer portal reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": null,
+  "zip": "54417",
+  "lat": 45.0273,
+  "lon": -89.6541,
+  "latPrecision": "town",
+  "phone": "715-870-2455",
+  "email": null,
+  "website": "https://www.rivercountrycoop.com/",
+  "registryId": "reg:WI|rivercountrycoop|brokaw",
+  "inMerge": true
+}
