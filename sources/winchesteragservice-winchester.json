@@ -1,0 +1,39 @@
+{
+  "id": "winchesteragservice-winchester",
+  "operator": "Winchester Ag Service",
+  "location": "Winchester",
+  "state": "OH",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "cashbidssingle",
+  "futuresUnits": "dollars",
+  "cashRounding": "round-cent-both",
+  "url": "https://www.wheatongrain.com/cashbidssingle-3439?embed=y",
+  "locationId": "3439",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "note": "WRITTEN BY HAND 2026-10-15 from probe run 38665068783, which fetched the board page whole. WHY THIS IS HERE: data/known-elevators.json files \"Winchester Ag Service, Inc\" (Barchart elevatorId 2524) in Chippewa Falls, Wisconsin, at 5852 County Hwy T with phone 715.874.6593 -- which is Wheaton Grain's address and phone (the footer of every wheatongrain.com page; sources/wheatongrain-chippewafalls.json). That put a grey \"not read\" pin 11 miles from Bloomer. It is not a Wisconsin elevator. winchesteragservice.com/cashbidssingle-3439 and -3440 redirect to https://www.wheatongrain.com/fccp-winchester-locations-23823, Wheaton Grain's \"Winchester Ag\" page, which embeds exactly two boards: cashbidssingle-3439 headed \"Winchester\" and cashbidssingle-3440 headed \"Georgetown\". Ohio's licence roll (data/registries.json, registry-oh) carries WINCHESTER AG SERVICE, INC. at WINCHESTER, OH (P.O. Box 86, 1350 Tri County) and at GEORGETOWN, OH (5867 Day Hill Road); Barchart separately lists Wheaton Grain at Georgetown, OH (elevatorId 2526). Winchester and Georgetown are 13 miles apart in Adams and Brown Counties, Ohio, and these basis levels (-40 Oct corn, against -65 at Wheaton's Wisconsin board the same evening) are southern-Ohio basis, not Chippewa Valley basis. So these are Winchester Ag Service's two Ohio yards, read from the boards their owner publishes.\n\nPARSER: lib/parse.mjs reads it unchanged -- the same vendor and the same markup as Wheaton's own board. locationId is the board number the rows carry. Futures are quoted in DOLLARS to four places (\"4.7950\"), as on every other dollars-quoting cashbidssingle board.\n\nCASH ROUNDING: cash and basis are posted to two decimals and the futures quote sits on the quarter-cent grid, so the derived value cannot always land on a cent. Measured on this snapshot (lib/rounding.mjs): 10 testable rows, residuals -0.5, -0.25, 0 and +0.25c; round-cent 10 of 10, floor-cent 5 of 10, exact 2. Declared round-cent-both, the mode measured across 216 rows on the eleven dollars-quoting cashbidssingle boards (see sources/aceethanol-stanley.json): it bounds the residual strictly under a cent either way, which is what two cent-rounded columns can produce, and it still refuses any column shift. round-cent explains this snapshot too and is narrower, but one snapshot does not establish a tie-break, and Wheaton's own board on the same site floors (sources/wheatongrain-chippewafalls.json), so the narrower claim is not made.\n\nAT THE TIME OF WRITING: 10 rows: corn Oct, Nov, Dec (vs Dec 26), Jan, Mch (vs Mar 27); soybeans Oct, Nov (vs Nov 26), Dec, Jan (vs Jan 27), Mch (vs Mar 27). \"Mch\" is not a month lib/delivery.mjs reads, so the two Mch rows will be counted and dropped at the merge as `delivery unreadable`, not guessed at.\n\nPLACE: the Census geocode of the licence address (P.O. Box 86, 1350 Tri County, Winchester OH) as geocodes/places.json holds it. registryId names that licence row. No phone: the only number on the page is Wheaton Grain's Wisconsin office.",
+  "publicNote": "Their publicly posted cash board, read from the page their own website serves. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "address": "1350 Tri County, Winchester OH",
+  "zip": "45697",
+  "lat": 38.94319,
+  "lon": -83.65617,
+  "latPrecision": "street",
+  "phone": null,
+  "email": null,
+  "website": "https://www.wheatongrain.com/fccp-winchester-locations-23823",
+  "registryId": "reg:OH|winchesteragserviceinc|winchester",
+  "inMerge": true
+}
