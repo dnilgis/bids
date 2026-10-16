@@ -100,20 +100,35 @@ test("Winchester Ag Service: two Ohio boards on Wheaton Grain's site, read by th
   }
 });
 
-test("Synergy Cooperative: five locations found, held disabled until the rounding can be stated", () => {
+test("Synergy Cooperative: five locations, floor-cent, settled by the second day's board", () => {
   const rows = bushel(read("fixtures/bushel-synergy.json"),
     "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList");
   assert.equal(rows.length, 20);
-  const ev = roundingEvidence(rows);
-  /* If this ever names a mode, the hold below is out of date: set cashRounding and enable. */
-  assert.equal(ev.confident, null, "floor-cent and round-cent-either both explain this snapshot");
+  /* The 2026-10-15 snapshot alone names no mode: floor-cent and
+     round-cent-either both explain it (residuals 0, 0.25 and 0.5c only). */
+  assert.equal(roundingEvidence(rows).confident, null, "the first snapshot alone is ambiguous");
+  /* 2026-10-16, bushel probe run 38961338857: 20 rows, 4 per location, and at
+     every location the probe printed floor 4, round 2, round-either 3, exact 0
+     over residuals 0.25, 0.5 and 0.75c -- which on four rows can only be
+     0.25, 0.25, 0.5, 0.75. The 0.75c row rules out round-cent-either. The
+     body was not dumped, so the residuals are pinned here, not the rows. */
+  const day2 = Array.from({ length: 5 }, () => [0.25, 0.25, 0.5, 0.75]).flat()
+    .map((s) => ({ cash: 4, basis: -0.5, futuresPrice: 450 + s }));
+  assert.equal(roundingEvidence(day2).confident, "floor-cent", "the second day alone settles it");
+  const both = roundingEvidence([...rows, ...day2]);
+  assert.equal(both.confident, "floor-cent");
+  assert.equal(both.margin, 5);
   const byId = new Map(rows.map((r) => [r.locationId, r.location]));
   for (const town of ["almena", "cameron", "elkmound", "ricelake", "ridgeland"]) {
     const s = src(`synergycoop-${town}`);
     assert.equal(byId.get(s.locationId), `${s.location} Grain`, s.id);
-    assert.equal(s.enabled, false, `${s.id} must stay held while no mode is stated`);
-    assert.equal(s.cashRounding, undefined, `${s.id}: a rounding mode is measured, not guessed`);
-    for (const r of rows.filter((x) => x.locationId === s.locationId))
+    assert.equal(s.enabled, true, s.id);
+    assert.equal(s.cashRounding, "floor-cent", s.id);
+    assert.equal(s._pending, undefined, `${s.id}: the hold is lifted`);
+    const rule = CASH_ROUNDING[s.cashRounding];
+    for (const r of rows.filter((x) => x.locationId === s.locationId)) {
+      assert.ok(rule(residualCents(r)), `${s.id} ${r.commodity} ${r.delivery}: residual ${residualCents(r)}c`);
       assert.ok(delivery(r.delivery, "2026-10-15T01:39:18Z").key, `"${r.delivery}" resolves`);
+    }
   }
 });
