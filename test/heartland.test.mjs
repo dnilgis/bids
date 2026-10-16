@@ -496,3 +496,32 @@ test("describe() says what came back without pretending to read it", () => {
   assert.match(d, /dated 2026-09-11/);
   assert.match(d, /CORN: 54 row\(s\) x 5 column\(s\)/);
 });
+
+/* ── a table of a grain the board has never printed ─────────────────────── */
+
+/* The live board on 2026-10-14 added "MX SOYBEAN" with every column headed
+   MX26. It is copied here from the capture's PROCESSOR SOYBEANS table with only
+   the heading and the codes changed, so the rest of the board is the real one. */
+const withMx = (codes) => {
+  const tables = BOARD.match(/<table\b[^>]*>[\s\S]*?<\/table>/gi);
+  let i = 0;
+  const mx = tables[3].replace("PROCESSOR SOYBEANS BIDS", "MX SOYBEAN BIDS")
+    .replace(/\/ S[FHX]\d{2}<\/th>/g, () => `/ ${codes[i++ % codes.length]}</th>`);
+  return BOARD.replace(tables[3], tables[3] + mx);
+};
+
+test("a whole table headed by an unknown root (MX SOYBEAN / MX26) is left out, the board is read", () => {
+  const plain = extract(BOARD, URL_, quotes());
+  const html = withMx(["MX26"]);
+  assert.equal(parseTables(html).length, 5);
+  const rows = extract(html, URL_, quotes());
+  assert.equal(rows.length, plain.length, "every corn and soybean row is still read");
+  assert.ok(!rows.some((r) => /MX/.test(r.commodity)), "nothing from the unknown table is published");
+});
+
+test("one unknown column inside a table of known ones still refuses the board", () => {
+  const html = withMx(["SX26", "MX26"]);
+  const e = refusal(() => extract(html, URL_, quotes()));
+  assert.ok(e instanceof HeartlandRefused, "a mixed table is the misread BOARD_ROOTS exists to catch");
+  assert.match(e.message, /MX26/);
+});
