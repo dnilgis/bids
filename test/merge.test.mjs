@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { placeKey, row, keepable, dedupe, Tally, shardName, shardOf,
+import { placeKey, row, keepable, dedupe, subWindow, Tally, shardName, shardOf,
          isBoardFile, nearestOpen, deliveryMonth } from "../scripts/merge_bids.mjs";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -764,4 +764,43 @@ test("the shard header carries the branch and the phone", () => {
   assert.equal(s.phone, "(402) 555-0100");
   assert.equal(s.branch, "Elevator");
   assert.equal(shardOf(b.place, [b]).phone, null);
+});
+
+/* ── A WEEK ROW NEVER HIDES THE MONTH ROW (ADM Cedar Rapids, 2026-10-15) ──── */
+test("a week row and the whole-month row are two rows, not one", () => {
+  const rows = [mk({ commodity: "Corn", delivery: "Oct wk 3 (2026-12)", cash: 4.79, basis: 0 }),
+                mk({ commodity: "Corn", delivery: "October (2026-12)", cash: 4.56, basis: -0.23 })];
+  /* Oct 16 Central: week 3 (15th-21st) is still open */
+  const { rows: kept, sameFeed, endedWindows } = dedupe(rows, Date.parse("2026-10-16T17:00:00Z"));
+  assert.equal(kept.length, 2, "the month row was dropped under the week row");
+  assert.deepEqual(kept.map((r) => r.cash).sort(), [4.56, 4.79]);
+  assert.equal(sameFeed.length, 0);
+  assert.equal(endedWindows.length, 0);
+});
+test("a week of this month that has ended is dropped and counted; the month stays", () => {
+  const rows = [mk({ commodity: "Corn", delivery: "Oct wk 2 (2026-12)", cash: 4.79, basis: 0 }),
+                mk({ commodity: "Corn", delivery: "October (2026-12)", cash: 4.56, basis: -0.23 })];
+  /* 01:47 UTC Oct 16 is 8:47 pm Oct 15 Central: week 2 (8th-14th) has ended */
+  const { rows: kept, endedWindows } = dedupe(rows, Date.parse("2026-10-16T01:47:00Z"));
+  assert.equal(kept.length, 1);
+  assert.equal(kept[0].cash, 4.56, "the ended week stood in for October");
+  assert.equal(endedWindows.length, 1);
+  assert.equal(endedWindows[0].delivery, "Oct wk 2 (2026-12)");
+  /* on the 14th itself week 2 is still open */
+  assert.equal(dedupe(rows, Date.parse("2026-10-14T18:00:00Z")).rows.length, 2);
+});
+test("first and last half of a later month are both kept", () => {
+  const rows = [mk({ commodity: "Corn", delivery: "FHNovember (2026-12)", cash: 4.59, basis: -0.20 }),
+                mk({ commodity: "Corn", delivery: "LH November (2026-12)", cash: 4.63, basis: -0.16 })];
+  assert.equal(dedupe(rows, Date.parse("2026-10-16T17:00:00Z")).rows.length, 2);
+});
+test("subWindow reads the window a label names, and only that", () => {
+  assert.deepEqual(subWindow("Oct wk 2 (2026-12)"), { tag: "wk2", lastDay: 14 });
+  assert.deepEqual(subWindow("LH November (2026-12)"), { tag: "lh", lastDay: null });
+  assert.deepEqual(subWindow("FHNovember (2026-12)"), { tag: "fh", lastDay: 15 });
+  assert.equal(subWindow("FH December (2026-12)").tag, "fh");
+  assert.equal(subWindow("Fhrank Elevator").tag, "", "a word starting Fh is no half-month");
+  assert.equal(subWindow("October (2026-12)").tag, "");
+  assert.equal(subWindow("OCT 2026").tag, "");
+  assert.equal(subWindow("Fall 26").tag, "");
 });

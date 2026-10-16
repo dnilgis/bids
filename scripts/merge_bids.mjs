@@ -941,12 +941,50 @@ function keepable(b, tally) {
  * vanished with `collisions` reading zero. Every same-feed drop is now listed
  * in `sameFeed` with both sources and both prices, so a key that still joins
  * two boards shows up in the run instead of on a farmer's screen. */
-function dedupe(rows) {
+/* A WEEK OR HALF-MONTH IS NOT THE MONTH -- 2026-10-16. ADM Cedar Rapids posts
+ * corn "Oct wk 2" at even and "October" at -23c. Both read as period 2026-10,
+ * so the key joined them and the first row listed won: the card showed October
+ * at even, 23c better than a load delivered on the October contract gets. 797
+ * rows were dropped this way in one run (FH/LH November too). The window the
+ * label names is now part of the key, so each is its own row; and a week or
+ * half-month of the CURRENT month whose last day has passed (Central time) is
+ * dropped as ended and counted, never left to stand in for the month.
+ * Weeks are read as calendar sevens from the 1st (wk 2 = 8th-14th): the board
+ * gives no dates, so a week is only called ended once its latest possible day
+ * under that reading has gone. */
+const MONTH_DAYS = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+export function subWindow(label) {
+  const t = String(label ?? "").replace(/\(\d{4}-\d{2}\)\s*$/, "").trim();
+  let m = /\b(?:wk|week)\.?\s*(\d)\b/i.exec(t);
+  if (m) return { tag: `wk${m[1]}`, lastDay: Math.min(7 * Number(m[1]), 31) };
+  /* "FH December", and "FHNovember" with no space (ADM writes both) */
+  if (/^\s*FH(?=[\sA-Z]|$)/.test(t) || /\bfirst\s+half\b/i.test(t)) return { tag: "fh", lastDay: 15 };
+  if (/^\s*LH(?=[\sA-Z]|$)/.test(t) || /\b(?:last|second)\s+half\b/i.test(t)) return { tag: "lh", lastDay: null };
+  return { tag: "", lastDay: null };
+}
+function ctToday(nowMs) {
+  const s = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric",
+    month: "2-digit", day: "2-digit" }).format(new Date(nowMs));
+  return { ym: s.slice(0, 7), day: Number(s.slice(8, 10)) };
+}
+function dedupe(rows, nowMs = Date.now()) {
   const seen = new Map();
   const collisions = [];
   const sameFeed = [];
+  const endedWindows = [];
+  const today = ctToday(nowMs);
   for (const b of rows) {
-    const k = [b.place, b.crop, b.period, b.commodity].join("␟");
+    const w = subWindow(b.delivery);
+    if (w.tag && b.period === today.ym) {
+      const [y, mo] = today.ym.split("-").map(Number);
+      const last = w.lastDay == null ? MONTH_DAYS(y, mo) : Math.min(w.lastDay, MONTH_DAYS(y, mo));
+      if (today.day > last) {
+        endedWindows.push({ place: b.place, crop: b.crop, period: b.period, delivery: b.delivery,
+                            source: b.source, cash: b.cash });
+        continue;
+      }
+    }
+    const k = [b.place, b.crop, b.period, b.commodity, w.tag].join("␟");
     const prev = seen.get(k);
     if (!prev) { seen.set(k, b); continue; }
     const [win, lose] = prev.via === "scrape" ? [prev, b] : [b, prev];
@@ -961,7 +999,7 @@ function dedupe(rows) {
     }
     seen.set(k, win);
   }
-  return { rows: [...seen.values()], collisions, sameFeed };
+  return { rows: [...seen.values()], collisions, sameFeed, endedWindows };
 }
 
 export function summariseSameFeed(sameFeed) {
@@ -1078,8 +1116,12 @@ function main() {
   rows = rows.filter((b) => keepable(b, keepTally));
   keepTally.report("guards");
 
-  const { rows: kept, collisions, sameFeed } = dedupe(rows);
+  const { rows: kept, collisions, sameFeed, endedWindows } = dedupe(rows, nowMs);
   console.log(`\ndedupe: ${rows.length} -> ${kept.length}`);
+  if (endedWindows.length) {
+    console.log(`  ${endedWindows.length} week or half-month row(s) of this month dropped as ended, e.g.`);
+    for (const e of endedWindows.slice(0, 5)) console.log(`     ${e.place} ${e.crop} "${e.delivery}" ${e.cash}`);
+  }
   if (sameFeed.length) {
     const otherBoard = sameFeed.filter((c) => c.kept !== c.dropped);
     console.log(`  ${sameFeed.length} row(s) dropped inside one feed (same place, crop, period and label); `
@@ -1144,6 +1186,8 @@ function main() {
       /* See dedupe(). Rows dropped because another row of the SAME feed held
          the same place, crop, period and label; listed in `sameFeedDrops`. */
       droppedSameFeed: sameFeed.length,
+      /* See dedupe(): a week or half-month of this month that has ended. */
+      droppedEndedWindows: endedWindows.length,
       /* Rows whose delivery month had already gone when the board was read.
          The label is the board's own words, so a repeat offender is named. */
       periodAlreadyPast: pastPeriod,
