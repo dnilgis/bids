@@ -485,6 +485,33 @@ test("a bare month sorts against a range on the end of the range", () => {
   assert.equal(got.corn.period, "2026-09", "the bare September closes first");
 });
 
+test("a board this pass did not ask keeps its last good read for 6 hours (agsist, 2026-10-17)", () => {
+  /* "skipped" is a pass that did not ask (pace, a bot check, the pass budget),
+     not a failed read. NEW Cooperative answers most passes with a bot check
+     and Landus is read 5 boards a pass, so dropping skipped rows emptied them. */
+  const at = (h) => new Date(Date.parse(SEPT) - h * 3.6e6).toISOString();
+  const held = nearestOpen([
+    { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped", checkedAt: at(5) },
+    B("corn", "2026-12", 5.00),
+  ], SEPT);
+  assert.equal(held.corn.cash, 4.10, "read 5 h ago: still counts");
+  const old = nearestOpen([
+    { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped", checkedAt: at(7) },
+    B("corn", "2026-12", 5.00),
+  ], SEPT);
+  assert.equal(old.corn.cash, 5.00, "read 7 h ago: too old");
+  const none = nearestOpen([
+    { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped" },
+    B("corn", "2026-12", 5.00),
+  ], SEPT);
+  assert.equal(none.corn.cash, 5.00, "no read time: never held");
+  const bad = nearestOpen([
+    { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "refused", checkedAt: at(1) },
+    B("corn", "2026-12", 5.00),
+  ], SEPT);
+  assert.equal(bad.corn.cash, 5.00, "a refused board is never held");
+});
+
 test("a price the board could not confirm this pass is not today's cash", () => {
   /* agsist's merge already drops these and says why: "merging that would show
      an unconfirmed price as today's cash." 268 rows in the live file carry

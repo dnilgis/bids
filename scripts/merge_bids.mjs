@@ -295,6 +295,9 @@ export function deliveryMonth(period, cropName, asOf, row = null) {
   return m != null && m >= cur ? m : null;
 }
 
+/** Hours a skipped (not asked) board's last good read still counts in `now`. */
+export const HELD_SKIP_H = 6;
+
 export function nearestOpen(bids, asOf = Date.now()) {
   const out = {};
   const when = new Map();
@@ -311,8 +314,15 @@ export function nearestOpen(bids, asOf = Date.now()) {
        CURRENCY IS NOT FILTERED HERE. A Canadian board publishing in CAD is
        correct, not stale; whether a given page can render it is that page's
        question, and `currency` is on the place row for it to ask. */
-    if (b.stale === true) continue;
-    if ((b.sourceStatus || "ok") !== "ok") continue;
+    /* A PASS NOT ASKED IS NOT A FAILED READ (agsist, 2026-10-17). "skipped"
+       means this pass did not ask the board (PLATFORM_PACE, a bot check, the
+       pass budget), not that a read failed. A skipped row whose last good read
+       is within HELD_SKIP_H counts, as agsist's pages and ZIP feed now take it
+       (scripts/fetch_bids.py held_skip_row). Refused and broken never do. */
+    const heldSkip = b.sourceStatus === "skipped" && b.checkedAt &&
+      (() => { const h = (new Date(asOf).getTime() - Date.parse(b.checkedAt)) / 3.6e6; return h >= -0.25 && h <= HELD_SKIP_H; })();
+    if (b.stale === true && !heldSkip) continue;
+    if ((b.sourceStatus || "ok") !== "ok" && !heldSkip) continue;
     const m = deliveryMonth(b.period, b.crop, asOf, b);
     if (m == null) continue;
     const cur = out[b.crop], cm = when.get(b.crop);
