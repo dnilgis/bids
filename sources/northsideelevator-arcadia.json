@@ -1,0 +1,42 @@
+{
+  "id": "northsideelevator-arcadia",
+  "operator": "Northside Elevator, Inc.",
+  "location": "Arcadia",
+  "state": "WI",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://api.bushelpowered.com/api/markets/aggregator/bids/v1/GetBidsList",
+  "browserPage": "https://www.northsideelevator.com/",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": false,
+  "cashRounding": "round-cent",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "email": null,
+  "website": "https://www.northsideelevator.com/",
+  "inMerge": true,
+  "locationId": "832ce6b2-c81a-4063-af8a-6c64d279f077",
+  "address": null,
+  "zip": null,
+  "lat": null,
+  "lon": null,
+  "phone": null,
+  "note": "WRITTEN BY HAND from the elevsites capture captures-5/www-northsideelevator-com (capture.yml run 39090126520, bids repo branch elevsites): Northside Elevator's home page asks Bushel's GetBidsList and the saved answer carries this location, \"Arcadia\", by the UUID in locationId. The payload holds a name and a UUID and nothing else. PLACE: the same page lists \"Arcadia, WI\" among its own locations. No directory or licence row names Northside at Arcadia, so there is no coordinate and nothing is claimed. ROUNDING, measured on that capture (fixtures/bushel-northside-2026-10-18.json): quoted futures minus (cash - basis) is -0.5, -0.25, 0 or +0.25 cents on all 28 rows across both locations, which is round-cent (nearest cent, half up) and is not floor-cent: Arcadia's March 27 corn reads 4.37 against -0.50 + 4.865 = 4.365. ",
+  "_pending": "HELD DISABLED: the rounding is measured on one day's board only. lib/adapters/bushel.mjs asks for the same answer on a second day's prices before a Bushel board is enabled (Country Partners read round-cent and floor-cent twenty minutes apart). Re-read this board on another day; if round-cent explains every row again, set enabled true. lat/lon is null: no row here places the Arcadia yard."
+}
