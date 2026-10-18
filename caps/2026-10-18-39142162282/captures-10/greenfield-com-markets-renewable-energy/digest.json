@@ -1,0 +1,78 @@
+{
+ "url": "https://greenfield.com/markets/renewable-energy",
+ "title": "Renewable Energy &amp; Low-Carbon Fuels | Greenfield",
+ "text": "Renewable Energy & Low-Carbon Fuels | Greenfield\nPress Alt+1 for screen-reader mode, Alt+0 to cancel Accessibility Screen-Reader Guide, Feedback, and Issue Reporting | New window\nError executing template \"/Designs/Swift/Grid/Page/RowTemplates/1ColumnFlex.cshtml\"\nSystem.InvalidOperationException: A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Container.VerifyIntegrity()\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Container.CreateEntryNoResize(TKey key, TValue value)\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Add(TKey key, TValue value)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.OtherParserBlock(SyntaxListBuilder`1& builder)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.ParseCodeTransition(SyntaxListBuilder`1& builder)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.ParseDocument()\nat Microsoft.AspNetCore.Razor.Language.Legacy.RazorParser.Parse(RazorSourceDocument source)\nat Microsoft.AspNetCore.Razor.Language.DefaultRazorParsingPhase.ExecuteCore(RazorCodeDocument codeDocument)\nat Microsoft.AspNetCore.Razor.Language.DefaultRazorEngine.Process(RazorCodeDocument document)\nat Microsoft.AspNetCore.Razor.Language.RazorTemplateEngine.GenerateCode(RazorCodeDocument codeDocument)\nat RazorEngine.Compilation.CompilerServiceBase.GenerateCodeFile(RazorTemplateEngine templateEngine, RazorCodeDocument document)\nat RazorEngine.Compilation.CompilerServiceBase.GetGeneratorResult(IEnumerable`1 namespaces, TypeContext context)\nat RazorEngine.Compilation.CompilerServiceBase.GetCodeCompileUnit(TypeContext context)\nat Dynamicweb.Rendering.Compatibility.RoslynCompilerServiceBase.CompileType(TypeContext context)\nat RazorEngine.Templating.RazorEngineCore.CreateTemplateType(ITemplateSource razorTemplate, Type modelType)\nat RazorEngine.Templating.RazorEngineCore.Compile(ITemplateKey key, Type modelType)\nat RazorEngine.Templating.RazorEngineService.CompileAndCacheInternal(ITemplateKey key, Type modelType)\nat RazorEngine.Templating.RazorEngineService.GetCompiledTemplate(ITemplateKey key, Type modelType, Boolean compileOnCacheMiss)\nat RazorEngine.Templating.RazorEngineService.RunCompile(ITemplateKey key, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.DynamicWrapperService.RunCompile(ITemplateKey key, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String name, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.<>c__DisplayClass16_0.<RunCompile>b__0(TextWriter writer)\nat RazorEngine.Templating.RazorEngineServiceExtensions.WithWriter(Action`1 withWriter)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String name, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String templateSource, String name, Type modelType, Object model, DynamicViewBag viewBag)\nat Dynamicweb.Rendering.RazorTemplateRenderingProvider.Render(Template template)\nat Dynamicweb.Rendering.TemplateRenderingService.Render(Template template)\nat Dynamicweb.Rendering.Template.RenderRazorTemplate()\n1 @inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Frontend.GridRowViewModel>\n2 @{\n3 string containerClass = \"container-xl\";\n4\n5 string width = Model.Item.GetRawValueString(\"Width\", \"\");\n6 if (width == \"stretch\") {\n7 containerClass = \"container-fluid\";\n8 }\n9 if (width == \"none\") {\n10 containerClass = \"container-fluid px-0\";\n11 }\n12\n13 string rowHeight = Model.Item.GetRawValueString(\"RowHeight\", \"0\");\n14 rowHeight = \"py-\" + rowHeight;\n15\n16 string hideOnScroll = Model.Item.GetRawValueString(\"HideOnScroll\", string.Empty).ToLower();\n17 hideOnScroll = hideOnScroll == \"hide\" ? \"js-hide-on-scroll\" : \"\";\n18\n19 string theme = !string.IsNullOrWhiteSpace(Model.Item.GetRawValueString(\"Theme\")) ? \" theme \" + Model.Item.GetRawValueString(\"Theme\").Replace(\" \", \"\").Trim().ToLower() : \"\";\n20 string alternativeTheme = !string.IsNullOrWhiteSpace(Model.Item.GetRawValueString(\"AlternativeTheme\")) ? \" theme \" + Model.Item.GetRawValueString(\"AlternativeTheme\").Replace(\" \", \"\").Trim().ToLower() : \"\";\n21 string mainTheme = theme;\n22\n23 string headerCssClass = \"sticky-top\";\n24 if (Pageview.Page.PropertyItem is Dynamicweb.Content.Items.Item propertyItem ) {\n25 headerCssClass = propertyItem[\"MoveThisPageBehindTheHeader\"] != null ? propertyItem[\"MoveThisPageBehindTheHeader\"].ToString() : \"sticky-top\";\n26 }\n27 headerCssClass = headerCssClass == \"\" ? \"sticky-top\" : headerCssClass;\n28 headerCssClass = Pageview.IsVisualEditorMode ? \"\" : headerCssClass;\n29\n30 string themeSwitchers = \"\";\n31 string themeAnimated = \"\";\n32 if (headerCssClass == \"fixed-top\") {\n33 theme = alternativeTheme;\n34 themeSwitchers = \"data-main-theme=\\\"\" + mainTheme + \"\\\" data-alternative-theme=\\\"\" + alternativeTheme + \"\\\"\";\n35 themeAnimated = \"theme-animated \";\n36 }\n37\n38 var decorations = Model.Item?.GetList(\"CssDecorations\")?.GetRawValue().OfType<string>() ?? Enumerable.Empty<string>();\n39 var css = string.Empty;\n40 var cssClasses = new List<string> { };\n41\n42 foreach (var itemId in decorations)\n43 {\n44 var item = Dynamicweb.Content.Services.Items.GetItem(\"Swift_Css\", itemId);\n45 item.TryGetValue(\"Class\", out object classes);\n46 if (classes is null)\n47 {\n48 continue;\n49 }\n50\n51 var cssString = (string)classes;\n52 if (cssString.StartsWith(\"[\"))\n53 {\n54 var cssArray = Dynamicweb.Core.Converter.Deserialize<string[]>(cssString);\n55 cssClasses.AddRange(cssArray);\n56 }\n57 else\n58 {\n59 cssClasses.Add(cssString.Replace(\",\", \" \"));\n60 }\n61 }\n62 css = string.Join(\" \", cssClasses).Trim();\n63\n64 var columnContent = Model.Column(1).Output();\n65\n66 if (Pageview.IsVisualEditorMode || !string.IsNullOrWhiteSpace(columnContent))\n67 {\n68 <div class=\"@rowHeight @themeAnimated @theme @hideOnScroll @(css) item_@Model.Item.SystemName.ToLower()\" @themeSwitchers data-swift-gridrow>\n69 <div class=\"@containerClass\">\n70 <div class=\"d-flex flex-row\">\n71 <div class=\"col\">\n72 @columnContent\n73 </div>\n74 </div>\n75 </div>\n76 </div>\n77 }\n78 }\n79\nError executing template \"/Designs/Swift/Grid/Page/RowTemplates/3ColumnsFlex.cshtml\"\nSystem.InvalidOperationException: A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Container.VerifyIntegrity()\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Container.CreateEntryNoResize(TKey key, TValue value)\nat System.Runtime.CompilerServices.ConditionalWeakTable`2.Add(TKey key, TValue value)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.OtherParserBlock(SyntaxListBuilder`1& builder)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.ParseCodeTransition(SyntaxListBuilder`1& builder)\nat Microsoft.AspNetCore.Razor.Language.Legacy.HtmlMarkupParser.ParseDocument()\nat Microsoft.AspNetCore.Razor.Language.Legacy.RazorParser.Parse(RazorSourceDocument source)\nat Microsoft.AspNetCore.Razor.Language.DefaultRazorParsingPhase.ExecuteCore(RazorCodeDocument codeDocument)\nat Microsoft.AspNetCore.Razor.Language.DefaultRazorEngine.Process(RazorCodeDocument document)\nat Microsoft.AspNetCore.Razor.Language.RazorTemplateEngine.GenerateCode(RazorCodeDocument codeDocument)\nat RazorEngine.Compilation.CompilerServiceBase.GenerateCodeFile(RazorTemplateEngine templateEngine, RazorCodeDocument document)\nat RazorEngine.Compilation.CompilerServiceBase.GetGeneratorResult(IEnumerable`1 namespaces, TypeContext context)\nat RazorEngine.Compilation.CompilerServiceBase.GetCodeCompileUnit(TypeContext context)\nat Dynamicweb.Rendering.Compatibility.RoslynCompilerServiceBase.CompileType(TypeContext context)\nat RazorEngine.Templating.RazorEngineCore.CreateTemplateType(ITemplateSource razorTemplate, Type modelType)\nat RazorEngine.Templating.RazorEngineCore.Compile(ITemplateKey key, Type modelType)\nat RazorEngine.Templating.RazorEngineService.CompileAndCacheInternal(ITemplateKey key, Type modelType)\nat RazorEngine.Templating.RazorEngineService.GetCompiledTemplate(ITemplateKey key, Type modelType, Boolean compileOnCacheMiss)\nat RazorEngine.Templating.RazorEngineService.RunCompile(ITemplateKey key, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.DynamicWrapperService.RunCompile(ITemplateKey key, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String name, TextWriter writer, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.<>c__DisplayClass16_0.<RunCompile>b__0(TextWriter writer)\nat RazorEngine.Templating.RazorEngineServiceExtensions.WithWriter(Action`1 withWriter)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String name, Type modelType, Object model, DynamicViewBag viewBag)\nat RazorEngine.Templating.RazorEngineServiceExtensions.RunCompile(IRazorEngineService service, String templateSource, String name, Type modelType, Object model, DynamicViewBag viewBag)\nat Dynamicweb.Rendering.RazorTemplateRenderingProvider.Render(Template template)\nat Dynamicweb.Rendering.TemplateRenderingService.Render(Template template)\nat Dynamicweb.Rendering.Template.RenderRazorTemplate()\n1 @inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Frontend.GridRowViewModel>\n2\n3 @{\n4 string containerClass = \"container-xl\";\n5\n6 string width = Model.Item.GetRawValueString(\"Width\", \"\").ToLower();\n7 if (width == \"stretch\")\n8 {\n9 containerClass = \"container-fluid\";\n10 }\n11 if (width == \"none\")\n12 {\n13 containerClass = \"container-fluid px-0\";\n14 }\n15\n16 string rowClass = \"gap-3\";\n17 string spaceBetweenColumns = Model.Item.GetRawValueString(\"SpaceBetweenColumns\", \"\").ToLower();\n18\n19 if (spaceBetweenColumns == \"stick\")\n20 {\n21 rowClass = \"gap-0\";\n22 }\n23 if (spaceBetweenColumns == \"spacing-large\")\n24 {\n25 rowClass = \"gap-1 gap-md-4 gap-lg-5\";\n26 }\n27\n28 string columnPosition = Model.Item.GetRawValueString(\"ColumnPosition\", \"align-items-center\").ToLower();\n29 if (columnPosition == \"top\")\n30 {\n31 columnPosition = \"align-items-start\";\n32 }\n33 if (columnPosition == \"center\")\n34 {\n35 columnPosition = \"align-items-center\";\n36 }\n37 if (columnPosition == \"bottom\")\n38 {\n39 columnPosition = \"align-items-end\";\n40 }\n41\n42 string rowHeight = Model.Item.GetRawValueString(\"RowHeight\", \"0\").ToLower();\n43 rowHeight = \"py-\" + rowHeight;\n44\n45 string column1width = Model.Item.GetRawValueString(\"Column_1Width\", \"\").ToLower();\n46 column1width = column1width == \"grow\" ? \"flex-grow-1\" : \"flex-grow-0\";\n47\n48 string column2width = Model.Item.GetRawValueString(\"Column_2Width\", \"\").ToLower();\n49 column2width = column2width == \"grow\" ? \"flex-grow-1\" : \"flex-grow-0\";\n50\n51 string column3width = Model.Item.GetRawValueString(\"Column_3Width\", \"\").ToLower();\n52 column3width = column3width == \"grow\" ? \"flex-grow-1\" : \"flex-grow-0\";\n53\n54 string hideOnScroll = Model.Item.GetRawValueString(\"HideOnScroll\", \"\").ToLower();\n55 hideOnScroll = hideOnScroll == \"hide\" ? \"js-hide-on-scroll\" : \"\";\n56\n57 string theme = !string.IsNullOrWhiteSpace(Model.Item.GetRawValueString(\"Theme\")) ? \" theme \" + Model.Item.GetRawValueString(\"Theme\").Replace(\" \", \"\").Trim().ToLower() : \"\";\n58 string alternativeTheme = !string.IsNullOrWhiteSpace(Model.Item.GetRawValueString(\"AlternativeTheme\")) ? \" theme \" + Model.Item.GetRawValueString(\"AlternativeTheme\").Replace(\" \", \"\").Trim().ToLower() : \"\";\n59 string mainTheme = theme;\n60\n61 string headerCssClass = \"sticky-top\";\n62 if (Pageview.Page.PropertyItem != null) {\n63 headerCssC",
+ "textBytes": 177064,
+ "looksLikeBoard": false,
+ "links": [
+  {
+   "url": "https://accessibe.com/blog/knowledgebase/screen-reader-guide",
+   "text": "Accessibility Screen-Reader Guide, Feedback, and Issue Reporting | New window"
+  },
+  {
+   "url": "https://greenfield.com/about-us/contact-us",
+   "text": "CONTACT US"
+  },
+  {
+   "url": "https://greenfield.com/products",
+   "text": "PRODUCT CATALOG"
+  },
+  {
+   "url": "https://greenfield.com/fr/markets/renewable-energy",
+   "text": "Français"
+  }
+ ],
+ "linkCount": 4,
+ "pdfLinks": [],
+ "facebook": [],
+ "scripts": [
+  "https://j.6sc.co/6si.min.js",
+  "https://scout-cdn.salesloft.com/sl.js",
+  "https://static.hotjar.com/c/hotjar-6783590.js?sv=7",
+  "https://snap.licdn.com/li.lms-analytics/insight.min.js",
+  "https://www.googletagmanager.com/gtag/js?id=G-KSY7ZL02GL&amp;cx=c&amp;gtm=4e6af0h2",
+  "https://cdn.weglot.com/switchers/default_dropdown.1ad9a1842163219e5fcc6ca5bad90520e898af51.min.js",
+  "https://www.googletagmanager.com/gtm.js?id=GTM-NR5XRF6",
+  "https://greenfield.com/Files/Templates/Designs/Swift/Assets/js/scripts.js?639276466863769267",
+  "https://cdn.weglot.com/weglot.min.js",
+  "https://acsbapp.com/apps/app/dist/js/app.js",
+  "https://script.hotjar.com/modules.cbb571aa58c48ef8fa6e.js",
+  "https://j.6sc.co/j/f72c77f8-9c7e-4a17-b561-e56c4cb6fa9c.js"
+ ],
+ "iframes": [
+  "about:blank"
+ ],
+ "responseHosts": {
+  "greenfield.com": 5,
+  "cdn.weglot.com": 3,
+  "googletagmanager.com": 2,
+  "static.hotjar.com": 1,
+  "j.6sc.co": 2,
+  "pagead2.googlesyndication.com": 3,
+  "scout-cdn.salesloft.com": 1,
+  "snap.licdn.com": 1,
+  "script.hotjar.com": 1,
+  "ipv6.6sc.co": 1,
+  "acsbapp.com": 1,
+  "px.ads.linkedin.com": 2,
+  "scout.salesloft.com": 2,
+  "c.6sc.co": 1,
+  "cdn.acsbapp.com": 1,
+  "google-analytics.com": 2,
+  "content.hotjar.io": 1
+ },
+ "dataResponses": [
+  "https://greenfield.com/markets/renewable-energy",
+  "https://pagead2.googlesyndication.com/ccm/collect?rcb=17&frm=0&apvc=1&ae=g&en=page_view&dl=https%3A%2F%2Fgreenfield.com%2Fmarkets%2Frenewable-energy&scrsrc=www.googletagmanager.com&rnd=1146325206.1792339397&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He6af0h2v833178965za200zd833178965xeaxf1&gcs=G100&gcd=13p3p3p3p5l1&dma_cps=-&dma=0&tag_exp=115938466~115938469~118897920~118897930~120385423~120469145~120469153~121246026~121246034&tft=1792339397462&tfd=1109&fmt=8",
+  "https://scout.salesloft.com/r?tid=[redacted]",
+  "https://c.6sc.co/?m=1",
+  "https://scout.salesloft.com/i",
+  "https://cdn.acsbapp.com/config/greenfield.com/config.json",
+  "https://content.hotjar.io/?site_id=6783590&gzip=1"
+ ],
+ "parent": "https://greenfield.com/",
+ "navError": null,
+ "error": null,
+ "domBytes": 338625,
+ "httpStatus": 200
+}

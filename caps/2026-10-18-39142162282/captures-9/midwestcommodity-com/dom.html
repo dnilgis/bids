@@ -1,0 +1,846 @@
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Midwest Commodity Service | Baldwin, WI</title>
+<!-- ONE FONT FILE, PRELOADED. The browser cannot know a font exists until it
+     has downloaded and parsed site.css, so on a phone the first screen is
+     drawn twice: once in the fallback and again in Inter.
+
+     MEASURED on a 400kbps link with the processor slowed four times, five
+     loads each, median. "first font" is when the first Inter file finished:
+
+       the site as it stands ......... first paint 3,972ms   first font 5,533ms
+       metric-matched fallback only .. first paint 4,084ms   first font 5,649ms
+       + this one preload ............ first paint 4,328ms   first font 2,225ms
+       + three preloads (500/700/800)  first paint 4,980ms   first font 2,604ms
+
+     Three was the plan and the measurement said no: three font files compete
+     with the stylesheet for the same narrow pipe and cost a full second of
+     first paint to save nothing. One buys the real typeface three and a third
+     seconds earlier for about a third of a second of first paint. Inter 700
+     is the one, because at 390px it carries 61,271px2 of the first screen's
+     text against 500's 49,683 and 800's 37,548.
+
+     crossorigin is required on a font preload even same-origin: without it the
+     file is fetched twice. -->
+<link rel="preload" href="fonts/inter-700.woff2" as="font" type="font/woff2" crossorigin="">
+<link rel="stylesheet" href="site.css">
+<meta name="description" content="Midwest Commodity Service buys, dries and stores corn in Baldwin, Wisconsin. Today’s prices, hours and the drying schedule. Call (715) 704-0548.">
+<meta name="theme-color" content="#15662f">
+<link rel="canonical" href="https://midwestcommodity.com/">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Midwest Commodity Service">
+<meta property="og:title" content="Midwest Commodity Service, Baldwin Wisconsin">
+<meta property="og:description" content="Today’s cash prices, hours, and the corn drying schedule. Call (715) 704-0548.">
+<meta property="og:url" content="https://midwestcommodity.com/">
+    <!-- THE LINK PREVIEW. Without these a farmer texting this address to
+         another farmer, or posting it in a Facebook group, gets a bare link
+         or an empty grey card -- the first thing most people ever see of
+         this business, saying nothing. og.png is GENERATED from this page's
+         own markup by tools/make-og.mjs, so it cannot come to disagree with
+         the site the way a hand-made image would the first time the phone
+         number changes. Re-run that tool and the card is right again. -->
+    <meta property="og:image" content="https://midwestcommodity.com/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="Midwest Commodity Service, Inc. — cash corn prices and hours">
+    <meta name="twitter:image" content="https://midwestcommodity.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.png">
+<link rel="manifest" href="site.webmanifest">
+</head>
+<body>
+
+<a class="skip" href="#prices">Skip to today’s prices</a>
+
+<header>
+  <div class="wrap">
+    <h1 class="logo">
+      <!-- THE MARK IS A FILE, NOT A LOCKUP BUILT IN CSS. Kristi asked for the
+           companies' own logos back ("keep our old logo's so people recognize it
+           better"), so the four corn ears and the .wm wordmark that stood here are
+           gone from this element. Everywhere else on this site the corn stays --
+           the app icons, the favicon and the link-preview card are deliberately
+           untouched.
+
+           THE ARTWORK LANDED ON 2026-09-18. It was rebuilt as vector from the only
+           reference there was -- a 205x98 crop of a screenshot -- because nothing
+           that small survives being stretched to a 430px masthead. If the original
+           files ever turn up, replacing the PNG is the whole job.
+
+           IF THE FILE IS EVER MISSING the browser draws the alt text instead, which
+           is the company's name in this site's own display face (see .logo .mark in
+           site.css). That is why the alt text is a real name and not decoration.
+
+           THE BOX IS RESERVED IN CSS, in both axes, so nothing below the masthead
+           moves when the file loads and any shape fits without being cropped or
+           stretched. The width and height below are MEASURED off the delivered
+           file, not asked for -- they were 600x400 from assets/README.md until
+           2026-09-18, when the file turned out to be 832x400 and the browser was
+           reserving a box a third too narrow. -->
+      <img class="mark" src="assets/logo-midwestcommodity.png" width="832" height="400" alt="Midwest Commodity Service, Inc.">
+    </h1>
+    <p class="tag">Grain buying, drying and storage<span class="town">Baldwin, Wisconsin</span></p>
+  </div>
+</header>
+
+<div class="notice">
+  <div class="wrap">
+    <span class="notice-tag">Notice</span>
+    <span class="notice-msg">**No Storage Available**
+Sat 10/17 - 7am - 7pm
+*Sun 10/18 - 8am - 5pm</span>
+  </div>
+</div>
+
+<!-- Everything from here to </main> is the page proper. The notice
+     banner sits above this, outside main, because it is site level
+     and because publishSite() anchors it to </header>. -->
+<main id="content">
+<div class="top">
+  <div class="wrap topgrid">
+
+    <div class="pricecol" id="prices">
+      <div class="panel">
+      <div class="hd">Prices paid today<span class="as" data-built="as of Sunday, October 18, 10:50am">as of Sunday, October 18, 10:50am · CBOT closed</span></div>
+      <table class="bids">
+        <caption class="sr-only">Cash corn bids by delivery month</caption>
+        <thead>
+          <tr><th scope="col">Delivery</th><th scope="col" class="r m-hide">Futures</th><th scope="col" class="r m-hide">Basis</th><th scope="col" class="r">We pay</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mo">October</td><td class="fut r m-hide">$4.74<span class="q">¼</span><span class="con">Dec 26</span></td><td class="bas r m-hide">−0.70</td><td class="pay r">$4.04</td></tr>
+          <tr><td class="mo">November</td><td class="fut r m-hide">$4.74<span class="q">¼</span><span class="con">Dec 26</span></td><td class="bas r m-hide">−0.70</td><td class="pay r">$4.04</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tnote">Corn futures are delayed at least 10 min. Pricing is provided for informational purposes only.</div>
+      </div>
+      <a class="call num" href="tel:+17157040548">Call <span class="nb">(715) 704-0548</span> to lock a price</a>
+    </div>
+
+    <div class="panel hourspanel">
+      <div class="today">
+        <div class="today-lbl">Open today, Sunday</div>
+        <div class="today-hrs num">8:00a to 5:00p</div>
+      </div>
+      <div class="hrow"><span>Mon to Fri</span><span class="num">8:00a to 7:00p</span></div>
+      <div class="hrow"><span>Saturday</span><span class="num">7:00a to 7:00p</span></div>
+      <div class="hrow"><span>Sunday</span><span class="num">8:00a to 5:00p</span></div>
+      <div class="hnote">During harvest our standard hours are 8:00am to 7:00pm, seven days a week. Hours may change due to weather. Please check website often for the most up to date hours.</div>
+    </div>
+
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Grain marketing options</h2>
+    <div class="ways">
+      <div class="way">
+        <h3>Cash or spot price</h3>
+        <p>Haul it in and take the spot price, which is determined at the close of market. Payment will be made within 7 days of delivery.</p>
+      </div>
+      <div class="way">
+        <h3>Forward contract</h3>
+        <p>Lock in a price now for grain you deliver later. Minimum 5,000 bushels, in 5,000 bushel lots.</p>
+      </div>
+      <div class="way">
+        <h3>Storage</h3>
+        <p>Store grain at 5 cents per bushel per month, and sell when you decide the price is right. A 10 cent per bushel load out fee will be charged if corn is pulled back out of storage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="drying">
+  <div class="wrap">
+    <h2>Corn drying and shrink</h2>
+    <div class="shrink num">
+      <strong>Shrink: 1.4% per point of moisture above 14%.</strong>
+    </div>
+    <!-- BOTH SCHEDULES, ALWAYS. Sig, 2026-09-11: "non collapsing is actually
+         preferrable." This was a details element that opened on a click, so a
+         grower standing at the scale had to find and press something before
+         the charge that comes off his settlement would show. The box it sat in
+         is kept; only the summary and the open/closed states are gone. -->
+    <div class="drop">
+      <div class="dropbody">
+        <div class="schedgrid">
+        <div class="schedcol">
+          <h3 class="schedhd">Corn we buy</h3>
+          <table class="sched num">
+            <caption class="sr-only">Corn we buy, drying charge by moisture</caption>
+            <thead><tr><th scope="col">Moisture %</th><th scope="col" class="r">Per bushel</th></tr></thead>
+            <tbody>
+          <tr><td>15.001 to 15.5</td><td>$0.05</td></tr>
+          <tr><td>15.501 to 16.0</td><td>$0.10</td></tr>
+          <tr><td>16.001 to 16.5</td><td>$0.15</td></tr>
+          <tr><td>16.501 to 17.0</td><td>$0.17</td></tr>
+          <tr><td>17.001 to 17.5</td><td>$0.19</td></tr>
+          <tr><td>17.501 to 18.0</td><td>$0.21</td></tr>
+          <tr><td>18.001 to 18.5</td><td>$0.23</td></tr>
+          <tr><td>18.501 to 19.0</td><td>$0.24</td></tr>
+          <tr><td>19.001 to 19.5</td><td>$0.25</td></tr>
+          <tr><td>19.501 to 20.0</td><td>$0.26</td></tr>
+          <tr><td>20.001 to 20.5</td><td>$0.27</td></tr>
+          <tr><td>20.501 to 21.0</td><td>$0.28</td></tr>
+          <tr><td>21.001 to 21.5</td><td>$0.29</td></tr>
+          <tr><td>21.501 to 22.0</td><td>$0.30</td></tr>
+          <tr><td>22.001 to 22.5</td><td>$0.31</td></tr>
+          <tr><td>22.501 to 23.0</td><td>$0.32</td></tr>
+          <tr><td>23.001 to 23.5</td><td>$0.33</td></tr>
+          <tr><td>23.501 to 24.0</td><td>$0.34</td></tr>
+          <tr><td>24.001 to 24.5</td><td>$0.35</td></tr>
+          <tr><td>24.501 to 25.0</td><td>$0.36</td></tr>
+          <tr><td>25.001 to 25.5</td><td>$0.37</td></tr>
+          <tr><td>25.501 to 26.0</td><td>$0.38</td></tr>
+          <tr><td>26.001 to 26.5</td><td>$0.39</td></tr>
+          <tr><td>26.501 to 27.0</td><td>$0.40</td></tr>
+          <tr><td>27.001 to 27.5</td><td>$0.41</td></tr>
+          <tr><td>27.501 to 28.0</td><td>$0.42</td></tr>
+          <tr><td>28.001 to 28.5</td><td>$0.43</td></tr>
+          <tr><td>28.501 to 29.0</td><td>$0.44</td></tr>
+          <tr><td>29.001 to 29.5</td><td>$0.45</td></tr>
+          <tr><td>29.501 to 30.0</td><td>$0.46</td></tr>
+          <tr><td>30.001 to 30.5</td><td>$0.47</td></tr>
+          <tr><td>30.501 to 31.0</td><td>$0.48</td></tr>
+          <tr><td>31.001 to 31.5</td><td>$0.49</td></tr>
+          <tr><td>31.501 to 32.0</td><td>$0.50</td></tr>
+          <tr><td>32.001 to 32.5</td><td>$0.51</td></tr>
+          <tr><td>32.501 to 33.0</td><td>$0.52</td></tr>
+          <tr><td>33.001 to 33.5</td><td>$0.53</td></tr>
+          <tr><td>33.501 to 34.0</td><td>$0.54</td></tr>
+          <tr><td>34.001 to 34.5</td><td>$0.55</td></tr>
+          <tr><td>34.501 to 35.0</td><td>$0.56</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schedcol">
+          <h3 class="schedhd">Corn in storage</h3>
+          <table class="sched num">
+            <caption class="sr-only">Corn in storage, drying charge by moisture</caption>
+            <thead><tr><th scope="col">Moisture %</th><th scope="col" class="r">Per bushel</th></tr></thead>
+            <tbody>
+          <tr><td>0 to 16.0</td><td>$0.10</td></tr>
+          <tr><td>16.001 to 16.5</td><td>$0.15</td></tr>
+          <tr><td>16.501 to 17.0</td><td>$0.17</td></tr>
+          <tr><td>17.001 to 17.5</td><td>$0.19</td></tr>
+          <tr><td>17.501 to 18.0</td><td>$0.21</td></tr>
+          <tr><td>18.001 to 18.5</td><td>$0.23</td></tr>
+          <tr><td>18.501 to 19.0</td><td>$0.24</td></tr>
+          <tr><td>19.001 to 19.5</td><td>$0.25</td></tr>
+          <tr><td>19.501 to 20.0</td><td>$0.26</td></tr>
+          <tr><td>20.001 to 20.5</td><td>$0.27</td></tr>
+          <tr><td>20.501 to 21.0</td><td>$0.28</td></tr>
+          <tr><td>21.001 to 21.5</td><td>$0.29</td></tr>
+          <tr><td>21.501 to 22.0</td><td>$0.30</td></tr>
+          <tr><td>22.001 to 22.5</td><td>$0.31</td></tr>
+          <tr><td>22.501 to 23.0</td><td>$0.32</td></tr>
+          <tr><td>23.001 to 23.5</td><td>$0.33</td></tr>
+          <tr><td>23.501 to 24.0</td><td>$0.34</td></tr>
+          <tr><td>24.001 to 24.5</td><td>$0.35</td></tr>
+          <tr><td>24.501 to 25.0</td><td>$0.36</td></tr>
+          <tr><td>25.001 to 25.5</td><td>$0.37</td></tr>
+          <tr><td>25.501 to 26.0</td><td>$0.38</td></tr>
+          <tr><td>26.001 to 26.5</td><td>$0.39</td></tr>
+          <tr><td>26.501 to 27.0</td><td>$0.40</td></tr>
+          <tr><td>27.001 to 27.5</td><td>$0.41</td></tr>
+          <tr><td>27.501 to 28.0</td><td>$0.42</td></tr>
+          <tr><td>28.001 to 28.5</td><td>$0.43</td></tr>
+          <tr><td>28.501 to 29.0</td><td>$0.44</td></tr>
+          <tr><td>29.001 to 29.5</td><td>$0.45</td></tr>
+          <tr><td>29.501 to 30.0</td><td>$0.46</td></tr>
+          <tr><td>30.001 to 30.5</td><td>$0.47</td></tr>
+          <tr><td>30.501 to 31.0</td><td>$0.48</td></tr>
+          <tr><td>31.001 to 31.5</td><td>$0.49</td></tr>
+          <tr><td>31.501 to 32.0</td><td>$0.50</td></tr>
+          <tr><td>32.001 to 32.5</td><td>$0.51</td></tr>
+          <tr><td>32.501 to 33.0</td><td>$0.52</td></tr>
+          <tr><td>33.001 to 33.5</td><td>$0.53</td></tr>
+          <tr><td>33.501 to 34.0</td><td>$0.54</td></tr>
+          <tr><td>34.001 to 34.5</td><td>$0.55</td></tr>
+          <tr><td>34.501 to 35.0</td><td>$0.56</td></tr>
+            </tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wi">
+  <div class="wrap">
+    <h2>Licensed by the State of Wisconsin</h2>
+    <p>Midwest Commodity Service, Inc. is a licensed Wisconsin grain dealer and grain warehouse keeper, regulated by the Wisconsin Department of Agriculture, Trade and Consumer Protection.</p>
+    <div class="lics">
+      <div class="lic"><span class="l">Grain dealer license</span><span class="v num">252525 GL</span></div>
+      <div class="lic"><span class="l">Grain warehouse keeper license</span><span class="v num">286621 GW</span></div>
+    </div>
+    <p class="statute-lead">Wisconsin requires us to give you these notices in writing. They are reproduced here word for word.</p>
+
+    <div class="statute">
+      <p class="statute-which">Grain we buy from you · required by s. ATCP 99.14(2)(a), Wis. Adm. Code</p>
+      <div class="statute-box">
+        <p class="statute-hd">IMPORTANT NOTICE</p>
+        <p>Midwest Commodity Service, Inc. participates in Wisconsin’s Agricultural Producer Security program. If we fail to pay you for grain when payment is due, you may file a claim under this program. The program may reimburse up to 80% of the first $60,000 of your allowed claim, and up to 75% of any additional amount. For more information, you may contact the Wisconsin Department of Agriculture, Trade and Consumer Protection, 2811 Agriculture Drive, P. O. Box 8911, Madison, WI 53708-8911 (phone 608/224-4998).</p>
+      </div>
+    </div>
+
+    <div class="statute">
+      <p class="statute-which">Grain we store for you · required by s. ATCP 99.26(2)(a), Wis. Adm. Code</p>
+      <div class="statute-box">
+        <p class="statute-hd">IMPORTANT NOTICE</p>
+        <p>Midwest Commodity Service, Inc. participates in Wisconsin’s Agricultural Producer Security program. If we fail to return your grain on demand, you may file a claim under this program. The program may reimburse you for the loss of up to $100,000 worth of grain. For more information, you may contact the Wisconsin Department of Agriculture, Trade and Consumer Protection, 2811 Agriculture Drive, P. O. Box 8911, Madison, WI 53708-8911 (phone 608/224-4998).</p>
+      </div>
+    </div>
+
+    <p class="statute-foot">These notices are also given to you in writing when you first deliver or store grain with us, and again each license year, as the rule requires.</p>
+  </div>
+</section>
+
+<section id="contact" itemscope="" itemtype="https://schema.org/LocalBusiness">
+  <div class="wrap">
+    <!-- Structured data for search engines. These must agree with the
+         hours table further up the page and with the Google Business
+         Profile; a search result that says 7am when the gate opens at 8
+         is worse than no search result. Off-peak hours only. Harvest
+         hours are irregular and go in the Business Profile as special
+         hours, not here. -->
+    <meta itemprop="name" content="Midwest Commodity Service, Inc.">
+    <link itemprop="url" href="https://midwestcommodity.com/">
+    <meta itemprop="description" content="Grain buying, drying and storage in Baldwin, Wisconsin. Licensed Wisconsin grain dealer and grain warehouse keeper.">
+    <link itemprop="image" href="https://midwestcommodity.com/assets/icon.png">
+    <link itemprop="additionalType" href="https://www.wikidata.org/wiki/Q1136883">
+    <meta itemprop="areaServed" content="St. Croix, Pierce, Dunn and Polk counties, Wisconsin">
+    <meta itemprop="currenciesAccepted" content="USD">
+    <!-- The two licence numbers are already on the page in words. They are the
+         answer to "is this outfit bonded", they are printed on the elevator's
+         own paperwork, and until now the only machine-readable thing about
+         this business that a search engine could not see. -->
+    <link itemprop="hasMap" href="https://www.google.com/maps/dir/?api=1&amp;destination=1881%20140th%20Ave%2C%20Baldwin%2C%20WI%2054002">
+    <!-- Street-precision pin: this address geocoded by the US Census geocoder, the same pin dnilgis/bids uses (sources/midwestcommodity-*.json). -->
+    <div itemprop="geo" itemscope="" itemtype="https://schema.org/GeoCoordinates"><meta itemprop="latitude" content="45.06464"><meta itemprop="longitude" content="-92.41691"></div>
+    <div itemprop="identifier" itemscope="" itemtype="https://schema.org/PropertyValue">
+      <meta itemprop="name" content="Wisconsin grain dealer license">
+      <meta itemprop="value" content="252525 GL">
+    </div>
+    <div itemprop="identifier" itemscope="" itemtype="https://schema.org/PropertyValue">
+      <meta itemprop="name" content="Wisconsin grain warehouse keeper license">
+      <meta itemprop="value" content="286621 GW">
+    </div>
+    <!-- HOURS:meta -->
+    <meta itemprop="openingHours" content="Mo-Fr 08:00-19:00">
+    <meta itemprop="openingHours" content="Sa 07:00-19:00">
+    <meta itemprop="openingHours" content="Su 08:00-17:00">
+    <!-- /HOURS:meta -->
+    <h2>Get in touch</h2>
+    <p class="intro">Call and you get a person, not a menu. If you are hauling a long way, call before you load, because prices and hours can change during the day.</p>
+
+    <div class="actions">
+      <a class="act act-primary" href="tel:+17157040548"><span class="act-t">Call us</span><span class="act-s num" itemprop="telephone">(715) 704-0548</span></a>
+      <a class="act" href="sms:+17157040548"><span class="act-t">Text us</span><span class="act-s num">(715) 704-0548</span></a>
+      <a class="act" href="https://www.google.com/maps/dir/?api=1&amp;destination=1881%20140th%20Ave%2C%20Baldwin%2C%20WI%2054002" target="_blank" rel="noopener"><span class="act-t">Get directions</span><span class="act-s">Opens in Google Maps</span></a>
+    </div>
+
+    <div class="cgrid">
+      <div class="cblock">
+        <h3 class="cbh">Elevator and office</h3>
+        <p class="addr" itemprop="address" itemscope="" itemtype="https://schema.org/PostalAddress">
+          <span itemprop="streetAddress">1881 140th Avenue</span><br>
+          <span itemprop="addressLocality">Baldwin</span>, <span itemprop="addressRegion">WI</span> <span itemprop="postalCode">54002</span><br>
+          St. Croix County
+        </p>
+        <a class="act act-wide" href="data:text/vcard;charset=utf-8,BEGIN%3AVCARD%0D%0AVERSION%3A3.0%0D%0AN%3A%3BMidwest%20Commodity%20Service%3B%3B%3B%0D%0AFN%3AMidwest%20Commodity%20Service%0D%0AORG%3AMidwest%20Commodity%20Service%2C%20Inc.%0D%0ATEL%3BTYPE%3DWORK%2CVOICE%3A%2B17157040548%0D%0AADR%3BTYPE%3DWORK%3A%3B%3B1881%20140th%20Avenue%3BBaldwin%3BWI%3B54002%3BUSA%0D%0AURL%3Ahttps%3A%2F%2Fmidwestcommodity.com%2F%0D%0ANOTE%3AGrain%20buying%2C%20drying%20and%20storage.%20Baldwin%2C%20Wisconsin.%0D%0AEND%3AVCARD%0D%0A" download="Midwest-Commodity-Service.vcf"><span class="act-t">Save our number</span><span class="act-s">Adds us to your phone contacts</span></a>
+      </div>
+      <div class="cblock">
+        <h3 class="cbh">Before you haul</h3>
+        <p>Check the price and today’s hours at the top of this page.</p>
+        <p>Questions about a forward contract or storage? Ring the office and we will walk you through it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="sister">
+  <div class="wrap">
+    <p class="sister-l">Our other location</p>
+    <a class="sister-a" href="https://badgergrain.com/">
+      <span class="logo sm">
+        <!-- THE OTHER ELEVATOR'S OWN MARK, not this one's, and not a wordmark
+             built in CSS any more. aria-hidden because the sentence to its right
+             already names that company: without it a screen reader reads the name
+             twice before it gets to the town. The alt text is still there and is
+             still what a browser draws while the artwork is missing -- aria-hidden
+             takes the element out of the accessibility tree, not off the page. -->
+        <img class="mark" src="assets/logo-badgergrain.png" width="1200" height="400" alt="Badger Grain Supply, LLC" aria-hidden="true">
+      </span>
+      <span class="sister-t"><strong>Badger Grain Supply, LLC</strong>Wheeler, Wisconsin. Same drying and discount schedule, same terms.</span>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    Midwest Commodity Service, Inc. <span class="nb">1881 140th Avenue</span>, <span class="nb">Baldwin, WI 54002</span>. <span class="foot-tel"><a href="tel:+17157040548">(715) 704-0548</a><span class="foot-dot">.</span></span><br>
+    Licensed Wisconsin grain dealer and grain warehouse keeper. Prices change without notice and are not an offer to buy. Grain is bought subject to the posted drying and discount schedule. Copyright Midwest Commodity Service, Inc.
+  </div>
+</footer>
+
+
+<!-- TODAY:js -->
+<script type="application/json" id="today-hours">{"weekday":"8:00a to 7:00p","saturday":"7:00a to 7:00p","sunday":"8:00a to 5:00p","harvest":"7:00a to 7:00p","harvest_mode":false,"closed_today":false,"today_override":null,"today_date":null}</script>
+<script>
+/* The box, worked out from your clock rather than from the last build.
+   Generated by tools/update-today.mjs -- edit tools/today-core.mjs, not this. */
+(function () {
+  "use strict";
+  const DAY_NAMES =
+    ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  function spanMinutes(text) {
+    const m = /^(\d{1,2}):(\d{2})([ap])\s+to\s+(\d{1,2}):(\d{2})([ap])$/i
+      .exec(String(text ?? "").trim());
+    if (!m) return null;
+    const mins = (hh, mm, ap) => {
+      let hr = +hh % 12;
+      if (ap.toLowerCase() === "p") hr += 12;
+      return hr * 60 + +mm;
+    };
+    const open = mins(m[1], m[2], m[3]), close = mins(m[4], m[5], m[6]);
+    return close > open ? [open, close] : null;
+  }
+
+  const opensAt = (text) =>
+    spanMinutes(text) ? String(text).split(/\s+to\s+/i)[0] : null;
+
+  function todayBox(h, { dow, dayName, nowMins }) {
+    const hoursOn = (d) =>
+      h.harvest_mode ? h.harvest : d === 0 ? h.sunday : d === 6 ? h.saturday : h.weekday;
+
+    let label, hours;
+    if (h.closed_today)        { label = `Closed today, ${dayName}`;  hours = "Closed"; }
+    else if (h.today_override) { label = `Open today, ${dayName}`;    hours = h.today_override; }
+    else if (h.harvest_mode)   { label = `Harvest hours, ${dayName}`; hours = h.harvest; }
+    else                       { label = `Open today, ${dayName}`;    hours = hoursOn(dow); }
+    if (!h.closed_today && !h.today_override && !h.harvest_mode && !hoursOn(dow)) {
+      label = `Closed today, ${dayName}`; hours = "Closed";
+    }
+
+    const span = h.closed_today ? null : spanMinutes(hours);
+    if (span) {
+      const [open, close] = span;
+      if (nowMins < open) {
+        label = `Closed now, ${dayName}`;
+        hours = `Opens ${opensAt(hours)}`;
+      } else if (nowMins >= close) {
+        let next = null;
+        for (let i = 1; i <= 7 && !next; i++) {
+          const d = (dow + i) % 7;
+          const hrs = hoursOn(d);
+          if (hrs) next = { hours: hrs, tomorrow: i === 1, name: DAY_NAMES[d] };
+        }
+        label = "Closed for the day";
+        hours = next
+          ? `${next.tomorrow ? "Tomorrow" : next.name} ${opensAt(next.hours) ?? ""}`.trim()
+          : "Call for hours";
+      }
+    }
+    const open = !/^Closed/.test(label);
+    return { label, hours, open };
+  }
+
+  function expireToday(h, todayISO) {
+    if ((h.closed_today || h.today_override) && h.today_date !== todayISO) {
+      h.closed_today = false;
+      h.today_override = null;
+      h.today_date = null;
+      return true;
+    }
+    return false;
+  }
+
+  function bannerShowing(h, todayISO) {
+    if (typeof h.banner !== "string" || !h.banner.trim()) return null;
+    const u = h.banner_until;
+    if (typeof u === "string" && /^\d{4}-\d{2}-\d{2}$/.test(u) && todayISO > u) return null;
+    return h.banner;
+  }
+
+  function msToNextMinute(nowMs) {
+    if (!Number.isFinite(nowMs)) return 60000;
+    return 60000 - (((nowMs % 60000) + 60000) % 60000) + 1000;
+  }
+
+  function paint() {
+   try {
+    var data = document.getElementById("today-hours");
+    if (!data) return;
+    var h = JSON.parse(data.textContent);
+    var now = new Date();
+    var parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago", weekday: "long",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(now);
+    var g = {};
+    for (var i = 0; i < parts.length; i++) g[parts[i].type] = parts[i].value;
+    var dow = DAY_NAMES.indexOf(g.weekday);
+    if (dow < 0) return;
+    /* en-CA gives YYYY-MM-DD, the same shape the build compares against. */
+    var todayISO = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(now);
+    expireToday(h, todayISO);
+    /* Some ICU builds render midnight as hour 24. */
+    var nowMins = (Number(g.hour) % 24) * 60 + Number(g.minute);
+    var r = todayBox(h, { dow: dow, dayName: g.weekday, nowMins: nowMins });
+
+    var box = document.querySelector(".today");
+    if (!r.hours) { if (box && box.parentNode) box.parentNode.removeChild(box); return; }
+
+    /* The build removes the box on a day with no hours. Without this, a Sunday
+       build followed by no Monday build would leave Monday with no box at all
+       and the script with nothing to correct -- the exact failure it is here
+       to prevent, arriving one day later. */
+    if (!box) {
+      var first = document.querySelector(".hrow");
+      if (!first || !first.parentNode) return;
+      box = document.createElement("div");
+      var l = document.createElement("div"); l.className = "today-lbl";
+      var v = document.createElement("div"); v.className = "today-hrs num";
+      box.appendChild(l); box.appendChild(v);
+      first.parentNode.insertBefore(box, first);
+    }
+    var lbl = box.querySelector(".today-lbl"), hrs = box.querySelector(".today-hrs");
+    if (!lbl || !hrs) return;
+    box.className = "today" + (r.open ? "" : " is-shut");
+    lbl.textContent = r.label;
+    hrs.textContent = r.hours;
+   } catch (e) {
+    /* Leave the sentence the build wrote. It was right when it was written. */
+   }
+  }
+
+  paint();
+
+  /* IT HAS TO KEEP LOOKING, NOT LOOK ONCE.
+   *
+   * Measured 2026-08-20 in a real browser with the clock moved: at 07:55 the
+   * box correctly read "Closed now, Opens 8:00a"; at 08:05 WITHOUT A RELOAD it
+   * still read "Closed now". Reloading fixed it, which is the tell -- the rule
+   * was right all along and simply never ran again. At the other end of the
+   * day the same fault is worse: at 17:05 the page went on saying OPEN with
+   * the gate shut, which is the exact failure this box exists to prevent.
+   *
+   * A page on the scale-house screen, or on a phone in somebody's pocket, is
+   * not reloaded at eight o'clock. So it ticks.
+   *
+   * TO THE TOP OF THE MINUTE, not every thirty seconds. Eight o'clock should
+   * land at eight o'clock rather than up to a minute late, and a minute late
+   * on the close is a minute of a page saying come on in. */
+  /* WRAPPED, LIKE THE PAINT IS.
+   *
+   * test/clientclock.test.mjs runs this block against a deliberately minimal
+   * host and asserts that "if anything at all goes wrong the sentence the
+   * build wrote is left alone". The first version of this wiring sat OUTSIDE
+   * any guard, so on a host without setTimeout it threw where the old code
+   * had merely done nothing -- and worse, the throw happened before the
+   * visibilitychange and pageshow listeners were registered, so one missing
+   * feature took the other two down with it. A page must never be broken by
+   * the thing that keeps its clock. */
+  try {
+  var timer = null;
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { paint(); schedule(); }, msToNextMinute(Date.now()));
+  }
+  schedule();
+
+  /* A SLEEPING PHONE RUNS NO TIMERS. Waking at half past nine to a page that
+     still says "Opens 8:00a" is the same failure as never ticking. */
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) { paint(); schedule(); }
+  });
+
+  /* AND THE BACK BUTTON DOES NOT RE-RUN THIS SCRIPT. A page restored from the
+     bfcache comes back exactly as it was left, stale clock and all. Same
+     lesson the admin screen learned about restored form state. */
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) { paint(); schedule(); }
+  });
+  } catch (e) {
+    /* The box is painted and correct as of now; it just will not follow the
+       clock on this host. Strictly better than an exception. */
+  }
+})();
+</script>
+<!-- /TODAY:js -->
+
+<!-- PRICE:meta -->
+<script type="application/json" id="price-meta">{"builtFrom":"2026-10-18T15:50:16.526Z"}</script>
+<!-- /PRICE:meta -->
+<!-- PRICE:stale -->
+<script>
+/* IS THIS PAGE STILL BEING BUILT, AND IS THE MARKET OPEN?
+   The price above is baked in by the build, which reads the board every ten
+   minutes around the clock. If the build stops, the price freezes and the
+   page would go on saying "Prices paid today". So, in the reader's browser:
+
+   - past 4 hours without a build, the cash and futures columns turn to
+     dashes, the heading says "Prices not updating since ..." and the reader
+     is asked to call. The same line Flash Grain uses, at the same 4 hours
+     the build itself withdraws the price (Sig, 13 Oct); this covers the case
+     where the build does not run at all.
+   - past 24 hours the "since" time carries the date, because "since Tue
+     8:10am" could be any Tuesday.
+   - while the build is fresh and CBOT is shut (the 7:45 to 8:30am break,
+     afternoons, overnight Friday to Sunday evening) the stamp says
+     "CBOT closed". Exchange holidays are not known here.
+
+   Everything is looked up again on each check, because PRICE:live below can
+   replace the panel and its stamp while the page is open. With JavaScript off
+   the page is exactly what the build wrote. */
+(function () {
+  "use strict";
+  var HIDE_H = 4, DATE_H = 24, TZ = "America/Chicago";
+  var DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function central(t) {
+    var p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short", hour: "numeric",
+      minute: "numeric", hourCycle: "h23" }).formatToParts(new Date(t))
+      .forEach(function (x) { p[x.type] = x.value; });
+    return { day: DAYS.indexOf(p.weekday), min: (+p.hour % 24) * 60 + (+p.minute) };
+  }
+  /* CBOT corn: Sunday to Friday 7:00pm to 7:45am, and 8:30am to 1:20pm on
+     weekdays. Central time. */
+  function cbotOpen(t) {
+    var n = central(t), wk = n.day >= 0 && n.day <= 4;
+    if (wk && n.min >= 510 && n.min < 800) return true;
+    if (wk && n.min < 465) return true;
+    if ((n.day === 6 || (n.day >= 0 && n.day <= 3)) && n.min >= 1140) return true;
+    return false;
+  }
+  function since(t, withDate) {
+    var o = { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" };
+    if (withDate) { o.month = "short"; o.day = "numeric"; }
+    return new Date(t).toLocaleString("en-US", o).replace(/ ([AP])M$/, function (_m, a) {
+      return a.toLowerCase() + "m"; });
+  }
+  function paint() {
+    var meta = document.getElementById("price-meta");
+    var panel = document.querySelector(".pricecol .panel");
+    if (!meta || !panel) return;        /* withdrawn state, or an older build */
+    var when;
+    try { when = Date.parse(JSON.parse(meta.textContent).builtFrom); } catch (e) { return; }
+    if (!when) return;
+    var hd = panel.querySelector(".hd");
+    var table = panel.querySelector("table.bids");
+    if (!hd || !table || !hd.firstChild) return;
+    var as = hd.querySelector(".as");
+    if (as && !as.getAttribute("data-built")) as.setAttribute("data-built", as.textContent);
+    var now = Date.now(), hours = (now - when) / 36e5;
+    if (hours <= HIDE_H) {
+      if (as) as.textContent = as.getAttribute("data-built") + (cbotOpen(now) ? "" : " · CBOT closed");
+      return;
+    }
+    var stamp = since(when, hours > DATE_H);
+    panel.classList.add("is-stale");
+    hd.firstChild.nodeValue = "Prices not updating";
+    if (as) as.textContent = "since " + stamp;
+    var cells = table.querySelectorAll("td.pay, td.fut");
+    for (var i = 0; i < cells.length; i++) {
+      cells[i].textContent = "—";
+      cells[i].setAttribute("aria-label", "not shown");
+      cells[i].classList.add("gone");
+    }
+    var tel = document.querySelector(".call .nb");
+    var p = panel.querySelector(".stalewarn");
+    if (!p) {
+      p = document.createElement("p");
+      p.className = "stalewarn";
+      p.setAttribute("role", "alert");
+      panel.insertBefore(p, table);
+    }
+    p.textContent = "Prices are hidden because this page has not updated since " + stamp + ". Call ";
+    if (tel) {
+      var nb = document.createElement("span");
+      nb.className = "nb";                 /* the number does not break across lines */
+      nb.textContent = tel.textContent;
+      p.appendChild(nb);
+      p.appendChild(document.createTextNode(" for today’s price."));
+    } else p.appendChild(document.createTextNode("us for today’s price."));
+  }
+  paint();
+  /* A page left open on the office screen crosses both lines without ever
+     reloading, and the market opens and shuts on the minute. */
+  document.addEventListener("visibilitychange", paint);
+  document.addEventListener("pricechange", paint);
+  window.addEventListener("pageshow", paint);
+  setInterval(paint, 6e4);
+})();
+</script>
+<!-- /PRICE:stale -->
+<!-- PRICE:live -->
+<script>
+/* THE PRICE ARRIVES BEFORE THE PAGE DOES.
+   A new price is committed to this site's repository about forty seconds after
+   the board is read. GitHub Pages then takes anywhere from half a minute to
+   more than four to publish it -- measured 2026-09-21: the 10:20am build was
+   committed at 10:20:42 and badgergrain.com showed it at about 10:25, with a
+   hard refresh at 10:23 still on 10:10am. So this asks the repository itself.
+
+   How: when the price on screen is more than ten and a half minutes old, ask
+   GitHub which commit is newest on main, read index.html at exactly that
+   commit (a commit address never serves an older copy, which a branch address
+   can for five minutes), and put its price panel in place of this one. It is
+   the same panel the build wrote, not a second rendering of it.
+
+   What it never does: show an older price than the one on screen, run anywhere
+   but the two live domains, or keep asking while the tab is hidden. GitHub
+   allows sixty of these questions an hour to each visitor; this asks one or
+   two every ten minutes, backs off to every five when the reader has stopped,
+   and stops for fifteen minutes if GitHub says no. With JavaScript off, or
+   GitHub unreachable, the page is exactly what Pages published. */
+(function () {
+  "use strict";
+  var REPOS = { "badgergrain.com": "badgergrain", "midwestcommodity.com": "midwestcommodity" };
+  var repo = REPOS[String(location.hostname).replace(/^www\./, "")];
+  if (!repo || !window.fetch || !window.Promise) return;
+  var API = "https://api.github.com/repos/midwestagsupply/" + repo + "/commits/main";
+  var RAW = "https://raw.githubusercontent.com/midwestagsupply/" + repo + "/";
+  var REGION = /(<div class="pricecol" id="prices">\s*<div class="panel">\n)([\s\S]*?)(\n\s*<div class="tnote">)/;
+  var META = /<!-- PRICE:meta -->([\s\S]*?)<!-- \/PRICE:meta -->/;
+  var STAMP = /id="price-meta">([^<]*)<\/script>/;
+  var CYCLE = 10 * 6e4, GRACE = 30e3, FAST = 90e3, SLOW = 5 * 6e4, FAST_FOR = 15 * 6e4, PAUSE = 15 * 6e4;
+
+  var lastSha = null, lastAsk = 0, pausedUntil = 0, timer = null, busy = false;
+
+  function builtFrom() {
+    var m = document.getElementById("price-meta");
+    if (!m) return null;
+    try { var t = Date.parse(JSON.parse(m.textContent).builtFrom); return isFinite(t) ? t : null; }
+    catch (e) { return null; }
+  }
+
+  /* How long to wait before asking. Due ten and a half minutes after the read
+     on screen; every ninety seconds for the quarter hour after that; then every
+     five minutes, because a reader that has stopped will not start faster for
+     being asked. */
+  function wait(now) {
+    var t = builtFrom(), due = t === null ? lastAsk + SLOW : t + CYCLE + GRACE;
+    if (now < pausedUntil) return pausedUntil - now;
+    if (now < due) return due - now;
+    var step = (t !== null && now - due < FAST_FOR) ? FAST : SLOW;
+    return Math.max(0, lastAsk + step - now);
+  }
+
+  function swap(html) {
+    var r = REGION.exec(html), mm = META.exec(html);
+    if (!r || !mm) return false;                  /* not a page this knows */
+    var sm = STAMP.exec(mm[1]), next = null;
+    if (sm) { try { next = Date.parse(JSON.parse(sm[1]).builtFrom); } catch (e) { return false; } }
+    var cur = builtFrom();
+    /* NEVER BACKWARDS. The newest commit on main is never older than what
+       Pages serves, but GitHub's answer can be a minute behind a publish. */
+    if (next !== null && cur !== null && !(next > cur)) return false;
+    if (next === null && cur === null) return false;
+    var panel = document.querySelector(".pricecol .panel");
+    var note = panel && panel.querySelector(".tnote");
+    if (!note) return false;
+    while (note.previousSibling) panel.removeChild(note.previousSibling);
+    note.insertAdjacentHTML("beforebegin", r[2] + "\n");
+    panel.classList.remove("is-stale");
+    var meta = document.getElementById("price-meta");
+    if (sm) {
+      if (!meta) {
+        meta = document.createElement("script");
+        meta.type = "application/json"; meta.id = "price-meta";
+        document.body.appendChild(meta);
+      }
+      meta.textContent = sm[1];
+    } else if (meta) meta.parentNode.removeChild(meta);
+    try { document.dispatchEvent(new Event("pricechange")); } catch (e) { /* old browser */ }
+    return true;
+  }
+
+  function ask() {
+    if (busy) return Promise.resolve();
+    busy = true; lastAsk = Date.now();
+    return fetch(API, { cache: "no-store", headers: { Accept: "application/vnd.github.sha" } })
+      .then(function (r) {
+        if (r.status === 403 || r.status === 429) { pausedUntil = Date.now() + PAUSE; return null; }
+        return r.ok ? r.text() : null;
+      })
+      .then(function (sha) {
+        sha = sha && String(sha).trim();
+        if (!sha || !/^[0-9a-f]{40}$/.test(sha) || sha === lastSha) return null;
+        return fetch(RAW + sha + "/index.html", { cache: "no-store" }).then(function (r) {
+          if (!r.ok) return null;
+          return r.text().then(function (html) { lastSha = sha; swap(html); });
+        });
+      })
+      .catch(function () { /* offline, or GitHub down: the page stands as published */ })
+      .then(function () { busy = false; });
+  }
+
+  function tick() {
+    clearTimeout(timer); timer = null;
+    if (document.hidden) return;                 /* visibilitychange restarts it */
+    var w = wait(Date.now());
+    if (w > 0) { timer = setTimeout(tick, Math.min(w, SLOW)); return; }
+    ask().then(tick);
+  }
+
+  document.addEventListener("visibilitychange", tick);
+  window.addEventListener("pageshow", tick);
+  window.addEventListener("online", tick);
+  tick();
+})();
+</script>
+<!-- /PRICE:live -->
+<!-- PRICE:flash -->
+<script>
+/* THE ONE LINE THAT MAKES A NEW PRICE VISIBLE. PRICE:live already announces
+   every successful swap on `pricechange`; this puts a class on the panel for
+   the length of the tint in site.css and takes it off again, so a second
+   update a minute later flashes a second time. Nothing here decides anything:
+   if the script is blocked the panel still updates, just quietly. */
+(function () {
+  "use strict";
+  var TINT = 1700;
+  var t = null;
+  document.addEventListener("pricechange", function () {
+    var p = document.querySelector(".pricecol .panel");
+    if (!p) return;
+    p.classList.remove("is-fresh");
+    void p.offsetWidth;                 /* restart the tint on a second swap */
+    p.classList.add("is-fresh");
+    clearTimeout(t);
+    t = setTimeout(function () { p.classList.remove("is-fresh"); }, TINT);
+  });
+})();
+</script>
+<!-- /PRICE:flash -->
+
+
+
+
+<!-- THE FIXED CALL BAR IS GONE. Removed 2026-08-31 at Sig's word: "i hate
+     the call the office that moves with scroll, remove from both sites."
+
+     What it was for, written down so nobody re-derives it and puts it back:
+     the page is about 6,900px tall on a phone and the Call button sits in the
+     first 11% of it, so a reader who has scrolled past has no button in front
+     of them. THAT GAP IS REAL, AND IT IS NOW COVERED BY THE FOOTER, which
+     carries the same number as its own tel: link on its own line — the change
+     made on this same day for a different reason. Top of the page and bottom
+     of the page, and nothing pinned over the reading in between. -->
+
+
+
+</body></html>

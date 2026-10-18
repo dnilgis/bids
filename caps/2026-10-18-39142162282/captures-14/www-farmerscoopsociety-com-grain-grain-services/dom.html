@@ -1,0 +1,2120 @@
+<html lang="en" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#" class="js-enabled alpine-loaded loaded"><head>
+      <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+
+<link rel="preconnect" href="https://content-services.dtn.com">
+<link rel="dns-prefetch" href="https://content-services.dtn.com">
+
+
+               
+         
+      <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-S3HQVRDQ0X&amp;cx=c&amp;gtm=4e6ae1"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-TSZ7P8F"></script><script>/* Enhanced FOUC Prevention Script */
+(function(){
+    var d=document,h=d.documentElement;
+    
+    // Mark JS as enabled and add loading class immediately
+    h.classList.add('js-enabled','loading');
+    
+    // Enhanced ready function with smoother transition
+    function ready(){
+        // Add a slight delay to ensure critical CSS has loaded
+        setTimeout(function(){
+            h.classList.remove('loading');
+            h.classList.add('loaded');
+            
+            // Clean up after transition completes
+            setTimeout(function(){
+                h.style.backgroundImage = '';
+            }, 400);
+        }, 100);
+    }
+    
+    // Wait for both DOM and critical resources
+    var resourcesLoaded = false;
+    var domReady = false;
+    
+    function checkReady(){
+        if(domReady && resourcesLoaded){
+            ready();
+        }
+    }
+    
+    // DOM ready detection
+    function onDomReady(){
+        domReady = true;
+        checkReady();
+    }
+    
+    if(d.readyState==='loading'){
+        d.addEventListener('DOMContentLoaded', onDomReady);
+    } else {
+        domReady = true;
+    }
+    
+    // Wait for critical CSS to load
+    var criticalLink = d.querySelector('link[href*="criticalcss"]');
+    if(criticalLink){
+        criticalLink.addEventListener('load', function(){
+            resourcesLoaded = true;
+            checkReady();
+        });
+        criticalLink.addEventListener('error', function(){
+            resourcesLoaded = true;
+            checkReady();
+        });
+    } else {
+        resourcesLoaded = true;
+    }
+    
+    checkReady();
+    
+    // Fallback timeout (reduced since we have better loading detection)
+    setTimeout(ready, 2000);
+    
+    // Preload critical resources
+    function preload(href,as,type){
+        var link=d.createElement('link');
+        link.rel='preload';
+        link.href=href;
+        if(as)link.as=as;
+        if(type)link.type=type;
+        d.head.appendChild(link);
+    }
+    
+    // Only preload if not already loaded
+    if(!d.querySelector('link[href*="lato"]')){
+        preload('https://fonts.bunny.net/css?family=lato:100,100i,300,300i,400,400i,700,700i,900,900i|noto-serif:400','style');
+    }
+})();
+</script><link rel="preload" href="https://fonts.bunny.net/css?family=lato:100,100i,300,300i,400,400i,700,700i,900,900i|noto-serif:400" as="style">
+
+      <style>
+/* Immediate loading styles - must be inline for instant availability */
+html.loading {
+    background-color: #233e67 !important; /* var(--html-dark) */
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(128, 21, 21, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(240, 89, 65, 0.1) 0%, transparent 50%) !important;
+    background-attachment: fixed !important;
+}
+
+html.loading body {
+    opacity: 0 !important;
+    transition: opacity 0.4s ease-in-out !important;
+}
+
+/* Loading spinner */
+html.loading::before {
+    content: '' !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 60px !important;
+    height: 60px !important;
+    margin: -30px 0 0 -30px !important;
+    border: 4px solid rgba(249, 249, 249, 0.2) !important;
+    border-top: 4px solid #f9f9f9 !important; /* var(--copy-light) */
+    border-radius: 50% !important;
+    animation: loading-spin 1s linear infinite !important;
+    z-index: 9999 !important;
+}
+
+/* Loading text */
+html.loading::after {
+    content: 'Loading...' !important;
+    position: fixed !important;
+    top: 60% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    color: #f9f9f9 !important; /* var(--copy-light) */
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 300 !important;
+    letter-spacing: 1px !important;
+    z-index: 9999 !important;
+    animation: loading-pulse 1.5s ease-in-out infinite alternate !important;
+}
+
+@keyframes loading-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes loading-pulse {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+html.loaded {
+    background: #f9f9f9 !important; /* var(--html-light) */
+    transition: background-color 0.4s ease-in-out !important;
+}
+
+html.loaded body {
+    opacity: 1 !important;
+}
+</style>
+
+
+<link rel="preconnect" href="https://fonts.bunny.net" crossorigin="">
+<link rel="dns-prefetch" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=lato:100,100i,300,300i,400,400i,700,700i,900,900i|noto-serif:400" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.bunny.net/css?family=lato:100,100i,300,300i,400,400i,700,700i,900,900i|noto-serif:400"></noscript>
+
+      <script type="module">!function(){const e=document.createElement("link").relList;if(!(e&&e.supports&&e.supports("modulepreload"))){for(const e of document.querySelectorAll('link[rel="modulepreload"]'))r(e);new MutationObserver((e=>{for(const o of e)if("childList"===o.type)for(const e of o.addedNodes)if("LINK"===e.tagName&&"modulepreload"===e.rel)r(e);else if(e.querySelectorAll)for(const o of e.querySelectorAll("link[rel=modulepreload]"))r(o)})).observe(document,{childList:!0,subtree:!0})}function r(e){if(e.ep)return;e.ep=!0;const r=function(e){const r={};return e.integrity&&(r.integrity=e.integrity),e.referrerpolicy&&(r.referrerPolicy=e.referrerpolicy),"use-credentials"===e.crossorigin?r.credentials="include":"anonymous"===e.crossorigin?r.credentials="omit":r.credentials="same-origin",r}(e);fetch(e.href,r)}}();</script>
+<script type="module" src="https://www.farmerscoopsociety.com//dist/assets/app-G-er5Tvp.js" crossorigin="" onload="e=new CustomEvent('vite-script-loaded', {detail:{path: 'src/js/app.js'}});document.dispatchEvent(e);"></script>
+<link href="https://www.farmerscoopsociety.com//dist/assets/app-yqPwD1Bc.css" rel="stylesheet">
+
+            <title>Grain Services | Farmers Cooperative Society</title>
+<script>dataLayer = [];
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TSZ7P8F');
+</script><meta name="generator" content="SEOmatic">
+<meta name="keywords" content="producers, innovation, leading, excellence">
+<meta name="description" content="Leading Producers with Innovation and Excellence">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<meta name="robots" content="all">
+<meta content="en_US" property="og:locale">
+<meta content="Farmers Cooperative Society" property="og:site_name">
+<meta content="website" property="og:type">
+<meta content="https://www.farmerscoopsociety.com/grain/grain-services" property="og:url">
+<meta content="Grain Services" property="og:title">
+<meta content="Leading Producers with Innovation and Excellence" property="og:description">
+<meta content="https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6ZmFsc2UsInRyZWxsaXNRdWFudGlzYXRpb24iOnRydWUsIm92ZXJzaG9vdERlcmluZ2luZyI6dHJ1ZSwib3B0aW1pemVTY2FucyI6dHJ1ZX0sInJlc2l6ZSI6eyJ3aWR0aCI6MTIwMCwiaGVpZ2h0Ijo2MzAsImZpdCI6ImNvdmVyIn0sInNoYXJwZW4iOnRydWV9fQ==?mtime=1542309900" property="og:image">
+<meta content="1200" property="og:image:width">
+<meta content="630" property="og:image:height">
+<meta content="Leading Producers with Innovation and Excellence" property="og:image:alt">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:creator" content="@">
+<meta name="twitter:title" content="Grain Services">
+<meta name="twitter:description" content="Leading Producers with Innovation and Excellence">
+<meta name="twitter:image" content="https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6ZmFsc2UsInRyZWxsaXNRdWFudGlzYXRpb24iOnRydWUsIm92ZXJzaG9vdERlcmluZ2luZyI6dHJ1ZSwib3B0aW1pemVTY2FucyI6dHJ1ZX0sInJlc2l6ZSI6eyJ3aWR0aCI6ODAwLCJoZWlnaHQiOjgwMCwiZml0IjoiY292ZXIifSwic2hhcnBlbiI6dHJ1ZX19?mtime=1542309900">
+<meta name="twitter:image:width" content="800">
+<meta name="twitter:image:height" content="800">
+<meta name="twitter:image:alt" content="Leading Producers with Innovation and Excellence">
+<link href="https://www.farmerscoopsociety.com/grain/grain-services" rel="canonical">
+<link href="https://www.farmerscoopsociety.com/" rel="home">
+<link type="text/plain" href="https://www.farmerscoopsociety.com/humans.txt" rel="author"><style>/* Default state */
+
+dtn-input {
+  display: block;
+  position: relative;
+  padding-top: 6px;
+  padding-bottom: 18px;
+}
+
+dtn-input,
+dtn-input * {
+  box-sizing: border-box;
+}
+
+dtn-input .label {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  left: 8px;
+  padding: 2px;
+  font-size: 16px;
+  line-height: 1 !important;
+  color: #838384;
+  background-color: white;
+  transition: all 0.2s ease-out;
+  pointer-events: none;
+}
+
+dtn-input .error {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 5px;
+  font-size: 12px;
+  color: #d80000;
+}
+
+dtn-input input {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 35px;
+  padding: 0 7px 0 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  font-size: 16px;
+  transition: border-color 0.2s ease-in-out;
+  box-shadow: none;
+}
+
+dtn-input input::-moz-placeholder {
+  color: transparent;
+}
+
+dtn-input input::placeholder {
+  color: transparent;
+}
+
+dtn-input input::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Focused state */
+
+dtn-input.focus-within input {
+  outline: none;
+  border-color: #008fd5;
+}
+
+dtn-input.focus-within .label,
+dtn-input:not(.placeholder-shown) .label {
+  top: -1px;
+  left: 8px;
+  padding: 0 2px;
+  font-size: 12px;
+}
+
+dtn-input input:not(:-moz-placeholder-shown) ~ .label {
+  top: -1px;
+  left: 8px;
+  padding: 0 2px;
+  font-size: 12px;
+}
+
+dtn-input input:not(:placeholder-shown) ~ .label {
+  top: -1px;
+  left: 8px;
+  padding: 0 2px;
+  font-size: 12px;
+}
+
+dtn-input.focus-within .label {
+  color: #008fd5;
+}
+
+/* Invalid state */
+
+dtn-input.invalid input {
+  border-color: #d80000;
+}
+
+dtn-input.invalid .label {
+  color: #d80000;
+}
+
+dtn-input.invalid .error {
+  display: block;
+}
+
+/* Disabeld state */
+
+dtn-input[disabled="true"] .label,
+dtn-input[disabled="true"] input {
+  color: #989898;
+}
+
+dtn-input[disabled="true"] input {
+  background-color: #ffffff;
+  border-color: #e5e5e5;
+}
+
+dtn-input[disabled="true"],
+dtn-input[disabled="true"] label,
+dtn-input[disabled="true"] .label,
+dtn-input[disabled="true"] input {
+  cursor: not-allowed;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-input .label {
+  left: auto;
+  right: 5px;
+}
+
+[dir="rtl"] dtn-input .error {
+  left: auto;
+  right: 5px;
+}
+
+[dir="rtl"] dtn-input.has-icon input {
+  padding-right: 7px;
+  padding-left: 30px;
+}
+
+[dir="rtl"] dtn-input.has-icon dtn-icon {
+  right: auto;
+  left: 10px;
+}
+</style><style>/* Used to override Mapbox Geocoder's default styles  */
+
+div#geocoder {
+  display: block;
+  position: relative;
+  padding-top: 6px;
+  padding-bottom: 18px;
+}
+
+div#geocoder div.mapboxgl-ctrl-geocoder {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 35px;
+  padding: 0 7px 0 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  font-size: 16px;
+  transition: border-color 0.2s ease-in-out;
+  box-shadow: none;
+  max-width: 100%;
+  min-width: 200px;
+}
+
+div#geocoder div.mapboxgl-ctrl-geocoder div.suggestions-wrapper {
+  position: fixed;
+  width: 435px;
+}
+
+div#geocoder div.mapboxgl-ctrl-geocoder input.mapboxgl-ctrl-geocoder--input {
+  font: inherit;
+  width: 100%;
+  border: 0;
+  background-color: transparent;
+  margin: 0;
+  /* height: 50px; */
+  /* color: #404040; */
+  color: rgba(0, 0, 0, 0.75);
+  /* padding: 6px 45px; */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  outline: none !important;
+}
+</style><style>dtn-loading-spinner {
+  display: inline-block;
+  overflow: hidden;
+  min-width: 16px;
+  min-height: 16px;
+  width: 64px;
+  height: 64px;
+  border: 15px solid #3e8ecf;
+  border-top: 15px solid #77b856;
+  border-left: 15px solid #77b856;
+  border-radius: 50%;
+  animation: rotate-spinner 0.6s infinite linear;
+}
+
+@keyframes rotate-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+</style><style>/* Default state */
+
+dtn-select {
+  display: block;
+  position: relative;
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3e%3cpath fill='%23353535' d='M287.968 288H32.038c-28.425 0-42.767 34.488-22.627 54.627l127.962 128c12.496 12.496 32.758 12.497 45.255 0l127.968-128C330.695 322.528 316.45 288 287.968 288zM160 448L32 320h256L160 448z'/%3e%3c/svg%3e")
+    no-repeat right 10px bottom/10px 39px;
+}
+
+dtn-select label {
+  display: block;
+  cursor: pointer;
+}
+
+dtn-select select {
+  display: inline-block;
+  cursor: pointer;
+}
+
+dtn-select .label {
+  position: absolute;
+  z-index: 1;
+  top: -3px;
+  left: 7px;
+  padding: 2px !important;
+  font-size: 12px;
+  background-color: white;
+  color: #838384;
+}
+
+dtn-select select {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 30px 7px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  background: 0 0;
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+}
+
+/* Focused state */
+
+dtn-select select:focus {
+  border: 1px solid #008fd5;
+}
+
+dtn-select select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #000000;
+}
+
+dtn-select.focus-within .label {
+  color: #008fd5;
+}
+
+/* Disabeld state */
+
+dtn-select[disabled="true"] {
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3e%3cpath fill='%239e9e9e' d='M287.968 288H32.038c-28.425 0-42.767 34.488-22.627 54.627l127.962 128c12.496 12.496 32.758 12.497 45.255 0l127.968-128C330.695 322.528 316.45 288 287.968 288zM160 448L32 320h256L160 448z'/%3e%3c/svg%3e")
+    no-repeat right 10px bottom/10px 39px;
+}
+
+dtn-select[disabled="true"] .label,
+dtn-select[disabled="true"] select {
+  color: #838384;
+}
+
+dtn-select[disabled="true"] label,
+dtn-select[disabled="true"] select {
+  cursor: not-allowed;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-select {
+  background-position: 11px 10px;
+}
+
+[dir="rtl"] dtn-select .label {
+  left: auto;
+  right: 5px;
+}
+
+[dir="rtl"] dtn-select select {
+  padding-left: 30px;
+  padding-right: 4px;
+}
+</style><style>dtn-table {
+  display: block !important;
+  font-size: 14px !important;
+}
+
+dtn-table table {
+  width: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+dtn-table[fixed-layout="true"] table {
+  table-layout: fixed !important;
+}
+
+dtn-table table,
+dtn-table table * {
+  border-collapse: collapse !important;
+}
+
+dtn-table tr {
+  border: 0 !important;
+  border-bottom: 1px solid #f3f3f3 !important;
+}
+
+dtn-table th {
+  min-width: 44px !important;
+  font-size: 12px !important;
+  text-align: left !important;
+  font-weight: normal !important;
+  text-transform: uppercase !important;
+  color: #969696 !important;
+  padding-bottom: 5px !important;
+}
+
+dtn-table td {
+  padding-top: 0.5em !important;
+  padding-bottom: 0.5em !important;
+  text-align: left;
+}
+
+/* Compact layout */
+
+dtn-table[layout="compact"] {
+  font-size: 12px !important;
+}
+
+dtn-table[layout="compact"] th {
+  min-width: 24px !important;
+}
+
+dtn-table[layout="compact"] td {
+  padding: 0.2em 0.1em !important;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-table th,
+[dir="rtl"] dtn-table td {
+  text-align: right !important;
+}
+</style><style>dtn-loading-spinner {
+  display: inline-block;
+  overflow: hidden;
+  min-width: 16px;
+  min-height: 16px;
+  width: 64px;
+  height: 64px;
+  border: 15px solid #3e8ecf;
+  border-top: 15px solid #77b856;
+  border-left: 15px solid #77b856;
+  border-radius: 50%;
+  animation: rotate-spinner 0.6s infinite linear;
+}
+
+@keyframes rotate-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+</style><style>dtn-table {
+  display: block !important;
+  font-size: 14px !important;
+}
+
+dtn-table table {
+  width: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+dtn-table[fixed-layout="true"] table {
+  table-layout: fixed !important;
+}
+
+dtn-table table,
+dtn-table table * {
+  border-collapse: collapse !important;
+}
+
+dtn-table tr {
+  border: 0 !important;
+  border-bottom: 1px solid #f3f3f3 !important;
+}
+
+dtn-table th {
+  min-width: 44px !important;
+  font-size: 12px !important;
+  text-align: left !important;
+  font-weight: normal !important;
+  text-transform: uppercase !important;
+  color: #969696 !important;
+  padding-bottom: 5px !important;
+}
+
+dtn-table td {
+  padding-top: 0.5em !important;
+  padding-bottom: 0.5em !important;
+  text-align: left;
+}
+
+/* Compact layout */
+
+dtn-table[layout="compact"] {
+  font-size: 12px !important;
+}
+
+dtn-table[layout="compact"] th {
+  min-width: 24px !important;
+}
+
+dtn-table[layout="compact"] td {
+  padding: 0.2em 0.1em !important;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-table th,
+[dir="rtl"] dtn-table td {
+  text-align: right !important;
+}
+</style><style>dtn-loading-spinner {
+  display: inline-block;
+  overflow: hidden;
+  min-width: 16px;
+  min-height: 16px;
+  width: 64px;
+  height: 64px;
+  border: 15px solid #3e8ecf;
+  border-top: 15px solid #77b856;
+  border-left: 15px solid #77b856;
+  border-radius: 50%;
+  animation: rotate-spinner 0.6s infinite linear;
+}
+
+@keyframes rotate-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+</style><style>dtn-loading-spinner {
+  display: inline-block;
+  overflow: hidden;
+  min-width: 16px;
+  min-height: 16px;
+  width: 64px;
+  height: 64px;
+  border: 15px solid #3e8ecf;
+  border-top: 15px solid #77b856;
+  border-left: 15px solid #77b856;
+  border-radius: 50%;
+  animation: rotate-spinner 0.6s infinite linear;
+}
+
+@keyframes rotate-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+</style><style>/* stylelint-disable indentation */
+
+/* Default state */
+
+dtn-radiogroup,
+dtn-radiogroup * {
+  all: unset;
+  box-sizing: border-box;
+}
+
+dtn-radiogroup legend {
+  display: block;
+  padding-bottom: 5px;
+  font-size: 12px;
+  color: #838384;
+}
+
+/* Default state */
+
+dtn-radiogroup-radio,
+dtn-radiogroup-radio * {
+  box-sizing: border-box;
+}
+
+dtn-radiogroup-radio {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  padding: 2px 2px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+
+dtn-radiogroup-radio label {
+  all: unset;
+  cursor: pointer;
+}
+
+dtn-radiogroup-label {
+  padding-left: 21px;
+  order: 1;
+  color: #323232;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+dtn-radiogroup-radio input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+dtn-radiogroup dtn-radiogroup-indicator {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 17px;
+  height: 17px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3e%3cpath fill='%23353535' d='M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm216 248c0 118.7-96.1 216-216 216-118.7 0-216-96.1-216-216 0-118.7 96.1-216 216-216 118.7 0 216 96.1 216 216z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+}
+
+/* Checked state */
+
+dtn-radiogroup-radio input:checked ~ dtn-radiogroup-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3e%3cpath fill='%23353535' d='M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 464c-118.663 0-216-96.055-216-216 0-118.663 96.055-216 216-216 118.663 0 216 96.055 216 216 0 118.663-96.055 216-216 216zm0-296c-44.183 0-80 35.817-80 80s35.817 80 80 80 80-35.817 80-80-35.817-80-80-80zm0 128c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48z'/%3e%3c/svg%3e");
+}
+
+dtn-radiogroup-radio input:checked:focus ~ dtn-radiogroup-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3e%3cpath fill='%23008fd5' d='M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 464c-118.663 0-216-96.055-216-216 0-118.663 96.055-216 216-216 118.663 0 216 96.055 216 216 0 118.663-96.055 216-216 216zm0-296c-44.183 0-80 35.817-80 80s35.817 80 80 80 80-35.817 80-80-35.817-80-80-80zm0 128c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48z'/%3e%3c/svg%3e");
+}
+
+/* Focus state */
+
+dtn-radiogroup-radio.focus-within dtn-radiogroup-label {
+  color: #008fd5;
+}
+
+/* Disabled state */
+
+dtn-radiogroup[disabled="true"] dtn-radiogroup-label {
+  color: #989898;
+}
+
+dtn-radiogroup[disabled="true"] dtn-radiogroup-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3e%3cpath fill='%23e5e5e5' d='M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 464c-118.663 0-216-96.055-216-216 0-118.663 96.055-216 216-216 118.663 0 216 96.055 216 216 0 118.663-96.055 216-216 216zm0-296c-44.183 0-80 35.817-80 80s35.817 80 80 80 80-35.817 80-80-35.817-80-80-80zm0 128c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48z'/%3e%3c/svg%3e") !important;
+}
+
+dtn-radiogroup[disabled="true"]
+  dtn-radiogroup-radio:hover
+  dtn-radiogroup-indicator {
+  background-color: transparent;
+}
+
+dtn-radiogroup[disabled="true"],
+dtn-radiogroup[disabled="true"] dtn-radiogroup-indicator,
+dtn-radiogroup[disabled="true"] label,
+dtn-radiogroup[disabled="true"] dtn-radiogroup-label,
+dtn-radiogroup[disabled="true"] dtn-radiogroup-indicator::after {
+  cursor: not-allowed;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-radiogroup dtn-radiogroup-indicator {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] dtn-radiogroup dtn-radiogroup-indicator::after {
+  left: auto;
+  right: 4px;
+}
+
+[dir="rtl"] dtn-radiogroup-radio dtn-radiogroup-label {
+  padding-left: 0;
+  padding-right: 21px;
+}
+</style><style>/* Default state */
+
+dtn-select {
+  display: block;
+  position: relative;
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3e%3cpath fill='%23353535' d='M287.968 288H32.038c-28.425 0-42.767 34.488-22.627 54.627l127.962 128c12.496 12.496 32.758 12.497 45.255 0l127.968-128C330.695 322.528 316.45 288 287.968 288zM160 448L32 320h256L160 448z'/%3e%3c/svg%3e")
+    no-repeat right 10px bottom/10px 39px;
+}
+
+dtn-select label {
+  display: block;
+  cursor: pointer;
+}
+
+dtn-select select {
+  display: inline-block;
+  cursor: pointer;
+}
+
+dtn-select .label {
+  position: absolute;
+  z-index: 1;
+  top: -3px;
+  left: 7px;
+  padding: 2px !important;
+  font-size: 12px;
+  background-color: white;
+  color: #838384;
+}
+
+dtn-select select {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 30px 7px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  background: 0 0;
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+}
+
+/* Focused state */
+
+dtn-select select:focus {
+  border: 1px solid #008fd5;
+}
+
+dtn-select select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #000000;
+}
+
+dtn-select.focus-within .label {
+  color: #008fd5;
+}
+
+/* Disabeld state */
+
+dtn-select[disabled="true"] {
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3e%3cpath fill='%239e9e9e' d='M287.968 288H32.038c-28.425 0-42.767 34.488-22.627 54.627l127.962 128c12.496 12.496 32.758 12.497 45.255 0l127.968-128C330.695 322.528 316.45 288 287.968 288zM160 448L32 320h256L160 448z'/%3e%3c/svg%3e")
+    no-repeat right 10px bottom/10px 39px;
+}
+
+dtn-select[disabled="true"] .label,
+dtn-select[disabled="true"] select {
+  color: #838384;
+}
+
+dtn-select[disabled="true"] label,
+dtn-select[disabled="true"] select {
+  cursor: not-allowed;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-select {
+  background-position: 11px 10px;
+}
+
+[dir="rtl"] dtn-select .label {
+  left: auto;
+  right: 5px;
+}
+
+[dir="rtl"] dtn-select select {
+  padding-left: 30px;
+  padding-right: 4px;
+}
+</style><style>dtn-table {
+  display: block !important;
+  font-size: 14px !important;
+}
+
+dtn-table table {
+  width: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+dtn-table[fixed-layout="true"] table {
+  table-layout: fixed !important;
+}
+
+dtn-table table,
+dtn-table table * {
+  border-collapse: collapse !important;
+}
+
+dtn-table tr {
+  border: 0 !important;
+  border-bottom: 1px solid #f3f3f3 !important;
+}
+
+dtn-table th {
+  min-width: 44px !important;
+  font-size: 12px !important;
+  text-align: left !important;
+  font-weight: normal !important;
+  text-transform: uppercase !important;
+  color: #969696 !important;
+  padding-bottom: 5px !important;
+}
+
+dtn-table td {
+  padding-top: 0.5em !important;
+  padding-bottom: 0.5em !important;
+  text-align: left;
+}
+
+/* Compact layout */
+
+dtn-table[layout="compact"] {
+  font-size: 12px !important;
+}
+
+dtn-table[layout="compact"] th {
+  min-width: 24px !important;
+}
+
+dtn-table[layout="compact"] td {
+  padding: 0.2em 0.1em !important;
+}
+
+/* RTL */
+
+[dir="rtl"] dtn-table th,
+[dir="rtl"] dtn-table td {
+  text-align: right !important;
+}
+</style><style>dtn-loading-spinner {
+  display: inline-block;
+  overflow: hidden;
+  min-width: 16px;
+  min-height: 16px;
+  width: 64px;
+  height: 64px;
+  border: 15px solid #3e8ecf;
+  border-top: 15px solid #77b856;
+  border-left: 15px solid #77b856;
+  border-radius: 50%;
+  animation: rotate-spinner 0.6s infinite linear;
+}
+
+@keyframes rotate-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+</style><style data-emotion="news-list-widget"></style></head>
+            
+<body><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TSZ7P8F"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+
+   <a href="#main-content" class="transition left-0 bg-html-dark text-copy-dark font-bold absolute p-3 m-3 -translate-y-16 focus:translate-y-0">Skip
+      to main Content</a>
+   <header>
+       <div id="weather-bar" class="w-full px-8 bg-surface-light pt-4">
+   <div class="flex justify-between max-w-screen-xl mx-auto">
+      <div class="flex space-x-2 items-center">
+         <div x-data="timeComponent()" x-init="startClock()">
+            <span x-text="time">October 18th 3:56 PM</span>
+         </div>
+         
+                              
+                                                </div>
+      <div class="flex space-x-8">
+         <form action="https://www.farmerscoopsociety.com/search/results" class="flex space-x-6 relative" x-data="{open: false, search: ''}">
+            <button type="button" class="z-20 bg-transparent border-none outline-none focus:outline-none" style="background-color: transparent !important;" @click="open = ! open">
+               <svg x-show="! open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search mx-[8px] hover:stroke-tertiary">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+               </svg>
+            </button>
+            <button x-show="open" type="submit" class="z-20 bg-transparent border-none outline-none focus:outline-none" style="background-color: transparent !important; display: none;">
+               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-big-right mx-[8px] stroke-html-dark">
+                  <path d="M6 9h6V5l7 7-7 7v-4H6V9z"></path>
+               </svg>
+            </button>
+
+            <div class="absolute -translate-x-full left-10 z-10 -translate-y-1" x-show="open" @click.outside="open = false" style="display: none;">
+               <input x-model="search" placeholder="search..." class="rounded-sm text-copy-dark" type="search" name="q" aria-label="search">
+            </div>
+
+         </form>
+         <a href="https://portal.farmerscoopsociety.com/" target="_blank" class="w-full xl:flex space-x-2 justify-center items-center text-white hover:text-tertiary hidden xl:visible">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock">
+               <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Customer Login</span>
+         </a>
+      </div>
+   </div>
+</div>
+
+<script>
+    function timeComponent() {
+        return {
+            time: '',
+            startClock() {
+                this.updateTime();
+                setInterval(() => {
+                    this.updateTime();
+                }, 1000);
+            },
+            updateTime() {
+                const now = new Date();
+                const suffix = this.getDaySuffix(now.getDate());
+                // Separate date and time formatting to avoid automatic "at"
+                const datePart = now.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const timePart = now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                // Manually concatenate the parts with the day suffix
+                this.time = `${datePart}${suffix} ${timePart}`;
+            },
+            getDaySuffix(day) {
+                if (day > 3 && day < 21) return 'th'; // for the 4th to 20th
+                switch (day % 10) {
+                    case 1:
+                        return "st";
+                    case 2:
+                        return "nd";
+                    case 3:
+                        return "rd";
+                    default:
+                        return "th";
+                }
+            }
+        }
+    }
+</script>    
+<nav id="main-nav" class="text-white w-full px-8">
+   <div class="max-w-screen-xl flex items-center justify-between mx-auto h-24 py-4">
+            <a href="/" class="flex items-center mb-0 xl:mb-0">
+                     <img class="w-32" src="https://dlxlkg218juo1.cloudfront.net/website/images/fcs-logo-white_2025-09-16-213007_qsmg.png" alt="FCS Logo">
+               </a>
+            <div class="w-full hidden xl:block md:w-auto" id="navbar-dropdown" x-data="{ openDropdown: null }">
+   <ul class=" flex flex-col font-medium p-4 md:p-0 mt-4 md:mt-0 border border-gray-100 rounded-sm md:space-x-8 lg:flex-row md:border-0">
+                           <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 1 ? null : 1; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 1 ? null : 1; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  Agronomy
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 1" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/agronomy-over/agronomyservices" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Agronomy Services</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/agronomy-over/plot-test-results/2026-test-plot-results" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Test Plot Results</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <button @click="subSubOpen = !subSubOpen" class="flex justify-between items-center w-full px-3 py-2 mb-2 rounded hover:text-tertiary text-html-dark">
+                                 <span>Advance+</span>
+                                 <svg x-bind:class="{ 'rotate-180': subSubOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                                 </svg>
+                              </button>
+                              <div x-show="subSubOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                     <a href="https://www.farmerscoopsociety.com/agronomy-over/advanceplus" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">About</a>
+                                                                     <a href="https://www.farmerscoopsociety.com/agronomy-over/advanceplusequipment" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Advance+ Equipment</a>
+                                                                     <a href="https://www.farmerscoopsociety.com/advance-service" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Advance+ Service</a>
+                                                                     <a href="https://www.farmerscoopsociety.com/advance-on-farm-trials" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Advance+ On Farm Trials</a>
+                                                                     <a href="https://www.farmerscoopsociety.com/precision-ag-services/elite-crop" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Advance+ Elite Crop</a>
+                                                               </div>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/agronomy-over/agronomy-team" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Agronomy Team</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/locations?services=agronomy" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Agronomy Locations</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/agronomy-over/organic-products" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Organic Products</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 2 ? null : 2; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 2 ? null : 2; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  Feed
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 2" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/feed/feed-products" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Bagged Feed Products</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/feed/show-feed-supplements" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Show Feed &amp; Supplements</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/feed/feed-team" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Feed Team</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/feed/proven" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">PROVEN Swine Management</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/locations?services=feed" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Feed Locations</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://howtobuildingcenter.com/hog-store" rel="noopener" target="_blank" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Hog Store</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 3 ? null : 3; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 3 ? null : 3; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  Grain
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 3" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/grain/grain-services" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Grain Services</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/grain/grain-team" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Grain Team</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/locations?services=grain" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Grain Locations</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li>
+               <a href="https://howtobuildingcenter.com/" target="_blank" class="flex items-center justify-between w-full py-2 px-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto" aria-current="page">How-To Building Center</a>
+            </li>
+                                    <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 5 ? null : 5; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 5 ? null : 5; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  News
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 5" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/news" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">News</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/dtn-news" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">DTN News</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 6 ? null : 6; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 6 ? null : 6; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  Company
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 6" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/about-us" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">About Us</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/board-of-directors" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Board of Directors</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/fcs-team" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Corporate Team</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/financing" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Financing</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/internships" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Internship Program</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="/locations" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Locations</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/services" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Text Notifications</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/company/forms" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Forms</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li class="relative" x-data="{ subOpen: false }" @mouseleave="openDropdown = null; subOpen = false">
+               <button @click="openDropdown = openDropdown === 7 ? null : 7; subOpen = !subOpen" @mouseover="openDropdown = openDropdown === 7 ? null : 7; subOpen = !subOpen" class="flex items-center justify-between w-full py-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto">
+                  Community
+                  <svg x-bind:class="{ 'rotate-180': subOpen }" class="w-2.5 h-2.5 ms-2.5 ml-1 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"></path>
+                  </svg>
+               </button>
+               <div x-show="openDropdown === 7" class="absolute -translate-x-1/3 pt-[36px] bg-transparent divide-y divide-gray-100 rounded-sm shadow-lg w-64 z-[9999]" style="display: none;">
+                  <ul class="flex flex-col space-y-2 font-medium p-2 text-html-dark bg-white bg-opacity-[95%]">
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/customer-stories" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Our Growers - Their Stories</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/ffa-chapters" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">FFA Chapter Initiatives</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/scholarship-application" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Scholarship Application</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/scholarships" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Scholarships</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/donation-request-form" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Donation Request Form</a>
+                                                   </li>
+                                             <li x-data="{ subSubOpen: false }">
+                                                         <a href="https://www.farmerscoopsociety.com/community/community-engagement" class="block py-2 px-3 mb-2 rounded hover:text-tertiary">Community Engagement &amp; Impact</a>
+                                                   </li>
+                                       </ul>
+               </div>
+            </li>
+                                    <li>
+               <a href="https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=469d414b-f536-46e6-84f1-c99fd3cf0b28&amp;ccId=19000101_000001&amp;lang=en_US" target="_blank" class="flex items-center justify-between w-full py-2 px-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto" aria-current="page">Careers</a>
+            </li>
+                                    <li>
+               <a href="https://www.farmerscoopsociety.com/futures" class="flex items-center justify-between w-full py-2 px-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto" aria-current="page">Futures</a>
+            </li>
+                                    <li>
+               <a href="https://www.farmerscoopsociety.com/cash-bids" class="flex items-center justify-between w-full py-2 px-2 text-gray-200 rounded md:border-0 hover:text-tertiary md:p-0 md:w-auto" aria-current="page">Cash Bids</a>
+            </li>
+               
+   </ul>
+</div>            <div x-data="{ open: false }" class="xl:hidden">
+   <button @click="open = !open" type="button" class="xl:hidden inline-flex items-center justify-center w-10 h-10 text-sm text-gray-500 hover:bg-gray-100 rounded-sm stroke-copy-light hover:stroke-copy-dark focus:outline-none focus:ring-2 focus:ring-gray-200">
+      <span class="sr-only">Open main menu</span>
+      <svg class="w-5 h-5 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+         <path class="" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15">
+         </path>
+      </svg>
+   </button>
+   <div x-show="open" x-transition="" class="absolute top-[146px] right-0 z-50 w-full max-w-96 bg-white" style="display: none;">
+      <ul class="flex max-w-md mx-auto flex-col space-y-2 font-medium p-5 text-html-dark">
+                                                <li x-data="{ AgronomyOpen: false }">
+                  <button @click="AgronomyOpen = !AgronomyOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>Agronomy</span>
+                     <svg x-bind:class="{ 'rotate-180': AgronomyOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="AgronomyOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/agronomyservices" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Agronomy Services</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/plot-test-results/2026-test-plot-results" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Test Plot Results</a>
+   </li>
+                                                                                                         
+   <li x-data="{ tgsynaqwcn: false }">
+      <button @click="tgsynaqwcn = !tgsynaqwcn" class="flex items-center justify-between w-full text-html-dark py-2 pl-4 mb-2 text-gray-200 rounded md:border-0 hover:text-tertiary ">
+         Advance+
+         <svg x-bind:class="{ 'rotate-180': tgsynaqwcn }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+         </svg>
+      </button>
+
+      <ul class="ml-4" x-show="tgsynaqwcn" x-transition="" style="display: none;">
+                                                                                 
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/advanceplus" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">About</a>
+   </li>
+                                                                                 
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/advanceplusequipment" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Advance+ Equipment</a>
+   </li>
+                                                                                 
+   <li>
+      <a href="https://www.farmerscoopsociety.com/advance-service" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Advance+ Service</a>
+   </li>
+                                                                                 
+   <li>
+      <a href="https://www.farmerscoopsociety.com/advance-on-farm-trials" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Advance+ On Farm Trials</a>
+   </li>
+                                                                                 
+   <li>
+      <a href="https://www.farmerscoopsociety.com/precision-ag-services/elite-crop" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Advance+ Elite Crop</a>
+   </li>
+               </ul>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/agronomy-team" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Agronomy Team</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="/locations?services=agronomy" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Agronomy Locations</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/agronomy-over/organic-products" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Organic Products</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li x-data="{ FeedOpen: false }">
+                  <button @click="FeedOpen = !FeedOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>Feed</span>
+                     <svg x-bind:class="{ 'rotate-180': FeedOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="FeedOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/feed/feed-products" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Bagged Feed Products</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/feed/show-feed-supplements" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Show Feed &amp; Supplements</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/feed/feed-team" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Feed Team</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/feed/proven" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">PROVEN Swine Management</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="/locations?services=feed" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Feed Locations</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://howtobuildingcenter.com/hog-store" rel="noopener" target="_blank" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Hog Store</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li x-data="{ GrainOpen: false }">
+                  <button @click="GrainOpen = !GrainOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>Grain</span>
+                     <svg x-bind:class="{ 'rotate-180': GrainOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="GrainOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/grain/grain-services" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Grain Services</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/grain/grain-team" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Grain Team</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="/locations?services=grain" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Grain Locations</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li>
+                  <a href="https://howtobuildingcenter.com/" rel="noopener" target="_blank" class="block py-2 pl-4 rounded hover:text-tertiary text-html-dark">How-To Building Center</a>
+               </li>
+                                                            <li x-data="{ NewsOpen: false }">
+                  <button @click="NewsOpen = !NewsOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>News</span>
+                     <svg x-bind:class="{ 'rotate-180': NewsOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="NewsOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="/news" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">News</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="/dtn-news" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">DTN News</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li x-data="{ CompanyOpen: false }">
+                  <button @click="CompanyOpen = !CompanyOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>Company</span>
+                     <svg x-bind:class="{ 'rotate-180': CompanyOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="CompanyOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/about-us" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">About Us</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/board-of-directors" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Board of Directors</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/fcs-team" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Corporate Team</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/financing" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Financing</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/internships" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Internship Program</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="/locations" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Locations</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/services" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Text Notifications</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/company/forms" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Forms</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li x-data="{ CommunityOpen: false }">
+                  <button @click="CommunityOpen = !CommunityOpen" class="flex justify-between items-center w-full pl-4 py-2 rounded hover:text-tertiary text-html-dark">
+                     <span>Community</span>
+                     <svg x-bind:class="{ 'rotate-180': CommunityOpen }" class="w-3 h-3 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"></path>
+                     </svg>
+                  </button>
+                  <ul x-show="CommunityOpen" x-transition="" class="ml-4 space-y-2" style="display: none;">
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/customer-stories" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Our Growers - Their Stories</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/ffa-chapters" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">FFA Chapter Initiatives</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/scholarship-application" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Scholarship Application</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/scholarships" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Scholarships</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/donation-request-form" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Donation Request Form</a>
+   </li>
+                                                                                                         
+   <li>
+      <a href="https://www.farmerscoopsociety.com/community/community-engagement" class="block w-full pl-4 py-2 hover:bg-gray-100 text-html-dark hover:text-tertiary">Community Engagement &amp; Impact</a>
+   </li>
+                                       </ul>
+               </li>
+                                                            <li>
+                  <a href="https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=469d414b-f536-46e6-84f1-c99fd3cf0b28&amp;ccId=19000101_000001&amp;lang=en_US" rel="noopener" target="_blank" class="block py-2 pl-4 rounded hover:text-tertiary text-html-dark">Careers</a>
+               </li>
+                                                            <li>
+                  <a href="https://www.farmerscoopsociety.com/futures" class="block py-2 pl-4 rounded hover:text-tertiary text-html-dark">Futures</a>
+               </li>
+                                                            <li>
+                  <a href="https://www.farmerscoopsociety.com/cash-bids" class="block py-2 pl-4 rounded hover:text-tertiary text-html-dark">Cash Bids</a>
+               </li>
+                              <div class="space-y-6">
+            <a href="https://portal.farmerscoopsociety.com/" target="_blank">
+               <button class="w-full flex space-x-2 justify-center items-center p-3 mx-auto bg-html-dark text-white hover:text-tertiary">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock">
+                     <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <span>Customer Account Login</span>
+               </button>
+            </a>
+
+         </div>
+      </ul>
+   </div>
+</div>   </div>
+</nav>
+
+<style>
+    #main-nav, #weather-bar {
+        background-color: #1B2946;
+    }
+
+    @media only screen and (max-width: 1400px) {
+        #main-nav, #weather-bar {
+            background-color: #000000;
+        }
+    }
+</style></header>
+
+<main class="selection:bg-sky-300 selection:text-sky-800">
+      <article>
+            
+
+   
+<article class="page-grain-services">
+            
+
+
+<style>
+    div[sub-nav] {
+        background-color: #1B2946;
+    }
+
+    @media only screen and (max-width: 1400px) {
+        div[sub-nav] {
+            background-color: #000000;
+        }
+    }
+</style>      <div class="flex justify-center items-center bg-html-dark min-h-[30vh] max-h-[40vh] overflow-hidden z-10 relative">
+                                      
+      
+      
+      
+   
+   
+   
+   
+                
+                        
+                                                
+                              
+      
+      
+      
+      
+      
+         <div class="absolute inset-0 z-10" style="height: 100%;">
+                        <picture>
+                           <source srcset="https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJ3ZWJwIjp7InF1YWxpdHkiOjgyfSwicmVzaXplIjp7IndpZHRoIjoxMjAwLCJoZWlnaHQiOjY3NSwiZml0IjoiY292ZXIifSwic2hhcnBlbiI6dHJ1ZX19 1200w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJ3ZWJwIjp7InF1YWxpdHkiOjgyfSwicmVzaXplIjp7IndpZHRoIjo5OTIsImhlaWdodCI6NTU4LCJmaXQiOiJjb3ZlciJ9LCJzaGFycGVuIjp0cnVlfX0= 992w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJ3ZWJwIjp7InF1YWxpdHkiOjYwfSwicmVzaXplIjp7IndpZHRoIjo3NjgsImhlaWdodCI6NTc2LCJmaXQiOiJjb3ZlciJ9LCJzaGFycGVuIjp0cnVlfX0= 768w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJ3ZWJwIjp7InF1YWxpdHkiOjYwfSwicmVzaXplIjp7IndpZHRoIjo1NzYsImhlaWdodCI6NDMyLCJmaXQiOiJjb3ZlciJ9fX0= 576w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJ3ZWJwIjp7InF1YWxpdHkiOjgyfSwicmVzaXplIjp7IndpZHRoIjo0MDAsImhlaWdodCI6NTAwLCJmaXQiOiJjb3ZlciJ9fX0= 400w" sizes="100vw" type="image/webp">
+                        <img loading="eager" src="data:image/jpeg;base64,%2F9j%2F4AAQSkZJRgABAQEAYABgAAD%2F2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P%2F2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P%2FwAARCAAJABADASIAAhEBAxEB%2F8QAFgABAQEAAAAAAAAAAAAAAAAAAgMG%2F8QAIBAAAgICAAcAAAAAAAAAAAAAAQIAAwQREyExNXFzgf%2FEABQBAQAAAAAAAAAAAAAAAAAAAAL%2FxAAZEQEAAgMAAAAAAAAAAAAAAAABAAIDITH%2F2gAMAwEAAhEDEQA%2FAM7c9ZXQx2QBgCwbYlWFIv4bBwCdKF5E%2FYbO0p5EeX1f2LE5LpthKVOE%2F9k%3D" srcset="https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6dHJ1ZSwidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWl6ZVNjYW5zIjp0cnVlfSwicmVzaXplIjp7IndpZHRoIjoxMjAwLCJoZWlnaHQiOjY3NSwiZml0IjoiY292ZXIifSwic2hhcnBlbiI6dHJ1ZX19 1200w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6dHJ1ZSwidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWl6ZVNjYW5zIjp0cnVlfSwicmVzaXplIjp7IndpZHRoIjo5OTIsImhlaWdodCI6NTU4LCJmaXQiOiJjb3ZlciJ9LCJzaGFycGVuIjp0cnVlfX0= 992w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjYwLCJwcm9ncmVzc2l2ZSI6dHJ1ZSwidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWl6ZVNjYW5zIjp0cnVlfSwicmVzaXplIjp7IndpZHRoIjo3NjgsImhlaWdodCI6NTc2LCJmaXQiOiJjb3ZlciJ9LCJzaGFycGVuIjp0cnVlfX0= 768w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjYwLCJwcm9ncmVzc2l2ZSI6dHJ1ZSwidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWl6ZVNjYW5zIjp0cnVlfSwicmVzaXplIjp7IndpZHRoIjo1NzYsImhlaWdodCI6NDMyLCJmaXQiOiJjb3ZlciJ9fX0= 576w, https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6dHJ1ZSwidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWl6ZVNjYW5zIjp0cnVlfSwicmVzaXplIjp7IndpZHRoIjo0MDAsImhlaWdodCI6NTAwLCJmaXQiOiJjb3ZlciJ9fX0= 400w" sizes="100vw" width="1536" height="2048" alt="Hero image for Grain Services" class="w-full h-full object-cover brightness-75    max-h-[calc(100vh-80px)]" style="object-position: 50% 50%;">
+         </picture>
+         </div>
+   
+
+                  
+                  <div class="w-full h-full bg-black/40 absolute top-0 left-0 z-20"></div>
+         
+                  <h1 class="font-bold text-4xl md:text-5xl lg:text-6xl text-copy-light drop-shadow-lg z-30 mx-8 text-center">Grain Services</h1>
+      </div>
+            <div class="w-full flex justify-center">
+   <nav class="max-w-screen-xl w-full h-10 z-40 px-4">
+      <div class="text-xs sm:text-sm md:text-base text-gray-500 px-4  py-2 rounded-sm">
+         <ol class="flex items-centerleading-none pt-0.5">
+
+                                          <li class="flex items-center leading-none">
+                  <a class="hover:text-orange-400" href="https://www.farmerscoopsociety.com/">Home Page</a>
+               </li>
+               <span class="h-full flex items-center mx-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                           <path d="m9 18 6-6-6-6"></path>
+                        </svg></span>
+                              <li class="flex items-center leading-none">
+                  <a class="hover:text-orange-400" href="https://www.farmerscoopsociety.com/grain/grain-services">Grain Services</a>
+               </li>
+                     </ol>
+      </div>
+   </nav>
+</div>
+   </article>
+      <div>
+         
+<div class="w-full flex flex-col items-center text-copy-light">
+   <div class="w-full max-w-screen-xl">
+         <div class="w-full flex flex-col justify-center space-y-8 pb-8 my-8 md:my-12">
+
+                                                                                                                                                                                                      
+         
+                                                                                 
+<div class="w-full px-8">
+   <div class="max-w-screen-xl w-full">
+               
+          
+            
+
+   <div class="banner flex flex-col justify-center items-center bg-surface-light text-copy-light p-8 rounded-sm w-full">
+               <h1 class="text-2xl md:text-3xl lg:text-4xl  font-semibold text-copy-light">"We are dedicated to providing great services and competitive grain market prices to our customers."</h1>
+               </div>
+
+   <style>
+       .banner {
+           background-blend-mode: difference;
+           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='24' viewBox='0 0 88 24'%3E%3Cg fill-rule='evenodd'%3E%3Cg id='autumn' fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M10 0l30 15 2 1V2.18A10 10 0 0 0 41.76 0H39.7a8 8 0 0 1 .3 2.18v10.58L14.47 0H10zm31.76 24a10 10 0 0 0-5.29-6.76L4 1 2 0v13.82a10 10 0 0 0 5.53 8.94L10 24h4.47l-6.05-3.02A8 8 0 0 1 4 13.82V3.24l31.58 15.78A8 8 0 0 1 39.7 24h2.06zM78 24l2.47-1.24A10 10 0 0 0 86 13.82V0l-2 1-32.47 16.24A10 10 0 0 0 46.24 24h2.06a8 8 0 0 1 4.12-4.98L84 3.24v10.58a8 8 0 0 1-4.42 7.16L73.53 24H78zm0-24L48 15l-2 1V2.18A10 10 0 0 1 46.24 0h2.06a8 8 0 0 0-.3 2.18v10.58L73.53 0H78z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+       }
+
+   </style>
+
+   </div>
+</div>
+                           
+                                                                                 
+<div class="w-full px-8 clearfix">
+   <div class="w-full max-w-screen-xl">
+         
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>At Farmers Coop Society, we utilize 110,000 bushels of corn a day out of three feed mills, giving us an opportunity to be aggressive in the marketplace. With that aggressiveness, we offer different market strategies to ensure our patrons a great market advantage!</p>
+<p>We have ten grain locations across South Dakota and Iowa. This allows us to better serve our patrons with an annual volume of 11 million bushels of beans and 39 million bushels of corn. We take pride in providing the best service to our growers. From grain marketing programs, direct shipping from the farm, a variety of grain contracts, daily cash market texts, and the efficiency of our grain handling equipment.</p>
+<h5><strong>Take a look at the contracts we offer below, but for more information, contact your local Farmers Coop Society location or call 712-722-2671.</strong></h5>
+   </div>
+
+   </div>
+</div>
+                           
+                                                                                                                                    
+                        
+                           <div class="bg-none text-copy-dark rounded-sm space-y-8 py-8">
+                                    
+<div class="w-full flex flex-col items-center text-copy-light">
+   <div class="w-full max-w-screen-xl">
+         <div class="w-full px-8">
+      <div class="max-w-screen-xl w-full">
+               
+   
+   
+   <div class="flex w-full justify-start">
+      <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-copy-dark">Grain Marketing Contracts</h2>
+   </div>
+
+      </div>
+   </div>
+   </div>
+</div>               
+                                                                  
+
+
+                                                                              
+             
+
+
+   <div x-data="{ activeTab: 0 }" class="flex flex-wrap flex flex-col mx-8 mb-8 ">
+      <div class="flex space-x-1 flex flex-wrap-reverse">
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 bg-slate-300 font-black !text-copy-dark" :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 0 }" @click="activeTab = 0" type="button">
+               Cash Contract/Cash Offer
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 1 }" @click="activeTab = 1" type="button">
+               Extended Price Contract
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 2 }" @click="activeTab = 2" type="button">
+               No Basis Established
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 3 }" @click="activeTab = 3" type="button">
+               Accumulator Contracts
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 4 }" @click="activeTab = 4" type="button">
+               Delayed Price
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 5 }" @click="activeTab = 5" type="button">
+               Bonus Premium
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 6 }" @click="activeTab = 6" type="button">
+               Minimum Price Contracts
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 7 }" @click="activeTab = 7" type="button">
+               Basis Contract
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 8 }" @click="activeTab = 8" type="button">
+               Averaging Contracts
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 9 }" @click="activeTab = 9" type="button">
+               Open Storage
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 10 }" @click="activeTab = 10" type="button">
+               On Farm Pickup
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 11 }" @click="activeTab = 11" type="button">
+               Direct Ship
+            </button>
+                     <button class="tab text-xs md:text-sm lg:text-base h-12 bg-html-dark text-slate-400 rounded-t-md ml-2 mt-1 px-8 cursor-pointer hover:bg-slate-300 " :class="{ 'bg-slate-300 font-black !text-copy-dark': activeTab === 12 }" @click="activeTab = 12" type="button">
+               JSA Select Contract
+            </button>
+               </div>
+
+      <div class="bg-white text-copy-dark outline outline-slate-200 rounded-sm overflow-hidden">
+                     <div x-show="activeTab === 0" class="p-4 overflow-x-scroll">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>Also known as priced, or flat price contracts; a cash contract is the most common and straightforward grain contract. A fixed price is set for product delivery at an agreed-upon time; this can be immediate (spot) or at a deferred (forward) date. Futures and basis are set simultaneously, and the price of the contract will not change over time. Producers can also elect to submit a cash offer for a specific quantity, delivery period, and price. If the market reaches the specified price for the associated delivery period during trading hours a contract will be automatically generated for their account.</p>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 1" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p><strong>Extended Price Contract</strong></p><p>An Extended Price contract allows you to price grain that has already been delivered or will be delivered in a future month. When you set your price, you’ll receive 70% of the cash value, either at the time of sale or upon delivery to FCS. The remaining 30% is held back in lieu of purchasing a futures contract in a later month on the Board of Trade.</p><p>This contract gives you the opportunity to benefit if the futures market moves higher after you’ve priced your grain. Your final price will be determined when you exit the futures position. While there is a risk of loss if futures decline, you can participate fully (100%) in any futures market gain, unlike a minimum price contract.</p><p><strong>Example:</strong></p><ul><li>You price cash corn for December delivery at <strong>$3.84/bu</strong>&nbsp;and receive 70% upfront (<strong>$2.69/bu</strong>).</li><li>You purchase a May corn futures contract at <strong>$4.50</strong>.<ul><li>If May futures rise to <strong>$5.00</strong>, you gain $0.50, making your final cash price <strong>$4.34/bu</strong>&nbsp;($3.84 + $0.50).</li><li>If May futures fall to <strong>$4.00</strong>, you lose $0.50, making your final cash price <strong>$3.34/bu</strong>&nbsp;($3.84 - $0.50).</li></ul></li><li>In either case, FCS issues a final payment for the remaining 30% balance while accounting for any futures gain or loss.</li><li>A <strong>$0.03/bu</strong>&nbsp;service fee applies to Extended Price contracts.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 2" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>No Basis Established (NBE, HTA, Futures Fixed)</p><p>A NBE contract offers sellers the ability to lock in just the futures portion of a cash grain contract for a quantity to be delivered in the future. An HTA is typically employed when sellers think that the price of futures are high but believe basis will improve or they wish to remain flexible on when they deliver against the cash grain sale. The basis portion of the contract must be set before the grain is delivered.</p><ul><li>Eliminates downside futures risk on those bushels marketed.</li><li>Allows for basis appreciation before delivery.</li><li>Seller has the option of rolling the contract to a new futures month and delivery period.</li><li>If the seller elects to roll, they will gain the spread (in the case of a carry market) or lose the spread (in the event of an inverse market) at the time they roll. There is a fee associated with rolling to a new month.</li><li>Final pricing must occur within the same crop year (Oct – Sep).</li><li>There is a fee commensurate to the amount of time the buyer will hold the HTA prior to delivery.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 3" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <ul><li>Contract tools used to accumulate a futures position throughout regular intervals throughout different time periods.</li><li>Growers can customize accumulators to meet their specific risk profiles.</li><li>Accumulation level is generally advantageous to current market conditions at initiation.</li><li>Many different possibilities for structure type and timeframe to meet your specific needs.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 4" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>A Delayed Price contract allows a seller to deliver grain without establishing either futures or basis price. A delayed price contract is similar in many respects to storage, but the seller has relinquished title to the grain.</p><ul><li>Delayed Price must be sold at the current nearby bid when you as the producer decide to sell.</li><li>Allows the seller to deliver grain immediately and wait for more favorable futures or basis market conditions.</li><li>Eliminates the risk of quality deterioration that is inherent with storing grain.</li><li>Allows the seller to price grain after delivery and potentially benefit if the market rallies.</li><li>Does not provide payment until the contract is priced.</li><li>Provides no protection to the seller of grain in the event the market declines prior to pricing.</li><li>Services charges may apply depending on market conditions.</li></ul><p>Service charges and quality terms are usually more favorable than open storage.</p>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 5" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>A seller makes a cash grain sale in conjunction with a firm, irrevocable offer to sell an additional quantity at a defined futures price should the market reach that level later. The seller receives a premium on the nearer cash sale that corresponds to the call option premium.</p><ul><li>The future offer does not expire until options expiration of the associated futures contract and the seller will not know if they have an additional bushel commitment until that date.</li><li>Downside price risk is eliminated on the nearer cash sale on which a premium was paid, but downside risk remains on the latter bushels offered.</li><li>High volatility corresponds to higher premiums.</li><li>Fee applies relative to premium received.</li><li>Can not manage downside price risk or additional offered bushels.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 6" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>FCS offers a wide range of minimum price contracts using options to limit your market risk, allowing you the ability to lock in a price floor while leaving upside participation intact, with the ability to participate in both pre- or post-harvest delivery. Using Options can be complex, but we can help explain them simply so you can leverage these powerful tools for your operation:</p><ul><li>Minimum Price contract before the cash sale&nbsp;<ul><li>This uses a Put Option that benefits you if prices decline while leaving the top open for a later cash sale. It allows you to know the absolute “floor price” or minimum price you would have on those bushels.</li></ul></li><li>Minimum Price contract after the cash sale<ul><li>This uses a Call Option that benefits you if prices increase after you already priced your grain. The cash price minus the price of the Call Option is your minimum price. But if prices continue to rise in the months after the cash sale, you can still benefit from that price increase.</li></ul></li><li>Option Combos or Window Trade&nbsp;<ul><li>For the more experienced grower with Options, we can tailor Option Strategies Like a Put/Call Collar or Window that involves buying one option and selling another option either in the same month or future months. Use of these strategies can help lower the initial cost to the grower but do involve some risk that we can explain in more depth should you see these strategies as a fit for your operation.</li></ul></li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 7" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>A basis contract locks in a basis price relative to a given futures month and delivery period. Pricing of the associated futures can be done before or after delivery.</p><ul><li>Allows the seller to make physical delivery of grain at an agreed-upon time and to benefit from a futures market rally before the final pricing date on the contract.</li><li>Allows the seller of grain the ability to lock in favorable basis levels if the seller feels the basis market will decline before pricing the futures portion of the contract.</li><li>Eliminates storage expenses and quality risk while waiting for higher prices.</li><li>Provides no protection to the seller of grain in the event the futures market declines prior to pricing.</li><li>Must be priced or rolled to a subsequent futures month by the options expiration date of the associated futures contract.</li><li>If the seller elects to roll, they will either gain the spread (in the case of an inverse market) or lose the spread (in the case of a carry market) at the time they roll. There is a fee associated with rolling to a new month.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 8" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>An Averaging Contract is a simple, disciplined way for growers to price grain by spreading sales over time. A set number of bushels are priced each day the market is open over a specified timeframe.</p><ul><li>Commit a set number of bushels (example: 5,000 bushels)</li><li>Program runs for a defined number of trading days (example: 62 days)</li><li>Total bushels committed/ trading days= Bushels priced at the futures close each trading day</li><li>At the end of the program, this will result in getting the “average” futures close price for that period</li><li>Pricing window is when the markets are historically higher.</li><li>Futures-only contract, basis must be set separately prior to fall delivery</li><li>Not a double-up or knock-out contract, all bushels committed will be priced</li><li>A service fee applies to Averaging Contracts</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 9" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>Allows the FCS to store your grain today and the ability to price at a later date.</p>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 10" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>The FCS On Farm Pick-Up program allows a seller to use FCS’s transportation to ship corn or soybeans from the seller’s farm tom an FCS or Direct Ship location.</p><ul><li>Your FCS Grain Marketing Specialist will quote you a picked-up price based upon the cash price less transportation costs based on miles away from destination of sale.</li><li>Allows the seller to utilize FCS trucks instead of their own trucks or wagons</li><li>Eliminates seller transportation and shipment delay risks</li><li>Gives seller access to markets that are further away from their farm than they would typically ship to if prices can justify a farther move.</li><li>Seller will pay for transportation costs via a deduction from their grain settlement.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 11" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>The FCS Direct Ship program allows a seller to sell to a non-FCS processor of corn or soybeans at the processors posted price, and sold through FCS.</p><ul><li>Your FCS Grain Marketing Specialist will find the latest posted price delivered into your desired processing facility that you can then book through FCS.</li><li>Sellers contract is written with FCS, and you will be paid by FCS.</li><li>Allows the seller access to sell at processor bids when they may be more advantageous than selling directly into a FCS location.</li><li>Discount schedules of the processor being delivered to will apply for all settlement procedures.</li></ul>
+   </div>
+
+   
+            </div>
+                     <div x-show="activeTab === 12" class="p-4 overflow-x-scroll" style="display: none;">
+                        
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>A JSA Select Contract is a producer marketing tool that allows JSA to actively manage futures pricing on a fixed number of bushels within a defined window, offering an alternative to traditional cash or basis contracts.</p><ul><li>Enroll a set number of bushels and select a pricing window (Fall, Winter, or Spring). There is no minimum volume requirement.</li><li>JSA actively manages and establishes futures positions during that window.</li><li>All bushel’s futures pricing will be set by the end of the pricing window.</li><li>Basis is set by the producer at any point prior to delivery.</li><li>Grain delivery settles like other FCS contracts once priced.</li></ul><p>Example:</p><ul><li>You enroll 10,000 bushels of corn during pricing during the Fall pricing window.</li><li>JSA manages the futures pricing during that period.</li><li>Producer sets basis at any time prior to delivery</li><li>Final futures price is set at the end of the pricing window creating an NBE contract.</li><li>The NBE contract is merged with the basis established by the producer to create a priced contract establishing a cash price.</li></ul>
+   </div>
+
+   
+            </div>
+               </div>
+   </div>
+               
+                                                                                                                                    
+                                       </div>
+            
+                           <div class="bg-gray-100 shadow-inner text-copy-dark rounded-sm space-y-8 py-8">
+                                    
+<div class="w-full flex flex-col items-center text-copy-light">
+   <div class="w-full max-w-screen-xl">
+         <div class="w-full px-8">
+      <div class="max-w-screen-xl w-full">
+               
+   
+   
+   <div class="flex w-full justify-center">
+      <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-copy-dark">2026 Grain Policy</h2>
+   </div>
+
+      </div>
+   </div>
+   </div>
+</div>               
+                                                                  
+    <div class="max-w-screen-xl mx-auto">
+      <div class="flex flex-wrap justify-center text-copy-light mx-8 gap-6">
+                                                <div class="shrink-0 min-w-64 bg-surface-light px-4 py-2 flex justify-center items-center space-x-2 rounded-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download">
+                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                     <polyline points="7 10 12 15 17 10"></polyline>
+                     <line x1="12" x2="12" y1="15" y2="3"></line>
+                  </svg>
+                  <a href="https://dlxlkg218juo1.cloudfront.net/website/downloads/fcs_grain-policy-2026.pdf" target="_blank" class="download-link">Click to Download FCS 2026 Grain Policy</a>
+               </div>
+
+                           </div>
+   </div>
+               
+                                                                                                                                    
+                                       </div>
+            
+                           <div class="bg-none text-copy-dark rounded-sm space-y-8 py-8">
+                                    
+<div class="w-full flex flex-col items-center text-copy-light">
+   <div class="w-full max-w-screen-xl">
+         <div class="w-full px-8">
+      <div class="max-w-screen-xl w-full">
+               
+   
+   
+   <div class="flex w-full justify-start">
+      <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-copy-dark">FCS Condominium Grain Storage</h2>
+   </div>
+
+      </div>
+   </div>
+   </div>
+</div>               
+                                                                  
+<div class="w-full px-8 clearfix">
+   <div class="w-full max-w-screen-xl">
+         
+      <div class="prose prose-lg max-w-none mx-0 pb-8 rich-text-content" data-text-color="text-copy-dark">
+      <p>Farmers Coop Society is excited to introduce the <strong>Condominium Grain Storage Program</strong>—a hassle-free way for growers to own bin space without the challenges of on-farm storage. This innovative program is designed for those who want to maximize their marketing opportunities while keeping capital free for land, equipment, and other investments.</p>
+<p><a href="https://www.farmerscoopsociety.com/news/invest-in-grain-storage-without-the-upkeep">Click here to learn more!</a></p>
+   </div>
+
+   </div>
+</div>               
+                                                                  
+    <div class="max-w-screen-xl mx-auto">
+      <div class="flex flex-wrap justify-center text-copy-light mx-8 gap-6">
+                                                <div class="shrink-0 min-w-64 bg-surface-light px-4 py-2 flex justify-center items-center space-x-2 rounded-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download">
+                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                     <polyline points="7 10 12 15 17 10"></polyline>
+                     <line x1="12" x2="12" y1="15" y2="3"></line>
+                  </svg>
+                  <a href="https://dlxlkg218juo1.cloudfront.net/website/downloads/FCS-Grain-Condo-Storage_Final2025.pdf" target="_blank" class="download-link">FCS Condominium Informational Sheet</a>
+               </div>
+
+                           </div>
+   </div>
+               
+      </div>
+
+   
+
+         <div class="bg-html-light text-copy-light rounded-sm space-y-8 mb-8 mx-8">
+               
+               
+      
+   
+      
+   
+      <div class="w-full flex justify-center px-8">
+      <div class="text-copy-dark max-w-screen-xl grid grid-cols-1 md:grid-cols-2  gap-8">
+         <div class="col-span-1 flex flex-col space-y-4">
+            <h3 class="text-4xl font-bold">DTN NEWS</h3>
+            <div id="dtnNews" style="position: relative;"><div class="news-list-widget-1j2y9xn"><div class="news-list-widget-vih5a7"><ol class="news-list-widget-3vmh0"><li><a rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/zDSydLc7/i-Stock-184986973-GRAIN.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag</span><h1 class="article-title news-list-widget-1q1uby0">Portland Grain Review</h1><time class="article-timestamp news-list-widget-1m270us">10/17/2026 | 9:31 pm </time></div></a></li><li><a rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/MKLqtqqt/i-Stock-524907074-Markets.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag</span><h1 class="article-title news-list-widget-1q1uby0">DTN Chart Technical Points</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 9:30 pm </time></div></a></li><li><a rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/MKLqtqqt/i-Stock-524907074-Markets.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag</span><h1 class="article-title news-list-widget-1q1uby0">DTN Cattle Close/Trends</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 8:58 pm </time></div></a></li><li><a href="https://www.dtnpf.com/agriculture/web/ag/news/article/2026/10/16/aghost-livestock-close" rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/MKLqtqqt/i-Stock-524907074-Markets.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag/Livestock</span><h1 class="article-title news-list-widget-1q1uby0">AgHost Livestock Close</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 8:49 pm </time></div></a></li><li><a rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/zDSydLc7/i-Stock-184986973-GRAIN.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag</span><h1 class="article-title news-list-widget-1q1uby0">FARM MARKET NEWS - CORN REPORT FOR Fri, October 16</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 8:17 pm </time></div></a></li><li><a rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/zDSydLc7/i-Stock-184986973-GRAIN.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag</span><h1 class="article-title news-list-widget-1q1uby0">FARM MARKET NEWS - SOYBEAN AND WHEAT REPORT FOR Fri, October 16</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 8:17 pm </time></div></a></li><li><a href="https://www.dtnpf.com/agriculture/web/ag/news/article/2026/10/16/aghost-grains-close" rel="nofollow" target="_blank" class="news-list-widget-89k4ud"><div class="article-thumbnail news-list-widget-kgaydw"><img src="https://i.postimg.cc/zDSydLc7/i-Stock-184986973-GRAIN.jpg"></div><div class="news-list-widget-1rfq2pv"><span class="article-topic news-list-widget-vrw8t6">DTN/Ag/Markets</span><h1 class="article-title news-list-widget-1q1uby0">AgHost Grains Close</h1><time class="article-timestamp news-list-widget-1m270us">10/16/2026 | 6:51 pm </time></div></a></li></ol><div class="news-list-widget-pvf2wz"><img src="https://content-services.dtn.com/ui-widgets/assets/img/logo-dtn.png" alt="DTN Logo" class="news-list-widget-rkd5p0"></div></div></div></div>
+            <div class="w-40 mx-auto">
+                  
+
+   <a href="/dtn-news" target="_self" class="
+       text-copy-light hover:bg-html-dark bg-surface-light  focus:ring-1 focus:outline-none focus:ring-blue-300 inline-flex items-center px-4 py-2.5 text-sm font-medium text-center rounded-sm shrink">
+
+            <span class="pt-1">More DTN News</span>
+         </a>
+
+
+            </div>
+         </div>
+
+                     <div class="col-span-1 flex flex-col space-y-4">
+               <h1 class="text-4xl font-bold">FCS NEWS</h1>
+                                 <a href="https://www.farmerscoopsociety.com/news/2026-fcs-corn-soybean-fungicide-program" class="w-full outline outline-1 outline-white rounded-sm p-4 bg-html-dark hover:bg-surface-light text-copy-light">
+                     <p class="text-lg">2026 FCS Corn &amp; Soybean Fungicide Program</p>
+                     <p class="text-sm">June 9, 2026</p>
+                                       </a>
+                                 <a href="https://www.farmerscoopsociety.com/news/direct-ship-with-fcs" class="w-full outline outline-1 outline-white rounded-sm p-4 bg-html-dark hover:bg-surface-light text-copy-light">
+                     <p class="text-lg">Direct Ship with FCS</p>
+                     <p class="text-sm">April 20, 2026</p>
+                                       </a>
+                                 <a href="https://www.farmerscoopsociety.com/news/free-dp-starting-monday-2-9" class="w-full outline outline-1 outline-white rounded-sm p-4 bg-html-dark hover:bg-surface-light text-copy-light">
+                     <p class="text-lg">Free DP on Corn and Beans!</p>
+                     <p class="text-sm">February 4, 2026</p>
+                                       </a>
+                                 <a href="https://www.farmerscoopsociety.com/news/learn-the-markets-grow-your-bottom-line" class="w-full outline outline-1 outline-white rounded-sm p-4 bg-html-dark hover:bg-surface-light text-copy-light">
+                     <p class="text-lg">Learn the Markets. Grow Your Bottom Line.</p>
+                     <p class="text-sm">December 19, 2025</p>
+                                       </a>
+                                 <a href="https://www.farmerscoopsociety.com/news/fcs-link-is-here" class="w-full outline outline-1 outline-white rounded-sm p-4 bg-html-dark hover:bg-surface-light text-copy-light">
+                     <p class="text-lg">FCS LINK is Here!</p>
+                     <p class="text-sm">December 18, 2025</p>
+                                       </a>
+                              <div class="w-40 mx-auto">
+                     
+
+   <a href="/news" target="_self" class="
+       text-copy-light hover:bg-html-dark bg-surface-light  focus:ring-1 focus:outline-none focus:ring-blue-300 inline-flex items-center px-4 py-2.5 text-sm font-medium text-center rounded-sm shrink">
+
+            <span class="pt-1">More FCS News</span>
+         </a>
+
+
+               </div>
+            </div>
+               </div>
+   </div>
+
+      </div>
+   
+   <style>
+       figure {
+           max-width: 100% !important;
+           padding-left: 1.5rem !important;
+           padding-right: 1.5rem !important;
+           padding-bottom: 0.5rem !important;
+           padding-top: 0.5rem !important;
+       }
+
+       figure > img {
+           max-width: 100% !important;
+       }
+   </style>
+   </div>
+</div>      </div>
+   </div></article>
+</main><footer>
+                                                            
+<div class="w-full flex justify-center ">
+
+       <div class="w-full flex justify-center mb-4 md:mb-6 lg:mb-8 px-8">
+      <footer class="w-full max-w-screen-xl space-y-8">
+                     <div class="w-full">
+               <div class="banner flex justify-between items-center space-x-8 bg-html-dark p-8 rounded-sm w-full shadow-lg">
+                  <div class="text-copy-light font-bold text-center flex flex-col gap-1 items-center w-full">
+                     <h1 class="text-2xl md:text-3xl lg:text-4xl">View Grain Bids Through FCS LINK</h1>
+                                             <p></p><p>Call your local FCS location to sign up!</p><p></p>
+                                       </div>
+                                 </div>
+            </div>
+         
+         <div class="flex flex-col md:flex-row items-center md:justify-between bg-white rounded-sm shadow p-8">
+            <div class="bg-white rounded-sm max-w-40 aspect-square flex justify-center items-center mb-8 md:mb-0">
+                                 <a href="/">
+                     <div class="w-28 mx-6">
+                         <img class="w-32" src="https://dlxlkg218juo1.cloudfront.net/website/images/fcs-logo-black_2025-09-16-211809_ivod.png" alt="FCS Logo">
+                     </div>
+                  </a>
+                           </div>
+
+            <div class="flex flex-col items-center md:items-end text-copy-dark space-y-4 space-x-0 sm:space-x-12">
+                                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                         <a href="https://www.facebook.com/farmerscoopscociety">
+                        <div class="w-10 h-10 rounded-full flex justify-center items-center bg-html-dark hover:bg-[#0165E1]">
+                           <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-7 h-7 stroke-white" viewBox="0 0 24 24">
+                              <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+                           </svg>
+                        </div>
+                     </a>
+                                                                           <a href="https://www.linkedin.com/company/farmers-coop-society/mycompany/?viewAsMember=true">
+                        <div class="w-10 h-10 rounded-full flex justify-center items-center bg-html-dark hover:bg-[#0F76A8]">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin stroke-white">
+                              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                              <rect width="4" height="12" x="2" y="9"></rect>
+                              <circle cx="4" cy="4" r="2"></circle>
+                           </svg>
+                        </div>
+                     </a>
+                                                                           <a href="https://www.instagram.com/farmerscoopsociety/">
+                        <div class="w-10 h-10 rounded-full flex justify-center items-center bg-html-dark hover:bg-[#DA2E68]">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram stroke-white">
+                              <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+                           </svg>
+                        </div>
+                     </a>
+                                                         <a href="https://www.youtube.com/@farmerscoopsociety">
+                        <div class="w-10 h-10 rounded-full flex justify-center items-center bg-html-dark hover:bg-[#c4302b] ">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-youtube stroke-white">
+                              <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"></path>
+                              <path d="m10 15 5-3-5-3z"></path>
+                           </svg>
+                        </div>
+                     </a>
+                                                                                       </div>
+
+               <ul class="flex flex-wrap justify-center md:justify-end my-3">
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="https://www.farmerscoopsociety.com/company/about-us">About Us</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="/site-map">Site Map</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=469d414b-f536-46e6-84f1-c99fd3cf0b28&amp;ccId=19000101_000001&amp;lang=en_US" rel="noopener" target="_blank">Careers</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="/locations">Contact Us</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="https://dlxlkg218juo1.cloudfront.net/website/images/Disclosure-consent-for-electronic-statements-and-electronic-user-privacy-policy-Revised.pdf" rel="noopener" target="_blank">Privacy Policy</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="https://www.dropbox.com/s/9lhn3ydamvep8hn/TeamViewerQS.exe?dl=0">Teamviewer</a>
+                     </li>
+                                       <li>
+                        <a class="hover:underline ml-6 text-sm sm:text-base" href="https://web.healthsparq.com/app/public/#/one/insurerCode=WMRK_I&amp;brandCode=WELLMARK&amp;productCode=MRF/machine-readable-transparency-in-coverage?searchTerm=420243080&amp;lock=True" rel="noopener" target="_blank">TiC</a>
+                     </li>
+                                 </ul>
+               <div class="text-sm"><h5>Copyright © 2024 Farmers Cooperative Society. All Rights Reserved.</h5></div>
+            </div>
+
+
+         </div>
+      </footer>
+   </div>
+   <style>
+       .banner {
+           background-blend-mode: difference;
+           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='24' viewBox='0 0 88 24'%3E%3Cg fill-rule='evenodd'%3E%3Cg id='autumn' fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M10 0l30 15 2 1V2.18A10 10 0 0 0 41.76 0H39.7a8 8 0 0 1 .3 2.18v10.58L14.47 0H10zm31.76 24a10 10 0 0 0-5.29-6.76L4 1 2 0v13.82a10 10 0 0 0 5.53 8.94L10 24h4.47l-6.05-3.02A8 8 0 0 1 4 13.82V3.24l31.58 15.78A8 8 0 0 1 39.7 24h2.06zM78 24l2.47-1.24A10 10 0 0 0 86 13.82V0l-2 1-32.47 16.24A10 10 0 0 0 46.24 24h2.06a8 8 0 0 1 4.12-4.98L84 3.24v10.58a8 8 0 0 1-4.42 7.16L73.53 24H78zm0-24L48 15l-2 1V2.18A10 10 0 0 1 46.24 0h2.06a8 8 0 0 0-.3 2.18v10.58L73.53 0H78z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+       }
+   </style>
+
+</div></footer>
+
+
+   
+
+         <script defer="" src="https://content-services.dtn.com/ui-widgets/local-weather-widget/local-weather-widget-1.0-latest.js"></script>
+      <script defer="" src="https://content-services.dtn.com/ui-widgets/futures-table-widget/futures-table-widget-1.0-latest.js"></script>
+      <script defer="" src="https://content-services.dtn.com/ui-widgets/news-list-widget/news-list-widget-1.0-latest.js"></script>
+      <script defer="" src="https://content-services.dtn.com/ui-widgets/news-article-widget/news-article-widget-1.0-latest.js"></script>
+      <script defer="" src="https://content-services.dtn.com/ui-widgets/cash-bids-table-widget/cash-bids-table-widget-1.0-latest.js"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","author":{"@id":"#identity"},"copyrightHolder":{"@id":"#identity"},"copyrightYear":"2018","creator":{"@id":"#creator"},"dateCreated":"2018-10-30T11:29:33-05:00","dateModified":"2026-09-14T12:03:22-05:00","datePublished":"2018-10-30T11:29:00-05:00","description":"Leading Producers with Innovation and Excellence","headline":"Grain Services","image":{"@type":"ImageObject","url":"https://d2dkz0u1vsfyvm.cloudfront.net/eyJidWNrZXQiOiJmYXJtZXJzY29vcHNvY2lldHkiLCJrZXkiOiJ3ZWJzaXRlL2ltYWdlcy9JTUdfMDMzMS5qcGciLCJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjgyLCJwcm9ncmVzc2l2ZSI6ZmFsc2UsInRyZWxsaXNRdWFudGlzYXRpb24iOnRydWUsIm92ZXJzaG9vdERlcmluZ2luZyI6dHJ1ZSwib3B0aW1pemVTY2FucyI6dHJ1ZX0sInJlc2l6ZSI6eyJ3aWR0aCI6MTIwMCwiaGVpZ2h0Ijo2MzAsImZpdCI6ImNvdmVyIn0sInNoYXJwZW4iOnRydWV9fQ==?mtime=1542309900"},"inLanguage":"en-us","mainEntityOfPage":"https://www.farmerscoopsociety.com/grain/grain-services","name":"Grain Services","publisher":{"@id":"#creator"},"url":"https://www.farmerscoopsociety.com/grain/grain-services"},{"@id":"#identity","@type":"Organization"},{"@id":"#creator","@type":"Organization"},{"@type":"BreadcrumbList","description":"Breadcrumbs list","itemListElement":[{"@type":"ListItem","item":"https://www.farmerscoopsociety.com/","name":"Home Page","position":1},{"@type":"ListItem","item":"https://www.farmerscoopsociety.com/grain","name":"Grain","position":2},{"@type":"ListItem","item":"https://www.farmerscoopsociety.com/grain/grain-services","name":"Grain Services","position":3}],"name":"Breadcrumbs"}]}</script>
+   
+
+</body></html>
