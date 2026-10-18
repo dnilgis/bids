@@ -177,7 +177,10 @@ function main() {
   writeFileSync(join(ROOT, out), JSON.stringify({ generated: dir.generated, built: new Date().toISOString(),
     note: "Unread elevators grouped by company, with every website the repository already holds for each. "
       + "A site here is a lead for one capture (scripts/capture-pages.mjs --follow), never a claim that the business posts bids. "
-      + "Written by scripts/elevsites-list.mjs.", counts, companies: wl }, null, 1) + "\n");
+      + "Companies with no site on file keep only their counts (urlfinder.mjs is the tool for those). "
+      + "Written by scripts/elevsites-list.mjs.", counts,
+    companies: wl.map((c) => c.sites.length ? c : { company: c.company, rows: c.rows, realRows: c.realRows,
+      upperMidwest: c.upperMidwest, states: c.states, sites: [] }) }, null, 1) + "\n");
   writeFileSync(join(ROOT, list), "# UNREAD ELEVATORS' OWN SITES, FOR capture.yml (list=probe-lists/elevsites.txt, follow=3).\n"
     + `# Built by scripts/elevsites-list.mjs from data/directory.json of ${dir.generated}. Upper Midwest first.\n`
     + `# ${counts.companiesWithSite} companies with a site on file, ${counts.rowsWithSite} unread rows behind them.\n`
