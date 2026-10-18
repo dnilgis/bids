@@ -99,7 +99,7 @@ fi
 # cannot be rebuilt must never stop a price reaching the repo.
 stage "directory"
 if node scripts/build_directory.mjs; then
-  git add data/directory.json
+  git add data/directory.json data/elevator-ids.jsonl
 else
   echo "::warning::directory bake failed; committing the price without it"
 fi

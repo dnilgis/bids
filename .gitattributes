@@ -75,3 +75,13 @@ index.html             merge=generated
 # definition of a file on this list. Every other file in sources/ still stops
 # and asks.
 sources/portal-*.json  merge=generated
+
+
+# data/elevator-ids.jsonl, ADDED 2026-10-18, AND WHY IT IS THE OPPOSITE OF
+# EVERYTHING ABOVE. It is not regenerated: it is the ledger of permanent
+# elevator ids (lib/elevid.mjs), and a line once written is never taken back.
+# Keeping one side would lose the other run's new ids, and an id lost is an id
+# the next run may mint differently. `union` is git's built-in driver: both
+# sides' lines are kept, one key per line, so two runs that each added a key
+# keep both. readLedger() tolerates a key twice and the next write tidies it.
+data/elevator-ids.jsonl  merge=union

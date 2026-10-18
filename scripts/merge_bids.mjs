@@ -335,9 +335,13 @@ export function nearestOpen(bids, asOf = Date.now()) {
   return out;
 }
 
-export function shardOf(place, bids, town = null, phone = null, info = null) {
+export function shardOf(place, bids, town = null, phone = null, info = null, ids = null) {
   const f = bids[0];
   return { schema: SHARD_SCHEMA, place,
+           /* JOIN KEYS (2026-10-18): the permanent elevator id and the county,
+              from data/directory.json. See idsFromDirectory(). */
+           ...(ids ? { elevId: ids.elevId ?? null, fips: ids.fips ?? null,
+                       fipsVia: ids.fipsVia ?? null, fipsSure: ids.fipsSure ?? null } : {}),
            operator: f.operator, branch: f.branch ?? null, phone: phone || null,
            city: f.city, town: town?.town ?? null,
            townVia: town?.townVia ?? null, state: f.state,
@@ -1024,6 +1028,21 @@ export function summariseSameFeed(sameFeed) {
   return [...by.values()].sort((a, b) => b.priceDiffers - a.priceDiffers || b.rows - a.rows);
 }
 
+/* THE JOIN KEYS COME FROM THE DIRECTORY, NOT FROM HERE.
+ * scripts/build_directory.mjs gives every elevator its permanent elevId
+ * (lib/elevid.mjs, ledger data/elevator-ids.jsonl) and its county FIPS
+ * (lib/county.mjs). This only copies them by source id, so the feed and the
+ * map can never name one yard two ways. A source the directory does not hold
+ * yet (added since the last directory build) gets nulls, not an id made up
+ * here: an id minted twice in two places is how permanent ids stop being. */
+export function idsFromDirectory(dir) {
+  const out = new Map();
+  for (const e of dir?.elevators ?? [])
+    if (e && e.id && e.elevId)
+      out.set(e.id, { elevId: e.elevId, fips: e.fips ?? null, fipsVia: e.fipsVia ?? null, fipsSure: e.fipsSure ?? null });
+  return out;
+}
+
 function main() {
   const idxPath = join(ROOT, "data", "index.json");
   const plPath = join(ROOT, "geocodes", "places.json");
@@ -1058,6 +1077,10 @@ function main() {
   /* The same idea for a portal elevator's listing facts: the source file owns
      them (scripts/portal-sources.mjs writes it from the agsist feed). */
   const infoOf = new Map();
+  const dirPath = join(ROOT, "data", "directory.json");
+  let idsOf = new Map();
+  try { idsOf = idsFromDirectory(JSON.parse(readFileSync(dirPath, "utf8"))); }
+  catch { console.log("  data/directory.json not readable: elevId and fips are null this run"); }
   for (const s of index.sources) {
     const ph = String(s.phone || files.get(s.id)?.phone || "").trim();
     if (ph) phoneOf.set(s.id, ph);
@@ -1297,7 +1320,12 @@ function main() {
       /* For display only; see displayTown(). null unless `city` is a name. */
       town: town.town, townVia: town.townVia, state: f.state,
       lat: f.lat, lon: f.lon, precision: f.precision, mappable: f.mappable,
-      via: f.via, source: f.source, bids: bids.length,
+      via: f.via, source: f.source,
+      /* Permanent id and county (see idsFromDirectory). Two fields only: the
+         index is what every phone downloads first; how the county was found
+         is in the shard. */
+      elevId: idsOf.get(f.source)?.elevId ?? null, fips: idsOf.get(f.source)?.fips ?? null,
+      bids: bids.length,
       /* FOR A CONSUMER THAT RENDERS A DOLLAR SIGN. 16 of the 11,797 rows in
          the live file are CAD. A page drawing "$" + number in front of a
          reader in Michigan must be able to tell, and asking it to fetch the
@@ -1309,7 +1337,7 @@ function main() {
       best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
     });
     const info = bids.map((b) => infoOf.get(b.source)).find(Boolean) || null;
-    const shard = shardOf(place, bids, town, phone, info);
+    const shard = shardOf(place, bids, town, phone, info, idsOf.get(f.source) ?? { elevId: null, fips: null });
     const path = join(outDir, `${slug}.json`);
     const text = JSON.stringify(shard, null, 1);
     /* Compare before writing. An identical rewrite still updates the mtime and
@@ -1370,6 +1398,10 @@ function main() {
         + "A browser should read merged-index.json plus the shards it needs "
         + "instead -- see the header of scripts/merge_bids.mjs.",
     counts: out.counts,
+    /* source -> { elevId, fips, fipsVia, fipsSure } for every source with a
+       row here, so a server-side join need not fetch the directory. */
+    elevators: Object.fromEntries([...new Set(kept.map((b) => b.source))].sort()
+      .filter((sid) => idsOf.has(sid)).map((sid) => [sid, idsOf.get(sid)])),
     bids: kept,
   };
   const allPath = arg("--out-all", join(ROOT, "data", "merged-all.json"));

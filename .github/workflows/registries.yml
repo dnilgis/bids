@@ -408,7 +408,7 @@ jobs:
           git rm -q --cached --ignore-unmatch data/gaps/no-website.csv data/gaps/no-board-published.csv 2>/dev/null || true
           [ -d debug/registries ] && git add debug/registries || true
           git reset -q -- debug/registries/survey 2>/dev/null || true
-          git add geocodes/places.json data/directory.json 2>/dev/null || true
+          git add geocodes/places.json data/directory.json data/elevator-ids.jsonl 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
           bash scripts/commit-and-push.sh "registries: $n businesses, plus the state survey [skip ci]"
 

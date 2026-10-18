@@ -103,6 +103,6 @@ jobs:
       # minutes and this job runs for several. A bare push throws the work away.
       - name: Commit
         run: |
-          git add data/known-elevators.json data/directory.json geocodes/places.json
+          git add data/known-elevators.json data/directory.json data/elevator-ids.jsonl geocodes/places.json
           n=$(node -e "process.stdout.write(String(require('./data/directory.json').counts.total))")
           bash scripts/commit-and-push.sh "directory: $n elevators known [skip ci]"

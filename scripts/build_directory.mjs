@@ -40,6 +40,8 @@ import { stateOf as uiState } from "../lib/freshness.mjs";
 import { orgKey } from "../lib/orgkey.mjs";
 import { yardLosers } from "../lib/same-yard.mjs";
 import { awaitingFirstFile } from "../lib/sources.mjs";
+import { assignIds, readLedger, writeLedger } from "../lib/elevid.mjs";
+import { loadCounties, fipsFor } from "../lib/county.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -443,6 +445,56 @@ elevators.sort((a, b) => (a.state || "").localeCompare(b.state || "") ||
                          (a.operator || "").localeCompare(b.operator || "") ||
                          (a.location || "").localeCompare(b.location || ""));
 
+/* ── JOIN KEYS: A PERMANENT ID AND A COUNTY, ON EVERY ROW ─────────────────
+   2026-10-18. Weather, land, rent and program data are all by county, and a
+   join needs an id that survives a rename. elevId comes from lib/elevid.mjs
+   and the ledger data/elevator-ids.jsonl (never changed, never reused; the
+   rule is in docs/ELEVATOR-IDS.md). fips comes from lib/county.mjs: the
+   licence roll's county where it names one, else the point in the Census
+   outline, with fipsVia saying which and fipsSure false near a county line.
+   Additive fields only: nothing a consumer read before has moved. */
+const LEDGER = join(ROOT, "data", "elevator-ids.jsonl");
+const TODAY = new Date(NOW_MS).toISOString().slice(0, 10);
+const idRows = elevators.map((e) => {
+  const s = byIdSrc.get(e.id);
+  const claims = s ? [...[].concat(s.registryId ?? []).filter(Boolean),
+                      ...(Array.isArray(s.sameAsKnown) ? s.sameAsKnown : []).map((k) => "known:" + k)] : [];
+  return { id: e.id, operator: e.operator, location: e.location, state: e.state,
+           lat: e.lat ?? null, lon: e.lon ?? null, board: e.status !== "known", claims };
+});
+const idsOut = assignIds(idRows, readLedger(LEDGER), TODAY);
+/* A source that shares a yard with one priced more recently draws no row, but
+   it is that yard: its key is written against the yard's id, so the day it
+   becomes the one drawn, the id does not move. */
+for (const [loser, winner] of yardGone) {
+  const w = idsOut.ledger.get(winner), s = byIdSrc.get(loser);
+  if (w && !idsOut.ledger.has(loser))
+    idsOut.ledger.set(loser, { key: loser, id: w.id, since: TODAY, via: "same-yard:" + winner,
+                               st: (s?.state || "").toUpperCase() || null, op: s?.operator || null, loc: s?.location || null });
+}
+writeLedger(LEDGER, idsOut.ledger);
+const COUNTIES = loadCounties(join(ROOT, "vendor", "census-counties", "counties.geo.json"));
+const fipsTally = { withFips: 0, sure: 0, byVia: {}, licenceDisagreesWithPoint: 0, why: {} };
+for (let i = 0; i < elevators.length; i++) {
+  const e = elevators[i];
+  const f = fipsFor(COUNTIES, e);
+  if (f.fips) {
+    fipsTally.withFips++;
+    if (f.fipsSure) fipsTally.sure++;
+    fipsTally.byVia[f.fipsVia] = (fipsTally.byVia[f.fipsVia] ?? 0) + 1;
+    /* How often the roll and the point disagree, so the choice above is a
+       measured one and not only an argued one. */
+    if (f.fipsVia === "licence-county" && e.placed) {
+      const p = fipsFor(COUNTIES, { ...e, county: null });
+      if (p.fips && p.fips !== f.fips) fipsTally.licenceDisagreesWithPoint++;
+    }
+  } else {
+    const w = String(f.fipsWhy).replace(/"[^"]*"/g, '"..."').replace(/ in [^,]+, [A-Z]{2}, not in [A-Z]{2}$/, " in another state");
+    fipsTally.why[w] = (fipsTally.why[w] ?? 0) + 1;
+  }
+  elevators[i] = { id: e.id, elevId: idsOut.ids.get(e.id), ...e, ...f };
+}
+
 const tally = (fn) => elevators.reduce((m, e) => (m[fn(e)] = (m[fn(e)] || 0) + 1, m), {});
 const counts = {
   total: elevators.length,
@@ -467,6 +519,9 @@ const counts = {
   knownMergedByName,
   knownKeptOnADifferentPhone,
   operators: new Set(elevators.map((e) => e.operator)).size,
+  /* elevId: every row has one. kept = key already in the ledger. */
+  elevIds: idsOut.counts,
+  fips: fipsTally,
 };
 
 writeFileSync(join(ROOT, "data", "directory.json"),
@@ -474,7 +529,9 @@ writeFileSync(join(ROOT, "data", "directory.json"),
     generated: index.generated || new Date().toISOString(),
     note: "Every elevator this project knows of. 'read' means we have its board; " +
           "'known' means we know it exists and have not built a way in yet. " +
-          "precision 'town' is a ZIP centroid, not the elevator itself.",
+          "precision 'town' is a ZIP centroid, not the elevator itself. " +
+          "elevId is permanent (docs/ELEVATOR-IDS.md); fips is the county, fipsVia how it was found, " +
+          "fipsSure false when the point is near a county line on the 20m Census outline.",
     counts,
     elevators,
   }, null, 1) + "\n");
@@ -491,6 +548,9 @@ if (unknownHealth.size) {
       `Add it to KNOWN_HEALTH and MAP_STATUS.`);
 }
 console.log("  precision:", JSON.stringify(counts.byPrecision));
+console.log("  elevId:   ", JSON.stringify(counts.elevIds));
+console.log("  fips:      %d of %d rows (%d sure); by how: %s", fipsTally.withFips, elevators.length,
+  fipsTally.sure, JSON.stringify(fipsTally.byVia));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);
 console.log("  barchart:   %d dropped as the same operator in the same town as a board we read, " +
