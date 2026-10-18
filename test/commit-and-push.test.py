@@ -256,6 +256,11 @@ def main():
         # registries run, so two writers cannot overlap.
         "debug/",
     }
+    # A LEDGER IS NEITHER. data/elevator-ids.jsonl (lib/elevid.mjs) is
+    # appended to, never regenerated and never edited by hand in a way two
+    # jobs could disagree about: keeping one side would lose the other run's
+    # ids, so its answer is git's built-in `union`, and it must say exactly that.
+    UNION = {"data/elevator-ids.jsonl"}
     import re as _re2
     staged, roots = set(), [ROOT / "scripts", ROOT / ".github" / "workflows"]
     for d in roots:
@@ -280,6 +285,10 @@ def main():
             continue
         attr = subprocess.run(["git", "check-attr", "merge", "--", tok],
                               cwd=ROOT, capture_output=True, text=True).stdout
+        if tok in UNION:
+            if "merge: union" not in attr:
+                unanswered.append(tok)
+            continue
         if "merge: generated" not in attr:
             unanswered.append(tok)
     check(staged, "found the staged paths to check at all", "%d paths" % len(staged))
