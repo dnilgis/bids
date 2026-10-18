@@ -1,0 +1,41 @@
+{
+  "id": "agwrx-brookings",
+  "operator": "AgWrx Coop",
+  "location": "Brookings",
+  "state": "SD",
+  "platform": "agricharts-cashgrid",
+  "url": "https://agwrx.agricharts.com/markets/cashgrid.php",
+  "locationId": "84740",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-7/www-agwrxcoop-com-grain-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.agwrxcoop.com/grain/cash-bids) loads https://agwrx.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 84740 \"Brookings\" in its own location selector (setLocation); the page was filtered to another location, so no rows for this one were in the saved copy. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://agwrx.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: only the board's label names this location. The licence roll holds exactly one row of this company whose town is that label (reg:SD|agwrxcooperative|brookings: Brookings, SD), and that row is the town and the coordinate.\n\nCLAIMS: reg:SD|agwrxcooperative|brookings (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": null,
+  "lat": 44.33765,
+  "lon": -96.79105,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://www.agwrxcoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is town precision: the licence row's.",
+  "registryId": "reg:SD|agwrxcooperative|brookings"
+}

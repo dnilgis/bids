@@ -1,0 +1,43 @@
+{
+  "id": "statelinecoop-lakota",
+  "operator": "StateLine Cooperative",
+  "location": "Lakota ",
+  "state": "IA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://statelinecoop.agricharts.com/markets/cashgrid.php",
+  "locationId": "951",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-5/statelinecoop-com-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://statelinecoop.com/cash-bids/) loads https://statelinecoop.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 951 \"Lakota\" with 11 bid row(s) in Corn, Soybeans, published at 1906 Hwy 9, Lakota, IA, 50451. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://statelinecoop.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: company, branch, town, state, ZIP and phone are copied from data/known-elevators.json (row StateLine Cooperative | Lakota | Lakota , IA), joined on the board's label by the sweep's own joinDirectory().\n\nCLAIMS: known:StateLine Cooperative|Lakota|Lakota |IA (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "50451",
+  "lat": 43.3847448,
+  "lon": -94.0858379,
+  "latPrecision": "street",
+  "phone": "15158862461",
+  "email": null,
+  "website": "https://statelinecoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate.",
+  "sameAsKnown": [
+    "StateLine Cooperative|Lakota|Lakota |IA"
+  ]
+}

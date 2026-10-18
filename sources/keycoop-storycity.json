@@ -1,0 +1,43 @@
+{
+  "id": "keycoop-storycity",
+  "operator": "Key Cooperative",
+  "location": "Story City",
+  "state": "IA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://keycoop.agricharts.com/markets/cashgrid.php",
+  "locationId": "21273",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-7/www-keycoop-com-cash-bids-futures (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.keycoop.com/cash-bids-futures) loads https://keycoop.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 21273 \"Story City\" in its own location selector (setLocation); the page was filtered to another location, so no rows for this one were in the saved copy. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://keycoop.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: company, branch, town, state, ZIP and phone are copied from data/known-elevators.json (row Key Cooperative | Story City | Story City, IA), joined on the board's label by the sweep's own joinDirectory().\n\nCLAIMS: known:Key Cooperative|Story City|Story City|IA (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "50248",
+  "lat": 42.1835,
+  "lon": -93.5988,
+  "latPrecision": "town",
+  "phone": "15157334358",
+  "email": null,
+  "website": "https://www.keycoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is town precision: the coordinate data/directory.json already draws for known:Key Cooperative|Story City|Story City|IA.",
+  "sameAsKnown": [
+    "Key Cooperative|Story City|Story City|IA"
+  ]
+}

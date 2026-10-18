@@ -1,0 +1,43 @@
+{
+  "id": "americanplains-susank",
+  "operator": "American Plains Co-op",
+  "location": "Susank",
+  "state": "KS",
+  "platform": "agricharts-cashgrid",
+  "url": "https://americanplains.agricharts.com/markets/cashgrid.php",
+  "locationId": "88004",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-7/www-apcoop-com-grain-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.apcoop.com/grain/cash-bids) loads https://americanplains.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 88004 \"Susank\" with 8 bid row(s) in Wheat, Milo, Corn, Soybeans, published at 95 Hoisington St, Susank, KS, 67544. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://americanplains.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location 88004 in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).\n\nCLAIMS: known:3091 (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "67544",
+  "lat": 38.63923,
+  "lon": -98.775653,
+  "latPrecision": "street",
+  "phone": null,
+  "email": null,
+  "website": "https://www.apcoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate.",
+  "sameAsKnown": [
+    "3091"
+  ]
+}

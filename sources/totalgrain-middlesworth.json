@@ -1,0 +1,45 @@
+{
+  "id": "totalgrain-middlesworth",
+  "operator": "Total Grain Marketing",
+  "location": "Shelbyville",
+  "state": "IL",
+  "platform": "agricharts-cashgrid",
+  "url": "https://totalgrain.agricharts.com/markets/cashgrid.php",
+  "locationId": "83075",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-2/www-totalgrainmarketing-com-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.totalgrainmarketing.com/Cash-Bids) loads https://totalgrain.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 83075 \"Middlesworth\" with 15 bid row(s) in Corn (#2 Yellow), Soybeans (#2 Yellow), Wheat (Soft Red Winter, Chicago), published at 1346 N 2300 E Rd, Shelbyville, IL, 62565. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://totalgrain.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: company, branch, town, state, ZIP and phone are copied from data/known-elevators.json (row Total Grain Marketing | Middlesworth | Shelbyville, IL), joined on the board's label by the sweep's own joinDirectory().\n\nCLAIMS: known:Total Grain Marketing|Middlesworth|Shelbyville|IL, reg:IL|totalgrainmarketingllc|shelbyvillemworth (same company, same state and town; one yard on two lists).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "62565",
+  "lat": 39.412167,
+  "lon": -88.715247,
+  "latPrecision": "street",
+  "phone": "12177742888",
+  "email": null,
+  "website": "https://www.totalgrainmarketing.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate.",
+  "labelInFeed": "Middlesworth",
+  "sameAsKnown": [
+    "Total Grain Marketing|Middlesworth|Shelbyville|IL"
+  ],
+  "registryId": "reg:IL|totalgrainmarketingllc|shelbyvillemworth"
+}
