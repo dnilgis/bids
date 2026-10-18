@@ -218,3 +218,19 @@ test("Five Star refuses without quotes, and refuses a basis read in the wrong un
   const wrong = FS.replace(/<td([^>]*)>(-?0\.\d+)<\/td>/g, (m, a, v) => `<td${a}>${(Number(v) * 100).toFixed(0)}</td>`);
   assert.throws(() => fivestar(wrong, "u", { contracts: TONIGHT }), FiveStarRefused);
 });
+
+/* 2026-10-18: one synced directory row, NEW Cooperative "Morton Mills" at
+   Villisca, IL with Iowa's ZIP 50864, made "Villisca" two-state and dropped a
+   real Iowa yard. A row whose ZIP is in another state places nothing. */
+import { zipContradicts, evidence as ownEvidence } from "../scripts/own-board-manifests.mjs";
+test("a directory row whose own ZIP is in another state is not evidence", () => {
+  assert.equal(zipContradicts({ zip: "50864", state: "IL" }), true);
+  assert.equal(zipContradicts({ zip: "50864", state: "IA" }), false);
+  assert.equal(zipContradicts({ zip: null, state: "IL" }), false, "no ZIP: kept");
+  assert.equal(zipContradicts({ zip: "00000", state: "IL" }), false, "a ZIP the table lacks: kept");
+  const ev = ownEvidence(["NEW Cooperative, Inc."]);
+  assert.ok(!ev.some((r) => r.branch === "Morton Mills" && r.state === "IL"));
+  const p = place("Villisca", ev);
+  assert.equal(p.state, "IA");
+  assert.equal(p.city, "Villisca");
+});

@@ -89,7 +89,28 @@ const title = (s) => tidy(s).toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperC
 export const BUYER = /\b(agp|cargill|poet|valero|adm|golden grain|gge|green plains|soy processing|reicks|christensen farms|bunge|cgb)\b/i;
 const STATES = new Set("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" "));
 
+/* A ROW THAT CONTRADICTS ITSELF PLACES NOTHING. The 2026-10-18 directory sync
+   brought in NEW Cooperative "Morton Mills" at Villisca, IL, ZIP 50864, and
+   50864 is Villisca, IA in the USPS table (geocodes/zip-towns.json). Counted,
+   that one row made "Villisca" match this operator in two states and dropped
+   newcoop-villisca, a yard the roster, the directory and the licence roll all
+   put in Iowa. A row whose own ZIP sits in another state is not evidence of
+   either state, so it is left out; a row with no ZIP, or a ZIP the table does
+   not hold, is kept as it was. */
+let ZIP_STATE = null;
+export function zipContradicts(r) {
+  ZIP_STATE ??= JSON.parse(rd("geocodes/zip-towns.json")).zips;
+  const z = String(r.zip ?? "").slice(0, 5);
+  const hit = ZIP_STATE[z];
+  return Boolean(hit && r.state && hit[1] !== r.state);
+}
+
 export function evidence(names) {
+  const rows = rawEvidence(names);
+  return rows.filter((r) => !zipContradicts(r));
+}
+
+function rawEvidence(names) {
   const want = new Set(names.map(norm));
   const known = JSON.parse(rd("data/known-elevators.json")).elevators
     .filter((e) => want.has(norm(e.facility || e.company)) && e.state)
