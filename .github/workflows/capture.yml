@@ -20,6 +20,20 @@
 # agsist's api-jobs.yml (build=elevsites) can read them from this public repo.
 #
 #   gh workflow run capture.yml -R dnilgis/bids -f list=probe-lists/elevsites.txt -f follow=3 -f shards=8 -f save=elevsites
+#
+# ROUND TWO (2026-10-18). pick chooses what the link picker looks for (bids,
+# schedule: discount/shrink/drying/storage schedules, land: county assessor,
+# auditor, recorder sales pages), depth=2 lets it pick again from the pages it
+# followed (still at most follow pages per listed page), paths tries a few
+# common paths on each listed site once. prep=county-sites builds
+# probe-lists/county-sites.txt from Wikidata in the plan job first. A list
+# with a sibling .json (probe-lists/schedules.json) has that file saved as the
+# worklist; otherwise data/gaps/elevsites.json is, as before.
+#
+#   gh workflow run capture.yml -R dnilgis/bids -f list=probe-lists/elevsites-unclear.txt -f follow=6 -f depth=2 \
+#     -f paths=/cash-bids,/grain,/markets,/bids,/cashbids,/grain-bids -f shards=8 -f save=elevsites
+#   gh workflow run capture.yml -R dnilgis/bids -f list=probe-lists/schedules.txt -f pick=schedule -f follow=6 -f depth=2 -f shards=16 -f save=schedules
+#   gh workflow run capture.yml -R dnilgis/bids -f prep=county-sites -f list=probe-lists/county-sites.txt -f pick=land -f follow=6 -f depth=2 -f shards=16 -f save=countysites
 name: capture pages
 on:
   workflow_dispatch:
@@ -33,9 +47,25 @@ on:
         required: false
         default: ""
       follow:
-        description: "Also capture up to N bid-looking links per page (0-5); turns on robots, pauses and digests"
+        description: "Also capture up to N bid-looking links per page (0-6); turns on robots, pauses and digests"
         required: false
         default: "0"
+      pick:
+        description: "What the link picker looks for: bids | schedule | land"
+        required: false
+        default: "bids"
+      depth:
+        description: "1, or 2 to pick again from the followed pages (same budget)"
+        required: false
+        default: "1"
+      paths:
+        description: "Common paths to try once on each listed site, comma separated (e.g. /cash-bids,/grain)"
+        required: false
+        default: ""
+      prep:
+        description: "Build the list in the plan job first: empty | county-sites"
+        required: false
+        default: ""
       shards:
         description: "Split the list over this many parallel jobs (1-16)"
         required: false
@@ -47,7 +77,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: capture-pages
+  group: capture-pages-${{ inputs.save }}
   cancel-in-progress: false
 jobs:
   plan:
@@ -67,6 +97,30 @@ jobs:
           case "$SAVE" in main|master|HEAD|refs/*|*..*) echo "::error::save must be a side branch, not $SAVE"; exit 1;; esac
           echo "n=$n" >> "$GITHUB_OUTPUT"
           echo "shards=[$(seq -s, 0 $((n-1)))]" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: ${{ inputs.prep != '' }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.prep != '' }}
+        with:
+          node-version: 22
+      - name: Build the list
+        if: ${{ inputs.prep != '' }}
+        env:
+          PREP: ${{ inputs.prep }}
+        run: |
+          case "$PREP" in
+            county-sites) node scripts/county-sites-list.mjs --out-dir /tmp/worklist ;;
+            *) echo "::error::unknown prep $PREP"; exit 1 ;;
+          esac
+          head -5 /tmp/worklist/*.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.prep != '' }}
+        with:
+          name: worklist
+          path: /tmp/worklist
+          retention-days: 14
   capture:
     needs: plan
     runs-on: ubuntu-latest
@@ -82,11 +136,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.prep != '' }}
+        with:
+          name: worklist
+          path: /tmp/worklist
+      - name: Use the built list, and pdftotext for picked PDFs
+        if: ${{ inputs.prep != '' || inputs.pick != 'bids' }}
+        run: |
+          if [ -d /tmp/worklist ]; then cp /tmp/worklist/* probe-lists/; fi
+          if [ "${{ inputs.pick }}" != "bids" ]; then sudo apt-get install -y -qq poppler-utils >/dev/null || echo "::warning::no pdftotext; PDFs saved without text"; fi
       - name: Capture
         env:
           URLS: ${{ inputs.urls }}
           LIST: ${{ inputs.list }}
           FOLLOW: ${{ inputs.follow }}
+          PICK: ${{ inputs.pick }}
+          DEPTH: ${{ inputs.depth }}
+          PATHS: ${{ inputs.paths }}
           N: ${{ needs.plan.outputs.n }}
           I: ${{ matrix.shard }}
         run: |
@@ -98,6 +165,9 @@ jobs:
           fi
           f=$(printf '%s' "$FOLLOW" | tr -cd 0-9); f=${f:-0}
           if [ "$f" -gt 0 ]; then args+=(--follow "$f"); fi
+          case "${PICK:-bids}" in bids|schedule|land) args+=(--pick "${PICK:-bids}") ;; *) echo "::error::pick must be bids, schedule or land"; exit 1;; esac
+          dp=$(printf '%s' "$DEPTH" | tr -cd 0-9); if [ "${dp:-1}" -gt 1 ]; then args+=(--depth 2); fi
+          pp=$(printf '%s' "$PATHS" | tr -cd 'A-Za-z0-9._~/,-'); if [ -n "$pp" ]; then args+=(--paths "$pp"); fi
           if [ "$N" -gt 1 ]; then args+=(--shard "$I/$N"); fi
           # shellcheck disable=SC2086 -- the box is a space-separated list on purpose
           node scripts/capture-pages.mjs "${args[@]}" $URLS
@@ -136,10 +206,14 @@ jobs:
             printf '%s\n' "# $SAVE" "" "Captures from capture.yml (never deployed, never main). One folder per run." > "$W/README.md"
           fi
           mkdir -p "$W/$D"
-          for a in /tmp/caps/*/; do mkdir -p "$W/$D/$(basename "$a")"; cp -r "$a". "$W/$D/$(basename "$a")/"; done
-          if [ -f data/gaps/elevsites.json ]; then cp data/gaps/elevsites.json "$W/$D/worklist.json"; fi
-          if [ -n "$LIST" ] && [ -f "$LIST" ]; then cp "$LIST" "$W/$D/list.txt"; fi
-          printf '{"run": "%s", "sha": "%s", "list": "%s"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$LIST" > "$W/$D/run.json"
+          for a in /tmp/caps/*/; do [ "$(basename "$a")" = worklist ] && continue; mkdir -p "$W/$D/$(basename "$a")"; cp -r "$a". "$W/$D/$(basename "$a")/"; done
+          J="${LIST%.txt}.json"; B=/tmp/caps/worklist
+          if [ -n "$LIST" ] && [ -f "$B/$(basename "$J")" ]; then cp "$B/$(basename "$J")" "$W/$D/worklist.json"
+          elif [ -n "$LIST" ] && [ -f "$J" ]; then cp "$J" "$W/$D/worklist.json"
+          elif [ -f data/gaps/elevsites.json ]; then cp data/gaps/elevsites.json "$W/$D/worklist.json"; fi
+          if [ -n "$LIST" ] && [ -f "$B/$(basename "$LIST")" ]; then cp "$B/$(basename "$LIST")" "$W/$D/list.txt"
+          elif [ -n "$LIST" ] && [ -f "$LIST" ]; then cp "$LIST" "$W/$D/list.txt"; fi
+          printf '{"run": "%s", "sha": "%s", "list": "%s", "pick": "%s"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$LIST" "${{ inputs.pick }}" > "$W/$D/run.json"
           # site owners' own keys (Maps, Stripe, Mapbox...) out before the push:
           # GitHub push protection refuses the whole push otherwise
           python3 scripts/redact_secrets.py "$W/$D"
