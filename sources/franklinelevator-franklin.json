@@ -1,0 +1,43 @@
+{
+  "id": "franklinelevator-franklin",
+  "operator": "Franklin Elevator Inc.",
+  "location": "Franklin",
+  "state": "IL",
+  "platform": "agricharts-cashgrid",
+  "url": "https://franklinelevator.com/markets/cashgrid.php",
+  "locationId": "3511",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-0/franklinelevator-com-markets-cash-php (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://franklinelevator.com/markets/cash.php) loads https://franklinelevator.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 3511 \"Franklin\" in its own location selector (setLocation); the page was filtered to another location, so no rows for this one were in the saved copy. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://franklinelevator.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: company, branch, town, state, ZIP and phone are copied from data/known-elevators.json (row Franklin Elevator Inc. | Franklin | Franklin, IL), joined on the board's label by the sweep's own joinDirectory().\n\nCLAIMS: known:Franklin Elevator Inc.|Franklin|Franklin|IL (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "62638",
+  "lat": 39.6222,
+  "lon": -90.0889,
+  "latPrecision": "town",
+  "phone": "12176752393",
+  "email": null,
+  "website": "https://franklinelevator.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is town precision: the coordinate data/directory.json already draws for known:Franklin Elevator Inc.|Franklin|Franklin|IL.",
+  "sameAsKnown": [
+    "Franklin Elevator Inc.|Franklin|Franklin|IL"
+  ]
+}

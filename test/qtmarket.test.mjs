@@ -46,8 +46,9 @@ test("no quotes, a page that is not the script, and a request with no loc are re
 });
 
 test("the manifests on disk are exactly what the generator writes", () => {
-  /* 2 on 2026-10-02 afternoon; 13 after the next four QT sites the same evening. */
-  assert.equal(SITES.length, 13);
+  /* 2 on 2026-10-02 afternoon; 13 after the next four QT sites the same evening;
+     15 with Central Grain Sauk Centre and Pride Grain (elevsites capture, 2026-10-18). */
+  assert.equal(SITES.length, 15);
   assert.ok(SITES.every((x) => x.knownId || x.registryId), "every yard names the row it is");
   for (const m of build())
     assert.deepEqual(JSON.parse(readFileSync(new URL(`../sources/${m.id}.json`, import.meta.url), "utf8")), m, m.id);
@@ -64,4 +65,32 @@ test("Premier Grain Leesburg: 'Call in for Cash Bids.' is an empty board, refuse
   let other = null;
   try { extract("<html></html>", scriptUrl("444"), { contracts: SAME_HOUR }); } catch (e) { other = e; }
   assert.notEqual(other.empty, true, "a body that is not the script is not an empty board");
+});
+
+/* 2026-10-18: Central Grain Sauk Centre (437) and Pride Grain (439), the script
+ * bodies the elevsites capture saved (Last Updated 10/17/2026). The quotes are
+ * the CBOT futures Total Grain's AgriCharts board printed in the same capture
+ * run, stamped 2026-10-16 17:42 UTC: Dec 26 corn 474-2, Mar 27 corn 486-4,
+ * Nov 26 beans 1261-2, Jan 27 1275-6, Mar 27 1284-2. Worked by hand: Sauk
+ * Centre Oct corn $3.83 - (-0.91) = 474c, a quarter cent under 474.25. */
+const OCT16 = [["ZCZ26", 474.25], ["ZCH27", 486.5], ["ZSX26", 1261.25], ["ZSF27", 1275.75], ["ZSH27", 1284.25]]
+  .map(([symbol, lastCents]) => ({ symbol, lastCents, priced: true }));
+const fx17 = (loc) => readFileSync(new URL(`../fixtures/qtmarket-${loc}-2026-10-17.js`, import.meta.url), "utf8");
+
+test("Central Grain Sauk Centre: all ten rows fit the contract they name within half a cent", () => {
+  const rows = extract(fx17("437"), scriptUrl("437"), { contracts: OCT16 });
+  assert.equal(rows.length, 10);
+  assert.equal(rows.unreconciled.length, 0);
+  assert.deepEqual([...new Set(rows.map((r) => r.futures))], ["ZCZ26", "ZCH27", "ZSX26", "ZSF27", "ZSH27"]);
+  for (const r of rows) {
+    const q = OCT16.find((c) => c.symbol === r.futures).lastCents;
+    assert.ok(Math.abs(r.impliedFuturesCents - q) <= 0.5, r.raw);
+  }
+  assert.equal(rows[0].cash, 3.83); assert.equal(rows[0].impliedFuturesCents, 474);
+});
+
+test("Pride Grain: five rows, corn on Dec 26 and beans on Nov 26", () => {
+  const rows = extract(fx17("439"), scriptUrl("439"), { contracts: OCT16 });
+  assert.deepEqual(rows.map((r) => [r.commodity, r.futures, r.cash]),
+    [["Corn", "ZCZ26", 4.09], ["Corn", "ZCZ26", 4.09], ["Corn", "ZCZ26", 4.09], ["Soybeans", "ZSX26", 11.96], ["Soybeans", "ZSX26", 11.96]]);
 });

@@ -102,9 +102,14 @@ export function widgetsIn(responses) {
   for (const e of responses) {
     let host;
     try { host = new URL(e.url).hostname.toLowerCase(); } catch { continue; }
-    if (!/^[a-z0-9_-]+\.agricharts\.com$/.test(host)) continue;
-    if (!/\/inc\/cashbids\/cashbids(-js)?\.php/.test(e.url)) continue;
     if (!e.body) continue;
+    /* AN AGRICHARTS SITE ON THE OPERATOR'S OWN DOMAIN serves its cash page at
+       /markets/cash.php with the board's own location_filter selector; the
+       cashgrid is the same site's /markets/cashgrid.php. */
+    const own = /\/markets\/cash\.php$/.test(new URL(e.url).pathname)
+      && /name=["']location_filter["']/.test(e.body) && /agricharts\.com/.test(e.body);
+    if (!own && !/^[a-z0-9_-]+\.agricharts\.com$/.test(host)) continue;
+    if (!own && !/\/inc\/cashbids\/cashbids(-js)?\.php/.test(e.url)) continue;
     out.push({ host, url: e.url, body: e.body });
   }
   return out;
