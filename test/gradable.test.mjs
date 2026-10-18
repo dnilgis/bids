@@ -141,8 +141,24 @@ test("only a mode that has been SEEN on a board is enabled", () => {
     enabledBy[String(s.cashRounding)] = (enabledBy[String(s.cashRounding)] ?? 0) + 1;
   assert.equal(enabledBy["floor-cent"], 17,
     "the measured mode: every always_down market, Big Stone City among them");
-  assert.equal(enabledBy["round-cent"], 1, "one probe, not six");
-  assert.equal(enabledBy["round-cent-either"], 1, "one probe, not ten");
+  /* 2026-10-18: ONE PROBE EACH, UNTIL THE PROBE PROVED IT. The rest of each
+     derived mode is enabled only on the probe's own record: its residuals in
+     data/rounding-residuals.json are exactly the set the derivation above
+     produces for that mode, over enough reads to mean it, and the opposite
+     half never appears. Take that record away and this goes back to one. */
+  const res = JSON.parse(readFileSync(new URL("../data/rounding-residuals.json", import.meta.url), "utf8")).sources;
+  const PROBE = { "round-cent": ["poetgrain-fairmontne", ["-0.25", "-0.5", "0", "0.25"], "0.5"],
+                  "round-cent-either": ["poetgrain-jewellia", ["-0.25", "0", "0.25", "0.5"], "-0.5"] };
+  for (const [mode, [probe, set, never]] of Object.entries(PROBE)) {
+    const r = res[probe];
+    const p = poet.find((s) => s.id === probe);
+    const proved = r && r.reads >= 1000 && !(never in r.residuals)
+      && JSON.stringify(Object.keys(r.residuals).sort()) === JSON.stringify(set)
+      && p?.enabled && p?.cashRounding === mode;
+    if (!proved) assert.equal(enabledBy[mode], 1, `${mode}: one probe until ${probe} proves it`);
+    else for (const s of poet.filter((x) => x.enabled && x.cashRounding === mode && x.id !== probe))
+      assert.match(s.note, new RegExp(`ENABLED 2026-10-18: .*${probe}`), `${s.id} names the probe that proved its mode`);
+  }
   for (const s of poet.filter((x) => !x.enabled))
     assert.ok(s._pending, `${s.id} is held with no reason written down`);
   for (const s of poet.filter((x) => x.enabled))
