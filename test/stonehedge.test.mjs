@@ -471,19 +471,58 @@ test("manifests are what the generator produces from the evidence, and coordinat
   assert.ok(manifests.length >= 73);
   const roster = JSON.parse(readFileSync(join(ROOT, "data/roster/barchart-roster-2026-09-24.json"), "utf8"));
   const text = JSON.stringify(roster);
+  const geo = JSON.parse(readFileSync(join(ROOT, "geocodes/places.json"), "utf8"));
   let nulls = 0;
   for (const x of manifests) {
     const disk = JSON.parse(readFileSync(join(ROOT, "sources", `${x.manifest.id}.json`), "utf8"));
     assert.deepEqual(disk, x.manifest, `${x.manifest.id} on disk differs from the generator`);
     if (disk.lat == null) { nulls++; assert.equal(disk.lon, null); }
+    else if (disk.registryId || disk.sameAsKnown) {
+      /* licence-roll evidence: the coordinate is one of the rows it claims, never a lookup */
+      const claimed = [...[].concat(disk.registryId ?? []).map((r) => geo.registry[r.replace(/^reg:/, "")]),
+                       ...(disk.sameAsKnown ?? []).map((k) => geo.known[k])];
+      assert.ok(claimed.some((c) => c && c.lat === disk.lat && c.lon === disk.lon && c.precision === disk.latPrecision),
+        `${disk.id}: coordinate is not one of the rows it claims`);
+    }
     else { assert.ok(text.includes(String(disk.lat)) && text.includes(String(disk.lon)), `${disk.id}: coordinate not in the roster`); }
   }
   assert.ok(nulls >= 0);
 });
 
-test("operators not proven in the roster have no manifest", () => {
-  const files = readdirSync(join(ROOT, "sources"));
-  assert.equal(files.filter((f) => /^(cendakcooperative|unitedcooperative)-/.test(f)).length, 0);
+/* Cendak and United Cooperative are not in the roster. Since 2026-10-18 they are
+   identified from the licence rolls instead (scripts/stonehedge-manifests.mjs,
+   registryEvidence). What used to be "no manifest at all" is now checked row by
+   row: every one claims a licence row of ITS operator, in ITS state, whose town
+   IS the label or the label less one generic word, and a label with no such row
+   or one that shares its town with another label has no manifest. */
+test("operators not in the roster: a manifest only where a licence row names the town", () => {
+  const geo = JSON.parse(readFileSync(join(ROOT, "geocodes/places.json"), "utf8"));
+  const want = { cendakcooperative: ["CenDak Cooperative", "ND"], unitedcooperative: ["United Cooperative", "WI"] };
+  const files = readdirSync(join(ROOT, "sources")).filter((f) => /^(cendakcooperative|unitedcooperative)-/.test(f));
+  const n = (s) => String(s).toLowerCase().replace(/[^a-z]/g, "");
+  for (const f of files) {
+    const m = JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"));
+    const [op, st] = want[m.id.split("-")[0]];
+    assert.equal(m.operator, op, m.id);
+    assert.equal(m.state, st, m.id);
+    const regs = [].concat(m.registryId ?? []);
+    assert.ok(regs.length >= 1, `${m.id}: claims no licence row`);
+    for (const r of regs) {
+      const row = geo.registry[r.replace(/^reg:/, "")];
+      assert.ok(row, `${m.id}: ${r} is not a licence row`);
+      assert.equal(row.operator, op, `${m.id}: ${r} is another operator's row`);
+      assert.equal(row.state, st, `${m.id}: ${r} is in ${row.state}`);
+      assert.ok(n(row.location) === n(m.location) || n(row.location) === n(m.location.replace(/\s+(grain|elevator)$/i, "")),
+        `${m.id}: the label ${m.location} is not the town ${row.location}`);
+    }
+  }
+  const ids = new Set(files.map((f) => f.replace(/\.json$/, "")));
+  /* two yards one roll row: not identified; no roll row: not identified; no bids: not written */
+  for (const no of ["unitedcooperative-riponnorthgrain", "unitedcooperative-riponsouthgrain",
+                    "unitedcooperative-auroravillenorthgrain", "unitedcooperative-centervalleygrain",
+                    "unitedcooperative-unitedenergynecedah", "cendakcooperative-niles", "cendakcooperative-futuresonly"])
+    assert.ok(!ids.has(no), `${no} has a manifest`);
+  assert.equal(files.length, 26);
 });
 
 test("every stonehedge manifest builds a valid board file through buildFile", () => {
