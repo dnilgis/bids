@@ -25,7 +25,7 @@
   },
   "cadence": "grain-day",
   "provenance": "scraped",
-  "enabled": false,
+  "enabled": true,
   "cashRounding": "round-cent",
   "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "email": null,
@@ -40,5 +40,5 @@
   "phone": null,
   "registryId": "reg:WI|northsideelevatorinc|loyal",
   "note": "WRITTEN BY HAND from the elevsites capture captures-5/www-northsideelevator-com (capture.yml run 39090126520, bids repo branch elevsites): Northside Elevator's home page asks Bushel's GetBidsList and the saved answer carries this location, \"Loyal\", by the UUID in locationId. The payload holds a name and a UUID and nothing else. PLACE: the same page prints \"Loyal, WI\" and names Loyal-only wheat and oat discounts; Wisconsin's licence roll lists Northside Elevator, Inc. at Loyal (a PO box, so no street), and that row is the town and the town-precision coordinate. CLAIMS: reg:WI|northsideelevatorinc|loyal. ROUNDING, measured on that capture (fixtures/bushel-northside-2026-10-18.json): quoted futures minus (cash - basis) is -0.5, -0.25, 0 or +0.25 cents on all 28 rows across both locations, which is round-cent (nearest cent, half up) and is not floor-cent: Arcadia's March 27 corn reads 4.37 against -0.50 + 4.865 = 4.365. ",
-  "_pending": "HELD DISABLED: the rounding is measured on one day's board only. lib/adapters/bushel.mjs asks for the same answer on a second day's prices before a Bushel board is enabled (Country Partners read round-cent and floor-cent twenty minutes apart). Re-read this board on another day; if round-cent explains every row again, set enabled true."
+  "_pending": "Rounding is measured on one trading day (round-cent, all 28 rows). As with Inco Grain, a wrong mode costs a refusal and never a wrong price; re-check it on a second day's prices."
 }

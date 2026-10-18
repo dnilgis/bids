@@ -1,0 +1,43 @@
+{
+  "id": "gatewayfs-stegenevieve",
+  "operator": "Gateway FS",
+  "location": "Ste. Genevieve",
+  "state": "MO",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://futures.bushelops.com/api/v1/cash-bids",
+  "browserPage": "https://fscooperatives.com/gatewayfs/agriculture/cash-bids",
+  "locationId": "2dbbd691-fe2e-4b9d-994e-a19fc2e95366",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "address": "23860 Bourbon Road",
+  "zip": null,
+  "lat": 37.94952,
+  "lon": -90.02237,
+  "latPrecision": "street",
+  "phone": null,
+  "email": null,
+  "website": "https://fscooperatives.com/gatewayfs/",
+  "inMerge": true,
+  "registryId": "reg:MO|gatewayfsinc|stegenevieve",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "WRITTEN BY HAND 2026-10-18 from the elevsites capture captures-0/fscooperatives-com-gatewayfs-agriculture-cash-bids (capture.yml run 39090126520, bids repo branch elevsites): Gateway FS's own cash-bids page asks futures.bushelops.com/api/v1/cash-bids, the second Bushel generation lib/adapters/bushel.mjs reads for Inco Grain and Riceland, and the saved answer (fixtures/bushel-gatewayfs-gen2-2026-10-18.json) carries \"Ste. Genevieve\" as bushel_location_id 2dbbd691-fe2e-4b9d-994e-a19fc2e95366 with 9 bid row(s) in Corn, Soybeans, Wheat. ROUNDING: floor-cent explained every row at all 17 locations on that capture and round-cent did not (lib/board.mjs, run by hand on the fixture); measured on one trading day, as Inco's was, so a wrong mode costs a refusal and never a wrong price. PLACE: the payload carries a name and an id and no address. Illinois's and Missouri's licence rolls list Gateway FS, Inc. at \"Ste. Genevieve\", MO (MO|gatewayfsinc|stegenevieve), and that row is the town and the street-precision coordinate; this source claims it. Not written from the same answer: Morrisonville and Rosamond (no row names their state), STL River Direct and Waverly BN Shippers (delivery points, not yards)."
+}

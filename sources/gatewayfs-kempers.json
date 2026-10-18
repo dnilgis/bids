@@ -1,0 +1,44 @@
+{
+  "id": "gatewayfs-kempers",
+  "operator": "Gateway FS",
+  "location": "Fults",
+  "state": "IL",
+  "country": "US",
+  "currency": "USD",
+  "countryVia": "state",
+  "platform": "bushel",
+  "url": "https://futures.bushelops.com/api/v1/cash-bids",
+  "browserPage": "https://fscooperatives.com/gatewayfs/agriculture/cash-bids",
+  "locationId": "1ed754f7-546b-4a7e-9944-081196a1bb33",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "floor-cent",
+  "labelInFeed": "Kempers",
+  "address": null,
+  "zip": null,
+  "lat": 38.1797,
+  "lon": -90.1974,
+  "latPrecision": "town",
+  "phone": null,
+  "email": null,
+  "website": "https://fscooperatives.com/gatewayfs/",
+  "inMerge": true,
+  "registryId": "reg:IL|gatewayfsinc|fultskemperslanding",
+  "publicNote": "Their publicly posted cash board, read from the same feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
+  "note": "WRITTEN BY HAND 2026-10-18 from the elevsites capture captures-0/fscooperatives-com-gatewayfs-agriculture-cash-bids (capture.yml run 39090126520, bids repo branch elevsites): Gateway FS's own cash-bids page asks futures.bushelops.com/api/v1/cash-bids, the second Bushel generation lib/adapters/bushel.mjs reads for Inco Grain and Riceland, and the saved answer (fixtures/bushel-gatewayfs-gen2-2026-10-18.json) carries \"Kempers\" as bushel_location_id 1ed754f7-546b-4a7e-9944-081196a1bb33 with 9 bid row(s) in Corn, Soybeans, Wheat. ROUNDING: floor-cent explained every row at all 17 locations on that capture and round-cent did not (lib/board.mjs, run by hand on the fixture); measured on one trading day, as Inco's was, so a wrong mode costs a refusal and never a wrong price. PLACE: the payload carries a name and an id and no address. Illinois's and Missouri's licence rolls list Gateway FS, Inc. at \"FULTS/KEMPERS LANDING\", IL (IL|gatewayfsinc|fultskemperslanding), and that row is the town and the town-precision coordinate; this source claims it. Not written from the same answer: Morrisonville and Rosamond (no row names their state), STL River Direct and Waverly BN Shippers (delivery points, not yards)."
+}
