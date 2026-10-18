@@ -1,0 +1,90 @@
+{
+ "url": "https://www.pikecountyohcommissioners.gov/offices/treasurer",
+ "title": "Treasurer — Pike County, Ohio",
+ "text": ": a meta policy\nonly governs what the parser has not reached yet.\nThis is a meta tag rather than a response header because the runtime has\nno CSP field in app.toml and emits one only on its own admin pages. A\nheader would be better (meta ignores frame-ancestors and report-uri);\nframing is already covered by X-Frame-Options: SAMEORIGIN.\n`script-src` is the part that earns its keep: with no 'unsafe-inline'\nthere, a `javascript:` href does not execute, which is the second layer\nunder safeHref()/check_url(). Do not add 'unsafe-inline' to script-src.\nWhy each exception exists, so nobody widens these by guesswork:\n- 'wasm-unsafe-eval' is REQUIRED, not optional: the Crux core ships as a\nWebAssembly module and script-src governs wasm compilation. Without it\nWebAssembly.instantiateStreaming throws and the page renders blank —\na total outage, not a degraded one. It permits wasm only; it does not\nre-enable eval() or inline script.\n- ensemble.everything.e6software.com serves the feedback toolbar and\nreceives its submissions. It is injected for [authz] admins only.\n- style-src 'unsafe-inline': the shell sets ~28 React style attributes\nand the toolbar builds its own elements. Styles cannot script.\n- img-src data: blob:: the toolbar renders inline icons and canvas\nscreenshots. Signed asset images are same-origin under /_everything/.\n- static.cloudflareinsights.com / cloudflareinsights.com: the site is\nbehind Cloudflare, which injects its Web Analytics beacon into every\npage. The script loads from the first host and reports to the second;\nwithout both, every page logged a CSP error and analytics recorded\nnothing (September 2026). -->\nTreasurer — Pike County, Ohio\nSkip to main content Board of Commissioners · Waverly, Ohio\n\" alt=\"Seal of Pike County, State of Ohio\"> Pike County, Ohio\nBoard of County Commissioners · Est. 1815\nMenu Offices Home\nCommissioners\nOffices\nMeetings\nPORTS-Pike Campus\nNews\nNotices\nHistory\nContact\nVisitors ↗\n← All offices\nTreasurer\nCollection of real estate and manufactured home taxes, and custody of county funds.\nAddress 230 Waverly Plaza, Suite 300, Waverly, OH 45690\nPhone (740) 947-2472\nHours Monday–Friday, 8:30 a.m.–4:00 p.m.\nPike County Commissioners\n230 Waverly Plaza, Suite 1000, Waverly, Ohio 45690\n(740) 947-4817 commissioners@pikecounty.oh.gov\nGovernment\nOffices & Departments Meetings Board of Commissioners PORTS-Pike Campus\nResources\nNotices News County History Contact Us Visitors ↗ Site Map Accessibility Privacy Statement Disclaimer\n© Pike County Ohio Commissioners · This institution is an equal opportunity provider.",
+ "textBytes": 2577,
+ "looksLikeBoard": false,
+ "links": [
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/treasurer",
+   "text": "Skip to main content"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/",
+   "text": "Home"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/board",
+   "text": "Commissioners"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices",
+   "text": "Offices"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/meetings",
+   "text": "Meetings"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/ports",
+   "text": "PORTS-Pike Campus"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/news",
+   "text": "News"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/documents",
+   "text": "Notices"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/history",
+   "text": "History"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/contact",
+   "text": "Contact"
+  },
+  {
+   "url": "https://www.pikechamber.org/welcome-to-pike-county",
+   "text": "Visitors ↗"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/sitemap",
+   "text": "Site Map"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/accessibility",
+   "text": "Accessibility"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/privacy",
+   "text": "Privacy Statement"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/disclaimer",
+   "text": "Disclaimer"
+  }
+ ],
+ "linkCount": 15,
+ "pdfLinks": [],
+ "facebook": [],
+ "scripts": [
+  "https://www.pikecountyohcommissioners.gov/assets/index-tM5ah1jf.js",
+  "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+ ],
+ "iframes": [],
+ "responseHosts": {
+  "pikecountyohcommissioners.gov": 8,
+  "static.cloudflareinsights.com": 1
+ },
+ "dataResponses": [
+  "https://www.pikecountyohcommissioners.gov/_everything/api",
+  "https://www.pikecountyohcommissioners.gov/_everything/api"
+ ],
+ "parent": "https://www.pikecountyohcommissioners.gov/offices",
+ "navError": null,
+ "error": null,
+ "domBytes": 8467,
+ "httpStatus": 200
+}

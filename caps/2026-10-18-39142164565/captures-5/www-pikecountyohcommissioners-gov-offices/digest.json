@@ -1,0 +1,174 @@
+{
+ "url": "https://www.pikecountyohcommissioners.gov/offices",
+ "title": "Offices &amp; Departments — Pike County, Ohio",
+ "text": ": a meta policy\nonly governs what the parser has not reached yet.\nThis is a meta tag rather than a response header because the runtime has\nno CSP field in app.toml and emits one only on its own admin pages. A\nheader would be better (meta ignores frame-ancestors and report-uri);\nframing is already covered by X-Frame-Options: SAMEORIGIN.\n`script-src` is the part that earns its keep: with no 'unsafe-inline'\nthere, a `javascript:` href does not execute, which is the second layer\nunder safeHref()/check_url(). Do not add 'unsafe-inline' to script-src.\nWhy each exception exists, so nobody widens these by guesswork:\n- 'wasm-unsafe-eval' is REQUIRED, not optional: the Crux core ships as a\nWebAssembly module and script-src governs wasm compilation. Without it\nWebAssembly.instantiateStreaming throws and the page renders blank —\na total outage, not a degraded one. It permits wasm only; it does not\nre-enable eval() or inline script.\n- ensemble.everything.e6software.com serves the feedback toolbar and\nreceives its submissions. It is injected for [authz] admins only.\n- style-src 'unsafe-inline': the shell sets ~28 React style attributes\nand the toolbar builds its own elements. Styles cannot script.\n- img-src data: blob:: the toolbar renders inline icons and canvas\nscreenshots. Signed asset images are same-origin under /_everything/.\n- static.cloudflareinsights.com / cloudflareinsights.com: the site is\nbehind Cloudflare, which injects its Web Analytics beacon into every\npage. The script loads from the first host and reports to the second;\nwithout both, every page logged a CSP error and analytics recorded\nnothing (September 2026). -->\nOffices & Departments — Pike County, Ohio\nSkip to main content Board of Commissioners · Waverly, Ohio\n\" alt=\"Seal of Pike County, State of Ohio\"> Pike County, Ohio\nBoard of County Commissioners · Est. 1815\nMenu Offices Home\nCommissioners\nOffices\nMeetings\nPORTS-Pike Campus\nNews\nNotices\nHistory\nContact\nVisitors ↗\nOffices & Departments\nEvery Pike County office, department, and elected official in one place.\nAdministration & Executive Offices\nAuditor (740) 947-4125 Monday–Friday, 8:30 a.m.–4:00 p.m.\nBoard of Commissioners (740) 947-4817 Monday–Friday, 8:00 a.m.–4:00 p.m.\nRecorder (740) 947-2622 Monday–Friday, 8:30 a.m.–4:00 p.m.\nTreasurer (740) 947-2472 Monday–Friday, 8:30 a.m.–4:00 p.m.\nBoard of Elections (740) 947-4512 Monday–Friday, 8:30 a.m.–12:00 p.m. and 1:00 p.m.–4:00 p.m.\nLaw Enforcement & Public Safety\nSheriff's Office (740) 947-2111 Open 24 hours a day, seven days a week.\nEmergency Management Agency (EMA) (740) 947-7346 Monday–Friday, 8:00 a.m.–4:00 p.m.\nProsecuting Attorney (740) 947-4323 Monday–Friday, 8:30 a.m.–4:00 p.m.\nCoroner's Office (740) 947-6599\nHealth & Human Services\nGeneral Health District (740) 947-7721 Monday–Friday, 8:00 a.m.–4:00 p.m.\nJob & Family Services (740) 947-2171 Monday–Friday, 7:30 a.m.–4:00 p.m.\nVeterans Services (740) 947-4623 Monday–Thursday, 6:00 a.m.–4:00 p.m. Closed Fridays.\nInfrastructure & Development\nCommunity & Economic Development (740) 947-4104 Monday–Friday, 8:30 a.m.–4:00 p.m.\nEngineer & Highway Department (740) 947-4259 Monday–Thursday, 7:00 a.m.–5:00 p.m. Closed Fridays.\nPlanning Commission (740) 947-9573 Monday–Friday, 8:00 a.m.–4:00 p.m.\nProperty Map Office (740) 941-1906 Monday–Friday, 8:00 a.m.–4:00 p.m.\nSewer District (740) 947-5474 Monday–Friday, 8:30 a.m.–4:00 p.m.\nJudicial System\nCounty Court (740) 947-4144 Monday–Friday, 8:30 a.m.–4:00 p.m. Closed 12:00 p.m.–1:00 p.m. for lunch.\nProbate & Juvenile Court (740) 947-2560\nClerk of Courts (740) 947-2715 Monday–Friday, 8:30 a.m.–4:00 p.m.\nCommon Pleas Court Monday–Friday, 8:30 a.m.–4:00 p.m.\nAuto Title Office (740) 941-4901 Monday–Friday, 8:30 a.m.–4:00 p.m. · Saturday, 9:00 a.m.–12:00 p.m.\nPassport Services (740) 941-4901 Monday–Friday, 9:00 a.m.–3:00 p.m. · Saturday by appointment only\nPike County Commissioners\n230 Waverly Plaza, Suite 1000, Waverly, Ohio 45690\n(740) 947-4817 commissioners@pikecounty.oh.gov\nGovernment\nOffices & Departments Meetings Board of Commissioners PORTS-Pike Campus\nResources\nNotices News County History Contact Us Visitors ↗ Site Map Accessibility Privacy Statement Disclaimer\n© Pike County Ohio Commissioners · This institution is an equal opportunity provider.",
+ "textBytes": 4277,
+ "looksLikeBoard": false,
+ "links": [
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices",
+   "text": "Skip to main content"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/",
+   "text": "Home"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/board",
+   "text": "Commissioners"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/meetings",
+   "text": "Meetings"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/ports",
+   "text": "PORTS-Pike Campus"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/news",
+   "text": "News"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/documents",
+   "text": "Notices"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/history",
+   "text": "History"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/contact",
+   "text": "Contact"
+  },
+  {
+   "url": "https://www.pikechamber.org/welcome-to-pike-county",
+   "text": "Visitors ↗"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/auditor",
+   "text": "Auditor"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/county-commissioners",
+   "text": "Board of Commissioners"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/recorder",
+   "text": "Recorder"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/treasurer",
+   "text": "Treasurer"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/board-of-elections",
+   "text": "Board of Elections"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/sheriff",
+   "text": "Sheriff's Office"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/emergency-management",
+   "text": "Emergency Management Agency (EMA)"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/prosecuting-attorney",
+   "text": "Prosecuting Attorney"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/coroner",
+   "text": "Coroner's Office"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/health-district",
+   "text": "General Health District"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/veterans-services",
+   "text": "Veterans Services"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/community-economic-development",
+   "text": "Community & Economic Development"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/engineer",
+   "text": "Engineer & Highway Department"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/planning-commission",
+   "text": "Planning Commission"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/property-map-office",
+   "text": "Property Map Office"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/sewer-district",
+   "text": "Sewer District"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/county-court",
+   "text": "County Court"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/probate-court",
+   "text": "Probate & Juvenile Court"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/clerk-of-courts",
+   "text": "Clerk of Courts"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/common-pleas-court",
+   "text": "Common Pleas Court"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/title-department",
+   "text": "Auto Title Office"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/offices/passport-services",
+   "text": "Passport Services"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/sitemap",
+   "text": "Site Map"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/accessibility",
+   "text": "Accessibility"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/privacy",
+   "text": "Privacy Statement"
+  },
+  {
+   "url": "https://www.pikecountyohcommissioners.gov/disclaimer",
+   "text": "Disclaimer"
+  }
+ ],
+ "linkCount": 36,
+ "pdfLinks": [],
+ "facebook": [],
+ "scripts": [
+  "https://www.pikecountyohcommissioners.gov/assets/index-tM5ah1jf.js",
+  "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+ ],
+ "iframes": [],
+ "responseHosts": {
+  "pikecountyohcommissioners.gov": 8,
+  "static.cloudflareinsights.com": 1
+ },
+ "dataResponses": [
+  "https://www.pikecountyohcommissioners.gov/_everything/api",
+  "https://www.pikecountyohcommissioners.gov/_everything/api"
+ ],
+ "parent": "https://www.pikecountyohcommissioners.gov/",
+ "navError": null,
+ "error": null,
+ "domBytes": 14409,
+ "httpStatus": 200
+}
