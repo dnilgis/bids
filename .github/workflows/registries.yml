@@ -385,6 +385,17 @@ jobs:
         continue-on-error: true
         run: node scripts/gap_lists.mjs
 
+      # own-board-manifests.mjs reads data/registries.json, and its test holds
+      # sources/ to exactly what it produces. Regenerate here so this commit
+      # carries both halves (see scripts/regen-manifests.mjs and the
+      # 2026-10-18 red main it was written for). It never deletes a yard; if
+      # one stops being produced the step fails and says which, and the
+      # harvest is committed anyway, because the harvest comes first here.
+      - name: Keep the generated manifests in step
+        if: always()
+        continue-on-error: true
+        run: node scripts/regen-manifests.mjs --write
+
       # THE WORK FIRST, THE SOUVENIRS SECOND — AND IN TWO COMMITS.
       #
       # Run 91883116181 kept nineteen pages and GitHub refused the push: the
@@ -409,6 +420,7 @@ jobs:
           [ -d debug/registries ] && git add debug/registries || true
           git reset -q -- debug/registries/survey 2>/dev/null || true
           git add geocodes/places.json data/directory.json 2>/dev/null || true
+          git add sources 2>/dev/null || true
           n=$(python -c "import json,os;p='data/registries.json';print(json.load(open(p))['counts']['businesses'] if os.path.exists(p) else 0)")
           bash scripts/commit-and-push.sh "registries: $n businesses, plus the state survey [skip ci]"
 
