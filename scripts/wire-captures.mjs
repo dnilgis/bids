@@ -42,7 +42,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bidsArray, plausible } from "../lib/agricharts-published.mjs";
+import { bidsArray, locationsArray, plausible, shownLocation } from "../lib/agricharts-published.mjs";
 import { cellText } from "../lib/adapters/agricharts.mjs";
 import { familyOf } from "../lib/elevsites.mjs";
 import { validateSource } from "../lib/sources.mjs";
@@ -62,7 +62,7 @@ export function widgetLocations(body) {
   const arr = bidsArray(body);
   const add = (L, commodity) => {
     if (!L || L.id == null) return;
-    if (String(L.active ?? "1") !== "1" || String(L.hide_on_sites_and_apis ?? "0") === "1") return;
+    if (!shownLocation(L)) return;
     const id = String(L.id);
     const tidy = (v) => (v == null ? null : String(v).replace(/\s+/g, " ").trim() || null);
     const e = out.get(id) ?? {
@@ -93,6 +93,21 @@ export function widgetLocations(body) {
     out.set(o[1], { id: o[1], label: name, city: null, state: null, zip: null, street: null, phone: null,
                     lat: null, lon: null, rows: 0, commodities: new Set(), from: "select" });
   }
+  /* THE WHOLE LOCATION LIST (`var locations`), which a filtered page still
+     carries in full: each entry is the operator's own record for that id. It
+     only FILLS a location the selector named and the bids list did not: a
+     record that is in neither may be an office or a yard that posts nothing,
+     and is not a board location on this evidence. */
+  const all = locationsArray(body);
+  if (Array.isArray(all)) for (const L of all) {
+    if (!L || L.id == null || out.get(String(L.id))?.from !== "select" || !("city" in L || "street1" in L)) continue;
+    const named = out.get(String(L.id));
+    out.delete(String(L.id));
+    add(L, null);
+    const e = out.get(String(L.id));
+    if (e) { e.from = "locations"; e.label = named.label ?? e.label; }
+    else out.set(String(L.id), named);
+  }
   return out;
 }
 
@@ -110,9 +125,24 @@ export function widgetsIn(responses) {
       && /name=["']location_filter["']/.test(e.body) && /agricharts\.com/.test(e.body);
     if (!own && !/^[a-z0-9_-]+\.agricharts\.com$/.test(host)) continue;
     if (!own && !/\/inc\/cashbids\/cashbids(-js)?\.php/.test(e.url)) continue;
-    out.push({ host, url: e.url, body: e.body });
+    out.push({ host, url: e.url, body: e.body, capture: e._capture ?? null });
   }
   return out;
+}
+
+/** The other capture folders of the same site: a page filtered to one
+ *  location lists the rest only by name in its selector, while the site's
+ *  home page or another saved page often loads the same widget unfiltered,
+ *  with every location's street, town and ZIP. Folders are matched on the
+ *  website's host ("www-farmersco-operative-com", "farmersco-operative-com-..."). */
+export function siblingCaptures(website, folders) {
+  let host;
+  try { host = new URL(website).hostname.toLowerCase().replace(/^www\./, ""); } catch { return []; }
+  const stem = host.replace(/\./g, "-");
+  return folders.filter((f) => {
+    const name = f.split("/").pop().replace(/^www-/, "");
+    return name === stem || name.startsWith(stem + "-");
+  });
 }
 
 /* ---------- where a location is ---------- */
@@ -211,7 +241,7 @@ export function claimRows(rows, locs) {
 
 /* ---------- one company ---------- */
 
-export function planCompany(cfg, { responses, known, directory, zipTowns, sources }) {
+export function planCompany(cfg, { responses, known, directory, zipTowns, sources, extra = [], rolls = [] }) {
   const read = new Map();
   for (const s of sources)
     if (/^agricharts/.test(s.platform ?? "") && s.locationId != null) read.set(String(s.locationId), s.id);
@@ -230,9 +260,13 @@ export function planCompany(cfg, { responses, known, directory, zipTowns, source
   if (hosts.length > 1) return { ok: false, why: `the capture loads boards from ${hosts.join(", ")}; name one` };
   const host = hosts[0];
   const locs = new Map();
-  for (const w of widgets) for (const [id, l] of widgetLocations(w.body)) {
+  /* The company's own capture first, then the same host's widget answers in
+     the site's other saved pages (siblingCaptures), which fill a location the
+     first one only named. Never another host. */
+  const more = widgetsIn(extra ?? []).filter((w) => w.host === host);
+  for (const w of [...widgets, ...more]) for (const [id, l] of widgetLocations(w.body)) {
     const have = locs.get(id);
-    if (!have || (have.from === "select" && l.from === "json")) locs.set(id, l);
+    if (!have || (have.from === "select" && l.from !== "select")) locs.set(id, { ...l, capture: w.capture ?? null });
   }
   const fam = familyOf(cfg.family ?? cfg.company);
   const family = directory.filter((e) => e.status === "known" && familyOf(e.operator) === fam);
@@ -259,6 +293,32 @@ export function planCompany(cfg, { responses, known, directory, zipTowns, source
     if (ownName.length >= 5 && slug(place.branch).includes(ownName) && place.city) place.branch = place.city;
     const dupe = [place.branch, place.city, l.label].map((t) => readTowns.get(`${place.state}|${slug(t)}`)).find(Boolean);
     if (dupe) { held.push({ id: l.id, label: l.label, why: `${dupe} already reads this company at ${place.branch}, ${place.state}` }); continue; }
+    /* THE BOARD'S OWN ADDRESS PLACES IT; IT DOES NOT SAY WHOSE YARD IT IS.
+       2026-10-18, from the var-locations records: FS Grain's board lists
+       "Prairie Central-Pontiac" at Pontiac and "Exline" at Kankakee, and the
+       Illinois roll licenses only Prairie Central Cooperative at Pontiac and
+       only Prairie Creek Grain at Kankakee; StateLine's lists "Mankato" and
+       "Fairmont", where the Minnesota roll licenses ADM, CHS and Green Plains
+       and never StateLine. A location in a town whose licence rows name other
+       companies and never this one is a price delivered to somebody else's
+       yard until shown otherwise. A town no roll lists at all says nothing,
+       and the board's own record stands. */
+    if (place.via === "published") {
+      const lm = String(l.label ?? "").match(/^(.+?),\s*([A-Z]{2})\b/);
+      if (lm && (slug(lm[1]) !== slug(place.city) || lm[2] !== place.state)) {
+        held.push({ id: l.id, label: l.label, why: `the label names ${lm[1]}, ${lm[2]} and the board's own record puts it in ${place.city}, ${place.state}` }); continue;
+      }
+      {
+        const here = (rolls ?? []).filter((b) => b.state === place.state && slug(b.city) === slug(place.city));
+        const opSlug = slug(cfg.operator);
+        const ours = here.filter((b) => familyOf(b.name) === fam || familyOf(b.name) === familyOf(cfg.operator)
+          || (opSlug.length >= 6 && slug(b.name).startsWith(opSlug)));
+        if (here.length && !ours.length) {
+          const names = [...new Set(here.map((b) => b.name))].slice(0, 3).join("; ");
+          held.push({ id: l.id, label: l.label, why: `the licence roll names only ${names} at ${place.city}, ${place.state}, not this company, so "${l.label}" is likely a price delivered to their yard` }); continue;
+        }
+      }
+    }
     write.push({ ...l, place });
   }
   const idOf = (l) => `${op}-${slug(l.place.branch)}`;
@@ -302,7 +362,10 @@ export function manifest(cfg, host, url, w, { capture, run, byZip = new Map() })
     m.location = p.city;
     if (slug(p.branch) !== slug(p.city)) m.labelInFeed = p.branch;
   }
-  const seen = w.loc.from === "json"
+  const seen = w.loc.from === "locations"
+    ? `lists location ${w.loc.id} "${w.loc.label}" in its location selector, and the same answer's full location list (var locations) `
+      + `publishes it at ${[w.loc.street, w.loc.city, w.loc.state, w.loc.zip].filter(Boolean).join(", ")}; the saved copy held no bid rows for it`
+    : w.loc.from === "json"
     ? `lists location ${w.loc.id} "${w.loc.label}" with ${w.loc.rows} bid row(s)`
       + (w.loc.commodities.size ? ` in ${[...w.loc.commodities].join(", ")}` : "")
       + (w.loc.city ? `, published at ${[w.loc.street, w.loc.city, w.loc.state, w.loc.zip].filter(Boolean).join(", ")}` : "")
@@ -312,8 +375,11 @@ export function manifest(cfg, host, url, w, { capture, run, byZip = new Map() })
     : p.via === "published"
     ? `PLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location ${w.loc.id} in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).`
     : `PLACE: only the board's label names this location. The licence roll holds exactly one row of this company whose town is that label (${p.rollRow.id}: ${p.rollRow.location}, ${p.rollRow.state}), and that row is the town and the coordinate.`;
+  const fromOther = w.loc.capture && w.loc.capture !== capture;
   m.note = `WRITTEN BY scripts/wire-captures.mjs from the elevsites capture ${capture} (capture.yml run ${run}, bids repo branch elevsites). `
-    + `The operator's own bid page (${cfg.page}) loads https://${host}/inc/cashbids/cashbids-js.php, and the saved answer ${seen}. `
+    + `The operator's own bid page (${cfg.page}) loads https://${host}/inc/cashbids/cashbids-js.php, and the saved answer `
+    + (fromOther ? `lists location ${w.loc.id} "${w.loc.label}" in its selector; the same site's page saved as ${w.loc.capture} loads the same widget unfiltered, and that answer ${seen}. `
+                 : `${seen}. `)
     + `locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). `
     + `The poller reads ${url}, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written `
     + `(the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\n`
@@ -337,8 +403,12 @@ export function trimmedFixture(cfg, host, responses, capture) {
     + `AgriCharts location the widget answer published, nothing else. scripts/wire-captures.mjs wrote sources from it.`,
     host, locations: {} };
   for (const w of widgetsIn(responses).filter((x) => x.host === host))
-    for (const [id, l] of widgetLocations(w.body))
-      out.locations[id] ??= { label: l.label, city: l.city, state: l.state, zip: l.zip, rows: l.rows, from: l.from };
+    for (const [id, l] of widgetLocations(w.body)) {
+      const have = out.locations[id];
+      if (!have || (have.from === "select" && l.from !== "select"))
+        out.locations[id] = { label: l.label, city: l.city, state: l.state, zip: l.zip, rows: l.rows, from: l.from,
+                              ...(w.capture && w.capture !== capture ? { capture: w.capture } : {}) };
+    }
   return out;
 }
 
@@ -363,14 +433,22 @@ export function main(argv = process.argv.slice(2)) {
   const directory = rd("data/directory.json").elevators;
   const zipTowns = rd("geocodes/zip-towns.json").zips;
   const byZip = new Map(rd("geocodes/zip-candidates.json").zips.map((z) => [z.zip, z]));
+  /* Every licence row as the state published it, including the ones the
+     directory merged away: whose yard a town holds is a question about the
+     roll, not about our pins. */
+  const rolls = (rd("data/registries.json").businesses ?? []).filter((b) => b && b.state && b.city && b.name);
   const sources = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8")));
   let nWrite = 0, nClaim = 0;
+  const folders = readdirSync(o.caps).filter((c) => /^captures-\d+$/.test(c))
+    .flatMap((c) => readdirSync(join(o.caps, c)).map((d) => `${c}/${d}`));
   for (const cfg of config.companies) {
     const file = join(o.caps, cfg.capture, "responses.json");
     if (!existsSync(file)) { console.log(`\n## ${cfg.company}: no capture at ${cfg.capture}`); continue; }
-    const responses = JSON.parse(readFileSync(file, "utf8"));
-    const plan = planCompany(cfg, { responses, known, directory, zipTowns, sources });
+    const responses = JSON.parse(readFileSync(file, "utf8")).map((e) => ({ ...e, _capture: cfg.capture }));
+    const extra = siblingCaptures(cfg.website, folders).filter((f) => f !== cfg.capture)
+      .flatMap((f) => { try { return JSON.parse(readFileSync(join(o.caps, f, "responses.json"), "utf8")).map((e) => ({ ...e, _capture: f })); } catch { return []; } });
+    const plan = planCompany(cfg, { responses, known, directory, zipTowns, sources, extra, rolls });
     console.log(`\n## ${cfg.company}${plan.ok ? ` (${plan.host})` : `: ${plan.why}`}`);
     if (!plan.ok) continue;
     for (const a of plan.already) console.log(`   read   ${a.id} ${a.label} -> ${a.source}`);
@@ -390,7 +468,7 @@ export function main(argv = process.argv.slice(2)) {
       const fx = join(ROOT, "fixtures", "wire1");
       mkdirSync(fx, { recursive: true });
       writeFileSync(join(fx, `agricharts-${operatorSlug(plan.url)}.json`),
-        JSON.stringify(trimmedFixture(cfg, plan.host, responses, cfg.capture), null, 1) + "\n");
+        JSON.stringify(trimmedFixture(cfg, plan.host, [...responses, ...extra], cfg.capture), null, 1) + "\n");
     }
   }
   console.log(`\n${o.write ? "wrote" : "would write"} ${nWrite} source(s), claiming ${nClaim} directory row(s)`);

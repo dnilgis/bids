@@ -1,0 +1,40 @@
+{
+  "id": "innovativeag-altavista",
+  "operator": "Innovative Ag Services",
+  "location": "Alta Vista",
+  "state": "IA",
+  "platform": "agricharts-cashgrid",
+  "url": "https://innovativeag.agricharts.com/markets/cashgrid.php",
+  "locationId": "4641",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-6/innovativeag-com-grain-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://innovativeag.com/grain/cash-bids) loads https://innovativeag.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 4641 \"Alta Vista\" in its location selector, and the same answer's full location list (var locations) publishes it at 109 E Weber St, Alta Vista, IA, 50603; the saved copy held no bid rows for it. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://innovativeag.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location 4641 in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "50603",
+  "lat": 43.1978336,
+  "lon": -92.4154432,
+  "latPrecision": "street",
+  "phone": "16413642009",
+  "email": null,
+  "website": "https://innovativeag.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate."
+}

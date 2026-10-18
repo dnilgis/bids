@@ -1,0 +1,43 @@
+{
+  "id": "agwrx-toronto",
+  "operator": "AgWrx Coop",
+  "location": "Toronto",
+  "state": "SD",
+  "platform": "agricharts-cashgrid",
+  "url": "https://agwrx.agricharts.com/markets/cashgrid.php",
+  "locationId": "84741",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-7/www-agwrxcoop-com-grain-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.agwrxcoop.com/grain/cash-bids) loads https://agwrx.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 84741 \"Toronto\" in its location selector, and the same answer's full location list (var locations) publishes it at W. Main St, Toronto, SD, 57268; the saved copy held no bid rows for it. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://agwrx.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location 84741 in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).\n\nCLAIMS: known:3070 (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "57268",
+  "lat": 44.5730202,
+  "lon": -96.6425536,
+  "latPrecision": "street",
+  "phone": null,
+  "email": null,
+  "website": "https://www.agwrxcoop.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate.",
+  "sameAsKnown": [
+    "3070"
+  ]
+}

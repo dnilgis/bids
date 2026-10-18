@@ -10,8 +10,9 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { widgetLocations, splitTown, subsequence, claimRows, placeFor, NOT_A_YARD, OTHER_PLANT }
-  from "../scripts/wire-captures.mjs";
+import { widgetLocations, splitTown, subsequence, claimRows, placeFor, NOT_A_YARD, OTHER_PLANT,
+  planCompany, siblingCaptures } from "../scripts/wire-captures.mjs";
+import { shownLocation } from "../lib/agricharts-published.mjs";
 import { operatorSlug } from "../scripts/agricharts-sweep.mjs";
 import { validateSource, toConfig } from "../lib/sources.mjs";
 import { buildFile } from "../lib/board.mjs";
@@ -114,6 +115,85 @@ test("a published place whose ZIP is in another state is held, not written", () 
   assert.match(p.why, /47949, which is IN/);
   assert.ok(OTHER_PLANT.test("CGB-Albany"));
   assert.ok(NOT_A_YARD.test("All Locations"));
+});
+
+/* ── ids1, 2026-10-18: the locations wire1 held as unplaced ── */
+
+test("a location flagged active:true is shown; false, \"0\" and hidden ones are not", () => {
+  assert.ok(shownLocation({ active: true, hide_on_sites_and_apis: false }));
+  assert.ok(shownLocation({ active: "1", hide_on_sites_and_apis: "0" }));
+  assert.ok(shownLocation({}));
+  assert.ok(!shownLocation({ active: false }));
+  assert.ok(!shownLocation({ active: "0" }));
+  assert.ok(!shownLocation({ active: true, hide_on_sites_and_apis: true }));
+  assert.ok(!shownLocation({ active: "1", hide_on_sites_and_apis: "1" }));
+});
+
+test("var locations fills a location the selector named, and adds none it did not", () => {
+  const body = `var bids = [{"id":"9","name":"Corn","cashbids":[{"locations":[{"id":"1","name":"BEATRICE","city":"Beatrice","state":"NE","zip":"68310","active":true}]}]}];`
+    + `var locations = [{"id":4605,"name":"DILLER","street1":"603 Commercial St","city":"Diller","state":"NE","zip":"68342","latitude":40.10,"longitude":-96.94,"active":true,"hide_on_sites_and_apis":false},`
+    + `{"id":777,"name":"OFFICE","street1":"1 Main","city":"Dorchester","state":"NE","zip":"68343","active":true}];`
+    + `<select name="setLocation"><option value="1">BEATRICE</option><option value="4605">DILLER</option></select>`;
+  const m = widgetLocations(body);
+  assert.equal(m.get("1").from, "json");
+  assert.equal(m.get("4605").from, "locations");
+  assert.equal(m.get("4605").city, "Diller");
+  assert.equal(m.get("4605").zip, "68342");
+  assert.equal(m.get("4605").label, "DILLER");
+  assert.ok(!m.has("777"), "in the full list but not on the board: not a board location on this evidence");
+});
+
+test("the same site's other saved pages are siblings; another site is not", () => {
+  const f = ["captures-1/www-farmersco-operative-com", "captures-1/www-farmersco-operative-com-grain-grain-cash-bids",
+             "captures-2/farmersco-operative-com-about", "captures-3/farmerscoop-coop", "captures-4/www-farmersco-operative-community"];
+  assert.deepEqual(siblingCaptures("https://www.farmersco-operative.com/", f), f.slice(0, 3));
+});
+
+function planOne({ label, city, state, zip, rolls, operator = "StateLine Cooperative" }) {
+  const body = `var bids = [{"id":"9","name":"Corn","cashbids":[{"locations":[{"id":"1","name":${JSON.stringify(label)},`
+    + `"city":${JSON.stringify(city)},"state":"${state}","zip":"${zip}","active":"1"}]}]}];`;
+  const responses = [{ url: "https://statelinecoop.agricharts.com/inc/cashbids/cashbids-js.php?x=1", body }];
+  return planCompany({ company: "T", operator, website: "https://statelinecoop.com/", page: "p" },
+    { responses, known: [], directory: [], zipTowns, sources: [], rolls });
+}
+
+test("a board location in a town whose roll licenses only other companies is held as a delivered price", () => {
+  const p = planOne({ label: "Mankato", city: "Mankato", state: "MN", zip: "56001",
+    rolls: [{ state: "MN", city: "MANKATO", name: "CHS Inc." }, { state: "MN", city: "Mankato", name: "Archer-Daniels-Midland Company" }] });
+  assert.equal(p.write.length, 0);
+  assert.match(p.held[0].why, /licence roll names only CHS Inc\.; Archer-Daniels-Midland Company at Mankato, MN/);
+  /* the company's own licence there: written */
+  const q = planOne({ label: "Mankato", city: "Mankato", state: "MN", zip: "56001",
+    rolls: [{ state: "MN", city: "Mankato", name: "StateLine Cooperative" }, { state: "MN", city: "MANKATO", name: "CHS Inc." }] });
+  assert.equal(q.write.length, 1);
+  /* no roll row in the town at all: the board's own record stands */
+  const r = planOne({ label: "Buffalo Center", city: "Buffalo Center", state: "IA", zip: "50424", rolls: [] });
+  assert.equal(r.write.length, 1);
+  /* "Superior Ag" owns "Superior Ag Resources Cooperative, Inc." rows */
+  const t = planOne({ label: "Ireland Grain", city: "Ireland", state: "IN", zip: "47545", operator: "Superior Ag",
+    rolls: [{ state: "IN", city: "IRELAND", name: "Superior Ag Resources Cooperative, Inc." }] });
+  assert.equal(t.write.length, 1);
+});
+
+test("a label that names one town while the record names another is held", () => {
+  const p = planOne({ label: "Mendota, IL (Terminal)", city: "Morris", state: "IL", zip: "60450", rolls: [] });
+  assert.equal(p.write.length, 0);
+  assert.match(p.held[0].why, /names Mendota, IL and the board's own record puts it in Morris, IL/);
+});
+
+test("the ids1 sources: each is on its fixture with the published town, ZIP and coordinate", () => {
+  const ids1 = wired.filter((s) => /full location list \(var locations\)/.test(s.note));
+  assert.ok(ids1.length >= 15, `${ids1.length} sources placed from var locations`);
+  for (const s of ids1) {
+    const fx = rd(`fixtures/wire1/agricharts-${operatorSlug(s.url)}.json`);
+    const L = fx.locations[s.locationId];
+    assert.ok(L, `${s.id}: ${s.locationId} on the fixture`);
+    assert.equal(L.from, "locations", s.id);
+    assert.equal(L.state, s.state, s.id);
+    assert.equal(L.zip, s.zip, s.id);
+    assert.equal(L.city, s.location, s.id);
+    assert.ok(Number.isFinite(s.lat) && Number.isFinite(s.lon), `${s.id} has the published coordinate`);
+  }
 });
 
 /* ── the hand-written Bushel sources, through the guards on their own capture ── */

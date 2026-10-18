@@ -1,0 +1,40 @@
+{
+  "id": "farmerscooperative-diller",
+  "operator": "Farmers Coop of Dorchester",
+  "location": "Diller",
+  "state": "NE",
+  "platform": "agricharts-cashgrid",
+  "url": "https://farmersco-operative.agricharts.com/markets/cashgrid.php",
+  "locationId": "4605",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-1/www-farmersco-operative-com-grain-grain-cash-bids (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://www.farmersco-operative.com/grain/grain-cash-bids) loads https://farmersco-operative.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 4605 \"DILLER\" in its location selector, and the same answer's full location list (var locations) publishes it at 603 Commercial St, Diller, NE, 68342; the saved copy held no bid rows for it. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://farmersco-operative.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location 4605 in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "68342",
+  "lat": 40.1042493,
+  "lon": -96.9384905,
+  "latPrecision": "street",
+  "phone": "14027935321",
+  "email": null,
+  "website": "https://www.farmersco-operative.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate."
+}

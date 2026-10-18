@@ -1,0 +1,41 @@
+{
+  "id": "valleyunited-buxton",
+  "operator": "Valley United Coop",
+  "location": "Buxton",
+  "state": "ND",
+  "platform": "agricharts-cashgrid",
+  "url": "https://valleyunited.agricharts.com/markets/cashgrid.php",
+  "locationId": "87650",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "cashRounding": "round-cent-either",
+  "note": "WRITTEN BY scripts/wire-captures.mjs from the elevsites capture captures-1/valleyunited-agricharts-com (capture.yml run 39090126520, bids repo branch elevsites). The operator's own bid page (https://valleyunited.agricharts.com/) loads https://valleyunited.agricharts.com/inc/cashbids/cashbids-js.php, and the saved answer lists location 87650 \"Valley United Co-op (Hong Grain)\" in its location selector, and the same answer's full location list (var locations) publishes it at 1068 161st Ave NE, Buxton, ND, 58218; the saved copy held no bid rows for it. locationId is that id, the same l= id every cashgrid row link carries (lib/agricharts-published.mjs). The poller reads https://valleyunited.agricharts.com/markets/cashgrid.php, the page all other agricharts-cashgrid sources read; that page was NOT fetched when this was written (the sandbox could not reach agricharts.com), so the first poll is the first run of the adapter's checks on this board.\n\nPLACE: the directory has no row for this label. Town, state, ZIP and phone are the operator's own, as published for location 87650 in that same answer; the ZIP agrees with the state (geocodes/zip-towns.json).\n\nCLAIMS: reg:ND|valleyunitedcoop|buxton (same company, same state and town).",
+  "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
+  "address": null,
+  "zip": "58218",
+  "lat": 47.565409,
+  "lon": -97.104388,
+  "latPrecision": "street",
+  "phone": null,
+  "email": null,
+  "website": "https://valleyunited.agricharts.com/",
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. lat/lon is street precision: the operator's own published coordinate.",
+  "registryId": "reg:ND|valleyunitedcoop|buxton"
+}
