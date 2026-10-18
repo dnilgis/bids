@@ -82,7 +82,7 @@ test("the platform is registered everywhere a source is loaded", () => {
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build as buildManifests } from "../scripts/cih-manifests.mjs";
+import { build as buildManifests, SITES as CIH_SITES } from "../scripts/cih-manifests.mjs";
 import { buildFile } from "../lib/board.mjs";
 import { validateSource, toConfig } from "../lib/sources.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
@@ -107,8 +107,10 @@ test("every CIH manifest validates and publishes rows from its own capture throu
   for (const x of manifests) {
     const m = x.manifest;
     assert.deepEqual(validateSource(m), [], m.id);
-    const b = buildFile(readFileSync(join(ROOT, `fixtures/cih-${x.site}-2026-10-02.json`), "utf8"),
-      { now: new Date("2026-10-02T02:00:00Z"), sourceUrl: m.url, source: toConfig(m), extract: adapterFor("cih") });
+    /* Each site's capture day: the first batch on 2026-10-02, later ones carry their own. */
+    const day = CIH_SITES[x.site].captured ?? "2026-10-02";
+    const b = buildFile(readFileSync(join(ROOT, `fixtures/cih-${x.site}-${day}.json`), "utf8"),
+      { now: new Date(`${day}T02:00:00Z`), sourceUrl: m.url, source: toConfig(m), extract: adapterFor("cih") });
     assert.ok(b.file.count > 0, m.id);
     assert.equal((b.file.withheld ?? []).length, 0, `${m.id} withheld rows`);
   }
