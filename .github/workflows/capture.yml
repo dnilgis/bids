@@ -2,19 +2,47 @@
 #
 # Loads each page in the runner's browser (lib/cdp.mjs captureAll, the same
 # identity discover uses), and attaches the rendered document plus every data
-# response the page received as a run artifact named "captures". Nothing is
-# committed: permissions are read-only. A capture is evidence for whoever is
-# writing a parser, never a claim about anybody's business.
+# response the page received as a run artifact named "captures". A capture is
+# evidence for whoever is writing a parser, never a claim about anybody's
+# business.
 #
 # Started from the API by the assistant, or by hand from the Actions tab with
 # the pages pasted into the box, space separated.
+#
+# UNREAD ELEVATORS' OWN SITES (2026-10-18). list=probe-lists/elevsites.txt
+# (built by scripts/elevsites-list.mjs), follow=3, shards=8, save=elevsites:
+# each shard reads its share of the list (one host always in one shard),
+# obeys robots.txt for every path, asks each page once with a pause between two
+# pages of one host, and follows up to 3 bid-looking links per listed page. A
+# small digest of every page is kept, the whole page only when it reads like a
+# posted board. With save set, the last job commits the captures to that branch
+# (never main) under caps/<date>-<run id>/, with the worklist that drove it, so
+# agsist's api-jobs.yml (build=elevsites) can read them from this public repo.
+#
+#   gh workflow run capture.yml -R dnilgis/bids -f list=probe-lists/elevsites.txt -f follow=3 -f shards=8 -f save=elevsites
 name: capture pages
 on:
   workflow_dispatch:
     inputs:
       urls:
-        description: "Pages to capture, space separated"
-        required: true
+        description: "Pages to capture, space separated (or use list)"
+        required: false
+        default: ""
+      list:
+        description: "A probe-lists/ file to capture instead (url per line, # comments)"
+        required: false
+        default: ""
+      follow:
+        description: "Also capture up to N bid-looking links per page (0-5); turns on robots, pauses and digests"
+        required: false
+        default: "0"
+      shards:
+        description: "Split the list over this many parallel jobs (1-16)"
+        required: false
+        default: "1"
+      save:
+        description: "Branch to commit the captures to (empty: artifact only). Never main."
+        required: false
         default: ""
 permissions:
   contents: read
@@ -22,9 +50,31 @@ concurrency:
   group: capture-pages
   cancel-in-progress: false
 jobs:
-  capture:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
+    outputs:
+      shards: ${{ steps.p.outputs.shards }}
+      n: ${{ steps.p.outputs.n }}
+    steps:
+      - id: p
+        env:
+          N: ${{ inputs.shards }}
+          SAVE: ${{ inputs.save }}
+        run: |
+          n=$(printf '%s' "$N" | tr -cd 0-9); n=${n:-1}
+          [ "$n" -lt 1 ] && n=1; [ "$n" -gt 16 ] && n=16
+          case "$SAVE" in main|master|HEAD|refs/*|*..*) echo "::error::save must be a side branch, not $SAVE"; exit 1;; esac
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+          echo "shards=[$(seq -s, 0 $((n-1)))]" >> "$GITHUB_OUTPUT"
+  capture:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,13 +85,67 @@ jobs:
       - name: Capture
         env:
           URLS: ${{ inputs.urls }}
+          LIST: ${{ inputs.list }}
+          FOLLOW: ${{ inputs.follow }}
+          N: ${{ needs.plan.outputs.n }}
+          I: ${{ matrix.shard }}
         run: |
           set -u
+          args=(--out captures)
+          if [ -n "$LIST" ]; then
+            case "$LIST" in probe-lists/*.txt) ;; *) echo "::error::list must be a probe-lists/*.txt file"; exit 1;; esac
+            args+=(--list "$LIST")
+          fi
+          f=$(printf '%s' "$FOLLOW" | tr -cd 0-9); f=${f:-0}
+          if [ "$f" -gt 0 ]; then args+=(--follow "$f"); fi
+          if [ "$N" -gt 1 ]; then args+=(--shard "$I/$N"); fi
           # shellcheck disable=SC2086 -- the box is a space-separated list on purpose
-          node scripts/capture-pages.mjs --out captures $URLS
+          node scripts/capture-pages.mjs "${args[@]}" $URLS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: captures
+          name: ${{ needs.plan.outputs.n == '1' && 'captures' || format('captures-{0}', matrix.shard) }}
           path: captures
           retention-days: 14
+  save:
+    needs: [plan, capture]
+    if: ${{ always() && inputs.save != '' && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/caps
+      - name: Commit the captures to the side branch
+        env:
+          SAVE: ${{ inputs.save }}
+          LIST: ${{ inputs.list }}
+        run: |
+          set -eu
+          D="caps/$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          W=/tmp/save-tree
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q --depth 1 origin "$SAVE"; then
+            git worktree add -q -B "$SAVE" "$W" FETCH_HEAD
+          else
+            git worktree add -q --orphan -b "$SAVE" "$W"
+            printf '%s\n' "# $SAVE" "" "Captures from capture.yml (never deployed, never main). One folder per run." > "$W/README.md"
+          fi
+          mkdir -p "$W/$D"
+          for a in /tmp/caps/*/; do mkdir -p "$W/$D/$(basename "$a")"; cp -r "$a". "$W/$D/$(basename "$a")/"; done
+          if [ -f data/gaps/elevsites.json ]; then cp data/gaps/elevsites.json "$W/$D/worklist.json"; fi
+          if [ -n "$LIST" ] && [ -f "$LIST" ]; then cp "$LIST" "$W/$D/list.txt"; fi
+          printf '{"run": "%s", "sha": "%s", "list": "%s"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$LIST" > "$W/$D/run.json"
+          du -sh "$W/$D"
+          git -C "$W" add -A
+          git -C "$W" commit -qm "captures: $D" || { echo "nothing to save"; exit 0; }
+          for i in 1 2 3 4; do
+            if git -C "$W" push -q origin "HEAD:refs/heads/$SAVE"; then exit 0; fi
+            sleep $((i * 10))
+            git -C "$W" fetch -q origin "$SAVE" && git -C "$W" rebase -q FETCH_HEAD || true
+          done
+          echo "::error::could not push to $SAVE"; exit 1
