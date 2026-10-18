@@ -140,6 +140,9 @@ jobs:
           if [ -f data/gaps/elevsites.json ]; then cp data/gaps/elevsites.json "$W/$D/worklist.json"; fi
           if [ -n "$LIST" ] && [ -f "$LIST" ]; then cp "$LIST" "$W/$D/list.txt"; fi
           printf '{"run": "%s", "sha": "%s", "list": "%s"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$LIST" > "$W/$D/run.json"
+          # site owners' own keys (Maps, Stripe, Mapbox...) out before the push:
+          # GitHub push protection refuses the whole push otherwise
+          python3 scripts/redact_secrets.py "$W/$D"
           du -sh "$W/$D"
           git -C "$W" add -A
           git -C "$W" commit -qm "captures: $D" || { echo "nothing to save"; exit 0; }
