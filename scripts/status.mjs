@@ -712,7 +712,7 @@ ${faultBand}
 <div class="legend">
   <span><b style="color:var(--live)">${GLYPH.live}</b> live — read inside ${LATE_H}h</span>
   <span><b style="color:var(--late)">${GLYPH.late}</b> needs a look — held price, still published</span>
-  <span><b style="color:var(--down)">${GLYPH.down}</b> down — past ${WITHDRAW_H}h, withdrawn from the feed</span>
+  <span><b style="color:var(--down)">${GLYPH.down}</b> down — past ${WITHDRAW_H}h (or the shorter line a source sets, Flash Grain 2h), withdrawn from the feed</span>
   <span>“due” is asked for, not promised — GitHub's scheduler is best effort</span>
   <span style="margin-left:auto">${n} source${n === 1 ? "" : "s"}</span>
 </div>

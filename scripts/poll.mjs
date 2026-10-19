@@ -50,7 +50,8 @@ import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak } from "../lib/breaker.mjs";
-import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { adapterFor, optionsFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -239,6 +240,10 @@ try {
     if (p.id) prevRow.set(p.id, p);
   }
 } catch { /* first run, or an unreadable index: every streak is zero */ }
+
+/* A manifest's maxAgeH, as an index-row fragment: present only when it would
+   actually shorten the line, so a row without one keeps its key set. */
+const maxAgeOf = (s) => withdrawHFor(s) < WITHDRAW_H ? { maxAgeH: withdrawHFor(s) } : {};
 
 const operatorOf = (s) => s.operator || String(s.id).split("-")[0];
 
@@ -689,6 +694,16 @@ async function readOne(s) {
               attemptedAt: prevSeen.has(s.id) ? new Date(prevSeen.get(s.id)).toISOString() : null,
               platform: s.platform, url: s.url, provenance: s.provenance ?? "scraped",
               pricedAt: prev?.pricedAt ?? null, checkedAt: prev?.checkedAt ?? null,
+              /* THE SOURCE'S OWN WITHDRAWAL LINE AND ITS OWN CLOCK, only where
+                 they exist (Flash Grain), so every other row keeps its key set.
+                 status.mjs and build_directory.mjs read this row, not the
+                 manifest, so the line has to travel on it; withdrawHFor in
+                 lib/freshness.mjs still caps it at WITHDRAW_H. `observedAt` is
+                 the feed's own `observed` from the last good read, carried
+                 forward on a failure like checkedAt is: a held price keeps
+                 aging by when THEY last looked. */
+              ...maxAgeOf(s),
+              ...(prevRow.get(s.id)?.observedAt ? { observedAt: prevRow.get(s.id).observedAt } : {}),
               rows: prev?.count ?? 0, wrote: false };
   if (prevUnreadable) {
     r.note = `previous file unreadable (${prevUnreadable}); pricedAt will be restamped`;
@@ -696,7 +711,10 @@ async function readOne(s) {
   }
   try {
     const { html, url } = await getPage(s);
-    const shared = await sharedFor(s.platform);
+    /* An adapter that takes its third argument from the manifest instead of
+       a shared page (emmert: the source's maxAgeH, checked against the feed's
+       own `observed`) gets that. See optionsFor in lib/adapters/index.mjs. */
+    const shared = optionsFor(s) ?? await sharedFor(s.platform);
     const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
     /* A withheld commodity is something the elevator IS buying that we are not
@@ -718,6 +736,7 @@ async function readOne(s) {
     r.status = "ok";
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
+    if (built.observedAt) r.observedAt = built.observedAt; else delete r.observedAt;
     r.rows = verdict.file.count;
     /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
        it belongs on the board rather than only inside the file. */
@@ -866,7 +885,13 @@ function withCarried(rows) {
   for (const s of todo) {
     if (seen.has(s.id)) continue;
     const prev = prevRow.get(s.id);
-    if (prev) { carried.push({ ...prev, ...(s.portal ? { portal: s.portal } : {}), carried: true, carriedAt: now }); continue; }
+    if (prev) {
+      /* The line comes from the manifest as it stands now, not from the row:
+         a maxAgeH added or removed since that pass must take effect. */
+      const { maxAgeH: _was, ...rest } = prev;
+      carried.push({ ...rest, ...maxAgeOf(s), ...(s.portal ? { portal: s.portal } : {}), carried: true, carriedAt: now });
+      continue;
+    }
     /* NO PREVIOUS ROW, BUT THERE MAY STILL BE A BOARD. Once a source has
        fallen out of the manifest it can never climb back in on its own: the
        carry above has nothing to copy, and the merge keeps dropping its board.
@@ -886,7 +911,7 @@ function withCarried(rows) {
       inMerge: s.inMerge !== false, platform: s.platform ?? null,
       url: s.url ?? null,
       status: b.status ?? "ok", health: b.status === "ok" ? "live" : (b.status ?? "unknown"),
-      checkedAt: b.checkedAt ?? null, pricedAt: b.pricedAt ?? null,
+      checkedAt: b.checkedAt ?? null, pricedAt: b.pricedAt ?? null, ...maxAgeOf(s),
       rows: b.count ?? (Array.isArray(b.bids) ? b.bids.length : null),
       fails: prevFails.get(s.id) ?? 0, attemptedAt: null,
       carried: true, carriedAt: now, carriedFrom: "board file",
