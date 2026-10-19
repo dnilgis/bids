@@ -467,7 +467,7 @@ const foldedInto = new Map();            // suspect key -> { board, state, opera
     const board = byId.get(m.board), row = byId.get(sid);
     fillEmpty(board, row);
     (board.mergedFrom ||= []).push({ id: sid, rule: m.rule, why: m.reason });
-    foldedInto.set(sid, { board: m.board, state: row.state, operator: row.operator, location: row.location });
+    foldedInto.set(sid, { board: m.board, rule: m.rule, state: row.state, operator: row.operator, location: row.location });
   }
   for (let i = elevators.length - 1; i >= 0; i--) if (foldedInto.has(elevators[i].id)) elevators.splice(i, 1);
 }
@@ -539,7 +539,7 @@ const counts = {
   byPrecision: tally((e) => (e.placed ? e.precision : "unplaced")),
   placed: elevators.filter((e) => e.placed).length,
   states: Object.keys(tally((e) => e.state || "?")).length,
-  /* Rows on the map after the dup-merge below folded some into their board. */
+  /* Rows on the map after the dup-merge above folded some into their board. */
   knownOnly: knownLeft,
   fromRegistries: registryLeft,
   registryMergedByPhone: regMergedPhone,

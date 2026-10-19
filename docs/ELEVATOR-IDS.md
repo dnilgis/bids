@@ -27,11 +27,21 @@ Code: `lib/elevid.mjs`. Ledger: `data/elevator-ids.jsonl`, one line per key that
 4. **Collision**: if the minted id is already in the ledger (held now or ever), hash the same text plus `#1`, `#2`, ... until it is not.
 5. **One id, one row per build**: if two live rows would hold one id (an old key came back beside the key that inherited it), the row with a board keeps it, then the key that held it first. The other gets a fresh id and its ledger line is rewritten (`via: split`). Counted.
 
+6. **Folded duplicates** (added 2026-10-19, `lib/dup-merge.mjs`): a Barchart or licence row flagged `duplicateSuspect` ("we already read an elevator in this town") is folded into a board only on evidence, and only when exactly one board has it:
+   - **phone**: the same ten digits, and the board is in the same town or within 400 m (a quarter mile). A shared head-office number in another town is not enough.
+   - **near+operator**: both rows within 400 m and the same `operatorKey` (co-op / coop / cooperative and trailing Inc / LLC / Co / Company folded).
+   - **near+alias**: both rows within 400 m and the two names a pair in `data/operator-aliases.json` for that state. Every pair there is cited to source manifests that already declare a row under the other name (`registryId` / `sameAsKnown`), at least two manifests per pair.
+   - Two ten-digit phones that differ veto a name match. A board with the same phone and no coordinate counts as a candidate but is never enough on its own. Two candidates: no fold, counted `ambiguous`. The town alone is never evidence.
+
+   Most rows sit on a town centroid, so for two town-precision rows "within 400 m" is "same town"; the reason string carries both precisions.
+
+   A folded row stops being a pin of its own. The board's elevId never changes. The board takes the folded row's address, phone, capacity, facility and licences where it had none, and lists it in `mergedFrom` (`id`, `elevId`, `rule`, `why`) so anything joined to the folded row's elevId can follow it to the board. The folded key keeps its own ledger line and id (rule 1); while its board is live it is held, so a rename (rule 2) can never carry it to another key. A folded key the ledger has never seen takes the board's id with `via: "dup-merge:<rule>:<board key>"`. If the evidence goes away, the row comes back as its own pin with the id it always had.
+
 `.gitattributes` merges the ledger with `union`, so two runs that each added keys keep both. A key that appears twice after a merge: the earlier `since` wins, then the smaller id, and the next build writes one line.
 
 A rename the rule cannot see (new operator name and new town at once) gets a new id. To carry it by hand, add a ledger line with the new key and the old id, `via: "manual: <why>"`.
 
-`counts.elevIds` in the directory says how many ids were kept, minted, claimed, renamed, left ambiguous or split on that build.
+`counts.elevIds` in the directory says how many ids were kept, minted, claimed, renamed, left ambiguous, split or folded on that build. `counts.dupMerge` gives the suspects before the fold, how many were folded by each rule, how many were ambiguous, and how many are still flagged (`counts.duplicateSuspects` is the still-flagged figure).
 
 ## The county rule
 

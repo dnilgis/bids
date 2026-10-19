@@ -528,9 +528,10 @@ function draw(dir) {
   document.getElementById("gaps").hidden = !gaps.length;
 
   var dup = dir.counts.duplicateSuspects || 0;
-  document.getElementById("dupnote").textContent = dup
+  var folded = (dir.counts.dupMerge && dir.counts.dupMerge.merged) || 0;
+  document.getElementById("dupnote").textContent = (dup
     ? dup + " grey " + (dup === 1 ? "pin sits" : "pins sit") + " in a town we already read — possibly the same yard, not merged"
-    : "";
+    : "") + (folded ? (dup ? "; " : "") + folded + " more folded into the board they duplicate, on a matching phone or operator within 400 m" : "");
 
   document.getElementById("foot").textContent =
     "Outlines projected once with Albers; the page carries the same projection so a pin " +
