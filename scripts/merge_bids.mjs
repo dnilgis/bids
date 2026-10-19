@@ -45,7 +45,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { crop, ppu, plausible, basisCents, basisDollars, PPU_BAND } from "../lib/crop.mjs";
 import { delivery } from "../lib/delivery.mjs";
-import { feedVerdict, WITHDRAW_H } from "../lib/freshness.mjs";
+import { feedVerdict, WITHDRAW_H, withdrawHFor, agingStamp } from "../lib/freshness.mjs";
 import { resolveCurrency, countryOfCurrency } from "../lib/currency.mjs";
 import { yardLosers } from "../lib/same-yard.mjs";
 
@@ -687,7 +687,16 @@ function readScraped(index, places, tally, nowMs, withdrawn = [], files = source
        rather show this morning's bid than an empty cell can. Hiding it makes
        that choice for them and makes it wrongly, because an empty cell reads
        as "this elevator has no bid" and the elevator does. */
-    const fv = feedVerdict(s.status, j.checkedAt ?? j.pricedAt, nowMs);
+    /* ONE SOURCE, ITS OWN LINE, ITS OWN CLOCK. withdrawHFor reads the
+       manifest (sources/<id>.json) first, so the line is what the source says
+       today; the index row only stands in when the manifest is gone. Flash
+       Grain says 2 hours, the line its own page withholds cash at, and nothing
+       can say more than WITHDRAW_H. The age is the older of our checkedAt and
+       the feed's own `observed` (the index row's observedAt): a frozen feed that
+       still answers every poll keeps checkedAt fresh, and only its own stamp
+       stops moving. lib/freshness.mjs. */
+    const fv = feedVerdict(s.status, agingStamp(j.checkedAt ?? j.pricedAt, s.observedAt), nowMs,
+                           withdrawHFor(files.get(id) ?? s));
     if (!fv.publish) {
       tally.drop(`${s.status}: ${fv.why ?? "withdrawn"}`, id);
       /* A WITHDRAWAL IS THE LOUDEST THING THIS SCRIPT DOES, AND IT USED TO BE

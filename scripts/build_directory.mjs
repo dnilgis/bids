@@ -99,7 +99,10 @@ const stateOf = (s, l, nowMs) => {
     unknownHealth.set(h, (unknownHealth.get(h) ?? 0) + 1);
     return "down";     // loudly wrong-looking, never quietly "known"
   }
-  return MAP_STATUS[uiState({ health: h, checkedAt: l.checkedAt }, nowMs)];
+  /* The manifest's maxAgeH (Flash Grain: 2h) and the feed's own observedAt,
+     so the map says "down" at the same moment the merge withdraws the price. */
+  return MAP_STATUS[uiState({ health: h, checkedAt: l.checkedAt, observedAt: l.observedAt,
+                              maxAgeH: s.maxAgeH ?? l.maxAgeH }, nowMs)];
 };
 const KNOWN_HEALTH = new Set(["live", "refused", "broken", "skipped"]);
 const unknownHealth = new Map();
