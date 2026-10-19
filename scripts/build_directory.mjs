@@ -41,6 +41,7 @@ import { orgKey } from "../lib/orgkey.mjs";
 import { yardLosers } from "../lib/same-yard.mjs";
 import { awaitingFirstFile } from "../lib/sources.mjs";
 import { assignIds, readLedger, writeLedger } from "../lib/elevid.mjs";
+import { decideMerges, loadAliases, fillEmpty } from "../lib/dup-merge.mjs";
 import { loadCounties, fipsFor } from "../lib/county.mjs";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
@@ -441,6 +442,38 @@ const registry = regOrder.map(([rid, r]) => {
   return row;
 }).filter(Boolean);
 elevators.push(...registry);
+
+/* ── A "MAY BE THE SAME YARD" PIN FOLDED INTO THE BOARD, ON EVIDENCE ───────
+   2026-10-19. Every row flagged duplicateSuspect above is checked against the
+   boards on the map (lib/dup-merge.mjs): the same ten-digit phone in the same
+   town or within 400 m, or within 400 m and the same operator (operatorKey, or
+   a cited pair in data/operator-aliases.json), with two differing phones a
+   veto. Exactly one board with evidence: the row is folded into it — it stops
+   being a pin of its own, the board takes the facts it lacked (empty fields
+   only), and `mergedFrom` on the board says which row, with its elevId and the
+   reason. Two boards with evidence, or none: the flag stays. Never the town
+   alone. The folded row's key keeps its own elevId in the ledger (rule 1) and
+   is held there by the board, so no rename can hand it out
+   (docs/ELEVATOR-IDS.md, rule 6). */
+const ALIASES = loadAliases(join(ROOT, "data", "operator-aliases.json"));
+const suspectsBefore = elevators.filter((e) => e.duplicateSuspect);
+const boardsForMerge = elevators.filter((e) => e.status !== "known")
+  .map((e) => ({ ...e, phone: byIdSrc.get(e.id)?.phone ?? null }));
+const dup = decideMerges(suspectsBefore, boardsForMerge, ALIASES);
+const foldedInto = new Map();            // suspect key -> { board, state, operator, location }
+{
+  const byId = new Map(elevators.map((e) => [e.id, e]));
+  for (const [sid, m] of dup.merges) {
+    const board = byId.get(m.board), row = byId.get(sid);
+    fillEmpty(board, row);
+    (board.mergedFrom ||= []).push({ id: sid, rule: m.rule, why: m.reason });
+    foldedInto.set(sid, { board: m.board, state: row.state, operator: row.operator, location: row.location });
+  }
+  for (let i = elevators.length - 1; i >= 0; i--) if (foldedInto.has(elevators[i].id)) elevators.splice(i, 1);
+}
+const knownLeft = known.filter((e) => !foldedInto.has(e.id)).length;
+const registryLeft = registry.filter((e) => !foldedInto.has(e.id)).length;
+
 elevators.sort((a, b) => (a.state || "").localeCompare(b.state || "") ||
                          (a.operator || "").localeCompare(b.operator || "") ||
                          (a.location || "").localeCompare(b.location || ""));
@@ -462,7 +495,7 @@ const idRows = elevators.map((e) => {
   return { id: e.id, operator: e.operator, location: e.location, state: e.state,
            lat: e.lat ?? null, lon: e.lon ?? null, board: e.status !== "known", claims };
 });
-const idsOut = assignIds(idRows, readLedger(LEDGER), TODAY);
+const idsOut = assignIds(idRows, readLedger(LEDGER), TODAY, { folded: foldedInto });
 /* A source that shares a yard with one priced more recently draws no row, but
    it is that yard: its key is written against the yard's id, so the day it
    becomes the one drawn, the id does not move. */
@@ -493,6 +526,10 @@ for (let i = 0; i < elevators.length; i++) {
     fipsTally.why[w] = (fipsTally.why[w] ?? 0) + 1;
   }
   elevators[i] = { id: e.id, elevId: idsOut.ids.get(e.id), ...e, ...f };
+  /* The folded row's own permanent id, so anything joined to it can follow it here. */
+  if (e.mergedFrom)
+    elevators[i].mergedFrom = e.mergedFrom.map((m) => ({ id: m.id, elevId: idsOut.ledger.get(m.id)?.id ?? null,
+                                                          rule: m.rule, why: m.why }));
 }
 
 const tally = (fn) => elevators.reduce((m, e) => (m[fn(e)] = (m[fn(e)] || 0) + 1, m), {});
@@ -502,15 +539,21 @@ const counts = {
   byPrecision: tally((e) => (e.placed ? e.precision : "unplaced")),
   placed: elevators.filter((e) => e.placed).length,
   states: Object.keys(tally((e) => e.state || "?")).length,
-  knownOnly: known.length,
-  fromRegistries: registry.length,
+  /* Rows on the map after the dup-merge below folded some into their board. */
+  knownOnly: knownLeft,
+  fromRegistries: registryLeft,
   registryMergedByPhone: regMergedPhone,
   registryMergedByName: regMergedByName,
   registryClaimedBySource: regClaimed,
   registryMergedWithinRegistries: regMergedWithin,
   /* Kept BECAUSE of a phone, against a name-and-town match. */
   registryKeptOnADifferentPhone: regPhoneDisagreed,
-  duplicateSuspects: merged + regSameTown,
+  /* Still flagged: flagged in a town we read, and NOT folded into a board. */
+  duplicateSuspects: merged + regSameTown - dup.counts.merged,
+  /* lib/dup-merge.mjs: suspects before, folded by rule, ambiguous (evidence for
+     two boards), phoneBoardUnplaced (the only same-phone board has no
+     coordinate), stillFlagged. */
+  dupMerge: { ...dup.counts, knownFolded: known.length - knownLeft, registryFolded: registry.length - registryLeft },
   /* Barchart rows a manifest declared it is, by key. Not in duplicateSuspects:
      they are not suspected, they are settled, and they are not on the map. */
   knownDeclaredSame: declaredDropped,
@@ -553,6 +596,9 @@ console.log("  fips:      %d of %d rows (%d sure); by how: %s", fipsTally.withFi
   fipsTally.sure, JSON.stringify(fipsTally.byVia));
 console.log("  known-only: %d (%d in a town we already read — flagged, not hidden)",
   counts.knownOnly, counts.duplicateSuspects);
+console.log("  dup-merge:  %d of %d flagged rows folded into their board (%s); %d ambiguous; %d still flagged",
+  counts.dupMerge.merged, counts.dupMerge.suspects, JSON.stringify(counts.dupMerge.byRule),
+  counts.dupMerge.ambiguous, counts.dupMerge.stillFlagged);
 console.log("  barchart:   %d dropped as the same operator in the same town as a board we read, " +
   "%d kept because their phone differs", counts.knownMergedByName, counts.knownKeptOnADifferentPhone);
 console.log("  registries: %d added, %d dropped as the same elevator by phone, " +
