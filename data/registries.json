@@ -1,12 +1,18 @@
 {
- "generated": "2026-10-19T07:12:16Z",
+ "generated": "2026-10-20T07:18:15Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
   "businesses": 7114,
   "statesAsked": "all",
   "carriedFromCommitted": 0,
   "licensedButLocatedElsewhere": 32,
-  "incompleteSources": [],
+  "incompleteSources": [
+   {
+    "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+    "state": "WI",
+    "why": "the live fetch failed (URLError: <urlopen error timed out>) and this run read the committed snapshot fixtures/registry-wi-datcp.xls instead"
+   }
+  ],
   "byState": {
    "AL": 8,
    "AR": 132,
@@ -368,7 +374,7 @@
     "tried": [
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
-      "bytes": 279407,
+      "bytes": 279408,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -410,21 +416,21 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?limit=1000&offset=25",
-      "bytes": 279408,
-      "bytesDiffer": true,
-      "newBusinesses": 0,
-      "changed": false
-     },
-     {
-      "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
       "bytes": 279406,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
+      "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
+      "bytes": 279408,
+      "bytesDiffer": true,
+      "newBusinesses": 0,
+      "changed": false
+     },
+     {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pageNumber=2",
-      "bytes": 279407,
+      "bytes": 279408,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -445,14 +451,14 @@
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
-      "bytes": 279409,
+      "bytes": 279407,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
-      "bytes": 279408,
+      "bytes": 279410,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -513,45 +519,43 @@
    "kept": 287,
    "sample": [
     {
-     "name": "Cameron Co-operative Elevator Associatio",
-     "city": "Cameron",
-     "county": "Clinton",
-     "phone": "(816) 632-2124",
-     "address": "102 South Walnut",
-     "zip": "64429",
+     "name": "Moberly Natural Crush",
+     "city": "Moberly",
+     "county": "Randolph",
+     "phone": "(314) 809-9499",
+     "address": "609 West Fowler Road",
+     "zip": "65270",
      "st": "MO",
-     "capacity": "2069000",
-     "licence": "WH-131",
+     "capacity": "144000",
+     "licence": "WH-1099",
      "kind": "dealer+warehouse",
-     "nameTruncated": true,
      "state": "MO"
     },
     {
-     "name": "Mid Missouri Agri Services- Sweet Springs",
-     "city": "Sweet Springs",
-     "county": "Saline",
-     "phone": "(660) 335-6355",
-     "address": "125 Lexington Ave",
-     "zip": "65351",
+     "name": "River Valley MFA Agri Services- Higginsville",
+     "city": "Higginsville",
+     "county": "Lafayette",
+     "phone": "(660) 584-3676",
+     "address": "105 W 22ndPO Box 508",
+     "zip": "64037",
      "st": "MO",
-     "capacity": "2660000",
-     "licence": "WH-1031",
+     "capacity": "5367000",
+     "licence": "WH-563",
      "kind": "dealer+warehouse",
      "nameRepaired": "city",
      "state": "MO"
     },
     {
-     "name": "Producers Cooperative Association of Gir",
-     "city": "Liberal",
-     "county": "Barton",
-     "phone": "(417) 843-6465",
-     "address": "1246 W. Highway K",
-     "zip": "64762",
+     "name": "MFA Rail Facility- Hamilton",
+     "city": "Hamilton",
+     "county": "Caldwell",
+     "phone": "(816) 465-4000",
+     "address": "6438 NE Nettleton Road",
+     "zip": "64644",
      "st": "MO",
-     "capacity": "3072000",
-     "licence": "WH-1086",
+     "capacity": "3870000",
+     "licence": "WH-1078",
      "kind": "dealer+warehouse",
-     "nameTruncated": true,
      "state": "MO"
     }
    ],
@@ -767,10 +771,18 @@
    "kind": "dealer+warehouse",
    "note": "DATCP licensees, xls",
    "route": "xls",
+   "errors": [
+    "URLError: <urlopen error timed out>"
+   ],
+   "usedSnapshot": {
+    "path": "fixtures/registry-wi-datcp.xls",
+    "bytes": 3137536
+   },
+   "INCOMPLETE": "the live fetch failed (URLError: <urlopen error timed out>) and this run read the committed snapshot fixtures/registry-wi-datcp.xls instead",
    "pages": [
     {
      "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
-     "status": 200,
+     "status": null,
      "bytes": 3137536
     }
    ],
@@ -819,7 +831,9 @@
      "st": "WI",
      "zip": "54747",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     },
     {
      "name": "24/7 Grain Services LLC",
@@ -829,7 +843,9 @@
      "st": "WI",
      "zip": "54805",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     },
     {
      "name": "Ace Ethanol, LLC",
@@ -839,7 +855,9 @@
      "st": "WI",
      "zip": "54768",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     }
    ],
    "state": "WI"
@@ -907,8 +925,8 @@
      "state": "TX"
     },
     {
-     "name": "CHAFIN INVESTMENTS LTD",
-     "county": "WILLIAMSON",
+     "name": "LONE STAR GRAIN-CHILLICOTHE LLC",
+     "county": "HARDEMAN",
      "kind": "warehouse",
      "state": "TX"
     }
@@ -85729,8 +85747,8 @@
    "state": "MO",
    "address": "1246 W. Highway K",
    "zip": "64762",
-   "capacity": "3072000",
-   "licenceClass": "WH-1086",
+   "capacity": null,
+   "licenceClass": null,
    "licenceStatus": null,
    "nameTruncated": true,
    "nameRepaired": null,
