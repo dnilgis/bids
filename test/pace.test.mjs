@@ -74,8 +74,11 @@ test("a Cloudflare challenge in front of a browser board is a skip, never an att
   const poll = rf(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
   const i = poll.indexOf("A BOT CHECK IS THE SITE SAYING NO");
   assert.ok(i > 0);
-  const block = poll.slice(i, i + 1200);
-  assert.ok(block.includes("challenge-platform|challenges"), "the challenge hosts are what it looks for");
-  assert.match(block, /throw new Skipped\(/);
+  const block = poll.slice(i, i + 2400);
+  /* Since 2026-10-20: lib/cdp.mjs's own BotCheck verdict, then the interactive
+     check's host; never the bare word "challenge-platform", which Cloudflare's
+     passive script puts on ordinary boards (test/botcheck.test.mjs). */
+  assert.ok(block.includes("e?.botCheck === true || /challenges\\.cloudflare\\.com"), "the verdict and the challenge host are what it looks for");
+  assert.match(block, /throw Object\.assign\(new Skipped\(/);
   assert.ok(i < poll.indexOf("if (breaker.fail(s.platform, e.message, operatorOf(s)))"), "checked before the breaker counts a failure");
 });
