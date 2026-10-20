@@ -2,7 +2,7 @@
  * The engine checkout (Sig, Oct 20 2026: "move bids code private"). The reader
  * and its tools (.github/engine-paths: lib/, scripts/, test/, docs/, poll.mjs,
  * breaker.mjs, the two root tests, package.json) live on the engine-bids branch
- * of dnilgis/agsistretired. The same engine.sh and action as dnilgis/agsist.
+ * of dnilgis/feedbag. The same engine.sh and action as dnilgis/agsist.
  * Every workflow job that runs it starts with the "Engine checkout" step
  * (.github/actions/engine), which copies it into the workspace with
  * PRIVATE_REPO_TOKEN when the repository variable ENGINE_MODE is private, and
@@ -118,7 +118,7 @@ test('the action: pinned checkout, key not left on disk, a failed checkout reach
   const sh = read('.github/actions/engine/engine.sh');
   assert.doesNotMatch(sh, /\$\{?(PRIVATE_REPO_TOKEN|INPUT_TOKEN|TOKEN)\b/, 'engine.sh never reads the key');
   const conf = read('.github/engine-paths');
-  assert.match(conf, /^repo dnilgis\/agsistretired$/m);
+  assert.match(conf, /^repo dnilgis\/feedbag$/m);
   assert.match(conf, /^branch engine-bids$/m);
   for (const p of ['lib', 'scripts', 'test', 'docs', 'poll.mjs', 'breaker.mjs', 'package.json']) assert.match(conf, new RegExp(`^path ${p.replace('.', '\\.')}$`, 'm'));
   for (const p of ['sources', 'data', 'fixtures', 'index.html']) assert.doesNotMatch(conf, new RegExp(`^path ${p}`, 'm'), `${p} stays public in this phase`);
@@ -133,7 +133,7 @@ const write = (dir, rel, s) => { fs.mkdirSync(path.dirname(path.join(dir, rel)),
 function publicRepo({ tracked = true } = {}) {
   const d = tmp();
   g(d, 'init', '-q', '-b', 'main');
-  write(d, '.github/engine-paths', 'repo dnilgis/agsistretired\nbranch engine-bids\npath scripts\npath test\npath build\npath poll.mjs\n');
+  write(d, '.github/engine-paths', 'repo dnilgis/feedbag\nbranch engine-bids\npath scripts\npath test\npath build\npath poll.mjs\n');
   write(d, '.github/actions/engine/engine.sh', fs.readFileSync(ENGINE, 'utf8'));
   write(d, 'data/x.json', '1\n');
   if (tracked) { write(d, 'scripts/a.py', 'public a\n'); write(d, 'test/t.mjs', 'public t\n'); write(d, 'build/b.sh', 'b\n'); write(d, 'poll.mjs', 'public poll\n'); }
@@ -165,7 +165,7 @@ test('engine.sh plan: in-repo when the code is here; loud failure when it is gon
   fs.writeFileSync(out, '');
   r = sh(d, `${E} plan`, { MODE: 'private', HAVE_TOKEN: 'true', GITHUB_OUTPUT: out });
   assert.equal(r.status, 0);
-  assert.match(fs.readFileSync(out, 'utf8'), /private=true\nrepo=dnilgis\/agsistretired\nref=engine-bids/);
+  assert.match(fs.readFileSync(out, 'utf8'), /private=true\nrepo=dnilgis\/feedbag\nref=engine-bids/);
   const gone = publicRepo({ tracked: false });
   r = sh(gone, `${E} plan`);
   assert.equal(r.status, 1);
@@ -227,7 +227,7 @@ test('engine.sh overlay: a failed checkout or an incomplete engine fails loudly 
   const sum = path.join(d, '.sum');
   let r = sh(d, `${E} overlay .engine-src`, { CHECKOUT_OUTCOME: 'failure', GITHUB_STEP_SUMMARY: sum });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /::error title=engine checkout failing::could not check out dnilgis\/agsistretired engine-bids/);
+  assert.match(r.stdout, /::error title=engine checkout failing::could not check out dnilgis\/feedbag engine-bids/);
   assert.match(fs.readFileSync(sum, 'utf8'), /### Engine checkout failing/);
   assert.ok(!fs.existsSync(path.join(d, 'scripts')));
   const e = engineDir(d);
