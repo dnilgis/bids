@@ -102,6 +102,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Engine checkout
+        if: ${{ inputs.prep != '' }}
         uses: ./.github/actions/engine
         with:
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
