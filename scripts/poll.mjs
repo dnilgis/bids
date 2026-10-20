@@ -44,14 +44,17 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
+import { pasteOf } from "../lib/sources.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
          localPathOf, awaitingFirstFile } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
-import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak } from "../lib/breaker.mjs";
+import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak, botCheckMarks,
+         botCheckWaiting as waitingOutBotCheck } from "../lib/breaker.mjs";
 import { adapterFor, optionsFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
+import { planLanes, drain } from "../lib/lanes.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -293,6 +296,24 @@ for (const s of todo) {
   if (t !== undefined) lastSeen.set(k, Math.max(lastSeen.get(k) ?? 0, t));
 }
 
+/* ---------- A BOT CHECK IS ASKED AGAIN EVERY FEW HOURS, NOT EVERY PASS ----------
+ *
+ * 2026-10-20. www.newcoop.com has answered our browser with a Cloudflare
+ * challenge on almost every pass since 15:30 UTC Oct 19. Each of those passes
+ * still loaded the page and waited out the browser clock, which is time taken
+ * from every board after it in the browser lane. A site that put a bot check in
+ * front of us has answered; asking again ten minutes later is not going to get
+ * a different answer, and we will not try to get past it.
+ *
+ * So a page that showed a bot check (lib/cdp.mjs BotCheck) carries `botCheckAt`
+ * on its index rows, and is not asked again until BOT_CHECK_BACKOFF_H have
+ * passed. Then it is asked once; a second check starts the clock again, and a
+ * board clears the mark. Its last good file is held and withdrawn on the usual
+ * 14-hour rule either way, exactly as a skip always has been. */
+const BOT_CHECK_BACKOFF_H = Number(process.env.BOT_CHECK_BACKOFF_H ?? 3);
+const botCheckSeen = botCheckMarks(todo, prevRow, pageKeyOf);
+const botCheckWaiting = (k, at = Date.now()) => waitingOutBotCheck(botCheckSeen, k, at, BOT_CHECK_BACKOFF_H);
+
 /* ---------- THE WAY BACK ----------
  *
  * THE THREE KEYS ABOVE HAVE NO EXIT. A page with ANY failure streak sorts
@@ -343,7 +364,8 @@ const REPRIEVE_PAGES = 4;
 const reprieveAt = Date.now();
 const reprieved = new Set(
   [...lastSeen.entries()]
-    .filter(([, t]) => reprieveAt - t > STARVING_MS)
+    /* A page waiting out a bot check is not starving; it is not to be asked. */
+    .filter(([k, t]) => reprieveAt - t > STARVING_MS && !botCheckWaiting(k, reprieveAt))
     .sort((a, b) => a[1] - b[1])
     .slice(0, REPRIEVE_PAGES)
     .map(([k]) => k));
@@ -389,6 +411,15 @@ async function getPage(s) {
      one page, so they share one browser load; a fourteenth on the same API url
      but a different page must not silently reuse it. */
   const key = pageKeyOf(s);   /* ONE definition, shared with the read order above */
+  if (botCheckWaiting(key)) {
+    const at = new Date(botCheckSeen.get(key));
+    const next = new Date(at.getTime() + BOT_CHECK_BACKOFF_H * 3600_000);
+    throw Object.assign(new Skipped(`not asked this pass: blocked by a bot check. ${new URL(s.browserPage ?? s.url).host} `
+      + `answered our browser with a Cloudflare challenge page at ${at.toISOString().slice(0, 16)}Z, and a page that `
+      + `does that is asked again once every ${BOT_CHECK_BACKOFF_H} hours (next after ${next.toISOString().slice(0, 16)}Z). `
+      + `We do not try to get past a site's bot check. Its last good file is untouched and still published while `
+      + `it is inside the withdrawal window.`), { botCheckHeld: true });
+  }
   if (pages.has(key)) return pages.get(key);
   const p = (async () => {
     const problems = [];
@@ -451,11 +482,19 @@ async function getPage(s) {
            We do not try to get past a site's bot check. The pass is recorded as
            not attempted: last price, streak and timestamps carry, and the
            14-hour withdrawal still applies if it never lets us back in. */
-        if (/challenge-platform|challenges\.cloudflare\.com/.test(e.message))
-          throw new Skipped(`not read: ${new URL(s.browserPage).host} answered our browser with a Cloudflare `
-            + `challenge page instead of its board. We do not try to get past a site's bot check, so this `
-            + `pass is not attempted. Its last good file is untouched and still published while it is inside `
-            + `the withdrawal window.`);
+        /* lib/cdp.mjs says so itself now (BotCheck, from Cloudflare's own
+           cf-mitigated header or the challenge page's markers, within a few
+           seconds instead of the whole clock). The host test stays for the
+           interactive check, which loads from challenges.cloudflare.com --
+           and NOT "challenge-platform" on its own: Cloudflare injects
+           /cdn-cgi/challenge-platform/scripts/jsd/ into ordinary pages,
+           NEW Cooperative's real board among them. */
+        if (e?.botCheck === true || /challenges\.cloudflare\.com|challenge-platform\/h\//.test(e.message))
+          throw Object.assign(new Skipped(`blocked by a bot check: ${new URL(s.browserPage).host} answered our `
+            + `browser with a Cloudflare challenge page instead of its board. We do not try to get past a `
+            + `site's bot check, so this pass is not attempted, and the page is asked again in `
+            + `${BOT_CHECK_BACKOFF_H} hours, not every pass. Its last good file is untouched and still `
+            + `published while it is inside the withdrawal window.`), { botCheck: true });
         if (breaker.fail(s.platform, e.message, operatorOf(s))) {
           /* NAME WHO FAILED, NOT WHERE THEY ARE HOSTED. The first version of
              this said "bushel is not answering" in a pass where 193 Bushel
@@ -629,6 +668,32 @@ function sharedFor(platform) {
   return p;
 }
 
+/* ---------- a board Sig pasted by hand ----------
+ *
+ * lib/sources.mjs PLATFORM_PASTE. Fetched once per platform per pass, only when
+ * a live read on that platform failed, with the same clamp as every fetch. A
+ * paste that is missing, unreadable or carries no paste time is null, and the
+ * live read's own failure stands. */
+const pasteCache = new Map();
+function getPaste(platform) {
+  const url = pasteOf(platform);
+  if (!url || fixtures.size) return Promise.resolve(null);
+  if (pasteCache.has(platform)) return pasteCache.get(platform);
+  const p = (async () => {
+    try {
+      const res = await fetchWithin(url, { headers: { "User-Agent": UA, Accept: "application/json" } }, fetchDeadline());
+      if (!res.ok) return null;
+      const body = await res.text();
+      const j = JSON.parse(body);
+      if (!j || !j.pastedAt || !Number.isFinite(Date.parse(j.pastedAt)) || !Array.isArray(j.locations)) return null;
+      return { body, url, pastedAt: new Date(Date.parse(j.pastedAt)).toISOString(),
+               source: typeof j.source === "string" ? j.source.slice(0, 120) : null };
+    } catch { return null; }
+  })();
+  pasteCache.set(platform, p);
+  return p;
+}
+
 /* ---------- read each source ---------- */
 const now = new Date().toISOString();
 const results = [];
@@ -704,18 +769,33 @@ async function readOne(s) {
                  aging by when THEY last looked. */
               ...maxAgeOf(s),
               ...(prevRow.get(s.id)?.observedAt ? { observedAt: prevRow.get(s.id).observedAt } : {}),
+              /* When this page last showed us a bot check; see BOT_CHECK_BACKOFF_H. */
+              ...(prevRow.get(s.id)?.botCheckAt ? { botCheckAt: prevRow.get(s.id).botCheckAt } : {}),
               rows: prev?.count ?? 0, wrote: false };
   if (prevUnreadable) {
     r.note = `previous file unreadable (${prevUnreadable}); pricedAt will be restamped`;
     console.error(`::warning title=${s.id} unreadable previous file::${prevUnreadable}`);
   }
   try {
-    const { html, url } = await getPage(s);
+    /* THE NEWER OF LIVE AND PASTED WINS. A live board is read now, so it is
+       always newer; only when there is no live board is the paste asked, and it
+       is used only when it is at least as new as the board already held. */
+    let page, pasted = null;
+    try { page = await getPage(s); }
+    catch (liveErr) {
+      const p = pasteOf(s.platform) ? await getPaste(s.platform) : null;
+      const heldAt = Date.parse(prev?.checkedAt ?? "");
+      if (!p || (Number.isFinite(heldAt) && Date.parse(p.pastedAt) < heldAt)) throw liveErr;
+      page = { html: p.body, url: p.url };
+      pasted = { at: p.pastedAt, source: p.source, liveErr };
+    }
+    const { html, url } = page;
     /* An adapter that takes its third argument from the manifest instead of
        a shared page (emmert: the source's maxAgeH, checked against the feed's
        own `observed`) gets that. See optionsFor in lib/adapters/index.mjs. */
     const shared = optionsFor(s) ?? await sharedFor(s.platform);
-    const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s),
+    /* A pasted board is as old as the paste: that is its checkedAt, never our clock. */
+    const built = buildFile(html, { now: pasted ? pasted.at : now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
     /* A withheld commodity is something the elevator IS buying that we are not
        publishing. It must never be a silent omission -- it goes in the index,
@@ -733,10 +813,28 @@ async function readOne(s) {
        and a source that works once has no case against it any more. */
     r.fails = nextStreak(prevFails.get(s.id), "live");
     r.attemptedAt = now;
+    delete r.botCheckAt;   /* the board answered: the bot check is over */
+    if (pasted) {
+      /* PUBLISHED FROM THE PASTE, AND SAYS SO. The live read still failed, so
+         its streak, its attempt stamp and any bot-check mark are what that read
+         earned; the row is `pasted` and aged by the paste (observedAt), which
+         lib/freshness.mjs holds for PASTED_WITHDRAW_H. */
+      const le = pasted.liveErr;
+      r.fails = nextStreak(prevFails.get(s.id), isSkip(le) ? "skipped" : "broken");
+      r.attemptedAt = isSkip(le) && le?.botCheck !== true
+        ? (prevSeen.has(s.id) ? new Date(prevSeen.get(s.id)).toISOString() : null) : now;
+      if (le?.botCheck === true) r.botCheckAt = now;
+      else if (prevRow.get(s.id)?.botCheckAt) r.botCheckAt = prevRow.get(s.id).botCheckAt;
+      r.pasted = true;
+      r.pastedAt = pasted.at;
+      if (pasted.source) r.pastedFrom = pasted.source;
+      r.liveError = String(le?.message ?? le).replace(/\s+/g, " ").trim().slice(0, 300);
+    }
     r.status = "ok";
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
     if (built.observedAt) r.observedAt = built.observedAt; else delete r.observedAt;
+    if (pasted) r.observedAt = pasted.at;
     r.rows = verdict.file.count;
     /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
        it belongs on the board rather than only inside the file. */
@@ -761,7 +859,8 @@ async function readOne(s) {
       writeFileSync(out, serialise(verdict.file));
       r.wrote = true;
     }
-    console.log(`  ok      ${s.id.padEnd(24)} ${String(verdict.file.count).padStart(2)} rows  ${verdict.reason}`);
+    console.log(`  ok      ${s.id.padEnd(24)} ${String(verdict.file.count).padStart(2)} rows  ${verdict.reason}`
+      + (pasted ? ` (from Sig's paste of ${pasted.at}; the live read: ${r.liveError.slice(0, 120)})` : ""));
   } catch (e) {
     /* HOLD, THEN WITHDRAW. A refused source keeps its last good file exactly
        as it is -- we do not overwrite a good price with silence -- and its
@@ -783,6 +882,11 @@ async function readOne(s) {
     /* An empty board clears the streak: see nextStreak in lib/breaker.mjs. */
     r.fails = nextStreak(prevFails.get(s.id), r.health, { emptyBoard: e?.empty === true });
     if (!isSkip(e)) r.attemptedAt = now;
+    /* A BOT CHECK IS A SKIP THAT DID ASK. The streak is left alone (it is the
+       site's policy, not a fault on their board), but the page was loaded, so
+       it is stamped attempted -- otherwise it would look starving and the
+       reprieve would load it first, every pass. */
+    if (e?.botCheck === true) { r.attemptedAt = now; r.botCheckAt = now; }
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the
        300-character cut. The console does not: on 2026-08-19 the 300th
@@ -831,10 +935,31 @@ async function readOne(s) {
  * The order is unchanged: this is a queue, and the reprieve still puts the
  * longest-starved pages at the front of it. */
 const READ_CONCURRENCY = Math.max(1, Number(process.env.READ_CONCURRENCY ?? 3));
-let cursor = 0;
-await Promise.all(Array.from({ length: READ_CONCURRENCY }, async () => {
-  while (cursor < todo.length) await readOne(todo[cursor++]);
-}));
+/* ---------- AND TWO LANES, NOT ONE LINE ----------
+ *
+ * The three above were shared by browser reads and plain fetches, and the pass
+ * still did not reach a third of the boards (lib/lanes.mjs has the count). The
+ * browser lane keeps READ_CONCURRENCY; the fetch lane runs beside it with its
+ * own FETCH_CONCURRENCY workers, one host at a time, against the same wall.
+ * Within each lane the order above is kept. */
+const FETCH_CONCURRENCY = Math.max(1, Number(process.env.FETCH_CONCURRENCY ?? 3));
+const lanes = planLanes(todo, { transportOf });
+const [browserLane, fetchLane] = await Promise.all([
+  drain(lanes.browser, READ_CONCURRENCY, readOne),
+  drain(lanes.fetch, FETCH_CONCURRENCY, readOne),
+]);
+/* WHAT EACH LANE COST, ON EVERY PASS, so the next change to this is made from
+   a measurement: written to the log and to index.json `lanes`. */
+const laneStat = (lane, l, workers, browser) => {
+  const mine = todo.filter((s) => (transportOf(s.platform) === "browser") === browser);
+  const reached = results.filter((r) => (transportOf(r.platform) === "browser") === browser).length;
+  return { lane, workers, jobs: l.jobs, sources: mine.length, reached, idleAtS: Math.round(l.ms / 1000) };
+};
+const laneStats = [laneStat("browser", browserLane, READ_CONCURRENCY, true),
+                   laneStat("fetch", fetchLane, FETCH_CONCURRENCY, false)];
+for (const l of laneStats)
+  console.log(`  ${l.lane} lane: reached ${l.reached} of ${l.sources} source(s) (${l.jobs} job(s), `
+    + `${l.workers} worker(s)), idle at +${l.idleAtS}s`);
 
 /* WHAT THE PASS DID NOT REACH, SAID OUT LOUD.
    A pass that quietly reads two hundred of three hundred and fifty looks exactly
@@ -852,8 +977,9 @@ if (skippedForTime) {
   console.error(`::error title=pass budget spent::${skippedForTime} source(s) were not reached `
     + `within ${Math.round(PASS_BUDGET_MS / 1000)}s. Everything read before the wall IS written and `
     + `committed — which is the point: a pass killed by the outer timeout publishes nothing at all. `
-    + `The next pass starts from the top, so a persistent overrun starves the end of the alphabet: `
-    + `if this line keeps appearing, something is timing out that should not be.`);
+    + `Each lane's line above says how far it got. The read order puts whoever waited longest first `
+    + `next pass, so the same boards are not the ones left out twice running; if this line keeps `
+    + `appearing, something is timing out that should not be.`);
 }
 
 /* ---------- index ---------- */
@@ -935,6 +1061,7 @@ const index = {
     /* Of the refused: boards whose operator is posting nothing right now. */
     emptyBoard: results.filter((r) => r.health === "refused" && r.emptyBoard).length,
   },
+  lanes: laneStats,
   sources: withCarried(results.map(({ wrote, ...keep }) => keep)),
 };
 if (!dryRun) {
