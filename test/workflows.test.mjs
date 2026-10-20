@@ -1230,10 +1230,12 @@ test("stepsOf finds the steps of the real manifests job", () => {
   // every cross-step read would look like a same-step read, or nothing would
   // be checked at all -- and the file-level test above would still be green.
   const steps = stepsOf(read("gradable-manifests.yml"));
-  assert.equal(steps.length, 7, steps.map((s) => s.name).join(" | "));
-  assert.equal(steps[2].name, "Test the guards");
+  // checkout, Engine checkout (Oct 20), setup-node, then the job's own steps
+  assert.equal(steps.length, 8, steps.map((s) => s.name).join(" | "));
+  assert.equal(steps[1].name, "Engine checkout");
+  assert.equal(steps[3].name, "Test the guards");
   assert.ok(steps.every((s) => s.job === 0));
-  assert.deepEqual([...steps[3].env], ["PARTNER"]);
+  assert.deepEqual([...steps[4].env], ["PARTNER"]);
 });
 
 test("a comment is not a read, and a commented-out redirect is not a write", () => {

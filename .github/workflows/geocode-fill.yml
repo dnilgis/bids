@@ -43,6 +43,11 @@ jobs:
         # commit it was CREATED at, and folding 216 manifests onto a tree two
         # commits behind is how the sharded merge broke on 2026-08-29.
         with: { ref: main }
+      - name: Engine checkout
+        uses: ./.github/actions/engine
+        with:
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          mode: ${{ vars.ENGINE_MODE }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
