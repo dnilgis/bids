@@ -119,8 +119,10 @@ test("the queue is taken from the front, so the reprieve still means something",
 test("poll.mjs drives the read with a bounded pool, not a serial for-loop", () => {
   assert.match(src, /const READ_CONCURRENCY = Math\.max\(1, Number\(process\.env\.READ_CONCURRENCY \?\? 3\)\)/,
     "three by default, measured; overridable without a code change");
-  assert.match(src, /while \(cursor < todo\.length\) await readOne\(todo\[cursor\+\+\]\)/,
-    "one shared cursor is what makes it a queue and not N copies of the work");
+  /* Since 2026-10-20 the queue is two lanes (lib/lanes.mjs drain, one cursor
+     per lane); test/lanes.test.mjs pins them. */
+  assert.match(src, /drain\(lanes\.browser, READ_CONCURRENCY, readOne\)/,
+    "the browser lane is a queue drained by READ_CONCURRENCY workers");
   assert.doesNotMatch(src, /\nfor \(const s of todo\) \{\n  const out = join\(DATA/,
     "the serial read loop is what this replaces");
   /* The budget check must still run per source, inside the worker. */
