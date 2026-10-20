@@ -44,6 +44,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
+import { pasteOf } from "../lib/sources.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
          localPathOf, awaitingFirstFile } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
@@ -667,6 +668,31 @@ function sharedFor(platform) {
   return p;
 }
 
+/* ---------- a board Sig pasted by hand ----------
+ *
+ * lib/sources.mjs PLATFORM_PASTE. Fetched once per platform per pass, only when
+ * a live read on that platform failed, with the same clamp as every fetch. A
+ * paste that is missing, unreadable or carries no paste time is null, and the
+ * live read's own failure stands. */
+const pasteCache = new Map();
+function getPaste(platform) {
+  const url = pasteOf(platform);
+  if (!url || fixtures.size) return Promise.resolve(null);
+  if (pasteCache.has(platform)) return pasteCache.get(platform);
+  const p = (async () => {
+    try {
+      const res = await fetchWithin(url, { headers: { "User-Agent": UA, Accept: "application/json" } }, fetchDeadline());
+      if (!res.ok) return null;
+      const body = await res.text();
+      const j = JSON.parse(body);
+      if (!j || !j.pastedAt || !Number.isFinite(Date.parse(j.pastedAt)) || !Array.isArray(j.locations)) return null;
+      return { body, url, pastedAt: new Date(Date.parse(j.pastedAt)).toISOString() };
+    } catch { return null; }
+  })();
+  pasteCache.set(platform, p);
+  return p;
+}
+
 /* ---------- read each source ---------- */
 const now = new Date().toISOString();
 const results = [];
@@ -750,12 +776,25 @@ async function readOne(s) {
     console.error(`::warning title=${s.id} unreadable previous file::${prevUnreadable}`);
   }
   try {
-    const { html, url } = await getPage(s);
+    /* THE NEWER OF LIVE AND PASTED WINS. A live board is read now, so it is
+       always newer; only when there is no live board is the paste asked, and it
+       is used only when it is at least as new as the board already held. */
+    let page, pasted = null;
+    try { page = await getPage(s); }
+    catch (liveErr) {
+      const p = pasteOf(s.platform) ? await getPaste(s.platform) : null;
+      const heldAt = Date.parse(prev?.checkedAt ?? "");
+      if (!p || (Number.isFinite(heldAt) && Date.parse(p.pastedAt) < heldAt)) throw liveErr;
+      page = { html: p.body, url: p.url };
+      pasted = { at: p.pastedAt, liveErr };
+    }
+    const { html, url } = page;
     /* An adapter that takes its third argument from the manifest instead of
        a shared page (emmert: the source's maxAgeH, checked against the feed's
        own `observed`) gets that. See optionsFor in lib/adapters/index.mjs. */
     const shared = optionsFor(s) ?? await sharedFor(s.platform);
-    const built = buildFile(html, { now, sourceUrl: url, source: toConfig(s),
+    /* A pasted board is as old as the paste: that is its checkedAt, never our clock. */
+    const built = buildFile(html, { now: pasted ? pasted.at : now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
     /* A withheld commodity is something the elevator IS buying that we are not
        publishing. It must never be a silent omission -- it goes in the index,
@@ -774,10 +813,26 @@ async function readOne(s) {
     r.fails = nextStreak(prevFails.get(s.id), "live");
     r.attemptedAt = now;
     delete r.botCheckAt;   /* the board answered: the bot check is over */
+    if (pasted) {
+      /* PUBLISHED FROM THE PASTE, AND SAYS SO. The live read still failed, so
+         its streak, its attempt stamp and any bot-check mark are what that read
+         earned; the row is `pasted` and aged by the paste (observedAt), which
+         lib/freshness.mjs holds for PASTED_WITHDRAW_H. */
+      const le = pasted.liveErr;
+      r.fails = nextStreak(prevFails.get(s.id), isSkip(le) ? "skipped" : "broken");
+      r.attemptedAt = isSkip(le) && le?.botCheck !== true
+        ? (prevSeen.has(s.id) ? new Date(prevSeen.get(s.id)).toISOString() : null) : now;
+      if (le?.botCheck === true) r.botCheckAt = now;
+      else if (prevRow.get(s.id)?.botCheckAt) r.botCheckAt = prevRow.get(s.id).botCheckAt;
+      r.pasted = true;
+      r.pastedAt = pasted.at;
+      r.liveError = String(le?.message ?? le).replace(/\s+/g, " ").trim().slice(0, 300);
+    }
     r.status = "ok";
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
     if (built.observedAt) r.observedAt = built.observedAt; else delete r.observedAt;
+    if (pasted) r.observedAt = pasted.at;
     r.rows = verdict.file.count;
     /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
        it belongs on the board rather than only inside the file. */
@@ -802,7 +857,8 @@ async function readOne(s) {
       writeFileSync(out, serialise(verdict.file));
       r.wrote = true;
     }
-    console.log(`  ok      ${s.id.padEnd(24)} ${String(verdict.file.count).padStart(2)} rows  ${verdict.reason}`);
+    console.log(`  ok      ${s.id.padEnd(24)} ${String(verdict.file.count).padStart(2)} rows  ${verdict.reason}`
+      + (pasted ? ` (from Sig's paste of ${pasted.at}; the live read: ${r.liveError.slice(0, 120)})` : ""));
   } catch (e) {
     /* HOLD, THEN WITHDRAW. A refused source keeps its last good file exactly
        as it is -- we do not overwrite a good price with silence -- and its

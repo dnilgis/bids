@@ -417,6 +417,9 @@ function row(o) {
     mappable: r5(o.lat) != null && r5(o.lon) != null && !!norm(o.state),
 
     via: o.via, source: o.source,
+    /* A board Sig pasted by hand from the elevator's own public page: when, and
+       the words a page prints beside it. Only on those rows. */
+    ...(o.via === "paste" ? { pastedAt: o.pastedAt ?? null, postedFrom: o.postedFrom ?? null } : {}),
 
     /* WHY A CONSUMER CAN TRUST THIS ROW, IN TWO FIELDS.
        `stale` is the one a renderer needs: true means the read failed and this
@@ -695,8 +698,11 @@ function readScraped(index, places, tally, nowMs, withdrawn = [], files = source
        the feed's own `observed` (the index row's observedAt): a frozen feed that
        still answers every poll keeps checkedAt fresh, and only its own stamp
        stops moving. lib/freshness.mjs. */
+    /* A BOARD SIG PASTED BY HAND (the index row says `pasted`) is aged by the
+       paste and held for PASTED_WITHDRAW_H (lib/freshness.mjs), not 14 h. */
+    const pasted = s.pasted === true;
     const fv = feedVerdict(s.status, agingStamp(j.checkedAt ?? j.pricedAt, s.observedAt), nowMs,
-                           withdrawHFor(files.get(id) ?? s));
+                           withdrawHFor(files.get(id) ?? s), { pasted });
     if (!fv.publish) {
       tally.drop(`${s.status}: ${fv.why ?? "withdrawn"}`, id);
       /* A WITHDRAWAL IS THE LOUDEST THING THIS SCRIPT DOES, AND IT USED TO BE
@@ -730,7 +736,9 @@ function readScraped(index, places, tally, nowMs, withdrawn = [], files = source
         commodity: b.commodity, delivery: b.delivery,
         cash: b.cash, basis: b.basisDollars ?? b.basisCents,
         futuresMonth: b.futuresMonth, futuresCents: b.futuresPriceCents,
-        via: "scrape", source: id,
+        via: pasted ? "paste" : "scrape", source: id,
+        ...(pasted ? { pastedAt: s.pastedAt ?? s.observedAt ?? j.checkedAt,
+                       postedFrom: `posted from ${s.operator}'s public bid page` } : {}),
         sourceStatus: s.status, stale: fv.stale, ageHours: fv.ageH,
         pricedAt: j.pricedAt, checkedAt: j.checkedAt, asOf: j.pricedAt || j.checkedAt,
       }));
