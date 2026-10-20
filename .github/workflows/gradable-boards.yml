@@ -88,6 +88,11 @@ jobs:
         # checks out an older tree would compare its read against an older
         # report and could "shrink" against a count that has since grown.
         with: { ref: main }
+      - name: Engine checkout
+        uses: ./.github/actions/engine
+        with:
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          mode: ${{ vars.ENGINE_MODE }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
