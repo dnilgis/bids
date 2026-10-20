@@ -419,7 +419,7 @@ function row(o) {
     via: o.via, source: o.source,
     /* A board Sig pasted by hand from the elevator's own public page: when, and
        the words a page prints beside it. Only on those rows. */
-    ...(o.via === "paste" ? { pastedAt: o.pastedAt ?? null, postedFrom: o.postedFrom ?? null } : {}),
+    ...(o.pasted === true ? { pasted: true, pastedAt: o.pastedAt ?? null, postedFrom: o.postedFrom ?? null } : {}),
 
     /* WHY A CONSUMER CAN TRUST THIS ROW, IN TWO FIELDS.
        `stale` is the one a renderer needs: true means the read failed and this
@@ -736,9 +736,11 @@ function readScraped(index, places, tally, nowMs, withdrawn = [], files = source
         commodity: b.commodity, delivery: b.delivery,
         cash: b.cash, basis: b.basisDollars ?? b.basisCents,
         futuresMonth: b.futuresMonth, futuresCents: b.futuresPriceCents,
-        via: pasted ? "paste" : "scrape", source: id,
-        ...(pasted ? { pastedAt: s.pastedAt ?? s.observedAt ?? j.checkedAt,
-                       postedFrom: `posted from ${s.operator}'s public bid page` } : {}),
+        /* Still "scrape": a paste is the elevator's own public board, first
+           party, read by Sig instead of by us. `pasted` says how it came. */
+        via: "scrape", source: id,
+        ...(pasted ? { pasted: true, pastedAt: s.pastedAt ?? s.observedAt ?? j.checkedAt,
+                       postedFrom: s.pastedFrom ?? "posted from the elevator's public bid page" } : {}),
         sourceStatus: s.status, stale: fv.stale, ageHours: fv.ageH,
         pricedAt: j.pricedAt, checkedAt: j.checkedAt, asOf: j.pricedAt || j.checkedAt,
       }));

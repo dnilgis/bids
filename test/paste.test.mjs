@@ -87,5 +87,5 @@ test("poll.mjs: the newer of live and pasted wins, and a paste row says what the
   assert.match(poll, /if \(pasted\) r\.observedAt = pasted\.at;/);
   const merge = readFileSync(new URL("../scripts/merge_bids.mjs", import.meta.url), "utf8");
   assert.match(merge, /withdrawHFor\(files\.get\(id\) \?\? s\), \{ pasted \}\);/);
-  assert.match(merge, /via: pasted \? "paste" : "scrape"/);
+  assert.match(merge, /\.\.\.\(pasted \? \{ pasted: true, pastedAt:/, "merged rows say they were pasted, and stay first party (via scrape)");
 });

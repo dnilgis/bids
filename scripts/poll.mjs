@@ -686,7 +686,8 @@ function getPaste(platform) {
       const body = await res.text();
       const j = JSON.parse(body);
       if (!j || !j.pastedAt || !Number.isFinite(Date.parse(j.pastedAt)) || !Array.isArray(j.locations)) return null;
-      return { body, url, pastedAt: new Date(Date.parse(j.pastedAt)).toISOString() };
+      return { body, url, pastedAt: new Date(Date.parse(j.pastedAt)).toISOString(),
+               source: typeof j.source === "string" ? j.source.slice(0, 120) : null };
     } catch { return null; }
   })();
   pasteCache.set(platform, p);
@@ -786,7 +787,7 @@ async function readOne(s) {
       const heldAt = Date.parse(prev?.checkedAt ?? "");
       if (!p || (Number.isFinite(heldAt) && Date.parse(p.pastedAt) < heldAt)) throw liveErr;
       page = { html: p.body, url: p.url };
-      pasted = { at: p.pastedAt, liveErr };
+      pasted = { at: p.pastedAt, source: p.source, liveErr };
     }
     const { html, url } = page;
     /* An adapter that takes its third argument from the manifest instead of
@@ -826,6 +827,7 @@ async function readOne(s) {
       else if (prevRow.get(s.id)?.botCheckAt) r.botCheckAt = prevRow.get(s.id).botCheckAt;
       r.pasted = true;
       r.pastedAt = pasted.at;
+      if (pasted.source) r.pastedFrom = pasted.source;
       r.liveError = String(le?.message ?? le).replace(/\s+/g, " ").trim().slice(0, 300);
     }
     r.status = "ok";
