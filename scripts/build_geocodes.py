@@ -444,6 +444,30 @@ def _census(address, timeout=20):
         return None
 
 
+def previous_registry_pins(path):
+    """The registry section of the places file this run is about to replace,
+    or {} when there is none or it cannot be read."""
+    try:
+        return (json.loads(Path(path).read_text()).get("registry") or {})
+    except Exception:
+        return {}
+
+
+def carried_pin(prev, rid, address):
+    """(lat, lon) of a Census street pin the previous file holds for this key at
+    this exact address, or None. Only a Census answer is carried: a centroid is
+    never promoted, and a changed address is asked again."""
+    e = (prev or {}).get(rid)
+    a = (address or "").strip()
+    if not e or not a or e.get("via") != "census" or e.get("precision") != "street":
+        return None
+    if (e.get("address") or "").strip() != a:
+        return None
+    if not isinstance(e.get("lat"), (int, float)) or not isinstance(e.get("lon"), (int, float)):
+        return None
+    return float(e["lat"]), float(e["lon"])
+
+
 def main():
     use_census = os.environ.get("NO_CENSUS", "") != "1"
     towns, boxes, counties, zips = build_tables()
@@ -639,7 +663,15 @@ def main():
 
     # ── the state registries ───────────────────────────────────────────────
     registry, rstats = {}, {"town": 0, "county": 0, "unplaced": 0, "rejected": 0,
-                           "mergedSameKey": 0}
+                           "mergedSameKey": 0, "keptStreet": 0}
+    # A STREET PIN IS NOT RE-EARNED EVERY MORNING. 2026-10-27, run 40465551047:
+    # a slow Census spent the 420s budget on 147 addresses, skipped 769, and the
+    # rebuild dropped 392 registry yards from the street point they had held the
+    # day before to their town's ZIP centroid. Nothing about those yards had
+    # changed; the geocoder was slow. So the answer the file already holds for
+    # the SAME key at the SAME address is kept, and the Census is asked only
+    # for addresses it has not answered yet.
+    prev_registry = previous_registry_pins(OUT)
     if REGISTRIES.exists():
         try:
             rd = json.loads(REGISTRIES.read_text())
@@ -655,7 +687,11 @@ def main():
             # not be pinned to the middle of its town. The Census geocoder is
             # reachable on the runner (it moved 126 of our own elevators from
             # centroids to rooftops on 2026-08-28), so ask it here too.
-            if use_census and (b_.get("address") or "").strip():
+            kept = carried_pin(prev_registry, rid, b_.get("address"))
+            if kept:
+                lat, lon, prec, via = kept[0], kept[1], "street", "census"
+                rstats["keptStreet"] += 1
+            elif use_census and (b_.get("address") or "").strip():
                 addr = b_["address"]
                 if st and st.lower() not in addr.lower():
                     addr = "%s, %s %s" % (addr, b_.get("city") or "", st)
@@ -772,9 +808,11 @@ def main():
             registry[rid] = entry
         print("\nstate registries: %d at a street point, %d at a ZIP or town centroid, "
               "%d at a COUNTY centroid, %d unplaced, %d rejected, "
-              "%d the same yard on two rolls"
+              "%d the same yard on two rolls; %d street pins kept from the last file "
+              "at an unchanged address"
               % (rstats.get("street", 0), rstats.get("town", 0), rstats.get("county", 0),
-                 rstats["unplaced"], rstats["rejected"], rstats["mergedSameKey"]))
+                 rstats["unplaced"], rstats["rejected"], rstats["mergedSameKey"],
+                 rstats["keptStreet"]))
 
     if _census_state["calls"] or _census_state["skipped"]:
         print("\ngeocoder: %d addresses asked in %.0fs, %d skipped once the %.0fs budget was spent"

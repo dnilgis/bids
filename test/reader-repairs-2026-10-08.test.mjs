@@ -27,6 +27,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { buildFile, Refused } from "../lib/board.mjs";
 import { extract as graindesk } from "../lib/adapters/graindesk.mjs";
 import { validateSource, toConfig } from "../lib/sources.mjs";
+import { roundAsBoard } from "../lib/board-rounding.mjs";
 
 const ROOT = new URL("..", import.meta.url);
 const json = (p) => JSON.parse(readFileSync(new URL(p, ROOT), "utf8"));
@@ -63,14 +64,48 @@ test("farmerseande: no enabled source still points at the dead mobile board", ()
   assert.deepEqual(still, []);
 });
 
+/* THE HISTORY HAS TWO ERAS -- 2026-10-27.
+ *
+ * Until 60631c8 reached main (02:05 UTC Oct 27) the cashgrid adapter rounded
+ * every cell half up, so the residuals data/rounding-residuals.json collected
+ * off this board measured OUR arithmetic, and round-cent-either described it.
+ * Since then the adapter prints what the board prints, with the board's own
+ * rounding setting, and lib/board.mjs explains such a row only when its cash
+ * is exactly what that setting makes of it. Farmers E&E floors: from 02:28
+ * UTC its live history gained +0.75c (618 times by 22:58) and never another
+ * -0.5 or -0.25, and +0.75 is a residual only a round-down setting produces.
+ * The test read the live file and went red on the first +0.75.
+ *
+ * So each era is checked against the arithmetic that made it. The first is a
+ * frozen copy of the last pre-fix write (66c6bd3, 01:59 UTC), held to
+ * round-cent-either exactly as before. The second is whatever the live file
+ * has gained since, held to the board's own floor. */
+const ERA1 = "test/fixtures/rounding-residuals-farmerseande-kalona-2026-10-27T0159Z.json";
+
 test("farmerseande: the rounding the move carries is the one the board's own history supports", () => {
   /* round-cent-either admits -0.5..+0.5c. Every residual farmerseande-kalona
-     has ever shown off this board is inside that, so the declaration is a
-     measurement of the board and not of one day. */
-  const h = json("data/rounding-residuals.json").sources["farmerseande-kalona"];
+     showed off this board under the half-up arithmetic is inside that, so the
+     declaration is a measurement of the board and not of one day. */
+  const h = json(ERA1).sources["farmerseande-kalona"];
   assert.ok(h && h.reads > 100, "the sibling's residual history is missing or thin");
   for (const r of Object.keys(h.residuals).map(Number))
     assert.ok(r >= -0.5 && r <= 0.5, `a residual of ${r}c is outside round-cent-either`);
+});
+
+test("farmerseande: since the board's own rounding is printed, every new residual is its round-down", () => {
+  const before = json(ERA1).sources["farmerseande-kalona"];
+  const live = json("data/rounding-residuals.json").sources["farmerseande-kalona"];
+  assert.ok(live && live.reads >= before.reads, "the live history is missing or shorter than the frozen one");
+  const gained = Object.entries(live.residuals)
+    .filter(([r, n]) => n > (before.residuals[r] ?? 0)).map(([r]) => Number(r));
+  for (const r of gained) {
+    /* A price of 1000 + r cents under setting 1 prints 1000: the residual is r. */
+    assert.equal(roundAsBoard(1000 + r, 1) * 100, 1000,
+      `a residual of ${r}c gained since 2026-10-27 is not the board's round-down`);
+  }
+  for (const r of ["-0.5", "-0.25"])
+    assert.ok((live.residuals[r] ?? 0) <= before.residuals[r],
+      `${r}c grew after the board's own rounding was printed: half-up arithmetic is back`);
 });
 
 /* --- 2. Sharedon Farms: the canola row is per tonne ---------------------- */
