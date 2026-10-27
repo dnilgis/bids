@@ -850,12 +850,15 @@ for c in ("out-of-state", "Out of State", "OUT OF STATE", "Boone"):
  *
  * A wrong town is worse than a missing one: it puts a pin somewhere real.
  */
-const SDF = "http-puc-sd-gov-commission-warehouse-grain-20license-20info-pdf.txt";
-test("South Dakota's wrapped lines are rejoined, not parsed as separate records", { skip: !existsSync(fixture(SDF)) }, () => {
+/* Pinned copy of the Oct 21 2026 capture. The live capture in debug/registries is
+   rewritten by the registries job (Oct 24: a new PDF with 17 wraps), so the counts
+   below are only exact against a frozen document. */
+const SDF_PINNED = join(ROOT, "test/fixtures/registries/sd-puc-grain-licenses-2026-10-21.txt");
+test("South Dakota's wrapped lines are rejoined, not parsed as separate records", () => {
   const out = pyOn(`
 import re
 src = [s for s in m.SOURCES if s["state"] == "SD"][0]
-t = open(r"${fixture(SDF)}", encoding="utf-8", errors="replace").read()
+t = open(r"${SDF_PINNED}", encoding="utf-8", errors="replace").read()
 d = {}
 r = m.pdf_records(t, d, src["pattern"], src.get("continuation"), src.get("cityStrip"))
 bad = [x for x in r if x["city"] in ("A", "ARMERS", "EST") or re.search(r"-\\d+$", x["city"] or "")]

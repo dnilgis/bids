@@ -887,7 +887,7 @@ test("a board we CAN parse is never captured — it is not evidence of a gap", a
    as mobile, 45 as cashgrid. The 45 carry 506 locations — more elevators than
    this repository currently reads at all.
    ──────────────────────────────────────────────────────────────────────── */
-import { VERIFIED_BY as CASHGRID_STAMP, extract as extractCashgrid }
+import { VERIFIED_BY as CASHGRID_STAMP, extract as extractCashgrid, cashDecimals }
   from "../lib/adapters/agricharts-cashgrid.mjs";
 import { buildFile, CASH_ROUNDING } from "../lib/board.mjs";
 import { toConfig } from "../lib/sources.mjs";
@@ -1150,6 +1150,13 @@ test("the captured boards publish through the real guard, and refuse without the
     .replace(/\.(com|net|org|coop)$/, "").replace(/-/g, "");
 
   let withRule = 0, withoutRule = 0, tried = 0;
+  /* BOARDS THAT PRINT MORE THAN TWO DECIMALS -- 2026-10-27. Since the adapter
+     prints what the board prints, a board set to four decimals (New Vision,
+     CoMark, FS Grain) posts 12.0650, which balances to the last digit with no
+     rounding to explain. Those publish without the declaration and SHOULD; the
+     declaration has to do the work on the two-decimal boards, and is counted
+     there. */
+  let fine = 0, fineWithout = 0;
   /* A CAPTURE'S NAME IS NOT EVIDENCE OF ITS SHAPE, AND THIS TEST LEARNED IT THE
      EXPENSIVE WAY. The pairing above is by HOST SLUG alone, which quietly
      assumes every fixtures/agricharts-cashgrid-<slug>.html is that operator's
@@ -1192,7 +1199,10 @@ test("the captured boards publish through the real guard, and refuse without the
        so it is counted apart and capped, never absorbed into withRule. */
     try { buildFile(html, opts(toConfig(s))); withRule++; }
     catch (e) { if (/none for location/.test(e.message)) { tried--; newerThanCapture.push(s.id); continue; } }
-    try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined }))); withoutRule++; } catch { /* ditto */ }
+    const isFine = cashDecimals(bytes) > 2;
+    if (isFine) fine++;
+    try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined })));
+          if (isFine) fineWithout++; else withoutRule++; } catch { /* ditto */ }
   }
   assert.deepEqual([...notItsBoard].sort(),
     ["agricharts-cashgrid-faasfeed.html reads as mobile"],
@@ -1202,8 +1212,11 @@ test("the captured boards publish through the real guard, and refuse without the
   assert.ok(newerThanCapture.length <= 10,
     `${newerThanCapture.length} sources are on boards newer than their capture: ${newerThanCapture.join(", ")}. Refresh the captures.`);
   assert.equal(withRule, tried, `${tried - withRule} still refuse WITH round-cent`);
-  assert.ok(withoutRule < tried / 4,
-    `${withoutRule} of ${tried} published WITHOUT the declaration — then it is not doing the work`);
+  assert.ok(withoutRule < (tried - fine) / 4,
+    `${withoutRule} of ${tried - fine} two-decimal sources published WITHOUT the declaration — then it is not doing the work`);
+  assert.ok(fine > 150, `only ${fine} sources on boards that print more than two decimals`);
+  assert.ok(fineWithout > fine * 0.9,
+    `${fineWithout} of ${fine} sources on boards that print more than two decimals balanced without a rounding rule`);
 });
 
 test("the platform's own host is preferred over the operator's marketing domain", () => {
