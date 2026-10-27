@@ -31,7 +31,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { mergeQuotes } from "../lib/adapters/agricharts.mjs";
-import { extract, parseCells, cashFor, deliveryFromCode, headerCodes,
+import { extract, parseCells, cashFor, cashDecimals, roundAsBoard, deliveryFromCode, headerCodes,
          headingsBefore, MONTH_CODES, CELL, VERIFIED_BY } from "../lib/adapters/agricharts-cashgrid.mjs";
 import { adapterFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { PLATFORMS, PLATFORM_WIRE } from "../lib/sources.mjs";
@@ -81,7 +81,11 @@ test("the eighth argument is absent on a flat posted price", () => {
 
 /* ── the arithmetic, which is the page's and not ours ────────────────────── */
 
-const cell = (o = {}) => ({ basis: -34, manual: false, rounding: 0, incwt: false,
+/* rounding -1 is the board's "off": print the price as computed, to two
+   decimals. It used to say 0 here, which the page reads as "always round UP";
+   nothing honoured it until 2026-10-27, so the default is the neutral one and
+   the rounding tests below set it on purpose. */
+const cell = (o = {}) => ({ basis: -34, manual: false, rounding: -1, incwt: false,
                             weight: 56, symbol: "ZCZ26", ...o });
 
 test("a cent-quoted contract adds the basis in cents", () => {
@@ -114,6 +118,73 @@ test("incwt converts to hundredweight at the board's own test weight", () => {
   /* Agtegra's sunflowers come out of here. */
   assert.equal(cashFor(cell({ manual: true, basis: 1200, symbol: null, incwt: true, weight: 60 }), null), 20);
   assert.equal(cashFor(cell({ manual: true, basis: 1200, symbol: null, incwt: false, weight: 60 }), null), 12);
+});
+
+/* ── the board's own rounding setting (2026-10-27) ───────────────────────── */
+
+test("Innovative Ag rounds DOWN, so half-cent soybeans print a cent lower than half up", () => {
+  /* THE REAL ROW. data/innovativeag-admclint.json, pricedAt 2026-10-23T20:31:36Z:
+     Beans 10/01/2026, futuresPriceCents 1256.5, basis -0.35, and we published
+     cash 12.22. The board (fixtures/agricharts-cashgrid-innovativeag.html: every
+     cell carries rounding 1) printed $12.21, read 2026-10-24. 1256.5 - 35 is
+     1221.5 cents, and remainder 0.5 >= 1 is false, so the page floors it. */
+  const beans = cell({ symbol: "ZSX26", basis: -35, rounding: 1, weight: 60 });
+  assert.equal(cashFor(beans, { lastCents: 1256.5, root: "ZS" }), 12.21);
+  /* Same capture's corn, futures on a whole cent (456, basis -0.16): every
+     mode agrees, which is why all 50 corn prices matched the boards. */
+  assert.equal(cashFor(cell({ basis: -16, rounding: 1 }), { lastCents: 456, root: "ZC" }), 4.4);
+  /* Rounding 1 floors a three-quarter too. */
+  assert.equal(cashFor(cell({ basis: 0, rounding: 1 }), { lastCents: 1221.75, root: "ZS" }), 12.21);
+});
+
+test("Agtegra rounds up only from three quarters", () => {
+  /* THE REAL ROW. data/agtegra-alpena.json, pricedAt 2026-10-23T18:51:32Z:
+     Soybeans 10/01/2026, 1256.5 with basis -0.70, published 11.87; the board
+     (rounding 0.75 on every ZS cell) printed $11.86. 1186.5 cents floors. */
+  const beans = (b) => cell({ symbol: "ZSX26", basis: b, rounding: 0.75, weight: 60 });
+  assert.equal(cashFor(beans(-70), { lastCents: 1256.5, root: "ZS" }), 11.86);
+  assert.equal(cashFor(beans(-70), { lastCents: 1256.75, root: "ZS" }), 11.87, "0.75 rounds up");
+  assert.equal(cashFor(beans(-70), { lastCents: 1256.25, root: "ZS" }), 11.86);
+});
+
+test("a board that prints four decimals keeps its half cent", () => {
+  /* THE REAL ROW. data/newvision-brewster.json, pricedAt 2026-10-23T18:30:32Z:
+     Soybeans 10/01/2026, 1256.5 with basis -0.50, published 12.07; the board
+     (rounding -1, cashprice_decimals 4) printed $12.0650. */
+  const beans = cell({ symbol: "ZSX26", basis: -50, rounding: -1, weight: 60, decimals: 4 });
+  assert.equal(cashFor(beans, { lastCents: 1256.5, root: "ZS" }), 12.065);
+  assert.equal(cashDecimals(read("agricharts-cashgrid-newvision.html")), 4);
+  assert.equal(cashDecimals(read("agricharts-cashgrid-innovativeag.html")), 2);
+  assert.equal(cashDecimals("var cashprice_decimals = parseInt('0');"), 2, "0 means 2 on the page");
+  assert.equal(cashDecimals("var cashprice_decimals = parseInt('');"), 2);
+});
+
+test("0.5 is half up and 0 is always up, as the page writes it", () => {
+  assert.equal(roundAsBoard(1221.5, 0.5), 12.22);
+  assert.equal(roundAsBoard(1221.25, 0.5), 12.21);
+  assert.equal(roundAsBoard(1221.25, 0), 12.22);
+  assert.equal(roundAsBoard(1221, 0), 12.21, "a whole cent has nothing to round");
+  assert.equal(roundAsBoard(1221.5, -1), Number((12.215).toFixed(2)), "off: the page's own toFixed");
+});
+
+test("the captured boards print what their own setting says, row by row", () => {
+  /* Every ZS cell on the three audited boards, computed the page's way from
+     the committed captures and quotes: none may come out above the floor on a
+     rounding-1 board, and the New Vision ones keep more than two decimals
+     where the quote has a half or quarter cent. */
+  const zs = (f) => extract(read(f), "u", { contracts: CONTRACTS }).filter((r) => /^ZS/.test(r.futures ?? ""));
+  const ias = zs("agricharts-cashgrid-innovativeag.html");
+  assert.ok(ias.length > 100, `only ${ias.length} Innovative Ag soybean rows`);
+  for (const r of ias)
+    assert.equal(r.cash, Math.floor(r.futuresPrice + r.basisCents) / 100, `${r.raw} ${r.futures}`);
+  const nv = zs("agricharts-cashgrid-newvision.html");
+  assert.ok(nv.length > 50, `only ${nv.length} New Vision soybean rows`);
+  let fractional = 0;
+  for (const r of nv) {
+    const cents = r.futuresPrice + r.basisCents;
+    if (!Number.isInteger(cents) && r.cash === Number((cents / 100).toFixed(4))) fractional++;
+  }
+  assert.ok(fractional > 0, "no New Vision soybean row kept its fraction of a cent");
 });
 
 test("no contract means no price, rather than a price of zero", () => {
