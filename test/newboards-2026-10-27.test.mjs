@@ -1,5 +1,5 @@
 /* THE OCT 27 CANDIDATE BOARDS. A research list named public cash-bid pages,
- * unverified. capture.yml run 40594412672 loaded each one; the boards an
+ * unverified. capture.yml runs 40594412672 and 40595637896 loaded each one; the boards an
  * existing adapter reads were written as manifests, and their bytes are the
  * fixtures here. Each manifest must name a location that is really on its
  * board, and publish from that capture through every guard with nothing
@@ -36,6 +36,7 @@ const BOARDS = {
   "dellrapidscoopgrain-dellrapids": ["fixtures/cashbidssingle-dellrapidscoopgrain-2026-10-27.html", 10],
   "burgessgrain-clinton": ["fixtures/cashbidssingle-burgessgrain-2026-10-27.html", 12],
   "jorgensenfe-williamston": ["fixtures/cashbidssingle-jorgensenfe-2026-10-27.html", 9],
+  "harvestonelcp-ibec": ["fixtures/cashbidssingle-harvestonelcp-ibec-2026-10-27.html", 7],
   "southbendethanol-southbend": ["fixtures/graindesk-verbio-2026-10-27.json", 6],
 };
 
@@ -44,7 +45,7 @@ for (const [id, [fixture, rows]] of Object.entries(BOARDS)) {
     const m = JSON.parse(rd(`sources/${id}.json`));
     assert.deepEqual(validateSource(m), [], id);
     assert.equal(m.enabled, true);
-    assert.match(m.note, /capture\.yml run 40594412672/, "the note names the capture it was written from");
+    assert.match(m.note, /capture\.yml run (40594412672|40595637896)/, "the note names the capture it was written from");
     assert.match(m.note, /PLACE: /, "the note says how the town was decided");
     const body = rd(fixture);
     const all = adapterFor(m.platform)(body, m.url);
