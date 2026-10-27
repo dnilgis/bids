@@ -46,13 +46,13 @@ import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { pasteOf } from "../lib/sources.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
-         localPathOf, awaitingFirstFile } from "../lib/sources.mjs";
+         localPathOf, awaitingFirstFile, keepOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak, botCheckMarks,
          botCheckWaiting as waitingOutBotCheck } from "../lib/breaker.mjs";
-import { adapterFor, optionsFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { adapterFor, optionsFor, withPageContext, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
 import { planLanes, drain } from "../lib/lanes.mjs";
 
@@ -472,7 +472,7 @@ async function getPage(s) {
            returns the body of one response. See PLATFORM_CAPTURE. */
         const how = captureOf(s.platform);
         got = how === "rendered"
-          ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
+          ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, keep: keepOf(s.platform) })
           : how === "fetched"
             ? await captureFetched({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
             : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, accept: acceptOf(s.platform) });
@@ -514,7 +514,7 @@ async function getPage(s) {
       if (!got.body.length) throw new Error(`${got.url} answered ${got.status} with an empty body`);
       /* got.url has already had any key in it redacted, which matters: it is
          what gets stamped into the committed file and printed on failure. */
-      return { html: got.body, url: got.url };
+      return { html: got.body, url: got.url, ...(got.kept ? { kept: got.kept } : {}) };
     }
     const headers = {
       "User-Agent": UA,
@@ -792,8 +792,11 @@ async function readOne(s) {
     const { html, url } = page;
     /* An adapter that takes its third argument from the manifest instead of
        a shared page (emmert: the source's maxAgeH, checked against the feed's
-       own `observed`) gets that. See optionsFor in lib/adapters/index.mjs. */
-    const shared = optionsFor(s) ?? await sharedFor(s.platform);
+       own `observed`) gets that. See optionsFor in lib/adapters/index.mjs.
+       A page that kept the widget's own side responses (StoneHedge delivery
+       periods) adds what they say, and the operator whose last good layout a
+       changed table is compared with (lib/relocate.mjs). */
+    const shared = withPageContext(optionsFor(s) ?? await sharedFor(s.platform), s, page);
     /* A pasted board is as old as the paste: that is its checkedAt, never our clock. */
     const built = buildFile(html, { now: pasted ? pasted.at : now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
