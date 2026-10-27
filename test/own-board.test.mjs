@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extract as newcoop, ticks, dateRange as ncRange, NewCoopRefused } from "../lib/adapters/newcoop.mjs";
 import { extract as nexus, contractMonth, NexusRefused } from "../lib/adapters/nexus.mjs";
-import { build, place, BUYER } from "../scripts/own-board-manifests.mjs";
+import { build, place, BUYER, respelled } from "../scripts/own-board-manifests.mjs";
 import { buildFile } from "../lib/board.mjs";
 import { validateSource, toConfig, PLATFORMS, wireOf, transportOf, methodOf } from "../lib/sources.mjs";
 import { adapterFor } from "../lib/adapters/index.mjs";
@@ -99,7 +99,7 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   }
   assert.ok(manifests.length >= 150);
   /* The three left out are left out for a reason that is printed. */
-  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["cpicoop: AGP David City", "cpicoop: AGP Hastings", "cpicoop: Hayland", "cpicoop: Juniata", "cpicoop: Lewis",
+  assert.deepEqual(skipped.map((s) => s.tag).sort(), ["cpicoop: AGP David City", "cpicoop: AGP Hastings", "cpicoop: Hayland", "cpicoop: Lewis",
     "fivestar: AGP Mason City", "fivestar: Christensen Farms FC", "fivestar: GGE Mason City", "fivestar: Reicks View Milling",
     "fivestar: Shell Rock Soy Processing", "fivestar: Valero Charles City",
     "landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
@@ -233,4 +233,24 @@ test("a directory row whose own ZIP is in another state is not evidence", () => 
   const p = place("Villisca", ev);
   assert.equal(p.state, "IA");
   assert.equal(p.city, "Villisca");
+});
+
+/* THE REAL CASE, 2026-10-27: CPI's board prints "Juniata" and the federal licence
+   list files the same Adams County yard as "Junita, NE". The respelling is one
+   declared row, matched on spelling, state and county, and only for a registry row. */
+test("a misspelled licence row is read as the town it names, and nothing else is", () => {
+  const map = { Junita: { city: "Juniata", state: "NE", county: "Adams" } };
+  const reg = { src: "registry (registry-wcmd)", branch: null, city: "Junita", state: "NE", county: "Adams", zip: null, phone: null };
+  const [fixed] = respelled([reg], map);
+  assert.equal(fixed.city, "Juniata");
+  assert.match(fixed.src, /filed as "Junita"/);
+  assert.equal(place("Juniata", [fixed]).city, "Juniata");
+  assert.ok(place("Juniata", [reg]).skip, "without the respelling the label stays unplaced");
+  assert.equal(respelled([{ ...reg, state: "KS" }], map)[0].city, "Junita", "another state is not this yard");
+  assert.equal(respelled([{ ...reg, county: "Clay" }], map)[0].city, "Junita", "another county is not this yard");
+  assert.equal(respelled([{ ...reg, src: "roster" }], map)[0].city, "Junita", "only licence rows are respelled");
+  const m = build().manifests.map((x) => x.manifest).find((x) => x.id === "cpicoop-juniata");
+  assert.ok(m, "cpicoop-juniata is generated");
+  assert.equal(m.location, "Juniata");
+  assert.equal(m.lat, null, "no coordinate is invented for it");
 });

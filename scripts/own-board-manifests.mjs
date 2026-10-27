@@ -45,7 +45,15 @@ export const SITES = {
   /* Cooperative Producers, Inc. bids milo per bushel as well, so its manifests carry a milo band. */
   cpicoop: { platform: "cpicoop", url: CPI_URL, extract: cpicoop, fixture: `fixtures/cpicoop-bids-${CAPTURED}.html`,
              names: ["Cooperative Producers, Inc.", "Cooperative Producers Inc", "Cooperative Producers, Inc"], operator: "Cooperative Producers, Inc.",
-             website: "https://www.cpicoop.com/", homeStates: ["NE", "KS"], extraBands: { milo: [1.5, 12] } },
+             website: "https://www.cpicoop.com/", homeStates: ["NE", "KS"], extraBands: { milo: [1.5, 12] },
+             /* A LICENCE ROW SPELLED WRONG, READ AS IT WAS MEANT (2026-10-27). The
+                federal warehouse list files CPI's Adams County yard as "Junita, NE"
+                (data/registries.json, registry-wcmd, 2,368,000 bu). Juniata is the
+                Adams County village; no Nebraska place is spelled Junita. The board
+                prints "Juniata". Only a registry row, only for this operator, only
+                this one spelling: a respelling is a decision with its evidence, not
+                a fuzzy match. */
+             respell: { Junita: { city: "Juniata", state: "NE", county: "Adams" } } },
   /* Five Star prints cash and basis and NO futures: its rows publish on the
      board-agreement + quote-fit checks (lib/adapters/fivestar.mjs), so the
      generator measures agreement instead of cash - basis = futures. */
@@ -121,8 +129,19 @@ function rawEvidence(names) {
                    phone: f.phone || null, lat: f.lat ?? null, lon: f.lon ?? null, precision: f.coord_precision ?? null }));
   const reg = JSON.parse(rd("data/registries.json")).businesses
     .filter((b) => want.has(norm(b.name)) && b.state && b.city)
-    .map((b) => ({ src: `registry (${b.source})`, branch: null, city: title(b.city), state: b.state, zip: b.zip || null, phone: b.phone || null }));
+    .map((b) => ({ src: `registry (${b.source})`, branch: null, city: title(b.city), state: b.state, county: b.county || null, zip: b.zip || null, phone: b.phone || null }));
   return [...roster, ...known, ...reg];
+}
+
+/** A registry row whose town is a known misspelling, read as the town it names.
+    Matches the filed spelling, state and county exactly; anything else is left as filed. */
+export function respelled(rows, map) {
+  if (!map) return rows;
+  return rows.map((r) => {
+    const fix = Object.entries(map).find(([bad]) => norm(bad) === norm(r.city))?.[1];
+    if (!fix || !String(r.src).startsWith("registry") || r.state !== fix.state || r.county !== fix.county) return r;
+    return { ...r, city: fix.city, src: `${r.src}, filed as "${r.city}"` };
+  });
 }
 
 /** Place one board label. */
@@ -283,7 +302,7 @@ function buildRaw() {
   for (const [site, cfg] of Object.entries(SITES)) {
     if (!existsSync(ROOT + cfg.fixture)) { skipped.push({ tag: site, why: `no capture at ${cfg.fixture}` }); continue; }
     const rows = cfg.extract(rd(cfg.fixture), cfg.url);
-    const ev = evidence(cfg.names);
+    const ev = respelled(evidence(cfg.names), cfg.respell);
     const coordOf = new Map();
     for (const r of ev.filter((x) => x.src === "roster" && x.lat != null && x.lon != null)) {
       const k = `${norm(r.city)}|${r.state}`;
