@@ -46,13 +46,14 @@ import { buildFile, Refused, serialise, isRefusal } from "../lib/board.mjs";
 import { decide, movedSources } from "../lib/decide.mjs";
 import { pasteOf } from "../lib/sources.mjs";
 import { loadSources, toConfig, urlsFor, wireOf, transportOf, captureOf, methodOf, paceOf, pacedIn, acceptOf,
-         localPathOf, awaitingFirstFile } from "../lib/sources.mjs";
+         localPathOf, awaitingFirstFile, keepOf } from "../lib/sources.mjs";
 import { fetchWithin, deadlineFrom, shareOf, SOURCE_FETCH_MS_DEFAULT,
          BROWSER_FLOOR_MS } from "../lib/deadline.mjs";
 import { capture, captureRendered, captureFetched } from "../lib/cdp.mjs";
 import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak, botCheckMarks,
-         botCheckWaiting as waitingOutBotCheck } from "../lib/breaker.mjs";
-import { adapterFor, optionsFor, SHARED_PAGES } from "../lib/adapters/index.mjs";
+         botCheckWaiting as waitingOutBotCheck, refusalHolds, refusalWaiting as waitingOutRefusal,
+         holdUntilFor, HostHold, isRefusalStatus } from "../lib/breaker.mjs";
+import { adapterFor, optionsFor, withPageContext, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
 import { planLanes, drain } from "../lib/lanes.mjs";
 
@@ -313,6 +314,11 @@ for (const s of todo) {
 const BOT_CHECK_BACKOFF_H = Number(process.env.BOT_CHECK_BACKOFF_H ?? 3);
 const botCheckSeen = botCheckMarks(todo, prevRow, pageKeyOf);
 const botCheckWaiting = (k, at = Date.now()) => waitingOutBotCheck(botCheckSeen, k, at, BOT_CHECK_BACKOFF_H);
+/* A page that answered 403 or 429 on every address, and a host that answered
+   429 this pass: see REFUSAL_HOLD_H in lib/breaker.mjs. */
+const refusalHeld = refusalHolds(todo, prevRow, pageKeyOf);
+const refusalWaiting = (k, at = Date.now()) => waitingOutRefusal(refusalHeld, k, at);
+const hostHold = new HostHold();
 
 /* ---------- THE WAY BACK ----------
  *
@@ -365,7 +371,7 @@ const reprieveAt = Date.now();
 const reprieved = new Set(
   [...lastSeen.entries()]
     /* A page waiting out a bot check is not starving; it is not to be asked. */
-    .filter(([k, t]) => reprieveAt - t > STARVING_MS && !botCheckWaiting(k, reprieveAt))
+    .filter(([k, t]) => reprieveAt - t > STARVING_MS && !botCheckWaiting(k, reprieveAt) && !refusalWaiting(k, reprieveAt))
     .sort((a, b) => a[1] - b[1])
     .slice(0, REPRIEVE_PAGES)
     .map(([k]) => k));
@@ -420,6 +426,13 @@ async function getPage(s) {
       + `We do not try to get past a site's bot check. Its last good file is untouched and still published while `
       + `it is inside the withdrawal window.`), { botCheckHeld: true });
   }
+  if (refusalWaiting(key)) {
+    const until = new Date(refusalHeld.get(key)).toISOString().slice(0, 16);
+    throw Object.assign(new Skipped(`not asked this pass: ${new URL(s.url).host} answered 403 or 429 on every `
+      + `address of this board, and a page that refuses us is asked again only after ${until}Z (REFUSAL_HOLD_H `
+      + `in lib/breaker.mjs, or what its Retry-After said). We do not try to get past a block. Its last good `
+      + `file is untouched and still published while it is inside the withdrawal window.`), { refusalHeld: true });
+  }
   if (pages.has(key)) return pages.get(key);
   const p = (async () => {
     const problems = [];
@@ -472,7 +485,7 @@ async function getPage(s) {
            returns the body of one response. See PLATFORM_CAPTURE. */
         const how = captureOf(s.platform);
         got = how === "rendered"
-          ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
+          ? await captureRendered({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, keep: keepOf(s.platform) })
           : how === "fetched"
             ? await captureFetched({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs })
             : await capture({ pageUrl: s.browserPage, target: s.url, timeoutMs: browserMs, accept: acceptOf(s.platform) });
@@ -514,7 +527,7 @@ async function getPage(s) {
       if (!got.body.length) throw new Error(`${got.url} answered ${got.status} with an empty body`);
       /* got.url has already had any key in it redacted, which matters: it is
          what gets stamped into the committed file and printed on failure. */
-      return { html: got.body, url: got.url };
+      return { html: got.body, url: got.url, ...(got.kept ? { kept: got.kept } : {}) };
     }
     const headers = {
       "User-Agent": UA,
@@ -557,13 +570,26 @@ async function getPage(s) {
         + `known to be wrong.`);
     const deadline = fetchDeadline();
     const urls = urlsFor(s);
+    let refusals = 0, refusal = null, answeredOther = false;
     for (const [i, url] of urls.entries()) {
+      let urlHost = url; try { urlHost = new URL(url).host; } catch {}
+      if (hostHold.held(urlHost)) {
+        problems.push(`${url} -> not asked: ${urlHost} answered 429 earlier this pass`);
+        refusals++; refusal ??= { status: 429, retryAfter: null };
+        continue;
+      }
       try {
         const res = await fetchWithin(url, { method: methodOf(s.platform), headers, redirect: "follow" },
                                       shareOf(deadline, urls.length - i));
         if (!res.ok) {
           problems.push(`${url} -> HTTP ${res.status}`);
           let host = url; try { host = new URL(url).host; } catch {}
+          if (isRefusalStatus(res.status)) {
+            refusals++;
+            hostHold.hold(host, res.status);
+            const ra = res.headers?.get?.("retry-after") ?? null;
+            if (!refusal || res.status === 429) refusal = { status: res.status, retryAfter: ra };
+          } else answeredOther = true;
           if (backoff.note(s.platform, res.status, host))
             console.error(`::error title=${s.platform} is refusing us::${BACKOFF_STRIKES} different `
               + `hosts answered 403 or 429 in a row (${backoff.culprits(s.platform).join(", ")}). `
@@ -571,6 +597,7 @@ async function getPage(s) {
           continue;
         }
         backoff.ok(s.platform);
+        answeredOther = true;
         const html = await res.text();
         /* THE 500-BYTE FLOOR IS AN HTML ASSUMPTION. It exists to catch a shell
            page served in place of a board. A JSON feed for a one-location
@@ -585,7 +612,13 @@ async function getPage(s) {
         return { html, url };
       } catch (e) { problems.push(`${url} -> ${e.message}`); }
     }
-    throw new Error(`could not read their page. ${problems.join("; ")}`);
+    const err = new Error(`could not read their page. ${problems.join("; ")}`);
+    /* EVERY ADDRESS THAT ANSWERED SAID NO: hold the page (lib/breaker.mjs
+       REFUSAL_HOLD_H). A twin that does not resolve said nothing either way;
+       one that answered anything but 403 or 429 means this is not a block. */
+    if (refusals > 0 && !answeredOther)
+      err.refusalHold = holdUntilFor(refusal.status, refusal.retryAfter);
+    throw err;
   })();
   pages.set(key, p);
   return p;
@@ -771,6 +804,8 @@ async function readOne(s) {
               ...(prevRow.get(s.id)?.observedAt ? { observedAt: prevRow.get(s.id).observedAt } : {}),
               /* When this page last showed us a bot check; see BOT_CHECK_BACKOFF_H. */
               ...(prevRow.get(s.id)?.botCheckAt ? { botCheckAt: prevRow.get(s.id).botCheckAt } : {}),
+              /* When this page may next be asked after refusing us; see REFUSAL_HOLD_H. */
+              ...(prevRow.get(s.id)?.holdUntil ? { holdUntil: prevRow.get(s.id).holdUntil } : {}),
               rows: prev?.count ?? 0, wrote: false };
   if (prevUnreadable) {
     r.note = `previous file unreadable (${prevUnreadable}); pricedAt will be restamped`;
@@ -792,8 +827,11 @@ async function readOne(s) {
     const { html, url } = page;
     /* An adapter that takes its third argument from the manifest instead of
        a shared page (emmert: the source's maxAgeH, checked against the feed's
-       own `observed`) gets that. See optionsFor in lib/adapters/index.mjs. */
-    const shared = optionsFor(s) ?? await sharedFor(s.platform);
+       own `observed`) gets that. See optionsFor in lib/adapters/index.mjs.
+       A page that kept the widget's own side responses (StoneHedge delivery
+       periods) adds what they say, and the operator whose last good layout a
+       changed table is compared with (lib/relocate.mjs). */
+    const shared = withPageContext(optionsFor(s) ?? await sharedFor(s.platform), s, page);
     /* A pasted board is as old as the paste: that is its checkedAt, never our clock. */
     const built = buildFile(html, { now: pasted ? pasted.at : now, sourceUrl: url, source: toConfig(s),
                                     extract: adapterFor(s.platform, shared) });
@@ -814,6 +852,7 @@ async function readOne(s) {
     r.fails = nextStreak(prevFails.get(s.id), "live");
     r.attemptedAt = now;
     delete r.botCheckAt;   /* the board answered: the bot check is over */
+    if (!pasted) delete r.holdUntil;   /* and so is any refusal hold */
     if (pasted) {
       /* PUBLISHED FROM THE PASTE, AND SAYS SO. The live read still failed, so
          its streak, its attempt stamp and any bot-check mark are what that read
@@ -825,6 +864,7 @@ async function readOne(s) {
         ? (prevSeen.has(s.id) ? new Date(prevSeen.get(s.id)).toISOString() : null) : now;
       if (le?.botCheck === true) r.botCheckAt = now;
       else if (prevRow.get(s.id)?.botCheckAt) r.botCheckAt = prevRow.get(s.id).botCheckAt;
+      if (le?.refusalHold) r.holdUntil = le.refusalHold;
       r.pasted = true;
       r.pastedAt = pasted.at;
       if (pasted.source) r.pastedFrom = pasted.source;
@@ -887,6 +927,10 @@ async function readOne(s) {
        it is stamped attempted -- otherwise it would look starving and the
        reprieve would load it first, every pass. */
     if (e?.botCheck === true) { r.attemptedAt = now; r.botCheckAt = now; }
+    /* A PAGE THAT REFUSED ON EVERY ADDRESS is a real failure (streak counts) and
+       is held until the stamp; see REFUSAL_HOLD_H in lib/breaker.mjs. */
+    if (e?.refusalHold) r.holdUntil = e.refusalHold;
+    else if (!isSkip(e)) delete r.holdUntil;   /* it was asked and did not refuse */
     /* THE INDEX GETS A SUMMARY; THE LOG GETS THE WHOLE THING.
        index.json is read by the dashboard and wants a line, so it keeps the
        300-character cut. The console does not: on 2026-08-19 the 300th
