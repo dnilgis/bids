@@ -64,9 +64,14 @@ for (const [id, [fixture, rows, label]] of Object.entries(BOARDS)) {
       assert.ok(x.commodity && x.delivery, `${id}: commodity and delivery read`);
       assert.ok(Number.isFinite(x.cash) && Number.isFinite(x.basisCents), `${id}: cash and basis read`);
     }
-    /* No coordinate is invented here: geocode fill adds one and says how. */
-    assert.equal(m.lat, null);
-    assert.equal(m.lon, null);
+    /* No coordinate is invented here: either none (geocode fill adds one and
+       says how) or one copied from a named directory or licence row, cited in
+       the note with its precision. */
+    if (m.lat === null) assert.equal(m.lon, null);
+    else {
+      assert.match(m.note, /(LOCATED|COORDINATE) \(2026-10-28[^)]*\)[^.]*(copied from geocodes\/places\.json (known|registry)\[)/, `${id}: the coordinate names the row it was copied from`);
+      assert.ok(["street", "town"].includes(m.latPrecision), `${id}: the coordinate says how precise it is`);
+    }
   });
 }
 
