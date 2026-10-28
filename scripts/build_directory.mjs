@@ -499,6 +499,13 @@ const idRows = elevators.map((e) => {
            lat: e.lat ?? null, lon: e.lon ?? null, board: e.status !== "known", claims };
 });
 const idsOut = assignIds(idRows, readLedger(LEDGER), TODAY, { folded: foldedInto });
+/* A new key that would have taken a board's folded id (docs/ELEVATOR-IDS.md
+   rule 6): minted instead, and said here, because it is very often the same
+   yard posted on a second board (farcoop-halstead and ceagrain-halsteadwest,
+   2026-10-28). A person compares the two boards and retires one. */
+for (const h of idsOut.counts.heldRenames)
+  console.warn(`  ${h.key}: same operator and town as ${h.from}, which is folded into ${h.heldBy}; ` +
+               `given a fresh id, not ${h.wouldTake}. Check whether ${h.key} is ${h.heldBy}'s yard on a second board.`);
 /* A source that shares a yard with one priced more recently draws no row, but
    it is that yard: its key is written against the yard's id, so the day it
    becomes the one drawn, the id does not move. */
