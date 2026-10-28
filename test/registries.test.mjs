@@ -21,7 +21,8 @@ import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const ROWS = Array.from({ length: 75 }, (_, i) => [
@@ -677,9 +678,12 @@ print(len(r), len(f), (f[0]["city"] if f else ""), sep=";")`).split(";");
     "Constantini kept its state code and lost its town, which is backwards");
 });
 
-test("Ohio's header is on the second row and the first is junk", { skip: !existsSync(fixture(OHIO)) }, () => {
+// Frozen copy (Oct 25 capture): debug/registries/ is rewritten by the registries bot (Oct 28 it held 333 rows), so a
+// count pinned to it drifts; the parser test reads its own copy.
+const OHIO_FROZEN = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "registries", "ohio-grain-2026-10-25.csv");
+test("Ohio's header is on the second row and the first is junk", () => {
   const out = pyOn(`
-b = open(r"${fixture(OHIO)}", encoding="utf-8", errors="replace").read()
+b = open(r"${OHIO_FROZEN}", encoding="utf-8", errors="replace").read()
 d = {}
 r = m.read_csv(b, d)
 print(len(r), d["headerRow"], r[0]["name"], sep="|")`).split("|");
