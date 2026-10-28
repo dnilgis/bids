@@ -1,0 +1,44 @@
+{
+  "operator": "Central Commodities",
+  "state": "MO",
+  "platform": "cashbidssingle",
+  "url": "https://www.cencommodities.com/cash-bids",
+  "futuresUnits": "dollars",
+  "bands": {
+    "corn": [
+      2,
+      12
+    ],
+    "soybean": [
+      6,
+      32
+    ],
+    "wheat": [
+      3,
+      20
+    ]
+  },
+  "cashRounding": "round-cent-both",
+  "cadence": "grain-day",
+  "provenance": "scraped",
+  "enabled": true,
+  "publicNote": "Their publicly posted cash board.",
+  "email": null,
+  "website": "https://www.cencommodities.com/",
+  "inMerge": true,
+  "id": "centralcommodities-stjoseph",
+  "location": "St. Joseph",
+  "locationId": "2862",
+  "note": "WRITTEN 2026-10-28 (fx/readers1028) from fixtures/cashbidssingle-cencommodities-2026-10-28.html, their own board https://www.cencommodities.com/cash-bids as capture.yml run 40694257375 loaded it (first seen on run 40626357705). The platform is cashbidssingle on the vendor's older table template: each location block has its <h2> name and its own \"Cash bids for\" line, and each commodity is a <table> captioned \"<location> - <commodity>\". lib/parse.mjs extractCaptionBids reads that layout (2026-10-28); before it the rows came back with no commodity and no location id. PROOF THE LOCATION IS ON THE BOARD: locationId 2862 is the block headed \"St Joe, MO\" (the page's own location list pairs 2862 with \"St Joe, MO\"), dated \"Cash bids for Monday, October 26, 2026\" on the capture. PLACE: the board labels it \"St Joe, MO\", which is St. Joseph; the Barchart directory row known:2978 is Central Commodities \"St Joe, MO\" at St. Joseph, and the federal licence list (registry-wcmd) files Central Commodities, LLC (CenCom Elevator) at St. Joseph, Buchanan County. LOCATED (2026-10-28): address, phone and street coordinate copied from geocodes/places.json known[\"2978\"], the Barchart directory row for Central Commodities at St. Joseph (1901 S 6th Street, 816-232-8555, www.cencommodities.com). EVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
+  "address": "1901 S 6th Street, St. Joseph, MO",
+  "zip": "64501",
+  "lat": 39.74711,
+  "lon": -94.85173,
+  "latPrecision": "street",
+  "phone": "18162328555",
+  "sameAsKnown": [
+    "2978"
+  ],
+  "registryId": "reg:MO|centralcommoditiesllc|stjoseph",
+  "_pending": "cashRounding is round-cent-both, the bound the other sources on this vendor's boards declare: every residual on this capture is inside the open (-1, +1) bound. It is a claim about the bound, not the tie-break.\n\nTHE RESIDUALS THIS CAPTURE MEASURED, once the futures column is read as dollars: +0.25c x1, -0.25c x3, -0.5c x2, 0c x1. That is the evidence for the bound declared above; the exact mode is not claimed, because this many rows cannot tell them apart."
+}
