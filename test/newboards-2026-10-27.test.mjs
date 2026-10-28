@@ -40,11 +40,26 @@ const BOARDS = {
   "southbendethanol-southbend": ["fixtures/graindesk-verbio-2026-10-27.json", 6],
 };
 
+/* Boards on this list later found to be a yard already read under another
+   board, and retired for it (the survivor named). */
+const RETIRED = {
+  "farcoop-bentley": "ceagrain-bentley",
+  "farcoop-halstead": "ceagrain-halsteadwest",
+  "farcoop-mounthope": "ceagrain-mthope",
+  "farcoop-patterson": "ceagrain-patterson",
+};
+
 for (const [id, [fixture, rows]] of Object.entries(BOARDS)) {
   test(`${id}: on its captured board, and publishes from it with nothing withheld`, () => {
     const m = JSON.parse(rd(`sources/${id}.json`));
     assert.deepEqual(validateSource(m), [], id);
-    assert.equal(m.enabled, true);
+    if (RETIRED[id]) {
+      /* Read correctly, and retired on evidence as a second board for a yard
+         we already read (test/farcoop-comark-2026-10-28.test.mjs). */
+      assert.equal(m.enabled, false, `${id} is ${RETIRED[id]}'s yard on a second board`);
+      assert.equal(m.inMerge, false);
+      assert.match(m.retired, new RegExp(`same yard as sources/${RETIRED[id]}\\.json`));
+    } else assert.equal(m.enabled, true);
     assert.match(m.note, /capture\.yml run (40594412672|40595637896)/, "the note names the capture it was written from");
     assert.match(m.note, /PLACE: /, "the note says how the town was decided");
     const body = rd(fixture);

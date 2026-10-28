@@ -23,7 +23,7 @@
   },
   "cadence": "grain-day",
   "provenance": "scraped",
-  "enabled": true,
+  "enabled": false,
   "note": "WRITTEN 2026-10-27 (fx/newboards) from fixtures/cashbidssingle-farcoop-2026-10-27.html, their own board https://www.farcoop.com/cash-bids as capture.yml run 40594412672 loaded it. The candidate came from an unverified research list; the bytes are the evidence. The platform is cashbidssingle, which this repository already reads; nothing about the parsing is new. PROOF THE LOCATION IS ON THE BOARD: locationId 1385 carries 8 row(s) in Wheat, Milo, Beans, Corn. PLACE: data/known-elevators.json files the Mount Hope branch at Mt. Hope, KS 67108. No coordinate is taken here; geocode fill adds a town-precision one from the ZIP table and says so. EVIDENCE, NOT A FACT: check the town against the operator's own published address before anything depends on the distance.",
   "publicNote": "Their publicly posted cash board.",
   "address": null,
@@ -33,6 +33,7 @@
   "phone": null,
   "email": null,
   "website": "https://www.farcoop.com/",
-  "inMerge": true,
-  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x8. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart."
+  "inMerge": false,
+  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures.\n\nTHE RESIDUALS THIS RUN MEASURED, once the futures column is read as dollars: 0c x8. That is the evidence for cashRounding and it is NOT a declaration -- the modes differ at their boundaries and this many rows cannot tell them apart.",
+  "retired": "2026-10-28: the same yard as sources/ceagrain-mthope.json, posted on a second board (CoMark Equity Alliance is the joint venture Farmers Cooperative Elevator Company is part of). EVIDENCE: (1) Barchart lists Farmers Cooperative Elevator Company at Mount Hope under 316-667-2441, the phone of CoMark's Mount Hope board, and this repository folded that row, known:Farmers Cooperative Elevator Company|Mount Hope|Mt. Hope|KS, into ceagrain-mthope by phone before this file existed. (2) The Kansas licence roll names CoMark Equity Alliance, LLC at Mount Hope and no Farmers Cooperative Elevator Company licence there. (3) farcoop.com's board carries exactly four locations, Halstead, Mount Hope, Patterson and Bentley, the four CoMark yards in those towns. (4) Prices: on the Oct 27 settle capture (fixtures/cashbidssingle-farcoop-2026-10-27.html, as of 5:24 PM CT) every commodity's basis and cash equalled ceagrain-mthope's 21:50 UTC read to the quarter cent; in the 20 paired reads from 23:53 UTC Oct 27 to 02:50 UTC Oct 28 every basis matched, 17 reads identical and 3 a quarter cent apart in cash only (the futures quote each read used). That is one market day: this board has been read only since Oct 27. KEPT: ceagrain-mthope, the licensed operator's board on the platform host, with phone, coordinate, a measured cashRounding and monthly delivery rows (14 rows against 8 here). This key's ledger id was minted fresh on Oct 27 and is never drawn while this file is disabled; the Barchart row for the yard (egv7sf474q) stays folded into ceagrain-mthope. Kept on disk, disabled, so the reason stays with the file."
 }
