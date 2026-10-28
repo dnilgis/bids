@@ -35,7 +35,11 @@ Code: `lib/elevid.mjs`. Ledger: `data/elevator-ids.jsonl`, one line per key that
 
    Most rows sit on a town centroid, so for two town-precision rows "within 400 m" is "same town"; the reason string carries both precisions.
 
+   The ledger line of a folded key names its board (`heldBy`), and the hold outlasts the fold: while that board is live the id is the board's, even on a build where the folded row is gone for another reason. Without it, on 2026-10-27 a new manifest (farcoop-halstead, the same yard as ceagrain-halsteadwest on a second board) took the Barchart row by name, the row stopped being a suspect, and rule 2 renamed its folded id `e049c48vt9` onto the new key. Now such a key is minted fresh and `counts.elevIds.heldRenames` names it with the board, so a person checks for a duplicate board.
+
    A folded row stops being a pin of its own. The board's elevId never changes. The board takes the folded row's address, phone, capacity, facility and licences where it had none, and lists it in `mergedFrom` (`id`, `elevId`, `rule`, `why`) so anything joined to the folded row's elevId can follow it to the board. The folded key keeps its own ledger line and id (rule 1); while its board is live it is held, so a rename (rule 2) can never carry it to another key. A folded key the ledger has never seen takes the board's id with `via: "dup-merge:<rule>:<board key>"`. If the evidence goes away, the row comes back as its own pin with the id it always had.
+
+7. **A held id is never a second live row** (2026-10-28): a live key whose ledger id is held by a fold into a different live board is split off with a fresh id (`via: split`, counted `splitHeld`); the board keeps the id.
 
 `.gitattributes` merges the ledger with `union`, so two runs that each added keys keep both. A key that appears twice after a merge: the earlier `since` wins, then the smaller id, and the next build writes one line.
 
