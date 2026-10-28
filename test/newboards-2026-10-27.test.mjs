@@ -69,9 +69,17 @@ for (const [id, [fixture, rows]] of Object.entries(BOARDS)) {
     const b = buildFile(body, { now: NOW, sourceUrl: m.url, source: toConfig(m), extract: adapterFor(m.platform) });
     assert.equal(b.file.count, rows);
     assert.equal((b.file.withheld ?? []).length, 0, `${id} withheld rows`);
-    /* No coordinate is invented here: geocode fill adds one and says how. */
-    assert.equal(m.lat, null);
-    assert.equal(m.lon, null);
+    /* No coordinate is invented here: geocode fill adds one and says how. The
+       one exception, La Paz, carries a coordinate copied on 2026-10-28 from its
+       Indiana licence row so the operator check can measure it; the note names
+       that row and the precision is town. */
+    if (id === "smithfieldgrain-lapaz") {
+      assert.match(m.note, /COORDINATE \(2026-10-28[^)]*\) copied from geocodes\/places\.json registry\["IN\|smithfieldgrainla\|paz"\]/);
+      assert.equal(m.latPrecision, "town");
+    } else {
+      assert.equal(m.lat, null);
+      assert.equal(m.lon, null);
+    }
   });
 }
 

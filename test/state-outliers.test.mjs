@@ -62,6 +62,17 @@ const ACCOUNTED_FOR = {
     "Nebraska; Bunge's Emporia, Kansas plant is where it ships, and the co-op " +
     "posts a bid for hauling there. The braces in the board's own label — " +
     "{BUNGE - EMPORIA} — are how that board marks a destination.",
+  "smithfieldgrain-harpster":
+    "Smithfield Grain's own combined board (fixtures/cashbidssingle-smithfieldgrain-cashbids-2026-10-28.html) " +
+    "carries a \"Harpster\" section (location 1685) and lists East and West regions; the Barchart roster files " +
+    "Smithfield Grain - East at 7211 Shawnee St, Harpster, OH, and Ohio's licence list files MB Grain dba " +
+    "Smithfield Grain at Harpster, Wyandot County. An Ohio yard of a company whose read yards are mostly Missouri.",
+  "smithfieldgrain-morral":
+    "The same board carries \"Morral, OH\" (location 1686); the Barchart roster files Smithfield Grain - East at " +
+    "Morral, OH (419-731-3950) and Ohio's licence list files MB Grain dba Smithfield Grain at Morral, Marion County.",
+  "smithfieldgrain-lapaz":
+    "The same board carries \"Lapaz, IN\" (location 2067), and Indiana's licence list files a Smithfield Grain yard " +
+    "at La Paz, Marshall County. Far only because the company's Missouri yards are its home state here.",
   "scottequityexchange-decaturds":
     "Scott Equity Exchange is Ohio. Its own StoneHedge board lists \"Decatur-DS\" " +
     "(fixtures/stonehedge-scottequityexchange-component-rendered.html, picker id " +
