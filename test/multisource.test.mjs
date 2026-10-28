@@ -28,7 +28,9 @@ test("1. a fixture run writes NOTHING", () => {
   // from test prices, because --fixture did not imply --dry-run.
   const before = snap();
   const out = execFileSync("node", ["scripts/poll.mjs", "--only", "boyceville",
-    "--fixture", "boyceville=fixtures/bigriver-2121-settled.html"],
+    "--fixture", "boyceville=fixtures/bigriver-2121-settled.html",
+    /* the capture's own day: its board reads "Cash bids for Wednesday, August 19, 2026" */
+    "--now", "2026-08-19T21:00:00Z"],
     { cwd: ROOT, encoding: "utf8" });
   assert.match(out, /writing nothing/, "it must say so out loud");
   assert.equal(snap(), before, "a fixture run changed data/ -- test prices reached the live file");
