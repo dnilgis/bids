@@ -474,6 +474,20 @@ const foldedInto = new Map();            // suspect key -> { board, state, opera
   }
   for (let i = elevators.length - 1; i >= 0; i--) if (foldedInto.has(elevators[i].id)) elevators.splice(i, 1);
 }
+/* A RETIRED BOARD NAMES WHERE ITS YARD IS READ. 2026-10-28 (bids#14, farcoop/CoMark): a disabled manifest with
+   retiredInto: "<board id>" is listed in that board's mergedFrom (rule "retired"), so its ledger id follows the
+   board downstream (agsist's build_ids folds it into the survivor) instead of going stale there. Mount Hope and
+   Patterson's farcoop ids (minted Oct 27) were the real case. */
+{
+  const byId = new Map(elevators.map((e) => [e.id, e]));
+  for (const s of sourcesAll) {
+    if (s.enabled !== false || !s.retiredInto) continue;
+    const board = byId.get(s.retiredInto);
+    if (!board) { console.warn(`retiredInto: ${s.id} names ${s.retiredInto}, which is not on the map`); continue; }
+    if ((board.mergedFrom ||= []).some((m) => m.id === s.id)) continue;
+    board.mergedFrom.push({ id: s.id, rule: "retired", why: `dup-merge: retired board, the same yard (sources/${s.id}.json, retired note)` });
+  }
+}
 const knownLeft = known.filter((e) => !foldedInto.has(e.id)).length;
 const registryLeft = registry.filter((e) => !foldedInto.has(e.id)).length;
 
