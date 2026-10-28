@@ -42,7 +42,10 @@ for (const [fixture, platform, url, operator] of BOARDS) {
     assert.equal(m.cashRounding, "round-cent-both");
     assert.match(m.url, /^https:\/\//, "a manifest must never be written on http");
     assert.match(m.note, /geocodes\/board-places\.json/);
-    const out = buildFile(html, { now: new Date(), sourceUrl: url, source: m, extract: adapterFor(platform) });
+    /* The captures' own day: each cashbidssingle board here reads "Cash bids for
+       Friday, September 25, 2026". A fixed clock, so the board's own date is
+       judged against when it was captured, not against whenever this runs. */
+    const out = buildFile(html, { now: new Date("2026-09-25T21:00:00Z"), sourceUrl: url, source: m, extract: adapterFor(platform) });
     assert.ok(out.file, "the guard refused a board it should accept");
   });
 }

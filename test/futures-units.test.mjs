@@ -166,7 +166,11 @@ test("the four sources whose boards are captured actually publish now", () => {
   for (const id of ["agassizvalleygrain-avgbarnesville", "countrygraincooperative-eldridge",
                     "hillsdaleelevator-clinton", "aceethanol-stanley"]) {
     const s = src(id);
-    const r = buildFile(fx(PROVED[id]), { now: new Date("2026-09-07T21:25:00Z"),
+    /* ace-3578.html is a capture of August 20 (its board reads "Cash bids for
+       Thursday, August 20, 2026"), so it is read on its own day; the others
+       were captured on September 4. */
+    const at = id === "aceethanol-stanley" ? "2026-08-20T21:25:00Z" : "2026-09-07T21:25:00Z";
+    const r = buildFile(fx(PROVED[id]), { now: new Date(at),
                                           sourceUrl: s.url, source: s });
     assert.ok(r.file.bids.length > 0, `${id} published no rows`);
     assert.ok(r.verified > 0, `${id} published ${r.file.bids.length} rows and verified none`);

@@ -728,7 +728,13 @@ function getPaste(platform) {
 }
 
 /* ---------- read each source ---------- */
-const now = new Date().toISOString();
+/* A FIXTURE IS A PAST CAPTURE, SO IT MAY NAME ITS OWN CLOCK. `--now <iso>` is
+   honoured only with --fixture (which never writes): a board's own date is
+   judged against today (lib/board.mjs BOARD_DATE_MAX_D), and an August
+   capture read against October's clock is a stale board, not a test. */
+const nowFlag = fixtures.size ? flag("--now") : null;
+const now = nowFlag && Number.isFinite(Date.parse(nowFlag))
+  ? new Date(nowFlag).toISOString() : new Date().toISOString();
 const results = [];
 
 let skippedForTime = 0;
@@ -874,6 +880,8 @@ async function readOne(s) {
     r.pricedAt = verdict.file.pricedAt;
     r.checkedAt = verdict.file.checkedAt;
     if (built.observedAt) r.observedAt = built.observedAt; else delete r.observedAt;
+    /* The board's own posted day ("Cash bids for ..."), where it prints one. */
+    if (built.boardDate) r.boardDate = built.boardDate;
     if (pasted) r.observedAt = pasted.at;
     r.rows = verdict.file.count;
     /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
