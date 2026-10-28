@@ -252,5 +252,10 @@ test("a misspelled licence row is read as the town it names, and nothing else is
   const m = build().manifests.map((x) => x.manifest).find((x) => x.id === "cpicoop-juniata");
   assert.ok(m, "cpicoop-juniata is generated");
   assert.equal(m.location, "Juniata");
-  assert.equal(m.lat, null, "no coordinate is invented for it");
+  // no coordinate is invented: either none, or the ZIP-table town centroid, said so in the note (geocodes/places.json
+  // gained Juniata on Oct 27; the generator now uses it at town precision)
+  if (m.lat !== null) {
+    assert.match(m.note, /ZIP-table centroid of Juniata, NE.*town precision/s, "a coordinate names where it came from");
+    assert.ok(Math.abs(m.lat - 40.5867) < 0.01 && Math.abs(m.lon + 98.515) < 0.01, "Juniata's own centroid, not another town's");
+  }
 });
