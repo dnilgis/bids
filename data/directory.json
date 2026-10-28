@@ -2,23 +2,23 @@
  "generated": "2026-10-28T03:00:30.245Z",
  "note": "Every elevator this project knows of. 'read' means we have its board; 'known' means we know it exists and have not built a way in yet. precision 'town' is a ZIP centroid, not the elevator itself. elevId is permanent (docs/ELEVATOR-IDS.md); fips is the county, fipsVia how it was found, fipsSure false when the point is near a county line on the 20m Census outline.",
  "counts": {
-  "total": 8201,
+  "total": 8198,
   "byStatus": {
-   "read": 1933,
+   "read": 1929,
    "stale": 240,
-   "known": 5900,
+   "known": 5901,
    "down": 128
   },
   "byPrecision": {
-   "unplaced": 105,
-   "town": 5824,
+   "unplaced": 101,
+   "town": 5825,
    "street": 1697,
    "county": 575
   },
-  "placed": 8096,
+  "placed": 8097,
   "states": 45,
   "knownOnly": 1115,
-  "fromRegistries": 4785,
+  "fromRegistries": 4786,
   "registryMergedByPhone": 113,
   "registryMergedByName": 1123,
   "registryClaimedBySource": 140,
@@ -26,46 +26,50 @@
   "registryKeptOnADifferentPhone": 15,
   "duplicateSuspects": 1191,
   "dupMerge": {
-   "suspects": 1438,
-   "merged": 247,
+   "suspects": 1439,
+   "merged": 248,
    "byRule": {
-    "phone": 225,
-    "near+operator": 17,
+    "phone": 227,
+    "near+operator": 16,
     "near+alias": 5
    },
    "ambiguous": 45,
    "phoneBoardUnplaced": 2,
    "stillFlagged": 1191,
-   "knownFolded": 239,
-   "registryFolded": 8
+   "knownFolded": 241,
+   "registryFolded": 7
   },
   "knownDeclaredSame": 225,
-  "knownMergedByName": 675,
+  "knownMergedByName": 673,
   "knownKeptOnADifferentPhone": 20,
-  "operators": 2697,
+  "operators": 2696,
   "elevIds": {
-   "kept": 8201,
+   "kept": 8198,
    "minted": 0,
    "claimed": 0,
    "renamed": 0,
    "renameAmbiguous": 0,
    "split": 0,
    "collisions": 0,
-   "folded": 247
+   "heldEarlier": 0,
+   "renameHeld": 0,
+   "splitHeld": 0,
+   "heldRenames": [],
+   "folded": 248
   },
   "fips": {
-   "withFips": 8096,
-   "sure": 7612,
+   "withFips": 8097,
+   "sure": 7613,
    "byVia": {
     "town-point": 2326,
     "point": 1444,
-    "licence-county": 4321,
+    "licence-county": 4322,
     "nearest-in-state": 2,
     "county-point": 3
    },
    "licenceDisagreesWithPoint": 193,
    "why": {
-    "no coordinate": 76,
+    "no coordinate": 72,
     "in Canada; FIPS codes are US counties": 29
    }
   }
@@ -95747,6 +95751,16 @@
    "lat": 37.8866,
    "lon": -97.5166,
    "precision": "town",
+   "address": "15802 W 109th N",
+   "phone": "316-796-0367",
+   "mergedFrom": [
+    {
+     "id": "known:3065",
+     "elevId": "ezgp80aa0j",
+     "rule": "phone",
+     "why": "dup-merge: phone 3167960367 (same town, no coordinate)"
+    }
+   ],
    "fips": "20173",
    "fipsVia": "town-point",
    "fipsSure": true
@@ -96211,6 +96225,12 @@
      "elevId": "esz3twa0vr",
      "rule": "phone",
      "why": "dup-merge: phone 3168352261 (0 m, town/town)"
+    },
+    {
+     "id": "known:Farmers Cooperative Elevator Company|Halstead|Halstead|KS",
+     "elevId": "e049c48vt9",
+     "rule": "phone",
+     "why": "dup-merge: phone 3168352261 (0 m, town/town)"
     }
    ],
    "fips": "20079",
@@ -96649,18 +96669,7 @@
      "elevId": "egv7sf474q",
      "rule": "phone",
      "why": "dup-merge: phone 3166672441 (0 m, town/town)"
-    },
-    {
-     "id": "reg:KS|comarkequityalliancellc|mounthope",
-     "elevId": "epkmkqtb4e",
-     "rule": "near+operator",
-     "why": "dup-merge: same operator \"CoMark Equity Alliance, LLC\" = \"CoMark Equity Alliance LLC\" (0 m, town/town)"
     }
-   ],
-   "capacity": "1,725,000",
-   "facility": "CoMark Equity Alliance Elevators",
-   "licences": [
-    "warehouse"
    ],
    "fips": "20173",
    "fipsVia": "town-point",
@@ -97408,6 +97417,38 @@
    "licenceStatus": "I - Issued",
    "why": "holds a federal warehouse licence; no bid feed found yet",
    "fips": "20175",
+   "fipsVia": "licence-county",
+   "fipsSure": true
+  },
+  {
+   "id": "reg:KS|comarkequityalliancellc|mounthope",
+   "elevId": "epkmkqtb4e",
+   "operator": "CoMark Equity Alliance, LLC",
+   "location": "Mount Hope",
+   "state": "KS",
+   "status": "known",
+   "platform": null,
+   "website": null,
+   "commodities": null,
+   "rows": null,
+   "checkedAt": null,
+   "pricedAt": null,
+   "placed": true,
+   "lat": 37.8684,
+   "lon": -97.6591,
+   "precision": "town",
+   "county": "Sedgwick",
+   "address": null,
+   "capacity": "1,725,000",
+   "facility": "CoMark Equity Alliance Elevators",
+   "licences": [
+    "warehouse"
+   ],
+   "knownFrom": "registry-wcmd",
+   "licenceClass": "Federal",
+   "licenceStatus": "I - Issued",
+   "why": "holds a federal warehouse licence; no bid feed found yet",
+   "fips": "20173",
    "fipsVia": "licence-county",
    "fipsSure": true
   },
@@ -98730,101 +98771,6 @@
    "fips": "20117",
    "fipsVia": "town-point",
    "fipsSure": true
-  },
-  {
-   "id": "farcoop-bentley",
-   "elevId": "ezgp80aa0j",
-   "operator": "Farmers Cooperative Elevator Company",
-   "location": "Bentley",
-   "state": "KS",
-   "status": "read",
-   "platform": "cashbidssingle",
-   "website": "https://www.farcoop.com/",
-   "commodities": [
-    "Wheat",
-    "Beans",
-    "Corn"
-   ],
-   "rows": 6,
-   "checkedAt": "2026-10-28T03:00:30.245Z",
-   "pricedAt": "2026-10-28T03:00:30.245Z",
-   "health": "live",
-   "placed": false,
-   "why": "location not resolved",
-   "fips": null,
-   "fipsWhy": "no coordinate"
-  },
-  {
-   "id": "farcoop-halstead",
-   "elevId": "e049c48vt9",
-   "operator": "Farmers Cooperative Elevator Company",
-   "location": "Halstead",
-   "state": "KS",
-   "status": "read",
-   "platform": "cashbidssingle",
-   "website": "https://www.farcoop.com/",
-   "commodities": [
-    "Wheat",
-    "Milo",
-    "Beans",
-    "Corn"
-   ],
-   "rows": 8,
-   "checkedAt": "2026-10-28T03:00:30.245Z",
-   "pricedAt": "2026-10-28T03:00:30.245Z",
-   "health": "live",
-   "placed": false,
-   "why": "location not resolved",
-   "fips": null,
-   "fipsWhy": "no coordinate"
-  },
-  {
-   "id": "farcoop-mounthope",
-   "elevId": "e780z66t3h",
-   "operator": "Farmers Cooperative Elevator Company",
-   "location": "Mount Hope",
-   "state": "KS",
-   "status": "read",
-   "platform": "cashbidssingle",
-   "website": "https://www.farcoop.com/",
-   "commodities": [
-    "Wheat",
-    "Milo",
-    "Beans",
-    "Corn"
-   ],
-   "rows": 8,
-   "checkedAt": "2026-10-28T03:00:30.245Z",
-   "pricedAt": "2026-10-28T03:00:30.245Z",
-   "health": "live",
-   "placed": false,
-   "why": "location not resolved",
-   "fips": null,
-   "fipsWhy": "no coordinate"
-  },
-  {
-   "id": "farcoop-patterson",
-   "elevId": "evhnnwahq9",
-   "operator": "Farmers Cooperative Elevator Company",
-   "location": "Patterson",
-   "state": "KS",
-   "status": "read",
-   "platform": "cashbidssingle",
-   "website": "https://www.farcoop.com/",
-   "commodities": [
-    "Wheat",
-    "Milo",
-    "Beans",
-    "Corn"
-   ],
-   "rows": 8,
-   "checkedAt": "2026-10-28T03:00:30.245Z",
-   "pricedAt": "2026-10-28T03:00:30.245Z",
-   "health": "live",
-   "placed": false,
-   "why": "location not resolved",
-   "fips": null,
-   "fipsWhy": "no coordinate"
   },
   {
    "id": "known:Farmers Cooperative Equity Company|Nashville|Nashville|KS",
