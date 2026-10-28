@@ -163,3 +163,76 @@ test("Stanberry's first rows are the price and basis the capture shows", () => {
   const j = build(CC, man("centralcommodities-stjoseph"), PF_NOW);
   assert.deepEqual(rows(j)[0], ["Corn", "Dec", 4.39, -13]);
 });
+
+/* ---------------- The Andersons ---------------- */
+
+const ANDERSONS = {
+  /* id -> [rows on the capture, the page's own <h1>, commodities] */
+  "andersons-albion": [5, "Albion", ["Corn"]],
+  "andersons-auburn": [16, "Auburn", ["Corn", "Soybean", "Red Wheat", "White Wheat"]],
+  "andersons-clymers": [5, "Clymers", ["Corn"]],
+  "andersons-delphi": [20, "Delphi", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-denison": [8, "Denison", ["Corn"]],
+  "andersons-dunkirk": [15, "Dunkirk", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-greenville": [6, "Greenville", ["Corn"]],
+  "andersons-hemlock": [20, "Hemlock", ["Corn", "Soybean", "Red Wheat", "White Wheat"]],
+  "andersons-maumee": [17, "Maumee", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-metamora": [14, "Metamora", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-oakley": [11, "Oakley", ["Corn", "Soybean", "Red Wheat", "White Wheat"]],
+  "andersons-oakville": [15, "Oakville", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-portwilliam": [3, "Port William", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-reading": [12, "Reading", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-standish": [18, "Standish", ["Corn", "Soybean", "Red Wheat", "White Wheat"]],
+  "andersons-toledoedwin": [17, "Toledo - Edwin Dr", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-toledokuhlman": [17, "Toledo - Kuhlman Dr", ["Corn", "Soybean", "Red Wheat"]],
+  "andersons-whitepigeon": [12, "White Pigeon", ["Corn", "Soybean", "Red Wheat"]],
+};
+const AN_NOW = new Date("2026-10-28T13:30:00Z");
+
+test("every Andersons location page with a cash-bid table is read, and only those", () => {
+  /* The company's Local Bids selector lists these 18; the other US pages in its
+     locations feed (Idaho, Louisiana, Nebraska, Houston, Toledo - Reynolds Rd)
+     carry no table and are not written. */
+  const list = rd("probe-lists/andersons-2026-10-28.txt").split("\n").filter((l) => l.startsWith("http"));
+  assert.equal(list.length, 36);
+  const urls = Object.keys(ANDERSONS).map((id) => man(id).url);
+  assert.equal(new Set(urls).size, 18);
+  assert.ok(urls.every((u) => list.includes(u)), "every source is a page from the company's own feed");
+});
+
+for (const [id, [n, h1, commodities]] of Object.entries(ANDERSONS)) {
+  test(`${id}: its own page, its own label, and every row balances`, () => {
+    const m = man(id);
+    assert.deepEqual(validateSource(m), []);
+    assert.equal(m.platform, "andersons");
+    assert.equal(m.locationId, null, "one location per page");
+    assert.match(m.note, /capture\.yml run 40695504713/);
+    assert.match(m.note, /PLACE: /);
+    const fixture = m.note.match(/from (fixtures\/andersons-[a-z-]+-2026-10-28\.html)/)[1];
+    const all = adapterFor(m.platform)(rd(fixture), m.url);
+    assert.equal(all.length, n);
+    assert.ok(all.every((r) => r.location === h1), `every row sits under the page's own name ${h1}`);
+    assert.equal(m.labelInFeed ?? m.location, h1);
+    assert.deepEqual([...new Set(all.map((r) => r.commodity))], commodities);
+    const b = build(fixture, m, AN_NOW);
+    assert.equal(b.file.count, n);
+    assert.equal(b.verified, n, "cash - basis = futures on every row, to the cent");
+    assert.equal((b.withheld ?? []).length, 0);
+    assert.equal(b.boardDate, null, "the page prints no posting date");
+    /* the coordinate is the company's own, and the note says so */
+    assert.equal(m.latPrecision, "street");
+    assert.match(m.note, new RegExp(`Latitude ${m.lat}, Longitude ${m.lon}`));
+  });
+}
+
+test("Maumee: the first corn and wheat rows are the price and basis the capture shows", () => {
+  const b = build("fixtures/andersons-oh-maumee-2026-10-28.html", man("andersons-maumee"), AN_NOW);
+  const r = rows(b);
+  assert.deepEqual(r[0], ["Corn", "ON 26", 4.3175, -20]);
+  assert.deepEqual(r.find((x) => x[0] === "Red Wheat"), ["Red Wheat", "OCT 26", 5.8125, -30]);
+});
+
+test("a page that is not an Andersons location page is refused, not read as empty", async () => {
+  const { AndersonsRefused } = await import("../lib/adapters/andersons.mjs");
+  assert.throws(() => adapterFor("andersons")(rd(PF), "u"), AndersonsRefused);
+});
