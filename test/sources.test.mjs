@@ -83,12 +83,24 @@ test("no two sources claim the same platform, url and locationId", () => {
   /* Two manifests reading the same rows would publish the same board twice
      under two towns, and anything counting elevators would count it twice —
      the hazard the Thorp/Granton note in the multisource handoff describes. */
+  /* ONE EXCEPTION, AND IT HAS TO PROVE ITSELF (2026-10-28). Peterson Farms post
+     two yards in one board section, told apart only by commodity name, so two
+     manifests share the key and split its rows: one keeps the commodities
+     matching a pattern (commodityMatch), the other drops exactly that pattern
+     (commodityExclude). Such a pair passes only when the two patterns are the
+     same string, so between them every row lands on exactly one source. */
   const seen = new Map();
   for (const f of files) {
     const s = load(f);
     const key = `${s.platform}|${s.url}|${normLocationId(s.locationId)}`;
-    assert.ok(!seen.has(key), `${f} and ${seen.get(key)} read exactly the same rows`);
-    seen.set(key, f);
+    if (seen.has(key)) {
+      const [g, o] = seen.get(key);
+      const split = (a, b) => typeof a.commodityMatch === "string" && a.commodityMatch === b.commodityExclude && !a.commodityExclude && !b.commodityMatch;
+      assert.ok(!seen.get(key).paired && (split(s, o) || split(o, s)), `${f} and ${g} read exactly the same rows`);
+      seen.get(key).paired = true;
+      continue;
+    }
+    seen.set(key, Object.assign([f, s], { paired: false }));
   }
 });
 
