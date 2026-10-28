@@ -488,6 +488,22 @@ const foldedInto = new Map();            // suspect key -> { board, state, opera
     board.mergedFrom.push({ id: s.id, rule: "retired", why: `dup-merge: retired board, the same yard (sources/${s.id}.json, retired note)` });
   }
 }
+/* A BARCHART ROW A BOARD SAYS IT IS. 2026-10-28 (bids#17, Central Commodities St. Joseph): a manifest's
+   sameAsKnown drops that Barchart row from the map, but the row had its own ledger id (known:2978 was
+   e2xhmjwrwm) while the board took its licence row's id by claim. Unlisted, that id went stale downstream
+   (agsist's ids test). The row is now listed in the board's mergedFrom (rule "declared"); an entry whose id
+   is the board's own, or that the ledger never gave an id, is dropped below, so only an id that would
+   otherwise go stale is listed. */
+{
+  const byId = new Map(elevators.map((e) => [e.id, e]));
+  for (const [kid, sid] of declaredSame) {
+    const board = byId.get(sid);
+    if (!board || !(kid in knownRaw)) continue;
+    const id = "known:" + kid;
+    if ((board.mergedFrom ||= []).some((m) => m.id === id)) continue;
+    board.mergedFrom.push({ id, rule: "declared", why: `dup-merge: declared, the same yard (sources/${sid}.json sameAsKnown names this Barchart row)` });
+  }
+}
 const knownLeft = known.filter((e) => !foldedInto.has(e.id)).length;
 const registryLeft = registry.filter((e) => !foldedInto.has(e.id)).length;
 
@@ -553,7 +569,9 @@ for (let i = 0; i < elevators.length; i++) {
   /* The folded row's own permanent id, so anything joined to it can follow it here. */
   if (e.mergedFrom)
     elevators[i].mergedFrom = e.mergedFrom.map((m) => ({ id: m.id, elevId: idsOut.ledger.get(m.id)?.id ?? null,
-                                                          rule: m.rule, why: m.why }));
+                                                          rule: m.rule, why: m.why }))
+      .filter((m) => !(m.rule === "declared" && (!m.elevId || m.elevId === elevators[i].elevId)));
+  if (elevators[i].mergedFrom && !elevators[i].mergedFrom.length) delete elevators[i].mergedFrom;
 }
 
 const tally = (fn) => elevators.reduce((m, e) => (m[fn(e)] = (m[fn(e)] || 0) + 1, m), {});
