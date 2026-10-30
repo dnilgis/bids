@@ -66,6 +66,30 @@ jobs:
         with:
           node-version: 22
 
+      # A MISSING SECRET MUST NOT LOOK LIKE A GOOD RUN. Until 2026-10-30 this job
+      # ended green with one line in the log ("not set up yet") on every pass
+      # since Oct 14: both secrets arrived empty, nothing read the mailbox, and
+      # no page showed it. Empty secrets now put a warning on the run and a
+      # line in the job summary. The run still ends green (the script's own
+      # rule), and no value is printed, only whether each is set.
+      - name: Say so when the mailbox is not set up
+        if: steps.when.outputs.go == '1'
+        env:
+          BIDS_IMAP_USER: ${{ secrets.BIDS_IMAP_USER }}
+          BIDS_IMAP_PASSWORD: ${{ secrets.BIDS_IMAP_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$BIDS_IMAP_USER" ] && missing="BIDS_IMAP_USER"
+          [ -z "$BIDS_IMAP_PASSWORD" ] && missing="${missing:+$missing and }BIDS_IMAP_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::warning title=email bids not set up::$missing is empty in this repository's secrets, so Bunge's emailed bids are NOT being read and the Ladoga board is not updating."
+            {
+              echo "### email bids: NOT SET UP"
+              echo "$missing is empty in the repository secrets, so the mailbox was not read."
+              echo "Bunge's emailed bids (Ladoga, IN) are not reaching the board until both secrets are set."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Read the mailbox
         id: read
         if: steps.when.outputs.go == '1'

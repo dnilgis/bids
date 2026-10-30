@@ -1120,7 +1120,7 @@ test("a cashgrid manifest declares round-cent; a mobile one declares nothing", (
 test("every cashgrid source on disk carries it", () => {
   const missing = readdirSync(join(ROOT, "sources")).filter((f) => f.endsWith(".json"))
     .map((f) => [f, JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"))])
-    .filter(([, s]) => s.platform === "agricharts-cashgrid" && s.cashRounding !== "round-cent-either")
+    .filter(([, s]) => /^agricharts-cashgrid(-browser)?$/.test(s.platform) && s.cashRounding !== "round-cent-either")
     .map(([f]) => f);
   assert.deepEqual(missing, [], `${missing.length} cashgrid sources would refuse on rounding`);
 });
@@ -1182,7 +1182,7 @@ test("the captured boards publish through the real guard, and refuse without the
   const newerThanCapture = [];
   for (const f of readdirSync(join(ROOT, "sources")).filter((x) => x.endsWith(".json"))) {
     const s = JSON.parse(readFileSync(join(ROOT, "sources", f), "utf8"));
-    if (s.platform !== "agricharts-cashgrid") continue;
+    if (!/^agricharts-cashgrid(-browser)?$/.test(s.platform)) continue;
     const ff = fixFor[slugOf(s.url)];
     if (!ff) continue;
     const bytes = readFileSync(join(ROOT, "fixtures", ff), "utf8");

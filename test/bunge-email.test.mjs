@@ -600,3 +600,15 @@ test("ONCE A SNAPSHOT EXISTS: the email source is an ordinary source, and normal
   assert.deepEqual(directoryFor({ snapshot: snap(), index: [{ id: "bunge-ladoga-email", health: "refused", status: "refused", checkedAt: old, pricedAt: old }] }),
     [["bunge-ladoga-email", "down"]], "a snapshot that went stale is reported, like any board");
 });
+
+test("the workflow warns, on the run and in its summary, when the mailbox secrets are empty", async () => {
+  const { readFileSync } = await import("node:fs");
+  const y = readFileSync(new URL("../.github/workflows/email-bids.yml", import.meta.url), "utf8");
+  const step = y.slice(y.indexOf("Say so when the mailbox is not set up"), y.indexOf("- name: Read the mailbox"));
+  assert.ok(step.length > 100, "the warning step is there, before the read");
+  assert.match(step, /::warning title=email bids not set up::/);
+  assert.match(step, /GITHUB_STEP_SUMMARY/);
+  assert.match(step, /-z "\$BIDS_IMAP_USER"/);
+  assert.match(step, /-z "\$BIDS_IMAP_PASSWORD"/);
+  assert.doesNotMatch(step, /echo[^\n]*\$BIDS_IMAP_(USER|PASSWORD)[^\n]*(?<!")$/m, "no value is printed");
+});
