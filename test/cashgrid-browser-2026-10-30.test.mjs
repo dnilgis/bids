@@ -62,3 +62,22 @@ test("the same adapter reads their real page (fixtures/agricharts-cashgrid-farme
   assert.ok(rows.length > 50, `rows ${rows.length}`);
   assert.deepEqual(rows, plain);
 });
+
+/* ── Franklin Elevator (3): the operator's own domain stopped answering; the board moved ── */
+
+test("Franklin Elevator's three boards read franklinelevator.agricharts.com, the host of their fresh capture", () => {
+  const fx = JSON.parse(readFileSync(join(ROOT, "fixtures", "wire1", "agricharts-franklinelevator.json"), "utf8"));
+  assert.equal(fx.host, "franklinelevator.agricharts.com");
+  const board = readFileSync(join(ROOT, "fixtures", "agricharts-cashgrid-franklinelevator.html"), "utf8");
+  const dir = join(ROOT, "fixtures");
+  const contracts = mergeQuotes(readdirSync(dir).filter((f) => /^agricharts-quotes-/.test(f))
+    .map((f) => readFileSync(join(dir, f), "utf8")));
+  for (const id of ["franklinelevator-franklin", "franklinelevator-orleans", "franklinelevator-scottville"]) {
+    const s = m(id);
+    assert.equal(s.url, "https://franklinelevator.agricharts.com/markets/cashgrid.php", id);
+    assert.equal(new URL(s.url).hostname, fx.host, id);
+    assert.deepEqual(validateSource(s, new Set()), [], id);
+    const rows = adapterFor(s.platform)(board, s.url, { contracts }).filter((r) => String(r.locationId) === String(s.locationId));
+    assert.equal(rows.length, 4, `${id}: 4 rows (corn, soybeans, wheat) on location ${s.locationId}`);
+  }
+});
