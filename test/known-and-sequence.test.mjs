@@ -3,7 +3,7 @@
  *   data/barchart.json  ->  build_known.mjs   ->  data/known-elevators.json
  *                       ->  build_geocodes.py ->  geocodes/places.json
  *                       ->  build_grid.mjs    ->  data/barchart-grid.json
- *                       ->  fetch_barchart.mjs -> data/barchart.json  (round again)
+ *   (the fetch that fed this chain was removed 2026-10-30)
  *
  * Until 2026-09-01 that chain ran agsist -> weekly -> monthly -> never: a
  * facility Barchart began pricing reached the grid up to a month later, if at
@@ -44,35 +44,18 @@ test("the collapse floor is a fraction, not a count", () => {
 const wf = (n) => readFileSync(new URL(`../.github/workflows/${n}`, import.meta.url), "utf8");
 const nonComment = (t) => t.split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
 
-test("barchart.yml runs the chain, in an order where each step feeds the next", () => {
+test("barchart.yml rebuilds the merged feed and no longer fetches from Barchart", () => {
   const t = nonComment(wf("barchart.yml"));
-  const order = ["fetch_barchart.mjs", "build_known.mjs", "build_geocodes.py",
-                 "build_grid.mjs", "merge_bids.mjs"];
-  let at = -1;
-  for (const step of order) {
-    const i = t.indexOf(step);
-    assert.ok(i > -1, `barchart.yml never runs ${step}`);
-    assert.ok(i > at, `${step} runs before the step that produces its input`);
-    at = i;
-  }
-});
-
-/* build_geocodes.py will spend seven minutes on the Census street geocoder,
-   which is right monthly and wrong four times a day. NO_CENSUS=1 places new
-   facilities on a ZIP centroid instead — precision "town", which is all a
-   45-mile radius needs. Checked because dropping the flag would quietly turn a
-   four-minute job into a half-hour one. */
-test("the four-times-daily geocode does not call the Census geocoder", () => {
-  const t = nonComment(wf("barchart.yml"));
-  assert.ok(/NO_CENSUS=1\s+python scripts\/build_geocodes\.py/.test(t),
-    "build_geocodes.py runs in barchart.yml without NO_CENSUS=1 — that is the monthly job's budget");
+  assert.ok(t.includes("merge_bids.mjs"), "barchart.yml never runs merge_bids.mjs");
+  assert.ok(!t.includes("fetch_barchart") && !t.includes("BARCHART_API_KEY"),
+    "barchart.yml still fetches from Barchart; the subscription is cancelled");
 });
 
 test("barchart.yml installs python before running python", () => {
   const t = nonComment(wf("barchart.yml"));
-  assert.ok(t.includes("actions/setup-python"),
-    "a python step with no setup-python — the schedule-guard failure of 2026-09-01");
-  assert.ok(t.indexOf("actions/setup-python") < t.indexOf("build_geocodes.py"));
+  if (/\bpython3?\s/.test(t) || /\.py\b/.test(t))
+    assert.ok(t.includes("actions/setup-python"),
+      "a python step with no setup-python: the schedule-guard failure of 2026-09-01");
 });
 
 /* THE MERGE IS PURE LOCAL COMPUTATION AND BELONGS ON THE BOARDS' CADENCE.
