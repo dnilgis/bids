@@ -6,9 +6,11 @@
   "country": "US",
   "currency": "USD",
   "countryVia": "state",
-  "platform": "fragment",
-  "url": "https://www.farmerscoopsociety.com/ajax/homepage/dtn-cash-bids",
-  "locationId": "Sioux Center",
+  "platform": "dtn-cs",
+  "url": "https://api.dtn.com/markets/sites/E0014201/cash-bids?units=us",
+  "browserPage": "https://www.farmerscoopsociety.com/cash-bids",
+  "locationId": "3523",
+  "siteId": "E0014201",
   "bands": {
     "corn": [
       2,
@@ -22,8 +24,8 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "Their own server renders this board and their page drops it straight in: U(\"js-dtn-bids\", \"/ajax/homepage/dtn-cash-bids\"). No widget, no key, no JavaScript. The per-location variant is /ajax/pages/dtn-cash-bids?location=<id> and is how the other FCS locations get added once their ids are read off the locations page; /ajax/pages/dtn-cash-bids with no location returned 70 bytes, so the id is not optional there. Their second heading drops the town -- \"Sioux Center Corn Bids\" then plain \"Soybean Bids\" -- and the adapter inherits it only because every heading that names a town names the same one. Cash is 2dp against quarter-cent futures, so rows sit up to half a cent off the identity; cashRoundingCents declares that.",
-  "cashRoundingCents": 0.5,
+  "note": "MOVED 2026-10-30 FROM THEIR OWN SERVER-RENDERED FRAGMENT TO THE DTN WIDGET THEIR PAGE NOW USES. /ajax/homepage/dtn-cash-bids answered HTTP 404 on every pass from 2026-10-03 (2,264 in a row by 2026-10-30). capture.yml run 40981238561 (branch caps-bidslive) loaded https://www.farmerscoopsociety.com/cash-bids and its own cash-bids-table-widget asked api.dtn.com for site E0014201, which returned 11 locations; Sioux Center is location 3523 with 12 rows (fixtures/dtncs-farmerscoopsociety-2026-10-30.json, the same feed on 2026-10-18 in capture.yml run 39090126520). CASH ROUNDING MEASURED 2026-10-30: round-cent, 12 of 12 rows (exact 9, floor 9), residuals -0.5c and 0c. EARLIER: Their own server renders this board and their page drops it straight in: U(\"js-dtn-bids\", \"/ajax/homepage/dtn-cash-bids\"). No widget, no key, no JavaScript. The per-location variant is /ajax/pages/dtn-cash-bids?location=<id> and is how the other FCS locations get added once their ids are read off the locations page; /ajax/pages/dtn-cash-bids with no location returned 70 bytes, so the id is not optional there. Their second heading drops the town -- \"Sioux Center Corn Bids\" then plain \"Soybean Bids\" -- and the adapter inherits it only because every heading that names a town names the same one. Cash is 2dp against quarter-cent futures, so rows sit up to half a cent off the identity; cashRoundingCents declares that.",
+  "cashRoundingCents": 0,
   "publicNote": "Their publicly posted cash board at Sioux Center, read from their website. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "zip": "51250",
   "lat": 43.07667,
@@ -32,6 +34,6 @@
   "email": null,
   "website": "https://www.farmerscoopsociety.com/",
   "inMerge": true,
-  "cashRounding": "round-cent-either",
-  "_pending": "cashRounding is round-cent-either (nearest cent, closed at half a cent either way), declared 2026-10-02 from this source's own history in data/rounding-residuals.json: 2237 reads 2026-09-08 to 2026-10-02, residuals (cents) {-0.5: 6520, -0.25: 4853, 0: 5761, 0.25: 5442}, nothing outside +/-0.5. Undeclared, it was held to exact and refused whenever the futures quote sat off a whole cent."
+  "cashRounding": "round-cent",
+  "_pending": "cashRounding is round-cent since the move to the DTN feed on 2026-10-30 (measured there, see note). BEFORE THE MOVE, on the old fragment: cashRounding is round-cent-either (nearest cent, closed at half a cent either way), declared 2026-10-02 from this source's own history in data/rounding-residuals.json: 2237 reads 2026-09-08 to 2026-10-02, residuals (cents) {-0.5: 6520, -0.25: 4853, 0: 5761, 0.25: 5442}, nothing outside +/-0.5. Undeclared, it was held to exact and refused whenever the futures quote sat off a whole cent."
 }

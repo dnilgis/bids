@@ -3,10 +3,10 @@
   "operator": "Ag Plus, Inc",
   "location": "South Whitley",
   "state": "IN",
-  "platform": "agricharts",
-  "url": "https://mobile.agplusinc.com/cash/prices.php",
+  "platform": "agricharts-cashgrid",
+  "url": "https://www.agplusinc.com/markets/cashgrid.php",
   "locationId": "20013",
-  "identityAlternative": "agricharts:board-agrees+quotes-agree",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
   "bands": {
     "corn": [
       2,
@@ -24,7 +24,8 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY scripts/agricharts-sweep.mjs (run 36953430878) from their own mobile board at https://mobile.agplusinc.com/cash/prices.php. locationId 20013 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 6 row(s) in Corn, Beans, Wheat.\n\nidentityAlternative: this board publishes cash, basis and a futures CHANGE and no futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp from the adapter. The board was read and both of the adapter's checks passed before this file was written: every location on it implies the same futures for one commodity and one delivery code, and every row sits within 5c of a real quoted CBOT contract. futuresPriceCents publishes as null, because there is no quote to republish.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the \"Visit Our Main Website\" link on their own mobile board.",
+  "cashRounding": "round-cent-either",
+  "note": "MOVED 2026-10-30 FROM THE AGRICHARTS MOBILE BOARD TO THE SAME OPERATOR'S CASHGRID. https://mobile.agplusinc.com/cash/prices.php answered HTTP 500 on every pass since its last good read at 2026-10-28 13:40Z, the answer AgriCharts gives when a customer has no mobile board. capture.yml run 40981238561 loaded https://www.agplusinc.com/markets/cashgrid.php: its own selector lists location 20013 and the grid carries 8 price cells for it, each naming its CBOT contract (test/fixtures/bidslive-2026-10-30/cashgrid-agplusinc.html). The location id is the same l= id the mobile board keyed it by. EARLIER: WRITTEN BY scripts/agricharts-sweep.mjs (run 36953430878) from their own mobile board at https://mobile.agplusinc.com/cash/prices.php. locationId 20013 is the l= parameter on this location's own chart links, which every row of every AgriCharts board carries; it is NOT the section heading, which is a display name and can be re-typed. At the time of writing this location showed 6 row(s) in Corn, Beans, Wheat.\n\nidentityAlternative: this board publishes cash, basis and a futures CHANGE and no futures price, so cash - basis = futures can never run on it. lib/board.mjs refuses such a source unless it names what it publishes on instead AND every row carries that stamp from the adapter. The board was read and both of the adapter's checks passed before this file was written: every location on it implies the same futures for one commodity and one delivery code, and every row sits within 5c of a real quoted CBOT contract. futuresPriceCents publishes as null, because there is no quote to republish.\n\nCompany, branch, town, state, ZIP and phone are copied verbatim from data/known-elevators.json. Website is the \"Visit Our Main Website\" link on their own mobile board.",
   "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
   "address": null,
   "zip": null,
@@ -35,5 +36,5 @@
   "email": null,
   "website": "https://www.agplusinc.com/",
   "inMerge": true,
-  "_pending": "cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for South Whitley, IN, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. BEFORE THE MOVE: cashRounding is NOT set and must not be guessed; it is measured from a real board against real futures. lat/lon was NOT derived here: it is the coordinate geocodes/places.json already holds for South Whitley, IN, at town precision via zip-centroid. This location came from a sibling list on a board this repository already reads, and it has no ZIP in data/known-elevators.json -- which is why the coordinate is carried in rather than looked up."
 }

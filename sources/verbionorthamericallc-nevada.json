@@ -6,23 +6,19 @@
   "country": "US",
   "currency": "USD",
   "countryVia": "state",
-  "platform": "dtn-cs",
-  "url": "https://api.dtn.com/markets/sites/E0416001/cash-bids?units=us",
-  "browserPage": "https://verbio-agriculture.com/",
-  "locationId": "25364",
-  "siteId": "E0416001",
+  "platform": "graindesk",
+  "url": "https://marketplace.graindiscovery.com/api/public-sites/verbio/cash-bids",
+  "locationId": "Nevada",
   "bands": {
     "corn": [
       2,
       12
     ]
   },
-  "cashRounding": "round-cent",
-  "cashRoundingCents": 0,
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://verbio-agriculture.com/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0416001 returned this location keyed 25364. 8 row(s): Corn — round-cent [8 testable: exact 0, round 8, floor 3]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is IA, the one state where \"Nevada\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for Nevada, IA. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.",
+  "note": "MOVED 2026-10-30 FROM THE DTN WIDGET TO GRAIN DISCOVERY, WHICH THEIR SITE NOW USES. The dtn-cs read timed out on every pass from 2026-10-09 (1,792 in a row by 2026-10-30): verbio-agriculture.com no longer asks api.dtn.com for cash bids, only for futures quotes, and links its bids to https://graindiscovery.aghost.net/verbio/corn-purchase/ (capture.yml run 40981238561). That page, \"NEVADA SITE HOURS & BIDS\", asked marketplace.graindiscovery.com/api/public-sites/verbio/cash-bids (capture.yml run 40981969844, test/fixtures/bidslive-2026-10-30/graindesk-verbio.json): destinations Nevada (6 corn rows) and South Bend Ethanol (6, read as sources/southbendethanol-southbend.json). locationId is the destination string verbatim. CASH ROUNDING MEASURED 2026-10-30: exact, 6 of 6 rows (Grain Desk posts four-decimal cash), so none is declared. EARLIER: BUILT FROM DTN PROBE RUN 90053942047, 2026-08-29. The probe loaded https://verbio-agriculture.com/ in the runner's Chromium and read the response that page's own widget asked api.dtn.com for; site id E0416001 returned this location keyed 25364. 8 row(s): Corn — round-cent [8 testable: exact 0, round 8, floor 3]. locationId, bands, cashRounding and cashRoundingCents are the probe's own MEASURED output, copied verbatim and not adjusted. state is IA, the one state where \"Nevada\" matches a town this repo already holds for this operator. lat/lon copied from directory.json for Nevada, IA. Town precision, not street — the pin is the town, not the driveway. website is the origin of this source's own browserPage. Nothing was looked up.",
   "publicNote": "Their publicly posted cash board, read from the feed their own website reads. Cash and basis are their own commercial numbers. The futures quote is carried only so a consumer can re-check cash minus basis; it is not redistributed as a price feed.",
   "address": null,
   "zip": null,
@@ -32,5 +28,5 @@
   "email": null,
   "website": "https://verbio-agriculture.com/",
   "inMerge": true,
-  "_pending": "address, zip and phone are null because the DTN payload carries a location name and an id and nothing else. They are lookups, not measurements."
+  "_pending": "address, zip and phone are null: the Grain Desk payload carries a destination name and nothing else. They are lookups, not measurements."
 }
