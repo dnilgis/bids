@@ -91,7 +91,9 @@ const MOVED_TO_CASHGRID = [
 for (const [id, file, n] of MOVED_TO_CASHGRID) {
   test(`${id}: on its operator's cashgrid, and publishes from it`, () => {
     const m = manifest(id);
-    assert.equal(m.platform, "agricharts-cashgrid");
+    // same cashgrid page and adapter; siouxlandenergy is read through the browser lane since Oct 30 (pinned in
+    // cashgrid-browser-five-2026-10-30.test.mjs)
+    assert.equal(m.platform, id === "siouxlandenergy-siouxlandenergy" ? "agricharts-cashgrid-browser" : "agricharts-cashgrid");
     assert.equal(m.identityAlternative, "agricharts-cashgrid:contract-named+heading-agrees");
     assert.match(m.note, /capture\.yml run 4098(1238561|1969844)/);
     assert.doesNotMatch(m.url, /\/\/mobile\./);
