@@ -1198,7 +1198,11 @@ test("the captured boards publish through the real guard, and refuse without the
        captures predate both locations. That is a stale fixture, not a refusal,
        so it is counted apart and capped, never absorbed into withRule. */
     try { buildFile(html, opts(toConfig(s))); withRule++; }
-    catch (e) { if (/none for location/.test(e.message)) { tried--; newerThanCapture.push(s.id); continue; } }
+    /* 2026-10-30: a yard in the capture's selector with no cell is now the
+       empty board it is ("posts no current bid", e.empty) rather than "none
+       for location". The same ten sources, counted the same way and under the
+       same cap: neither message is a rounding verdict. */
+    catch (e) { if (e.empty === true || /none for location/.test(e.message)) { tried--; newerThanCapture.push(s.id); continue; } }
     const isFine = cashDecimals(bytes) > 2;
     if (isFine) fine++;
     try { buildFile(html, opts(toConfig({ ...s, cashRounding: undefined })));
