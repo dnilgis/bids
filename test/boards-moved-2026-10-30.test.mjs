@@ -1,7 +1,7 @@
 /* BOARDS WHOSE PAGE CHANGED OR MOVED -- 2026-10-30.
  *
  * Every source here was broken or refused on all 40 passes from 2026-10-29
- * 18:08Z to 2026-10-30 00:24Z (Franklin: 35 of 40). Each was traced to its
+ * 18:08Z to 2026-10-30 00:24Z. Each was traced to its
  * operator's own page in the runner's browser (capture.yml runs 40981238561
  * and 40981969844, branch caps-bidslive), and the response that page read is
  * in test/fixtures/bidslive-2026-10-30/.
@@ -9,7 +9,6 @@
  *   Southeast Farmers (4)   layout: cells now name quotes['zcz6'], not 'ZCZ26'
  *   Ag Plus (6)             mobile board answers 500; their cashgrid has them
  *   Siouxland Energy        the same
- *   Franklin Elevator (3)   vanity host times out; franklinelevator.agricharts.com
  *   Farmers Coop Society    their fragment is 404; their page reads DTN E0014201
  *   VERBIO Nevada           their site moved its bids to Grain Discovery
  *   Cooperative Elevator    grower.coopelev.com "has moved"; www has the board
@@ -88,9 +87,6 @@ const MOVED_TO_CASHGRID = [
   ["agplusinc-raber", "cashgrid-agplusinc.html", 8],
   ["agplusinc-churubusco", "cashgrid-agplusinc.html", 8],
   ["siouxlandenergy-siouxlandenergy", "cashgrid-siouxlandenergy.html", 11],
-  ["franklinelevator-franklin", "cashgrid-franklinelevator.html", 4],
-  ["franklinelevator-orleans", "cashgrid-franklinelevator.html", 4],
-  ["franklinelevator-scottville", "cashgrid-franklinelevator.html", 4],
 ];
 for (const [id, file, n] of MOVED_TO_CASHGRID) {
   test(`${id}: on its operator's cashgrid, and publishes from it`, () => {
@@ -98,7 +94,7 @@ for (const [id, file, n] of MOVED_TO_CASHGRID) {
     assert.equal(m.platform, "agricharts-cashgrid");
     assert.equal(m.identityAlternative, "agricharts-cashgrid:contract-named+heading-agrees");
     assert.match(m.note, /capture\.yml run 4098(1238561|1969844)/);
-    assert.doesNotMatch(m.url, /mobile\.|\/\/franklinelevator\.com/);
+    assert.doesNotMatch(m.url, /\/\/mobile\./);
     const b = publish(id, file);
     assert.equal(b.file.count, n);
   });
