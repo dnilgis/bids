@@ -6,10 +6,10 @@
   "country": "US",
   "currency": "USD",
   "countryVia": "state",
-  "platform": "agricharts",
-  "url": "https://mobile.agplusinc.com/cash/prices.php",
+  "platform": "agricharts-cashgrid",
+  "url": "https://www.agplusinc.com/markets/cashgrid.php",
   "locationId": "20016",
-  "identityAlternative": "agricharts:board-agrees+quotes-agree",
+  "identityAlternative": "agricharts-cashgrid:contract-named+heading-agrees",
   "bands": {
     "corn": [
       2,
@@ -27,7 +27,8 @@
   "cadence": "grain-day",
   "provenance": "scraped",
   "enabled": true,
-  "note": "WRITTEN BY HAND 2026-10-27 (fx/newboards) for a location the AgriCharts sweep read and could not place. PROOF THE LOCATION IS ON THE BOARD: their own mobile board https://mobile.agplusinc.com/cash/prices.php carries \"Raber\" as a section with its own l= parameter 20016 (fixtures/agricharts-agplusinc.html: the Raber section, whose 8 chart links carry l=20016), and data/gaps/board-locations-with-no-town.csv recorded 6 rows for it. PLACE: the federal warehouse licence list (data/registries.json, registry-wcmd) files an Ag Plus, Inc. warehouse as \"Columbia City (Raber), IN\", Whitley County. Raber is that yard's own name; it is not a town in the ZIP table, so NO COORDINATE is taken: read and published, kept off the distance map until a pin with its evidence is added. identityAlternative is the same as every other Ag Plus location on this board: it prints cash, basis and a futures change and no futures price, so rows publish only when the board agrees with itself and each row fits a CBOT quote (lib/board.mjs). cashRounding is NOT set; it is measured from a real board against real futures.",
+  "cashRounding": "round-cent-either",
+  "note": "MOVED 2026-10-30 FROM THE AGRICHARTS MOBILE BOARD TO THE SAME OPERATOR'S CASHGRID. https://mobile.agplusinc.com/cash/prices.php answered HTTP 500 on every pass since its last good read at 2026-10-28 13:40Z, the answer AgriCharts gives when a customer has no mobile board. capture.yml run 40981238561 loaded https://www.agplusinc.com/markets/cashgrid.php: its own selector lists location 20016 and the grid carries 8 price cells for it, each naming its CBOT contract (test/fixtures/bidslive-2026-10-30/cashgrid-agplusinc.html). The location id is the same l= id the mobile board keyed it by. EARLIER: WRITTEN BY HAND 2026-10-27 (fx/newboards) for a location the AgriCharts sweep read and could not place. PROOF THE LOCATION IS ON THE BOARD: their own mobile board https://mobile.agplusinc.com/cash/prices.php carries \"Raber\" as a section with its own l= parameter 20016 (fixtures/agricharts-agplusinc.html: the Raber section, whose 8 chart links carry l=20016), and data/gaps/board-locations-with-no-town.csv recorded 6 rows for it. PLACE: the federal warehouse licence list (data/registries.json, registry-wcmd) files an Ag Plus, Inc. warehouse as \"Columbia City (Raber), IN\", Whitley County. Raber is that yard's own name; it is not a town in the ZIP table, so NO COORDINATE is taken: read and published, kept off the distance map until a pin with its evidence is added. identityAlternative is the same as every other Ag Plus location on this board: it prints cash, basis and a futures change and no futures price, so rows publish only when the board agrees with itself and each row fits a CBOT quote (lib/board.mjs). cashRounding is NOT set; it is measured from a real board against real futures.",
   "publicNote": "Their publicly posted cash board, read from the mobile page their own site serves. Cash and basis are their own commercial numbers. This platform publishes no futures price at all, so none is republished; the futures quote is used only to check that the two columns were read correctly.",
   "address": null,
   "zip": null,
@@ -36,5 +37,6 @@
   "phone": null,
   "email": null,
   "website": "https://www.agplusinc.com/",
-  "inMerge": true
+  "inMerge": true,
+  "_pending": "cashRounding is round-cent-either, the rule measured for the cashgrid page across 6,228 rows on 45 boards; this board's own rows have not been measured yet. BEFORE THE MOVE: "
 }
