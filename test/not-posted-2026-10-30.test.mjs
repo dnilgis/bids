@@ -75,3 +75,19 @@ test("the 30-day rule: due on day 30, not on day 29, retired with the reason and
   assert.deepEqual(retireDue([r], d30), [], "already retired: not due again");
   assert.deepEqual(retireDue([{ ...s, notPostedSince: undefined }], d30), [], "no flag, no retirement");
 });
+
+/* ── Wanstead (Ontario): listed, not read as CAD ──
+ * The DTN rows state USD on every row; the manifest says CAD. The reader takes the feed's word over ours
+ * (lib/currency.mjs) and refuses. The real soybean row: cash 15.89, "basis" 3.55, futures 1234'0 (USD 12.34).
+ * That basis is the CAD cash minus a USD futures price, not a basis anybody posted, and the reader has no FX
+ * rate, so reading the board as CAD would still publish a mixed-money basis. Held for the lead. */
+test("Wanstead stays refused: the feed says USD, the manifest CAD, and the basis mixes the two", () => {
+  const m = manifest("wansteadfarmerscooperative-anywansteadbranch");
+  const body = FX("dtncs-wanstead.json");
+  const e = run(m, body);
+  assert.ok(e, "refused");
+  assert.match(e.message, /the manifest declares CAD and the feed states USD on every row/);
+  const soy = JSON.parse(body).find((r) => r.commodityDisplayName === "Soybeans");
+  assert.equal(soy.currency, "USD");
+  assert.equal(Math.round((soy.cashPrice - soy.basisPrice) * 100) / 100, 12.34, "cash - basis is the USD futures price");
+});
