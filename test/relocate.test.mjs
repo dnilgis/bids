@@ -253,7 +253,7 @@ test("captureRendered keeps the delivery periods the widget itself fetched, and 
     seen.push(req.url);
     if (req.url.startsWith("/settings/v2/delivery-periods")) { res.writeHead(200, { "content-type": "application/json" }); return res.end(body); }
     if (req.url.startsWith("/component/bids")) {
-      res.writeHead(200, { "content-type": "text/html" });
+      res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" });
       return res.end(`<!doctype html><html><body><div id="root"></div><script>
         fetch("/settings/v2/delivery-periods?locationIds=A").then(() => {
           document.getElementById("root").innerHTML = '<div class="stonex-bids-component">Updated <span title="10/26/26 08:09 PM">x</span>'
@@ -268,11 +268,16 @@ test("captureRendered keeps the delivery periods the widget itself fetched, and 
   try {
     const got = await captureRendered({ pageUrl: `http://127.0.0.1:${port}/cash`, target: `http://127.0.0.1:${port}/component/bids`,
       browser, timeoutMs: 30000, settleMs: 500, keep: keepOf("stonehedge") });
-    /* the widget loads twice (inside the page, then on its own), and asks each time */
+    /* the widget loads twice (inside the page, then on its own), and asks each time.
+       The count is taken once the server has been quiet for a moment: captureRendered
+       returns on the document it settled on, and under load the other load's
+       delivery-periods request can still be on its way (seen 1 of 2, 2026-10-30). */
+    for (let last = -1, quiet = 0; quiet < 6; await new Promise((r) => setTimeout(r, 100)))
+      if (seen.length === last) quiet++; else { last = seen.length; quiet = 0; }
     assert.ok(got.kept.length >= 1);
     assert.equal(deliveryPeriodsOf(got.kept).length, 3, "the same periods twice are one set");
     assert.equal(seen.filter((u) => u.startsWith("/settings/")).length, seen.filter((u) => u.startsWith("/component/bids")).length,
-      "one delivery-periods request per widget load: only the widget's own requests were made");
+      "one delivery-periods request per widget load: " + JSON.stringify(seen));
     seen.length = 0;
     const plain = await captureRendered({ pageUrl: `http://127.0.0.1:${port}/cash`, target: `http://127.0.0.1:${port}/component/bids`, browser, timeoutMs: 30000, settleMs: 500 });
     assert.equal(plain.kept, undefined);
