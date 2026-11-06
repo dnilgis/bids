@@ -199,6 +199,34 @@ jobs:
             --states "$IN_STATES" \
             --dump-dir debug/registries
 
+      # ══════════════════════════════════════════════════════════════════
+      #  DID THIS RUN TAKE RECORDS AWAY?
+      # ══════════════════════════════════════════════════════════════════
+      #  On 2026-09-07 at 20:46 a `--states WI` run rewrote the whole file from
+      #  its filtered result: `5 files changed, 40628 insertions(+), 173521
+      #  deletions(-)`. Eleven states gone in one commit. Nothing caught it,
+      #  because every guard asked whether a SOURCE came back short and none
+      #  asked whether the FILE did.
+      #
+      #  merge_with_committed() in fetch_registries.py is the fix and it is
+      #  tested. This is the check that the fix is working, on the real file,
+      #  every run — and it is deliberately HERE rather than up with the
+      #  pre-fetch guards. Up there it would be reading the fetch's own output
+      #  before the fetch runs, which is the latch this workflow just spent a
+      #  day stuck in. Down here the fetch has already happened, so a red leaves
+      #  the GOOD file on main and blocks only the commit of a worse one.
+      #
+      #  Not `if: always()`. A skipped fetch must not fail this, because a
+      #  skipped fetch has taken nothing away.
+      - name: Did this run take records away
+        id: shrink
+        if: steps.fetch.outcome == 'success'
+        run: python scripts/registries_not_shrunk.py
+
+      - name: Put the committed list back
+        if: always() && steps.shrink.outcome == 'failure'
+        run: git checkout -- data/registries.json
+
       # WHAT EVERY OTHER STATE PUBLISHES, ASKED ONCE.
       # Three shapes are already confirmed and no two are alike: Iowa is HTML
       # lists with no street address, Illinois is a search form with nothing to
@@ -362,29 +390,6 @@ jobs:
       # summary that said it had succeeded.
       # THE TWO LISTS OF WHAT WE DO NOT HAVE — regenerated whenever the inputs
       # move, because a worklist that goes stale gets phoned twice.
-      # ══════════════════════════════════════════════════════════════════
-      #  DID THIS RUN TAKE RECORDS AWAY?
-      # ══════════════════════════════════════════════════════════════════
-      #  On 2026-09-07 at 20:46 a `--states WI` run rewrote the whole file from
-      #  its filtered result: `5 files changed, 40628 insertions(+), 173521
-      #  deletions(-)`. Eleven states gone in one commit. Nothing caught it,
-      #  because every guard asked whether a SOURCE came back short and none
-      #  asked whether the FILE did.
-      #
-      #  merge_with_committed() in fetch_registries.py is the fix and it is
-      #  tested. This is the check that the fix is working, on the real file,
-      #  every run — and it is deliberately HERE rather than up with the
-      #  pre-fetch guards. Up there it would be reading the fetch's own output
-      #  before the fetch runs, which is the latch this workflow just spent a
-      #  day stuck in. Down here the fetch has already happened, so a red leaves
-      #  the GOOD file on main and blocks only the commit of a worse one.
-      #
-      #  Not `if: always()`. A skipped fetch must not fail this, because a
-      #  skipped fetch has taken nothing away.
-      - name: Did this run take records away
-        if: steps.fetch.outcome == 'success'
-        run: python scripts/registries_not_shrunk.py
-
       - name: Rebuild the gap lists
         if: always()
         continue-on-error: true
