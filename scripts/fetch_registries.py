@@ -339,8 +339,11 @@ SOURCES = [
      # The Class column is only ever A+VCS, A or B. Accepting any capitalised
      # word as a class is what let "FREDERICK FARMERS ELEVATOR" parse as a
      # company in a town called ARMERS with a class of ELEVATOR.
-     "pattern": r"^(?P<name>.+)\s(?P<licence>[BFSW])(?P<city>[A-Z][A-Za-z0-9.'&/-]*"
-                r"(?: [A-Z0-9][A-Za-z0-9.'&/-]*)*?)(?:,\s*(?P<st>[A-Z]{2}))?"
+     # A location word may carry a bracket: "FAULKTON (TOWN)-340", "KIMBALL (PARAGON)" (Oct 23, 2026 list: both
+     # were dropped for that alone, Nov 6). A word may not START with "-": "BOWDLE WEST -316" would then read as
+     # permit W at a town "EST -316" (the name is greedy), so that one stays unread rather than misread.
+     "pattern": r"^(?P<name>.+)\s(?P<licence>[BFSW])(?P<city>[A-Z][A-Za-z0-9.'&/()-]*"
+                r"(?: [A-Z0-9(][A-Za-z0-9.'&/()-]*)*?)(?:,\s*(?P<st>[A-Z]{2}))?"
                 r"\s+(?P<cls>A\+VCS|A|B)\s*$",
      # THIS PATTERN SWALLOWED SIXTY-THREE COMPLETE RECORDS.
      #
