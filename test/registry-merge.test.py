@@ -83,10 +83,32 @@ ok(carried == 1, "only the Iowa record is carried (got %d)" % carried)
 ok({e["name"] for e in out} == {"A new Wisconsin elevator", "An Iowa elevator"},
    "all three old Wisconsin-roll records are replaced by the fresh answer")
 
-print("\na run over every state is authoritative and merges nothing")
+print("\na run over every state where every state answered is authoritative and merges nothing")
 out, diags, carried = fr.merge_with_committed(fresh, [], set(), path)
 ok(carried == 0, "nothing carried (got %d)" % carried)
 ok(out == fresh, "and the run's own answer is the whole file")
+
+print("\na state whose every source kept 0 on an all-states run keeps its committed rows (SD, 2026-11-05/06)")
+SD_ROLL = [{"name": "A South Dakota elevator %d" % i, "state": "SD", "source": "registry-sd"} for i in range(3)]
+path3 = committed(WI_ROLL + SD_ROLL)
+sd_diag = fr.mark_incomplete_if_empty([], {"state": "SD", "url": "sd.pdf", "errors": ["TimeoutError: timed out"]})
+wi_diag = {"state": "WI", "url": "u1", "kept": 3}
+out, diags, carried = fr.merge_with_committed(WI_ROLL, [wi_diag, sd_diag], set(), path3)
+ok(carried == 3, "the three committed South Dakota rows are carried (got %d)" % carried)
+ok(sum(1 for b in out if fr.source_state(b) == "SD") == 3 and sum(1 for b in out if fr.source_state(b) == "WI") == 3,
+   "South Dakota is back and Wisconsin is not doubled")
+ok(sd_diag.get("INCOMPLETE", "").startswith("kept 0 records") and sd_diag.get("carriedFromCommitted") == 3,
+   "the source stays flagged INCOMPLETE and says how many rows it carried")
+ok("carriedFromCommitted" not in wi_diag, "a state that answered carries nothing")
+# a state with two sources where one kept records answered: nothing carried
+two = [fr.mark_incomplete_if_empty([], {"state": "SD", "url": "a", "errors": ["timed out"]}), {"state": "SD", "url": "b", "kept": 5}]
+out, diags, carried = fr.merge_with_committed(WI_ROLL, two, set(), path3)
+ok(carried == 0, "one South Dakota source answering means South Dakota answered (carried %d)" % carried)
+# a source short of its own published total (not kept 0) is not carried: the run's partial answer stands, flagged
+short = {"state": "SD", "url": "sd.pdf", "INCOMPLETE": "parsed 25 of 251"}
+out, diags, carried = fr.merge_with_committed(WI_ROLL, [short], set(), path3)
+ok(carried == 0, "a short source is flagged, not carried")
+ok(fr.failed_states([sd_diag, wi_diag]) == {"SD"}, "failed_states names only the state that kept nothing")
 
 print("\nno committed file is not a crash, and not a silent merge either")
 out, diags, carried = fr.merge_with_committed(fresh, [], {"IA"}, "/nonexistent/registries.json")

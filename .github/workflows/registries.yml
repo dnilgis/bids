@@ -382,8 +382,13 @@ jobs:
       #  Not `if: always()`. A skipped fetch must not fail this, because a
       #  skipped fetch has taken nothing away.
       - name: Did this run take records away
+        id: shrink
         if: steps.fetch.outcome == 'success'
         run: python scripts/registries_not_shrunk.py
+
+      - name: Put the committed list back
+        if: always() && steps.shrink.outcome == 'failure'
+        run: git checkout -- data/registries.json
 
       - name: Rebuild the gap lists
         if: always()
