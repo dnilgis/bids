@@ -109,6 +109,20 @@ short = {"state": "SD", "url": "sd.pdf", "INCOMPLETE": "parsed 25 of 251"}
 out, diags, carried = fr.merge_with_committed(WI_ROLL, [short], set(), path3)
 ok(carried == 0, "a short source is flagged, not carried")
 ok(fr.failed_states([sd_diag, wi_diag]) == {"SD"}, "failed_states names only the state that kept nothing")
+# a document that states its own total and parsed 0 is "kept 0" too (fetch_registries.py: "the document says N and this parse found 0")
+total0 = {"state": "SD", "url": "sd.pdf", "kept": 0, "INCOMPLETE": "the document says 358 and this parse found 0"}
+out, diags, carried = fr.merge_with_committed(WI_ROLL, [wi_diag, total0], set(), path3)
+ok(carried == 3, "a stated total with nothing parsed is carried too (got %d)" % carried)
+# a --states SD run that times out keeps South Dakota as well
+sd_diag2 = fr.mark_incomplete_if_empty([], {"state": "SD", "url": "sd.pdf", "errors": ["TimeoutError: timed out"]})
+out, diags, carried = fr.merge_with_committed([], [sd_diag2], {"SD"}, path3)
+ok(sum(1 for b in out if fr.source_state(b) == "SD") == 3 and sum(1 for b in out if fr.source_state(b) == "WI") == 3,
+   "a timed-out --states SD keeps South Dakota's rows and carries the rest")
+ok(sd_diag2.get("carriedFromCommitted") == 3, "and its diagnostic says so")
+# a --states SD run that answers replaces South Dakota, as before
+fresh_sd = [{"name": "New SD", "state": "SD", "source": "registry-sd"}]
+out, diags, carried = fr.merge_with_committed(fresh_sd, [{"state": "SD", "url": "sd.pdf", "kept": 1}], {"SD"}, path3)
+ok(sum(1 for b in out if fr.source_state(b) == "SD") == 1, "an answering --states SD replaces the old South Dakota rows")
 
 print("\nno committed file is not a crash, and not a silent merge either")
 out, diags, carried = fr.merge_with_committed(fresh, [], {"IA"}, "/nonexistent/registries.json")

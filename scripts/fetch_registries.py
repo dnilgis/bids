@@ -2125,8 +2125,18 @@ def failed_states(diags):
     for d in diags:
         st = (d.get("state") or "").upper()
         if st:
-            by.setdefault(st, []).append(str(d.get("INCOMPLETE") or "").startswith("kept 0 records"))
+            # kept 0 either way: mark_incomplete_if_empty's "kept 0 records", or a document that states
+            # its own total and parsed 0 ("the document says N and this parse found 0")
+            by.setdefault(st, []).append(d.get("kept") == 0 or str(d.get("INCOMPLETE") or "").startswith("kept 0 records"))
     return {st for st, zs in by.items() if zs and all(zs)}
+
+
+def mark_carried(diags, failed, keep):
+    """each failed state's diagnostics say how many committed rows it carried"""
+    for d in diags:
+        st = (d.get("state") or "").upper()
+        if st in failed:
+            d["carriedFromCommitted"] = sum(1 for b in keep if source_state(b) == st)
 
 
 def merge_with_committed(out, diags, want, path):
@@ -2177,13 +2187,14 @@ def merge_with_committed(out, diags, want, path):
         return out, diags, 0
     if want is None:
         keep = [b for b in old.get("businesses") or [] if source_state(b) in failed]
-        for d in diags:
-            st = (d.get("state") or "").upper()
-            if st in failed:
-                d["carriedFromCommitted"] = sum(1 for b in keep if source_state(b) == st)
+        mark_carried(diags, failed, keep)
         return out + keep, diags, len(keep)
+    # a state this run asked for whose every source kept 0 is carried the same way: a timed-out
+    # --states SD must not delete South Dakota either
+    failed = failed_states(diags) & want
     keep = [b for b in old.get("businesses") or []
-            if source_state(b) not in want]
+            if source_state(b) not in want or source_state(b) in failed]
+    mark_carried(diags, failed, keep)
     keepdiag = [d for d in old.get("diagnostics") or []
                 if (d.get("state") or "").upper() not in want]
     return out + keep, diags + keepdiag, len(keep)
@@ -2412,9 +2423,10 @@ def main():
     if carried and want:
         print("\ncarried %d record(s) from %s for the %d state(s) this run did not ask"
               % (carried, OUT, len({source_state(b) for b in out} - want - {None})))
-    elif carried:
-        print("\ncarried %d committed record(s) from %s for %s: every source there kept 0 this run"
-              % (carried, OUT, ", ".join(sorted(failed_states(diags)))))
+    if carried:
+        held = sorted({(d.get("state") or "").upper() for d in diags if d.get("carriedFromCommitted")})
+        if held:
+            print("carried committed record(s) for %s: every source there kept 0 this run" % ", ".join(held))
 
     per_state, no_state = {}, 0
     for e in out:
