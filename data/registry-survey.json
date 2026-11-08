@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-07T07:23:46Z",
+ "generated": "2026-11-08T07:24:05Z",
  "note": "What each state publishes and in what shape. Candidates were found by search; most had never been opened when this list was written. Nothing here is parsed or trusted \u2014 this is reconnaissance.",
  "results": [
   {
@@ -64,7 +64,7 @@
    "url": "https://agriculture.mo.gov/grains/grainsearch.php",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 279731,
+   "bytes": 280154,
    "ua": "ours",
    "rows": 304,
    "headerCells": [
@@ -90,7 +90,7 @@
    "expected": "dealer/warehouse database",
    "confidence": "confirmed, 304 rows",
    "kept": "debug/registries/survey/mo-dealer-warehouse-database.html",
-   "keptBytes": 270393
+   "keptBytes": 270516
   },
   {
    "url": "https://psc.nebraska.gov/sites/default/files/doc/administration/RR-212/Mailing%20List%20GDGW,%20Interested%20Parties,%20&%20Insurance%20Carriers.pdf",
@@ -626,7 +626,7 @@
    "url": "http://agr.georgia.gov/warehouse.aspx",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 113325,
+   "bytes": 112928,
    "ua": "ours",
    "rows": 0,
    "headerCells": [],
@@ -636,7 +636,7 @@
    "expected": "state licensed warehouses",
    "confidence": "from grainjournal.com 2026-09-04; unopened",
    "kept": "debug/registries/survey/ga-state-licensed-warehouses.html",
-   "keptBytes": 108078
+   "keptBytes": 107681
   },
   {
    "url": "http://mda.maryland.gov/foodfeedquality/Pages/grain.aspx",
@@ -656,12 +656,32 @@
   },
   {
    "url": "https://www.mdac.ms.gov/bureaus-departments/regulatory-services/grain-dealers-warehouses/",
-   "status": 0,
+   "status": 200,
+   "contentType": "text/html",
+   "bytes": 479666,
    "ua": "ours",
-   "error": "HTTPError: HTTP Error 404: Not Found",
+   "rows": 0,
+   "headerCells": [],
+   "dataLinks": [
+    "https://agnet.mdac.ms.gov/agManage/uploads/1591.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/1592.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/1789.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/1790.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/1791.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/1792.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/2077.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/2078.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/2079.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/3437.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/3441.pdf",
+    "https://agnet.mdac.ms.gov/agManage/uploads/3445.pdf"
+   ],
+   "shape": "page offering a data file",
    "state": "MS",
    "expected": "grain dealers and warehouses",
-   "confidence": "from grainjournal.com 2026-09-04; unopened"
+   "confidence": "from grainjournal.com 2026-09-04; unopened",
+   "kept": "debug/registries/survey/ms-grain-dealers-and-warehouses.html",
+   "keptBytes": 87329
   },
   {
    "url": "http://www.ldaf.state.la.us/consumers/commodities-commission/",
@@ -710,8 +730,12 @@
   {
    "url": "http://apps.ncagr.gov/LicenseSearch/Home/Search/015",
    "status": 0,
-   "ua": "ours",
+   "ua": "ours, slow",
    "error": "HTTPError: HTTP Error 404: Not Found",
+   "attempts": [
+    "TimeoutError: timed out",
+    "HTTPError: HTTP Error 404: Not Found"
+   ],
    "state": "NC",
    "expected": "licence search, grain dealers",
    "confidence": "from grainjournal.com 2026-09-04; unopened"
@@ -863,7 +887,7 @@
    "url": "https://publicdashboards.dl.usda.gov/t/MRP_PUB/views/WCMDDashboard/WCMDDashboard?:isGuestRedirectFromVizportal=y&:embed=y",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 9724,
+   "bytes": 9725,
    "ua": "ours",
    "rows": 0,
    "headerCells": [],
@@ -997,7 +1021,7 @@
    "url": "https://catalog.data.gov/dataset/uswa-active-warehouses",
    "status": 200,
    "contentType": "text/html",
-   "bytes": 120536,
+   "bytes": 120535,
    "ua": "ours",
    "rows": 18,
    "headerCells": [
