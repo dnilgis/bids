@@ -102,7 +102,7 @@ test("sources/ holds exactly what the generator produces, and every one publishe
   assert.deepEqual(skipped.map((s) => s.tag).sort(), ["cpicoop: AGP David City", "cpicoop: AGP Hastings", "cpicoop: Hayland", "cpicoop: Lewis",
     "fivestar: AGP Mason City", "fivestar: Christensen Farms FC", "fivestar: GGE Mason City", "fivestar: Reicks View Milling",
     "fivestar: Shell Rock Soy Processing", "fivestar: Valero Charles City",
-    "landus: Mcleansboro, IL", "newcoop: Cainsville", "newcoop: Morton Mills", "newcoop: Mt. Ayr", "nexus: GOLDEN GRAIN, IA"]);
+    "landus: Mcleansboro, IL", "nexus: GOLDEN GRAIN, IA"]);
 });
 
 /* ---------------- Landus ---------------- */
