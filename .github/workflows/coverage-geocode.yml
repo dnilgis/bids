@@ -1,0 +1,30 @@
+name: coverage geocode
+on:
+  workflow_dispatch:
+    inputs:
+      addresses:
+        description: "Addresses separated by ' ;; '"
+        required: true
+permissions:
+  contents: read
+jobs:
+  geocode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Ask the Census geocoder, one address at a time
+        env:
+          ADDRS: ${{ inputs.addresses }}
+        run: |
+          echo "$ADDRS" | sed 's/ ;; /\n/g' | while IFS= read -r a; do
+            [ -z "$a" ] && continue
+            echo "### $a"
+            curl -sS -G --max-time 40 "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress" \
+              --data-urlencode "address=$a" --data-urlencode "benchmark=Public_AR_Current" --data-urlencode "format=json" \
+              | python3 -c 'import json,sys
+          d=json.load(sys.stdin)
+          m=d.get("result",{}).get("addressMatches",[])
+          print("matches",len(m))
+          for x in m[:3]: print(x["matchedAddress"],x["coordinates"]["y"],x["coordinates"]["x"],x.get("tigerLine"))'
+            sleep 2
+          done
