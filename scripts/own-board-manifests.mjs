@@ -39,7 +39,24 @@ const CAPTURED = "2026-10-02";
 
 export const SITES = {
   newcoop: { platform: "newcoop", url: NEWCOOP_URL, extract: newcoop, fixture: `fixtures/newcoop-cashbids-${CAPTURED}.html`,
-             names: ["NEW Cooperative, Inc.", "New Cooperative, Inc."], operator: "NEW Cooperative, Inc.", website: "https://www.newcoop.com/", homeStates: ["IA"], browserPage: NEWCOOP_URL },
+             names: ["NEW Cooperative, Inc.", "New Cooperative, Inc."], operator: "NEW Cooperative, Inc.", website: "https://www.newcoop.com/", homeStates: ["IA"], browserPage: NEWCOOP_URL,
+             /* THREE LOCATIONS THE REPOSITORY'S OWN LISTS DO NOT SETTLE (2026-11-12). The board has printed
+                "Cainsville", "Morton Mills" and "Mt. Ayr" since the 2026-10-02 capture and they sat in "not
+                written". Source: NEW Cooperative's own locations page (newcoop.com/locations), read by the
+                owner on 2026-11-12; the addresses are in LOCATED below.
+                `placed` names the town and state for a heading no directory row or licence row places:
+                Morton Mills (Barchart's row files it at "Villisca, IL" with ZIP 50864, and 50864 is Villisca,
+                IA, so that row places nothing) and Mt. Ayr (the licence roll spells the town "Mount Ayr" and
+                names no NEW Cooperative yard there). Cainsville needs no entry: the Missouri licence roll
+                has NEW Cooperative at 1301 E. Main Street, Cainsville, Harrison County, MO 64632.
+                `zipPins` is the ZIP-table centroid of the town, from the `zipcodes` table scripts/build_geocodes.py
+                reads (64632 Cainsville MO, 50854 Mount Ayr IA), town precision. Morton Mills has none on
+                purpose: its ZIP is Villisca's, so its centroid is newcoop-villisca's pin and two yards would
+                share one point (the same geocoder-collision rule as below). */
+             placed: { "Morton Mills": { city: "Villisca", state: "IA", noCoordWhy: "its ZIP, 50864, is Villisca's, so a pin taken from its ZIP would be the pin of newcoop-villisca, a different yard; two yards on one point is a geocoder collision" },
+                       "Mt. Ayr": { city: "Mount Ayr", state: "IA" } },
+             zipPins: { "newcoop-cainsville": { lat: 40.4578, lon: -93.759, city: "Cainsville", state: "MO", zip: "64632" },
+                        "newcoop-mtayr": { lat: 40.7142, lon: -94.2321, city: "Mount Ayr", state: "IA", zip: "50854" } } },
   nexus:   { platform: "nexus", url: NEXUS_URL, extract: nexus, fixture: `fixtures/nexus-cashbids-${CAPTURED}.html`,
              names: ["Nexus Cooperative"], operator: "Nexus Cooperative", website: "https://www.nexus.coop/", homeStates: ["IA", "MN"] },
   /* Cooperative Producers, Inc. bids milo per bushel as well, so its manifests carry a milo band. */
@@ -78,7 +95,9 @@ const norm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
  * scripts/geocode-fill.mjs rightly reads as "do not centroid this", so 72
  * Landus and CPI yards sat off the distance map with a confirmed town. */
 const PLACES = existsSync(ROOT + "geocodes/places.json") ? JSON.parse(rd("geocodes/places.json")).places ?? {} : {};
-const coordText = (c, p) => c.via === "zip"
+const coordText = (c, p) => c.pinned
+  ? `Coordinate is the ZIP-table centroid of ${p.city}, ${p.state} ${c.pinned} (the \`zipcodes\` table scripts/build_geocodes.py reads; town precision, which can be miles from the yard). The roster has none for it. `
+  : c.via === "zip"
   ? `Coordinate is the ZIP-table centroid of ${p.city}, ${p.state} (geocodes/places.json, from scripts/build_geocodes.py; town precision, which can be miles from the yard). The roster has none for it. `
   : `Coordinate is the roster's own for ${p.city}, ${p.state} (${c.precision ?? "town"} precision). `;
 export function zipCentroid(id, city) {
@@ -265,6 +284,12 @@ export const LOCATED = {
     why: "Landus's own Ulmer location page (landuscooperative.com/about-us/locations/ulmer) gives 3231 358th St, Lake View, IA 51450, (712) 657-8770; the World Grain directory gives the same street and phone, and the Iowa DNR facility list puts the Ulmer site at 3231 358th Street, Sac County." },
   "landus-yetter": { address: "3265 Durant Ave, Yetter, IA 51433", zip: "51433",
     why: "Landus's own Yetter location page (landuscooperative.com/about-us/locations/yetter) gives 3265 Durant Ave, Yetter, IA 51433, (712) 464-3688. The USPS city table this repository uses (the zipcodes package behind geocodes/zip-towns.json) lists Yetter as a place name of ZIP 51433 (Auburn)." },
+  "newcoop-cainsville": { address: "1301 E Main St, Cainsville, MO 64632", zip: "64632", on: "2026-11-12",
+    why: "NEW Cooperative's own locations page (newcoop.com/locations), read by the owner on 2026-11-12, gives Cainsville at 1301 E Main St, Cainsville, Harrison County, MO 64632 (county FIPS 29081). The Missouri licence roll in data/registries.json (registry-mo) has NEW Cooperative at 1301 E. Main Street, Cainsville, Harrison, MO 64632, (660) 893-5218." },
+  "newcoop-mortonmills": { address: "3107 155th St, Villisca, IA 50864", zip: "50864", on: "2026-11-12",
+    why: "NEW Cooperative's own locations page (newcoop.com/locations), read by the owner on 2026-11-12, gives Morton Mills at 3107 155th St, Villisca, Montgomery County, IA 50864 (county FIPS 19137). Barchart's row for the Morton Mills branch in data/known-elevators.json files it at Villisca with ZIP 50864 (it writes the state as IL, which 50864 contradicts)." },
+  "newcoop-mtayr": { address: "403 E South St, Mount Ayr, IA 50854", zip: "50854", on: "2026-11-12",
+    why: "NEW Cooperative's own locations page (newcoop.com/locations), read by the owner on 2026-11-12, gives Mt. Ayr at 403 E South St, Mount Ayr, Ringgold County, IA 50854 (county FIPS 19159)." },
   "newcoop-creston1": { address: "1000 East Mills Street, Creston, IA 50801", zip: "50801",
     why: "NEW Cooperative's own locations list gives Creston 1 at 1000 East Mills Street, Creston, IA 50801, (641) 782-7202, with grain services." },
   "newcoop-creston2": { address: "1405 East Howard, Creston, IA 50801", zip: "50801",
@@ -294,7 +319,7 @@ export function withLocated(m) {
   const x = LOCATED[m.id];
   if (!x) return m;
   return { ...m, address: x.address ?? m.address, zip: x.zip,
-    note: `${m.note}\n\nLOCATED (${LOCATED_ON}): ${x.why[0].toUpperCase()}${x.why.slice(1)}` };
+    note: `${m.note}\n\nLOCATED (${x.on ?? LOCATED_ON}): ${x.why[0].toUpperCase()}${x.why.slice(1)}` };
 }
 function buildRaw() {
   const manifests = [], skipped = [];
@@ -315,7 +340,8 @@ function buildRaw() {
     const usedIds = new Set();
     for (const [locationId, loc] of byLoc) {
       const tag = `${site}: ${loc.name}`;
-      const p = place(loc.name, ev);
+      const owned = cfg.placed?.[loc.name];
+      const p = owned ? { how: "owner", city: owned.city, state: owned.state, hits: [] } : place(loc.name, ev);
       if (p.skip) { skipped.push({ tag, why: p.skip }); continue; }
       const k = `${norm(p.city)}|${p.state}`;
       let coord = p.destination ? null : coordOf.get(k) ?? null, coordWhy = null;
@@ -333,6 +359,13 @@ function buildRaw() {
       if (!coord && !p.destination && p.how === "directory" && !coordWhy?.includes("geocoder collision")) {
         const z = zipCentroid(`${site}-${norm(loc.name)}`, p.city);
         if (z) { coord = z; coordWhy = null; }
+      }
+      /* The owner-placed headings never take the roster's pin for the town (Morton Mills would sit on
+         Villisca's); a ZIP-table pin is kept for the ones that have one (cfg.zipPins). */
+      if (owned) { coord = null; coordWhy = owned.noCoordWhy ?? `the roster has no coordinate for ${p.city}, ${p.state} under this operator`; }
+      const pin = cfg.zipPins?.[`${site}-${norm(loc.name)}`];
+      if (!coord && pin && !owned?.noCoordWhy && norm(pin.city) === norm(p.city) && pin.state === p.state) {
+        coord = { lat: pin.lat, lon: pin.lon, precision: "town", via: "zip", pinned: pin.zip }; coordWhy = null;
       }
       const home = cfg.homeStates;
       if (!coord && home && !home.includes(p.state)) {
@@ -357,6 +390,7 @@ function buildRaw() {
       usedIds.add(id);
       const how = p.how === "directory"
         ? `the label matches ${p.hits.length} row(s) for ${cfg.operator} (${[...new Set(p.hits.map((h) => h.src))].join(", ")}) at ${p.city}, ${p.state}`
+        : p.how === "owner" ? `no directory or licence row places the heading "${loc.name}"; NEW Cooperative's own locations page (newcoop.com/locations, read by the owner 2026-11-12) puts it at ${p.city}, ${p.state}`
         : p.how === "label" ? `the board's own label writes "${loc.name}"; no row for this operator names that town, so no ZIP and no coordinate are taken`
         : `DESTINATION: the label names a buyer's plant and its town, "${loc.name}". It is where the grain goes, not a ${cfg.operator} yard`;
       const m = {
