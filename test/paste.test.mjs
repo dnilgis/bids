@@ -89,3 +89,27 @@ test("poll.mjs: the newer of live and pasted wins, and a paste row says what the
   assert.match(merge, /withdrawHFor\(files\.get\(id\) \?\? s\), \{ pasted \}\);/);
   assert.match(merge, /\.\.\.\(pasted \? \{ pasted: true, pastedAt:/, "merged rows say they were pasted, and stay first party (via scrape)");
 });
+
+test("a paste held past STALE_PRICE_H flips its file to stale and stays down on the map (NEW Coop, 2026-11-18)", async () => {
+  /* The 66 NEW Coop boards: checkedAt = pricedAt = the paste of 2026-10-22,
+     still "ok" on 2026-11-18 because the age was checkedAt - pricedAt = 0.
+     Aged against this pass's attempt, the same paste is stale. */
+  const { decide, STALE_PRICE_H } = await import("../lib/decide.mjs");
+  const src = JSON.parse(readFileSync(new URL("../sources/newcoop-afton.json", import.meta.url), "utf8"));
+  const { sources } = loadSources([src]);
+  const build = () => buildFile(JSON.stringify(PASTE), { now: PASTE.pastedAt, sourceUrl: pasteOf("newcoop"),
+    source: toConfig(sources[0]), extract: adapterFor("newcoop", null) });
+  const held = build().file;   /* the file on disk since the paste */
+  const attempt = new Date(Date.parse(PASTE.pastedAt) + (STALE_PRICE_H + 24) * 36e5).toISOString();
+  const b = build();
+  const v = decide(held, b.file, { postedAt: b.postedAt, attemptedAt: attempt });
+  assert.equal(v.file.status, "stale");
+  assert.equal(v.write, true, "the flip is written although checkedAt has not moved");
+  assert.equal(v.file.checkedAt, PASTE.pastedAt);
+  /* The map keeps calling it down: health live, aged by the paste. */
+  assert.equal(stateOf({ health: "live", pasted: true, checkedAt: PASTE.pastedAt, observedAt: PASTE.pastedAt },
+    Date.parse(attempt)), "down");
+  const poll = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
+  assert.match(poll, /decide\(prev, built\.file, \{ postedAt: built\.postedAt \?\? null, attemptedAt: now \}\)/,
+    "poll.mjs ages the price against this pass's attempt");
+});

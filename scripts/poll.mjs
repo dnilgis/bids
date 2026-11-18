@@ -851,7 +851,9 @@ async function readOne(s) {
     }
     /* postedAt: a board that states when it posted (the agsist portal) sets
        pricedAt from that, not from when a number last moved. lib/decide.mjs. */
-    const verdict = decide(prev, built.file, { postedAt: built.postedAt ?? null });
+    /* attemptedAt: this pass's attempt, which a price is aged against (a
+       pasted board's checkedAt is the paste and never moves). lib/decide.mjs. */
+    const verdict = decide(prev, built.file, { postedAt: built.postedAt ?? null, attemptedAt: now });
     r.health = "live";
     /* A READ THAT WORKED CLEARS THE STREAK -- it counts CONSECUTIVE failures,
        and a source that works once has no case against it any more. */
