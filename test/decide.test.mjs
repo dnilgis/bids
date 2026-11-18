@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide, commitMessage, HEARTBEAT_H, movedSources } from "../lib/decide.mjs";
+import { decide, commitMessage, HEARTBEAT_H, STALE_PRICE_H, movedSources } from "../lib/decide.mjs";
 
 const bid = (cash) => ({
   seq: 0, commodity: "Corn", delivery: "August", futuresMonth: "Sep 26",
@@ -263,6 +263,56 @@ test("a real move after a frozen spell is still seen, and clears the flag", () =
   assert.equal(v.changed, true);
   assert.equal(v.file.status, "ok");
   assert.equal(v.file.pricedAt, moved.pricedAt);
+});
+
+test("A PASTED BOARD FROZEN WITH ITS checkedAt GOES STALE AGAINST THE ATTEMPT TIME", () => {
+  /* NEW Cooperative, 2026-11-18: a pasted board's checkedAt is the paste, so
+     checkedAt and pricedAt froze together on 2026-10-22 and checkedAt -
+     pricedAt read 0 hours on every pass for 27 days. Aged against this
+     pass's attempt, the same file is stale -- and that is written down even
+     though the heartbeat sees 0h since the last check. */
+  const frozen = fileAt(T0);
+  const attempt = hoursLater(T0, STALE_PRICE_H + 1);
+  const v = decide(frozen, fileAt(T0), { attemptedAt: attempt });
+  assert.equal(v.changed, false);
+  assert.equal(v.file.pricedAt, T0, "the price never moved, so pricedAt must not");
+  assert.equal(v.file.checkedAt, T0, "a paste keeps the paste's clock");
+  assert.equal(v.file.status, "stale");
+  assert.match(v.file.staleReason, /shown the same numbers for 14 days/);
+  assert.match(v.file.staleReason, new RegExp(`since ${T0}`));
+  assert.match(v.file.staleReason, /Nothing newer than the read of/,
+    "a held read must not be described as a healthy reader");
+  assert.equal(v.write, true, "the flip to stale must reach the file");
+  /* Next pass: already stale on disk, same paste. No new write. */
+  const again = decide(v.file, fileAt(T0), { attemptedAt: hoursLater(attempt, 1) });
+  assert.equal(again.file.status, "stale");
+  assert.equal(again.write, false, "staying stale is not news");
+});
+
+test("...one hour inside the line, the same frozen board is still ok", () => {
+  const v = decide(fileAt(T0), fileAt(T0), { attemptedAt: hoursLater(T0, STALE_PRICE_H - 1) });
+  assert.equal(v.file.status, "ok");
+  assert.equal(v.file.staleReason, undefined);
+});
+
+test("...and a live board with a fresh price stays ok whatever the attempt time", () => {
+  const attempt = hoursLater(T0, STALE_PRICE_H + 1);
+  const prev = fileAt(hoursLater(attempt, -1), 4.075);
+  const live = fileAt(attempt, 4.125);   /* read this pass, price moved */
+  const v = decide(prev, live, { attemptedAt: attempt });
+  assert.equal(v.changed, true);
+  assert.equal(v.file.status, "ok");
+  /* unchanged but priced an hour ago, read this pass */
+  const quiet = decide(v.file, fileAt(hoursLater(attempt, 1), 4.125), { attemptedAt: hoursLater(attempt, 1) });
+  assert.equal(quiet.file.status, "ok");
+});
+
+test("...without an attempt time, age falls back to checkedAt", () => {
+  const frozen = fileAt(T0);
+  const v = decide(frozen, fileAt(T0));
+  assert.equal(v.file.status, "ok", "no attempt time: checkedAt - pricedAt = 0");
+  const bad = decide(frozen, fileAt(T0), { attemptedAt: "not a date" });
+  assert.equal(bad.file.status, "ok", "an unreadable attempt time falls back too");
 });
 
 test("A FUTURE-DATED checkedAt WRITES rather than suppressing forever", () => {
