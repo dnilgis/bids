@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-11-20T21:25:28Z",
+ "generated": "2026-11-20T21:27:43Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
    "rows": 25151,
-   "boards": 787,
-   "generated": "2026-11-20T21:10:40.358Z"
+   "boards": 859,
+   "generated": "2026-11-20T21:20:36.210Z"
   },
   "barchart": {
    "rows": 0,
@@ -128,23 +128,23 @@
  },
  "dropped": {
   "scrape": {
-   "refused: price is 264.7h old, past the 14h withdrawal": 1,
+   "refused: price is 264.8h old, past the 14h withdrawal": 1,
    "leftover board file from a retired or disabled source": 34,
    "broken: price is 501.6h old, past the 14h withdrawal": 9,
-   "broken: price is 477.9h old, past the 14h withdrawal": 1,
-   "broken: price is 76.4h old, past the 14h withdrawal": 10,
+   "broken: price is 478.0h old, past the 14h withdrawal": 1,
+   "broken: price is 76.5h old, past the 14h withdrawal": 10,
    "inMerge is false on the source": 1,
    "refused: price is 857.1h old, past the 14h withdrawal": 1,
-   "broken: price is 1032.4h old, past the 14h withdrawal": 1,
-   "skipped: price is 1170.9h old, past the 14h withdrawal": 15,
-   "skipped: price is 1880.4h old, past the 14h withdrawal": 1,
+   "broken: price is 1032.5h old, past the 14h withdrawal": 1,
+   "skipped: price is 1171.0h old, past the 14h withdrawal": 15,
+   "skipped: price is 1880.5h old, past the 14h withdrawal": 1,
    "refused: price is 456.1h old, past the 14h withdrawal": 1,
-   "refused: price is 939.4h old, past the 14h withdrawal": 1,
+   "refused: price is 939.5h old, past the 14h withdrawal": 1,
    "refused: price is 1220.8h old, past the 14h withdrawal": 1,
    "refused: price is 1441.1h old, past the 14h withdrawal": 1,
    "broken: price is 1346.7h old, past the 14h withdrawal": 1,
-   "broken: price is 26.2h old, past the 14h withdrawal": 7,
-   "broken: price is 26.7h old, past the 14h withdrawal": 1,
+   "broken: price is 26.3h old, past the 14h withdrawal": 7,
+   "broken: price is 26.8h old, past the 14h withdrawal": 1,
    "broken: price is 1581.7h old, past the 14h withdrawal": 1,
    "broken: price is 896.3h old, past the 14h withdrawal": 1,
    "refused: price is 1806.1h old, past the 14h withdrawal": 1
@@ -624,8 +624,8 @@
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 2189,
-  "unchanged": 0,
+  "written": 2188,
+  "unchanged": 1,
   "orphaned": [
    "adm-buffalo-ny-a07d4136.json",
    "adm-clinton-ia-31cca9a2.json",
@@ -1047,9 +1047,26 @@
      "delivery": "15 Oct 2027 to 15 Dec 2027"
     }
    },
-   "now": {},
+   "now": {
+    "wheat": {
+     "cash": 7.0425,
+     "basis": 1.3,
+     "basisCents": 130,
+     "period": "2026-09/2026-11",
+     "commodity": "Wheat SRW",
+     "delivery": "01 Sep 2026 to 30 Nov 2026"
+    },
+    "corn": {
+     "cash": 5.595,
+     "basis": 1.25,
+     "basisCents": 125,
+     "period": "2026-10/2026-12",
+     "commodity": "Corn Yellow",
+     "delivery": "16 Oct 2026 to 01 Dec 2026"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:40:38.377Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Adell Cooperative||Adell|WI",
@@ -1537,9 +1554,26 @@
      "delivery": "July '27 (2027-07)"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 4.225,
+     "basis": -0.12,
+     "basisCents": -12,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "November '26 (2026-12)"
+    },
+    "soybeans": {
+     "cash": 12.1075,
+     "basis": -0.1,
+     "basisCents": -10,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "November '26 (2027-01)"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:40:38.377Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Carman|IL",
@@ -2147,16 +2181,7 @@
      "delivery": "April 2027 (2027-05)"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 12.3075,
-     "basis": 0.1,
-     "basisCents": 10,
-     "period": "newcrop-2026",
-     "commodity": "Soybeans",
-     "delivery": "New Crop 26 (2027-01)"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T19:30:29.977Z",
    "checkedAt": "2026-11-20T21:10:40.358Z"
   },
@@ -2941,7 +2966,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Helena|AR",
@@ -3029,7 +3054,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:20:28.792Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Henderson|KY",
@@ -3251,7 +3276,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Hoopeston|IL",
@@ -4410,7 +4435,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Memphis|TN",
@@ -5148,7 +5173,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Newburgh|IN",
@@ -6658,7 +6683,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Sullivan|IL",
@@ -7126,7 +7151,7 @@
      "delivery": "June 27 Corn (2027-07)"
     },
     "wheat": {
-     "cash": 7.995,
+     "cash": 7.9925,
      "basis": 1.48,
      "basisCents": 148,
      "period": "2028-07",
@@ -7152,8 +7177,8 @@
      "delivery": "July 27 Wheat (2027-07)"
     }
    },
-   "pricedAt": "2026-11-20T21:10:40.358Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM||Winona|MN",
@@ -7446,7 +7471,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM|Broadway|Evansville|IN",
@@ -9016,7 +9041,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ADM|Wheat Milling|Mendota|IL",
@@ -9344,7 +9369,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Cannon Falls|MN",
@@ -9419,7 +9444,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Elgin|MN",
@@ -9494,7 +9519,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Eyota|MN",
@@ -9569,7 +9594,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Goodhue|MN",
@@ -9644,7 +9669,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Lake City|MN",
@@ -9719,7 +9744,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Lewiston|MN",
@@ -9794,7 +9819,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Pine Island|MN",
@@ -9869,7 +9894,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Red Wing|MN",
@@ -9940,7 +9965,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Stewartville|MN",
@@ -10015,7 +10040,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Traverse|MN",
@@ -10090,7 +10115,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Viola|MN",
@@ -10165,7 +10190,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Partners Cooperative||Wanamingo|MN",
@@ -10240,7 +10265,7 @@
     }
    },
    "pricedAt": "2026-11-20T20:50:29.358Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Plus, Inc||Churubusco|IN",
@@ -10650,7 +10675,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Valley Co-op||Eustis|NE",
@@ -10753,7 +10778,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Valley Co-op||Hershey|NE",
@@ -10839,7 +10864,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Valley Co-op||Logan|NE",
@@ -10889,7 +10914,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Valley Co-op||Maywood|NE",
@@ -11009,7 +11034,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag Valley Co-op||North Platte|NE",
@@ -11095,7 +11120,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Ag-Land FS||Alto|IL",
@@ -19166,7 +19191,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||AUBURNDALE|WI",
@@ -19234,7 +19259,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||BLAIR|WI",
@@ -19302,7 +19327,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||Clintonville|WI",
@@ -19370,7 +19395,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||HIXTON|WI",
@@ -19438,7 +19463,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||MAUSTON|WI",
@@ -19523,7 +19548,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||SEYMOUR|WI",
@@ -19591,7 +19616,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||STRATFORD|WI",
@@ -19659,7 +19684,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||TOMAH|WI",
@@ -19727,7 +19752,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||WEST SALEM|WI",
@@ -19795,7 +19820,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Allied Cooperative||WISC RAPIDS|WI",
@@ -19881,7 +19906,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "American Plains Co-op - Cash Bid Include||Dundee|KS",
@@ -21152,7 +21177,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Assumption Coop||Assumption Facility|IL",
@@ -22111,7 +22136,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Aurora Cooperative||Geneva|NE",
@@ -23674,9 +23699,9 @@
    ],
    "best": {
     "corn": {
-     "cash": 3.995,
-     "basis": -0.35,
-     "basisCents": -35,
+     "cash": 3.655,
+     "basis": -0.69,
+     "basisCents": -69,
      "period": "spot",
      "commodity": "Corn",
      "delivery": "Cash"
@@ -23690,17 +23715,17 @@
      "delivery": "Cash"
     },
     "sorghum": {
-     "cash": 3.245,
-     "basis": -1.1,
-     "basisCents": -110,
+     "cash": 2.845,
+     "basis": -1.5,
+     "basisCents": -150,
      "period": "spot",
      "commodity": "Milo",
      "delivery": "Cash"
     },
     "soybeans": {
-     "cash": 12.1275,
-     "basis": -0.08,
-     "basisCents": -8,
+     "cash": 11.8875,
+     "basis": -0.32,
+     "basisCents": -32,
      "period": "spot",
      "commodity": "Soybeans",
      "delivery": "Cash"
@@ -23708,9 +23733,9 @@
    },
    "now": {
     "corn": {
-     "cash": 3.995,
-     "basis": -0.35,
-     "basisCents": -35,
+     "cash": 3.655,
+     "basis": -0.69,
+     "basisCents": -69,
      "period": "spot",
      "commodity": "Corn",
      "delivery": "Cash"
@@ -23724,24 +23749,24 @@
      "delivery": "Cash"
     },
     "sorghum": {
-     "cash": 3.245,
-     "basis": -1.1,
-     "basisCents": -110,
+     "cash": 2.845,
+     "basis": -1.5,
+     "basisCents": -150,
      "period": "spot",
      "commodity": "Milo",
      "delivery": "Cash"
     },
     "soybeans": {
-     "cash": 12.1275,
-     "basis": -0.08,
-     "basisCents": -8,
+     "cash": 11.8875,
+     "basis": -0.32,
+     "basisCents": -32,
      "period": "spot",
      "commodity": "Soybeans",
      "delivery": "Cash"
     }
    },
-   "pricedAt": "2026-11-20T21:10:40.358Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Beardsley Equity Coop||Beardsley|KS",
@@ -23916,7 +23941,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Big River Resources||Galva|IL",
@@ -24051,7 +24076,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Boerboom Ag Resources||Marshall|MN",
@@ -24203,7 +24228,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Border Ag & Energy||Kramer|ND",
@@ -24277,7 +24302,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Border Ag & Energy||Lansford|ND",
@@ -24351,7 +24376,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Border Ag & Energy||Russell|ND",
@@ -24445,7 +24470,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Border Ag & Energy||Souris|ND",
@@ -24519,7 +24544,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Border Ag & Energy||Westhope|ND",
@@ -24593,7 +24618,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bowling Green Farms||Bowling Green|ON",
@@ -25090,7 +25115,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Cairo|IL",
@@ -25144,7 +25169,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Chester|MT",
@@ -25197,7 +25222,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Council Bluffs|IA",
@@ -25253,7 +25278,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Decatur|AL",
@@ -25305,7 +25330,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Decatur|IN",
@@ -25377,7 +25402,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Delphos|OH",
@@ -25580,7 +25605,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Indianapolis|IN",
@@ -25631,7 +25656,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Kintyre Flats|MT",
@@ -25720,7 +25745,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||McLeansboro|IL",
@@ -25794,7 +25819,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Morristown|IN",
@@ -25904,7 +25929,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge||Tunis|MT",
@@ -25957,7 +25982,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Bunge|bunge-griggsville-il|Griggsville|IL",
@@ -26580,7 +26605,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cash Bid JSI Site - Ag State||A.C.|IA",
@@ -28551,7 +28576,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Esmond Elevator|ND",
@@ -28638,7 +28663,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Fessenden|ND",
@@ -28725,7 +28750,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Hamberg|ND",
@@ -28812,7 +28837,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Harlow|ND",
@@ -28882,7 +28907,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Leeds|ND",
@@ -28952,7 +28977,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Maddock Elevator|ND",
@@ -29039,7 +29064,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||New Rockford Elevator|ND",
@@ -29126,7 +29151,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Oberon|ND",
@@ -29196,7 +29221,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CenDak Cooperative||Sheyenne|ND",
@@ -29283,7 +29308,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Central Commodities||St. Joseph|MO",
@@ -29476,7 +29501,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Central Farmers Cooperative||Canova|SD",
@@ -33653,7 +33678,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Beltrami|MN",
@@ -33740,7 +33765,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Callaway|MN",
@@ -33827,7 +33852,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Crookston Terminal|MN",
@@ -33914,7 +33939,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Erskine|MN",
@@ -34001,7 +34026,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Greenbush|MN",
@@ -34071,7 +34096,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Grygla|MN",
@@ -34141,7 +34166,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Hazel|MN",
@@ -34228,7 +34253,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Mahnomen|MN",
@@ -34315,7 +34340,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Oklee|MN",
@@ -34402,7 +34427,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Roseau|MN",
@@ -34472,7 +34497,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Ulen|MN",
@@ -34559,7 +34584,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Ag Services||Warren|MN",
@@ -34647,7 +34672,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Big Sky||Havre|MT",
@@ -34700,7 +34725,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Big Sky||Kershaw|",
@@ -34753,7 +34778,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Big Sky||Shelby|MT",
@@ -34806,7 +34831,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Brandon (South Dakota/Minnesota)||Brandon|SD",
@@ -35591,7 +35616,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Dakota Plains Ag||Edgeley|ND",
@@ -35683,7 +35708,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Dakota Plains Ag||Galchutt|ND",
@@ -35774,7 +35799,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Dakota Plains Ag||Gwinner|ND",
@@ -35865,7 +35890,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Dakota Plains Ag||Harwood|ND",
@@ -35956,7 +35981,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Dakota Plains Ag||Kindred Terminal|ND",
@@ -36047,7 +36072,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Devils Lake (North Dakota)||Hannaford|ND",
@@ -36134,7 +36159,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Drayton||Cavalier|ND",
@@ -36223,7 +36248,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Drayton||Drayton|ND",
@@ -36312,7 +36337,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Drayton||Glasston|ND",
@@ -36401,7 +36426,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Drayton||Kennedy|MN",
@@ -36490,7 +36515,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Drayton||Manvel|ND",
@@ -36579,7 +36604,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Farmers Alliance||Mitchell|SD",
@@ -36798,7 +36823,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Farmers Elevator (Montana)||Macon|MT",
@@ -36849,7 +36874,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Chokio|MN",
@@ -37094,7 +37119,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Glenwood|MN",
@@ -37188,7 +37213,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Herman|MN",
@@ -37282,7 +37307,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Long Prairie|MN",
@@ -37376,7 +37401,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Lowry|MN",
@@ -37470,7 +37495,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Herman||Morris|MN",
@@ -37718,7 +37743,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS High Plains||Akron|CO",
@@ -40615,7 +40640,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Blunt|SD",
@@ -40702,7 +40727,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Dupree|SD",
@@ -40792,7 +40817,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Fairfax|SD",
@@ -40880,7 +40905,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Gettysburg|SD",
@@ -40970,7 +40995,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Isabel|SD",
@@ -41060,7 +41085,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Onida|SD",
@@ -41147,7 +41172,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Philip|SD",
@@ -41217,7 +41242,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Pierre|SD",
@@ -41305,7 +41330,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Selby|SD",
@@ -41395,7 +41420,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Strasburg|ND",
@@ -41485,7 +41510,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Plains||Winner|SD",
@@ -41591,7 +41616,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS River Terminals & Processing Plants||Absolute Energy|IA",
@@ -42197,7 +42222,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS South Central (North Dakota)||Sterling|ND",
@@ -42284,7 +42309,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Southwest Grain (North Dakota/South Dakota)||New Salem|ND",
@@ -42371,7 +42396,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Sun Basin Growers|Bruce Elevator|Othello|WA",
@@ -42439,7 +42464,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Sun Basin Growers|Connell Elevator|Connell|WA",
@@ -42490,7 +42515,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Sun Basin Growers|Kennewick/LoMo|Kennewick (Kennewick site) and Kahlotus (Lower Monumental / Lo-Mo site) — two separate facilities under one bid label|WA",
@@ -42541,7 +42566,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Sun Basin Growers|Quincy Elevator|Quincy|WA",
@@ -42609,7 +42634,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Sun Basin Growers|Wheeler Elevator ML|Moses Lake|WA",
@@ -42677,7 +42702,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "CHS Texoma (Oklahoma/Texas)||Frederick|OK",
@@ -53868,7 +53893,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Bladen|NE",
@@ -53970,7 +53995,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Bloomington|NE",
@@ -54037,7 +54062,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Campbell|NE",
@@ -54122,7 +54147,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Fairmont|NE",
@@ -54189,7 +54214,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Franklin|NE",
@@ -54291,7 +54316,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Funk|NE",
@@ -54376,7 +54401,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Giltner|NE",
@@ -54460,7 +54485,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Hansen|NE",
@@ -54527,7 +54552,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Hastings|NE",
@@ -54629,7 +54654,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Hildreth|NE",
@@ -54714,7 +54739,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Holstein|NE",
@@ -54799,7 +54824,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Juniata|NE",
@@ -54884,7 +54909,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Minden|NE",
@@ -54969,7 +54994,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Ragan|NE",
@@ -55053,7 +55078,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Red Cloud|NE",
@@ -55155,7 +55180,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Republican City|NE",
@@ -55240,7 +55265,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Roseland|NE",
@@ -55307,7 +55332,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Ruskin|NE",
@@ -55409,7 +55434,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Sutton|NE",
@@ -55476,7 +55501,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Trumbull|NE",
@@ -55560,7 +55585,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Wilcox|NE",
@@ -55662,7 +55687,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cooperative Producers, Inc.||Wood River|NE",
@@ -55729,7 +55754,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cornerstone Ag LLC||Colby|KS",
@@ -55890,7 +55915,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Partners Cooperative||AGP-David City|NE",
@@ -56313,7 +56338,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Partners Cooperative||Gothenburg|NE",
@@ -56405,7 +56430,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Partners Cooperative||Green America-Ord|NE",
@@ -56830,7 +56855,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||Chilton|WI",
@@ -56914,7 +56939,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||KIEL|WI",
@@ -56998,7 +57023,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||MISHICOT|WI",
@@ -57081,7 +57106,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||Random Lake|WI",
@@ -57165,7 +57190,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||READFIELD|WI",
@@ -57252,7 +57277,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||Valders|WI",
@@ -57336,7 +57361,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Country Visions Cooperative||WHITELAW|WI",
@@ -57402,7 +57427,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Crossroads Coop||BRIDGEPORT|NE",
@@ -57528,7 +57553,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Cushing Cooperative Society||Cushing Coop|WI",
@@ -57737,7 +57762,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Dakota Mill & Grain||Belle Fourche|SD",
@@ -58801,32 +58826,7 @@
      "delivery": "Cash"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.74,
-     "basis": -0.6,
-     "basisCents": -60,
-     "period": "spot",
-     "commodity": "Corn",
-     "delivery": "CASH"
-    },
-    "soybeans": {
-     "cash": 11.26,
-     "basis": -0.95,
-     "basisCents": -95,
-     "period": "spot",
-     "commodity": "Soybeans",
-     "delivery": "Cash"
-    },
-    "wheat": {
-     "cash": 4.74,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "spot",
-     "commodity": "Wheat",
-     "delivery": "Cash"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T19:30:29.977Z",
    "checkedAt": "2026-11-20T21:10:40.358Z"
   },
@@ -60963,7 +60963,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Encompass Grain||Delavan|IL",
@@ -65408,7 +65408,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Avon|SD",
@@ -65477,7 +65477,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Battle Creek|NE",
@@ -65546,7 +65546,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Bloomfield|NE",
@@ -65615,7 +65615,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Neligh-Oakdale|NE",
@@ -65684,7 +65684,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Newman Grove|NE",
@@ -65753,7 +65753,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Pride Coop||Osmond|NE",
@@ -65822,7 +65822,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Farmers Union Cooperative Company||Farmers Union Coop|NE",
@@ -69724,7 +69724,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Brewster|KS",
@@ -69809,7 +69809,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Goodland|KS",
@@ -69911,7 +69911,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Grinnell|KS",
@@ -69996,7 +69996,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Hill City|KS",
@@ -70081,7 +70081,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Kanorado|KS",
@@ -70183,7 +70183,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Menlo|KS",
@@ -70285,7 +70285,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Mingo|KS",
@@ -70387,7 +70387,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Morland/Studley|KS",
@@ -70489,7 +70489,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Oakley|KS",
@@ -70591,7 +70591,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Page City|KS",
@@ -70676,7 +70676,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Penokee|KS",
@@ -70726,7 +70726,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Quinter/Collyer|KS",
@@ -70828,7 +70828,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Ransom/Arnold/Utica|KS",
@@ -70913,7 +70913,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Rexford|KS",
@@ -71015,7 +71015,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Ag||Wakeeney|KS",
@@ -71100,7 +71100,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Frontier Cooperative||Adams|NE",
@@ -75221,7 +75221,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Garden City Coo-op||Alamota Elevator|KS",
@@ -76768,9 +76768,9 @@
    },
    "now": {
     "corn": {
-     "cash": 4.17,
-     "basis": -0.17,
-     "basisCents": -17,
+     "cash": 4.18,
+     "basis": -0.16,
+     "basisCents": -16,
      "period": "2026-11",
      "commodity": "Corn",
      "delivery": "November 2026"
@@ -76792,8 +76792,8 @@
      "delivery": "November 2026"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Gateway FS||Oakdale|IL",
@@ -76854,9 +76854,9 @@
    },
    "now": {
     "corn": {
-     "cash": 4.15,
-     "basis": -0.19,
-     "basisCents": -19,
+     "cash": 4.16,
+     "basis": -0.18,
+     "basisCents": -18,
      "period": "2026-11",
      "commodity": "Corn",
      "delivery": "November 2026"
@@ -76878,8 +76878,8 @@
      "delivery": "November 2026"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Gateway FS||Percy|IL",
@@ -77198,9 +77198,9 @@
    },
    "now": {
     "corn": {
-     "cash": 4.17,
-     "basis": -0.17,
-     "basisCents": -17,
+     "cash": 4.18,
+     "basis": -0.16,
+     "basisCents": -16,
      "period": "2026-11",
      "commodity": "Corn",
      "delivery": "November 2026"
@@ -77222,8 +77222,8 @@
      "delivery": "November 2026"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Gateway FS||Waltonville|IL",
@@ -77284,9 +77284,9 @@
    },
    "now": {
     "corn": {
-     "cash": 4.07,
-     "basis": -0.27,
-     "basisCents": -27,
+     "cash": 4.08,
+     "basis": -0.26,
+     "basisCents": -26,
      "period": "2026-11",
      "commodity": "Corn",
      "delivery": "November 2026"
@@ -77308,8 +77308,8 @@
      "delivery": "November 2026"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Gateway FS||Waterloo|IL",
@@ -77542,9 +77542,9 @@
    },
    "now": {
     "corn": {
-     "cash": 4.15,
-     "basis": -0.19,
-     "basisCents": -19,
+     "cash": 4.16,
+     "basis": -0.18,
+     "basisCents": -18,
      "period": "2026-11",
      "commodity": "Corn",
      "delivery": "November 2026"
@@ -77566,8 +77566,8 @@
      "delivery": "November 2026"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Gateway FS|Kempers|Fults|IL",
@@ -79792,7 +79792,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Hartsburg Grain Company||Hartsburg|IL",
@@ -82842,7 +82842,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Heritage Coop||Ada|OH",
@@ -89785,7 +89785,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||ANNESS|KS",
@@ -89835,7 +89835,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||ANTRIM|KS",
@@ -89936,7 +89936,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||BELMONT|KS",
@@ -90037,7 +90037,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Byers|KS",
@@ -90138,7 +90138,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||CCGP|KS",
@@ -90205,7 +90205,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Cheney|KS",
@@ -90306,7 +90306,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||CLONMEL|KS",
@@ -90407,7 +90407,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Coats|KS",
@@ -90508,7 +90508,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Colwich|KS",
@@ -90609,7 +90609,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||DILLWYN|KS",
@@ -90710,7 +90710,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||FURLEY|KS",
@@ -90811,7 +90811,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Garden Plain|KS",
@@ -90912,7 +90912,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Iuka|KS",
@@ -91013,7 +91013,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Norwich|KS",
@@ -91063,7 +91063,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Pratt|KS",
@@ -91164,7 +91164,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Pretty Prairie|KS",
@@ -91214,7 +91214,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Rago|KS",
@@ -91263,7 +91263,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||RANDLE|KS",
@@ -91364,7 +91364,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Sedgwick|KS",
@@ -91465,7 +91465,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||St. John|KS",
@@ -91566,7 +91566,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||Stafford|KS",
@@ -91667,7 +91667,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||VARNER|KS",
@@ -91768,7 +91768,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Kanza Cooperative||ZENITH|KS",
@@ -91869,7 +91869,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "KBQ Inc.||KBQ Inc.|MN",
@@ -96037,7 +96037,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Legacy Coop||Chadron|NE",
@@ -97889,7 +97889,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Dilworth|MN",
@@ -97984,7 +97984,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Kragnes|MN",
@@ -98079,7 +98079,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Leonard|ND",
@@ -98157,7 +98157,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Lynchburg|ND",
@@ -98231,7 +98231,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Peak|ND",
@@ -98326,7 +98326,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Prosper|ND",
@@ -98400,7 +98400,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Rothsay|MN",
@@ -98495,7 +98495,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maple River Grain||Sabin|MN",
@@ -98569,7 +98569,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Maplehurst Farms||AMBOY|IL",
@@ -98731,7 +98731,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Medford Cooperative||Medford Cooperative|WI",
@@ -99781,9 +99781,26 @@
      "delivery": "Nov 26 Soybeans"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 3.66,
+     "basis": -0.68,
+     "basisCents": -68,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "Nov 26 Corn"
+    },
+    "soybeans": {
+     "cash": 11.34,
+     "basis": -0.86,
+     "basisCents": -86,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "Nov 26 Soybeans"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:40:38.377Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Michigan Agricultural Commodities||Blissfield|MI",
@@ -102701,7 +102718,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nebraska Corn Processing||Nebraska Corn Processing|NE",
@@ -102863,7 +102880,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.35,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -102871,7 +102888,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -102881,7 +102898,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -102889,7 +102906,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -102897,8 +102914,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Algona|IA",
@@ -102934,7 +102951,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -102942,7 +102959,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -102952,7 +102969,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -102960,7 +102977,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -102968,8 +102985,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Anita|IA",
@@ -103005,7 +103022,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -103013,7 +103030,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103023,7 +103040,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -103031,7 +103048,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -103039,8 +103056,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Anthon|IA",
@@ -103076,7 +103093,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -103084,7 +103101,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103094,7 +103111,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -103102,7 +103119,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -103110,8 +103127,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Badger|IA",
@@ -103147,7 +103164,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103155,7 +103172,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103165,7 +103182,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -103173,7 +103190,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103181,8 +103198,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Barnum|IA",
@@ -103218,7 +103235,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103226,7 +103243,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103236,7 +103253,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -103244,7 +103261,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103252,8 +103269,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Belmond|IA",
@@ -103289,7 +103306,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103297,7 +103314,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103307,7 +103324,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -103315,7 +103332,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103323,8 +103340,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Blairsburg|IA",
@@ -103360,7 +103377,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103368,7 +103385,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103378,7 +103395,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -103386,7 +103403,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103394,8 +103411,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Blencoe|IA",
@@ -103431,7 +103448,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -103439,7 +103456,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103449,7 +103466,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -103457,7 +103474,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -103465,8 +103482,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Bode|IA",
@@ -103502,7 +103519,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.4,
+     "cash": 4.38,
      "basis": -0.27,
      "basisCents": -27,
      "period": "2027-07",
@@ -103510,7 +103527,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103520,7 +103537,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -103528,7 +103545,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103536,8 +103553,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Britt|IA",
@@ -103573,7 +103590,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103581,7 +103598,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103591,7 +103608,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -103599,7 +103616,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103607,8 +103624,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Cainsville|MO",
@@ -103644,7 +103661,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -103652,7 +103669,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103662,7 +103679,7 @@
    },
    "now": {
     "corn": {
-     "cash": 3.94,
+     "cash": 3.92,
      "basis": -0.42,
      "basisCents": -42,
      "period": "2026-11",
@@ -103670,7 +103687,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103678,8 +103695,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Chariton|IA",
@@ -103715,7 +103732,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.33,
+     "cash": 4.31,
      "basis": -0.34,
      "basisCents": -34,
      "period": "2027-07",
@@ -103723,7 +103740,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103733,7 +103750,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -103741,7 +103758,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -103749,8 +103766,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Churdan|IA",
@@ -103786,7 +103803,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103794,7 +103811,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103804,7 +103821,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -103812,7 +103829,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103820,8 +103837,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Clare|IA",
@@ -103857,7 +103874,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -103865,7 +103882,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103875,7 +103892,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -103883,7 +103900,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -103891,8 +103908,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Clearfield|IA",
@@ -103928,7 +103945,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -103936,7 +103953,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -103946,7 +103963,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -103954,7 +103971,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -103962,8 +103979,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Cooper|IA",
@@ -103999,7 +104016,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.42,
+     "cash": 4.4,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2027-07",
@@ -104007,7 +104024,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104017,7 +104034,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -104025,7 +104042,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104033,8 +104050,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Correctionville|IA",
@@ -104070,7 +104087,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104078,7 +104095,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104088,7 +104105,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -104096,7 +104113,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -104104,8 +104121,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Creston 1|IA",
@@ -104141,7 +104158,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.33,
+     "cash": 4.31,
      "basis": -0.34,
      "basisCents": -34,
      "period": "2027-07",
@@ -104149,7 +104166,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104159,7 +104176,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -104167,7 +104184,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -104175,8 +104192,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Creston 2|IA",
@@ -104211,7 +104228,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.35,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -104221,7 +104238,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -104229,8 +104246,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Davis City|IA",
@@ -104266,7 +104283,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104274,7 +104291,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104284,7 +104301,7 @@
    },
    "now": {
     "corn": {
-     "cash": 3.98,
+     "cash": 3.96,
      "basis": -0.38,
      "basisCents": -38,
      "period": "2026-11",
@@ -104292,7 +104309,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104300,8 +104317,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Dickens|IA",
@@ -104337,7 +104354,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104345,7 +104362,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104355,7 +104372,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -104363,7 +104380,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104371,8 +104388,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Dows|IA",
@@ -104408,7 +104425,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -104416,7 +104433,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104426,7 +104443,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -104434,7 +104451,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104442,8 +104459,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Duncombe|IA",
@@ -104479,7 +104496,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.42,
+     "cash": 4.4,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2027-07",
@@ -104487,7 +104504,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104497,7 +104514,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -104505,7 +104522,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104513,8 +104530,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Essex|IA",
@@ -104550,7 +104567,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104558,7 +104575,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104568,7 +104585,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -104576,7 +104593,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -104584,8 +104601,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Everly|IA",
@@ -104621,7 +104638,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -104629,7 +104646,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104639,7 +104656,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -104647,7 +104664,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104655,8 +104672,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Fostoria|IA",
@@ -104692,7 +104709,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104700,7 +104717,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104710,7 +104727,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -104718,7 +104735,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104726,8 +104743,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Garner|IA",
@@ -104763,7 +104780,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -104771,7 +104788,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104781,7 +104798,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -104789,7 +104806,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104797,8 +104814,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Glidden|IA",
@@ -104834,7 +104851,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -104842,7 +104859,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104852,7 +104869,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -104860,7 +104877,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104868,8 +104885,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Greenville|IA",
@@ -104905,7 +104922,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104913,7 +104930,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104923,7 +104940,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -104931,7 +104948,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -104939,8 +104956,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Gruver|IA",
@@ -104976,7 +104993,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -104984,7 +105001,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -104994,7 +105011,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -105002,7 +105019,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105010,8 +105027,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Hornick|IA",
@@ -105047,7 +105064,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -105055,7 +105072,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105065,7 +105082,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -105073,7 +105090,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -105081,8 +105098,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Humboldt|IA",
@@ -105118,7 +105135,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105126,7 +105143,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105136,7 +105153,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105144,7 +105161,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105152,8 +105169,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Humeston|IA",
@@ -105189,7 +105206,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.33,
+     "cash": 4.31,
      "basis": -0.34,
      "basisCents": -34,
      "period": "2027-07",
@@ -105197,7 +105214,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105207,7 +105224,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -105215,7 +105232,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -105223,8 +105240,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Klemme|IA",
@@ -105260,7 +105277,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105268,7 +105285,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105278,7 +105295,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -105286,7 +105303,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105294,8 +105311,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Knierim|IA",
@@ -105331,7 +105348,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105339,7 +105356,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105349,7 +105366,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105357,7 +105374,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105365,8 +105382,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Knoke|IA",
@@ -105402,7 +105419,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105410,7 +105427,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105420,7 +105437,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105428,7 +105445,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105436,8 +105453,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Lamoni|IA",
@@ -105473,7 +105490,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -105481,7 +105498,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105491,7 +105508,7 @@
    },
    "now": {
     "corn": {
-     "cash": 3.98,
+     "cash": 3.96,
      "basis": -0.38,
      "basisCents": -38,
      "period": "2026-11",
@@ -105499,7 +105516,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105507,8 +105524,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Lanesboro|IA",
@@ -105544,7 +105561,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105552,7 +105569,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105562,7 +105579,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105570,7 +105587,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105578,8 +105595,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Langdon|IA",
@@ -105615,7 +105632,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -105623,7 +105640,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105633,7 +105650,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -105641,7 +105658,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105649,8 +105666,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Lanyon|IA",
@@ -105686,7 +105703,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105694,7 +105711,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105704,7 +105721,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105712,7 +105729,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105720,8 +105737,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Lidderdale|IA",
@@ -105757,7 +105774,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.4,
+     "cash": 4.38,
      "basis": -0.27,
      "basisCents": -27,
      "period": "2027-07",
@@ -105765,7 +105782,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105775,7 +105792,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105783,7 +105800,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105791,8 +105808,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Lohrville|IA",
@@ -105828,7 +105845,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105836,7 +105853,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105846,7 +105863,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -105854,7 +105871,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105862,8 +105879,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||LuVerne|IA",
@@ -105899,7 +105916,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -105907,7 +105924,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105917,7 +105934,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -105925,7 +105942,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -105933,8 +105950,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Mallard|IA",
@@ -105970,7 +105987,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -105978,7 +105995,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -105988,7 +106005,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -105996,7 +106013,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106004,8 +106021,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Mapleton|IA",
@@ -106041,7 +106058,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106049,7 +106066,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106059,7 +106076,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -106067,7 +106084,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -106075,8 +106092,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Milford|IA",
@@ -106112,7 +106129,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106120,7 +106137,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106130,7 +106147,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -106138,7 +106155,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106146,8 +106163,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Morton Mills|IA",
@@ -106183,7 +106200,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106191,7 +106208,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106201,7 +106218,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -106209,7 +106226,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -106217,8 +106234,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Mt. Ayr|IA",
@@ -106254,7 +106271,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106262,7 +106279,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106272,7 +106289,7 @@
    },
    "now": {
     "corn": {
-     "cash": 3.98,
+     "cash": 3.96,
      "basis": -0.38,
      "basisCents": -38,
      "period": "2026-11",
@@ -106280,7 +106297,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106288,8 +106305,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Onawa|IA",
@@ -106325,7 +106342,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106333,7 +106350,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106343,7 +106360,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -106351,7 +106368,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -106359,8 +106376,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Osceola|IA",
@@ -106396,7 +106413,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.35,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -106404,7 +106421,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106414,7 +106431,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -106422,7 +106439,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -106430,8 +106447,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Otho|IA",
@@ -106467,7 +106484,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -106475,7 +106492,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106485,7 +106502,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -106493,7 +106510,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106501,8 +106518,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Palmer|IA",
@@ -106538,7 +106555,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -106546,7 +106563,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106556,7 +106573,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -106564,7 +106581,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106572,8 +106589,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Pierson|IA",
@@ -106609,7 +106626,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -106617,7 +106634,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106627,7 +106644,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -106635,7 +106652,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -106643,8 +106660,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Pomeroy|IA",
@@ -106680,7 +106697,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.42,
+     "cash": 4.4,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2027-07",
@@ -106688,7 +106705,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106698,7 +106715,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -106706,7 +106723,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106714,8 +106731,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Rands|IA",
@@ -106751,7 +106768,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -106759,7 +106776,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106769,7 +106786,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -106777,7 +106794,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106785,8 +106802,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Red Oak|IA",
@@ -106822,7 +106839,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.35,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -106830,7 +106847,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106840,7 +106857,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -106848,7 +106865,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -106856,8 +106873,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Roelyn|IA",
@@ -106893,7 +106910,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -106901,7 +106918,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106911,7 +106928,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -106919,7 +106936,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106927,8 +106944,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Rowan|IA",
@@ -106964,7 +106981,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.42,
+     "cash": 4.4,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2027-07",
@@ -106972,7 +106989,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -106982,7 +106999,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -106990,7 +107007,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -106998,8 +107015,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Sloan|IA",
@@ -107035,15 +107052,15 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
-     "basis": -0.35,
-     "basisCents": -35,
-     "period": "2027-07",
+     "cash": 4.31,
+     "basis": -0.45,
+     "basisCents": -45,
+     "period": "2027-10",
      "commodity": "Corn",
-     "delivery": "01 Jul 2027 to 31 Jul 2027"
+     "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107053,7 +107070,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -107061,7 +107078,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -107069,8 +107086,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Superior|IA",
@@ -107106,7 +107123,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107114,7 +107131,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107124,7 +107141,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.04,
+     "cash": 4.02,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2026-11",
@@ -107132,7 +107149,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -107140,8 +107157,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Ute|IA",
@@ -107177,7 +107194,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107185,7 +107202,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107195,7 +107212,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -107203,7 +107220,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -107211,8 +107228,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Villisca|IA",
@@ -107248,7 +107265,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107256,7 +107273,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107266,7 +107283,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -107274,7 +107291,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.58,
+     "cash": 11.56,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2026-11",
@@ -107282,8 +107299,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Vincent|IA",
@@ -107319,7 +107336,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -107327,7 +107344,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107337,7 +107354,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.11,
+     "cash": 4.09,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -107345,7 +107362,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -107353,8 +107370,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Washta|IA",
@@ -107390,7 +107407,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107398,7 +107415,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107408,7 +107425,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -107416,7 +107433,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -107424,8 +107441,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||West Bend|IA",
@@ -107461,7 +107478,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107469,7 +107486,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107479,7 +107496,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -107487,7 +107504,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.6,
+     "cash": 11.58,
      "basis": -0.63,
      "basisCents": -63,
      "period": "2026-11",
@@ -107495,8 +107512,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Whiting|IA",
@@ -107532,7 +107549,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.32,
+     "cash": 4.31,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-10",
@@ -107540,7 +107557,7 @@
      "delivery": "01 Oct 2027 to 31 Oct 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107550,7 +107567,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.01,
+     "cash": 3.99,
      "basis": -0.35,
      "basisCents": -35,
      "period": "2026-11",
@@ -107558,7 +107575,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.53,
+     "cash": 11.51,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -107566,8 +107583,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Whittemore|IA",
@@ -107603,7 +107620,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -107611,7 +107628,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107621,7 +107638,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.09,
+     "cash": 4.07,
      "basis": -0.27,
      "basisCents": -27,
      "period": "2026-11",
@@ -107629,7 +107646,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -107637,8 +107654,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "NEW Cooperative, Inc.||Woolstock|IA",
@@ -107674,7 +107691,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.35,
+     "cash": 4.33,
      "basis": -0.32,
      "basisCents": -32,
      "period": "2027-07",
@@ -107682,7 +107699,7 @@
      "delivery": "01 Jul 2027 to 31 Jul 2027"
     },
     "soybeans": {
-     "cash": 11.71,
+     "cash": 11.69,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -107692,7 +107709,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.06,
+     "cash": 4.04,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -107700,7 +107717,7 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     },
     "soybeans": {
-     "cash": 11.55,
+     "cash": 11.53,
      "basis": -0.68,
      "basisCents": -68,
      "period": "2026-11",
@@ -107708,8 +107725,8 @@
      "delivery": "01 Nov 2026 to 30 Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T18:11:00.888Z",
-   "checkedAt": "2026-11-20T18:11:00.888Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "New Vision Co-op||ADM Mankato|MN",
@@ -108925,7 +108942,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||AGP Eagle Grove, IA|IA",
@@ -108978,7 +108995,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||AGP Manning, IA|IA",
@@ -109031,7 +109048,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||AGP Mason City, IA|IA",
@@ -109084,7 +109101,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Alden, MN|MN",
@@ -109160,7 +109177,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Blooming Prairie, MN|MN",
@@ -109236,7 +109253,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Brownsdale, MN|MN",
@@ -109295,7 +109312,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Cargill Iowa Falls, IA|IA",
@@ -109424,7 +109441,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Chapin, IA|IA",
@@ -109500,7 +109517,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Denison, IA|IA",
@@ -109576,7 +109593,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Dewar, IA|IA",
@@ -109652,7 +109669,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Elgin, IA|IA",
@@ -109728,7 +109745,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Emmons, MN|MN",
@@ -109804,7 +109821,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Harlan, IA|IA",
@@ -109880,7 +109897,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Lansing, MN|MN",
@@ -109956,7 +109973,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Leroy, MN|MN",
@@ -110032,7 +110049,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||London, MN|MN",
@@ -110108,7 +110125,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Manly, IA|IA",
@@ -110184,7 +110201,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Marble Rock, IA|IA",
@@ -110260,7 +110277,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Minnesota Lake|MN",
@@ -110336,7 +110353,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Northwood, IA|IA",
@@ -110412,7 +110429,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Oakland, MN|MN",
@@ -110488,7 +110505,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Oelwein, IA|IA",
@@ -110564,7 +110581,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Poet Fairbank, IA|IA",
@@ -110697,7 +110714,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Rose Creek, MN|MN",
@@ -110756,7 +110773,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Rudd, IA|IA",
@@ -110832,7 +110849,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Shellrock, IA|IA",
@@ -110885,7 +110902,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Stacyville, IA|IA",
@@ -110961,7 +110978,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Sumner, IA|IA",
@@ -111037,7 +111054,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Toeterville, IA|IA",
@@ -111113,7 +111130,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Valero Charles City, IA|IA",
@@ -111170,7 +111187,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Nexus Cooperative||Wells|MN",
@@ -111246,7 +111263,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Niewohner Farms||Albion|NE",
@@ -111526,7 +111543,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "North Iowa Cooperative||Clear Lake|IA",
@@ -111912,7 +111929,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Northside Elevator, Inc.||Loyal|WI",
@@ -112004,7 +112021,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Northwood Equity Elevator||Hatton|ND",
@@ -113057,9 +113074,26 @@
      "delivery": "JUNE  2027"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 3.95,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "NOVEMBER 2026"
+    },
+    "soybeans": {
+     "cash": 11.46,
+     "basis": -0.75,
+     "basisCents": -75,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "NOVEMBER 2026"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Pawnee Co. Cooperative Association||Larned|KS",
@@ -115045,16 +115079,16 @@
    },
    "now": {
     "corn": {
-     "cash": 4.18,
-     "basis": -0.16,
-     "basisCents": -16,
+     "cash": 4.22,
+     "basis": -0.12,
+     "basisCents": -12,
      "period": "2026-10/2026-11",
      "commodity": "Corn",
      "delivery": "October/November 2026 (2026-12)"
     }
    },
-   "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T21:10:40.358Z"
+   "pricedAt": "2026-11-20T21:20:36.210Z",
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "POET Grain||Mitchell|SD",
@@ -115886,7 +115920,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Prairie Grain Partners||Boyd|MN",
@@ -115957,7 +115991,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Cooperative - IL||Broadlands|IL",
@@ -117377,7 +117411,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Cooperative||Mineral Point|WI",
@@ -117448,7 +117482,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Cooperative||New Albin|IA",
@@ -117503,7 +117537,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Cooperative||Ossian|IA",
@@ -117720,7 +117754,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Cooperative||Shell Rock Soy|IA",
@@ -117975,7 +118009,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Premier Grain, LLC||Jamestown|OH",
@@ -120720,7 +120754,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Riceland Foods||Corning|AR",
@@ -121435,7 +121469,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Country Co-op||Athens|WI",
@@ -122011,7 +122045,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||ADM - Clinton|IA",
@@ -122071,7 +122105,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||ADM- Creve Coeur|IL",
@@ -122143,7 +122177,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||ALTO ICP|IL",
@@ -122196,7 +122230,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Big River - Dyersville|IA",
@@ -122254,7 +122288,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Bradford|IL",
@@ -122328,7 +122362,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||CGB-Hennepin|IL",
@@ -122400,7 +122434,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Dewitt|IA",
@@ -122474,7 +122508,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Donahue|IA",
@@ -122531,7 +122565,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Marquis Energy|IL",
@@ -122587,7 +122621,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Martelle|IA",
@@ -122661,7 +122695,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Olin|IA",
@@ -122735,7 +122769,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Princeville|IL",
@@ -122809,7 +122843,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Putnam|IL",
@@ -122883,7 +122917,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Ryan|IA",
@@ -122957,7 +122991,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Speer|IL",
@@ -123031,7 +123065,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Valley|IL",
@@ -123105,7 +123139,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "River Valley Cooperative||Wyoming|IL",
@@ -123179,7 +123213,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Roggen Farmers Elevator Association||Roggen Elevator - Main Office|CO",
@@ -123484,7 +123518,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Sandhills Renewable Energy, LLC||Sandhills Renewable Energy, LLC|NE",
@@ -124978,7 +125012,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "ScoularView||Butterfield|MO",
@@ -128089,7 +128123,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "St. Ansgar Mills||St. Ansgar Mills, Inc|IA",
@@ -128298,9 +128332,34 @@
      "delivery": "July 2027"
     }
    },
-   "now": {},
+   "now": {
+    "soybeans": {
+     "cash": 11.8075,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "newcrop-2026",
+     "commodity": "Beans",
+     "delivery": "Fall 2026"
+    },
+    "corn": {
+     "cash": 4.045,
+     "basis": -0.3,
+     "basisCents": -30,
+     "period": "newcrop-2026",
+     "commodity": "Corn",
+     "delivery": "Fall 2026"
+    },
+    "wheat": {
+     "cash": 5.4125,
+     "basis": -0.65,
+     "basisCents": -65,
+     "period": "2027-07",
+     "commodity": "Wheat",
+     "delivery": "July 2027"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Starke County Co-op||Brems|IN",
@@ -131057,7 +131116,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "The Andersons||Delphi|IN",
@@ -131291,7 +131350,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "The Andersons||Greenville|OH",
@@ -131529,7 +131588,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "The Andersons||Metamora|OH",
@@ -131796,7 +131855,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "The Andersons||Port William|OH",
@@ -131971,7 +132030,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "The Andersons||Standish|MI",
@@ -132816,40 +132875,7 @@
      "delivery": "NC 27 Wheat"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.19,
-     "basis": -0.15,
-     "basisCents": -15,
-     "period": "newcrop-2026",
-     "commodity": "Corn",
-     "delivery": "NC Corn 26"
-    },
-    "sorghum": {
-     "cash": 3.69,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "newcrop-2026",
-     "commodity": "Milo",
-     "delivery": "NC Milo 26"
-    },
-    "soybeans": {
-     "cash": 10.81,
-     "basis": -0.9,
-     "basisCents": -90,
-     "period": "newcrop-2027",
-     "commodity": "Soybeans",
-     "delivery": "NC Soybeans 27"
-    },
-    "wheat": {
-     "cash": 5.92,
-     "basis": -0.55,
-     "basisCents": -55,
-     "period": "newcrop-2027",
-     "commodity": "Wheat",
-     "delivery": "NC 27 Wheat"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T19:30:29.977Z",
    "checkedAt": "2026-11-20T21:10:40.358Z"
   },
@@ -136266,7 +136292,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "United Equity,Inc.||NEPTUNE|OH",
@@ -136333,7 +136359,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "United Equity,Inc.||SPENCERVILLE|OH",
@@ -136400,7 +136426,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "United Wisconsin Grain Producers||Friesland|WI",
@@ -137257,7 +137283,7 @@
     }
    },
    "pricedAt": "2026-11-20T19:41:43.411Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Waukon Feed Ranch||Waukon|IA",
@@ -137990,9 +138016,26 @@
      "delivery": "January"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 3.67,
+     "basis": -0.67,
+     "basisCents": -67,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "November"
+    },
+    "soybeans": {
+     "cash": 11.35,
+     "basis": -0.85,
+     "basisCents": -85,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "November"
+    }
+   },
    "pricedAt": "2026-11-20T19:30:29.977Z",
-   "checkedAt": "2026-11-20T20:50:29.358Z"
+   "checkedAt": "2026-11-20T21:20:36.210Z"
   },
   {
    "place": "Whitewater Milling LLC||Whitewater Milling|MN",
