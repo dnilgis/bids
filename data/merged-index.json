@@ -1,12 +1,12 @@
 {
  "schema": "agsist-merged-index/1",
- "generated": "2026-11-20T14:16:41Z",
+ "generated": "2026-11-20T14:29:04Z",
  "note": "One row per elevator, crop, delivery period and commodity label. `commodity` and `delivery` are the board's own words, never rewritten. `crop` and `period` are derived here so a consumer can group like with like — `periodVia` says how each period was arrived at, and an inferred year says so. Nothing is averaged. Rows that could not be read are dropped and counted under `dropped`, never quietly omitted.",
  "sources": {
   "scrape": {
    "rows": 25140,
-   "boards": 2114,
-   "generated": "2026-11-20T14:10:34.665Z"
+   "boards": 2074,
+   "generated": "2026-11-20T14:20:32.636Z"
   },
   "barchart": {
    "rows": 0,
@@ -128,26 +128,26 @@
  },
  "dropped": {
   "scrape": {
-   "refused: price is 257.6h old, past the 14h withdrawal": 1,
+   "refused: price is 257.8h old, past the 14h withdrawal": 1,
    "leftover board file from a retired or disabled source": 34,
-   "broken: price is 494.4h old, past the 14h withdrawal": 9,
-   "refused: price is 470.8h old, past the 14h withdrawal": 1,
-   "broken: price is 69.3h old, past the 14h withdrawal": 10,
+   "broken: price is 494.6h old, past the 14h withdrawal": 9,
+   "refused: price is 471.0h old, past the 14h withdrawal": 1,
+   "broken: price is 69.5h old, past the 14h withdrawal": 10,
    "inMerge is false on the source": 1,
-   "refused: price is 849.9h old, past the 14h withdrawal": 1,
-   "refused: price is 1025.3h old, past the 14h withdrawal": 1,
-   "skipped: price is 1163.8h old, past the 14h withdrawal": 15,
-   "skipped: price is 1873.3h old, past the 14h withdrawal": 1,
-   "refused: price is 448.9h old, past the 14h withdrawal": 1,
-   "refused: price is 932.3h old, past the 14h withdrawal": 1,
-   "refused: price is 1213.6h old, past the 14h withdrawal": 1,
-   "refused: price is 1433.9h old, past the 14h withdrawal": 1,
-   "refused: price is 1339.5h old, past the 14h withdrawal": 1,
-   "broken: price is 19.1h old, past the 14h withdrawal": 7,
-   "broken: price is 19.6h old, past the 14h withdrawal": 1,
-   "refused: price is 1574.6h old, past the 14h withdrawal": 1,
-   "refused: price is 889.1h old, past the 14h withdrawal": 1,
-   "refused: price is 1798.9h old, past the 14h withdrawal": 1
+   "refused: price is 850.1h old, past the 14h withdrawal": 1,
+   "refused: price is 1025.5h old, past the 14h withdrawal": 1,
+   "skipped: price is 1164.0h old, past the 14h withdrawal": 15,
+   "skipped: price is 1873.5h old, past the 14h withdrawal": 1,
+   "refused: price is 449.1h old, past the 14h withdrawal": 1,
+   "refused: price is 932.5h old, past the 14h withdrawal": 1,
+   "refused: price is 1213.8h old, past the 14h withdrawal": 1,
+   "refused: price is 1434.1h old, past the 14h withdrawal": 1,
+   "broken: price is 1339.7h old, past the 14h withdrawal": 1,
+   "broken: price is 19.3h old, past the 14h withdrawal": 7,
+   "broken: price is 19.8h old, past the 14h withdrawal": 1,
+   "refused: price is 1574.8h old, past the 14h withdrawal": 1,
+   "refused: price is 889.3h old, past the 14h withdrawal": 1,
+   "refused: price is 1799.1h old, past the 14h withdrawal": 1
   },
   "barchart": {},
   "guards": {
@@ -631,8 +631,8 @@
  "facilitiesNotYetInDirectory": [],
  "shards": {
   "dir": "data/merged",
-  "written": 2189,
-  "unchanged": 0,
+  "written": 2188,
+  "unchanged": 1,
   "orphaned": [
    "adm-buffalo-ny-a07d4136.json",
    "adm-clinton-ia-31cca9a2.json",
@@ -4659,7 +4659,40 @@
      "delivery": "New Crop Milo (2026-12)"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 4.6175,
+     "basis": 0.23,
+     "basisCents": 23,
+     "period": "spot",
+     "commodity": "Corn",
+     "delivery": "Cash Corn (2026-12)"
+    },
+    "soybeans": {
+     "cash": 11.2775,
+     "basis": -0.9,
+     "basisCents": -90,
+     "period": "spot",
+     "commodity": "Soybeans",
+     "delivery": "Cash Beans (2027-01)"
+    },
+    "wheat": {
+     "cash": 5.5475,
+     "basis": -0.75,
+     "basisCents": -75,
+     "period": "spot",
+     "commodity": "Wheat (Hard Red Winter)",
+     "delivery": "Cash HRW (2026-12)"
+    },
+    "sorghum": {
+     "cash": 3.6875,
+     "basis": -0.7,
+     "basisCents": -70,
+     "period": "newcrop-2026",
+     "commodity": "Sorghum",
+     "delivery": "New Crop Milo (2026-12)"
+    }
+   },
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -7134,7 +7167,7 @@
      "delivery": "June 27 Corn (2027-07)"
     },
     "wheat": {
-     "cash": 7.98,
+     "cash": 7.975,
      "basis": 1.46,
      "basisCents": 146,
      "period": "2028-07",
@@ -7160,8 +7193,8 @@
      "delivery": "July 27 Wheat (2027-07)"
     }
    },
-   "pricedAt": "2026-11-20T14:10:34.665Z",
-   "checkedAt": "2026-11-20T14:10:34.665Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "ADM||Winona|MN",
@@ -22233,24 +22266,7 @@
      "delivery": "Nov"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.74,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22301,24 +22317,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.69,
-     "basis": -0.7,
-     "basisCents": -70,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.08,
-     "basis": -1.1,
-     "basisCents": -110,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22369,24 +22368,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.69,
-     "basis": -0.7,
-     "basisCents": -70,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22437,24 +22419,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.7375,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.1275,
-     "basis": -1.05,
-     "basisCents": -105,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22505,24 +22470,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.69,
-     "basis": -0.7,
-     "basisCents": -70,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22582,32 +22530,7 @@
      "delivery": "New Crop 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.74,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    },
-    "wheat": {
-     "cash": 5.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "newcrop-2027",
-     "commodity": "Wheat",
-     "delivery": "New Crop 27"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22658,24 +22581,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.79,
-     "basis": -0.6,
-     "basisCents": -60,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.13,
-     "basis": -1.05,
-     "basisCents": -105,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22726,24 +22632,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.67,
-     "basis": -0.72,
-     "basisCents": -72,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 10.98,
-     "basis": -1.2,
-     "basisCents": -120,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22794,24 +22683,7 @@
      "delivery": "Jan 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.74,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.18,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22862,24 +22734,7 @@
      "delivery": "Jan"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.71,
-     "basis": -0.68,
-     "basisCents": -68,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.23,
-     "basis": -0.95,
-     "basisCents": -95,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -22940,32 +22795,7 @@
      "delivery": "New 27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.71,
-     "basis": -0.68,
-     "basisCents": -68,
-     "period": "2026-11",
-     "commodity": "#2 Yellow Corn",
-     "delivery": "Nov"
-    },
-    "soybeans": {
-     "cash": 11.08,
-     "basis": -1.1,
-     "basisCents": -110,
-     "period": "2026-11",
-     "commodity": "#1 Yellow Soybeans",
-     "delivery": "Nov"
-    },
-    "wheat": {
-     "cash": 4.85,
-     "basis": -1.1,
-     "basisCents": -110,
-     "period": "2026-12",
-     "commodity": "Wheat",
-     "delivery": "Dec"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -26996,8 +26826,8 @@
      "delivery": "July 2027 (2027-07)"
     }
    },
-   "pricedAt": "2026-11-20T14:10:34.665Z",
-   "checkedAt": "2026-11-20T14:10:34.665Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Badger Grain Supply, LLC||Wheeler|WI",
@@ -29046,7 +28876,16 @@
      "delivery": "Dec"
     }
    },
-   "now": {},
+   "now": {
+    "corn": {
+     "cash": 4.01,
+     "basis": -0.38,
+     "basisCents": -38,
+     "period": "spot",
+     "commodity": "Corn",
+     "delivery": "Cash"
+    }
+   },
    "pricedAt": "2026-11-19T22:40:30.071Z",
    "checkedAt": "2026-11-20T13:50:52.385Z"
   },
@@ -33903,9 +33742,9 @@
      "cash": 12.01,
      "basis": -0.17,
      "basisCents": -17,
-     "period": "spot",
+     "period": "2026-12",
      "commodity": "Soybeans",
-     "delivery": "Spot"
+     "delivery": "Dec"
     }
    },
    "now": {
@@ -33918,16 +33757,16 @@
      "delivery": "Spot"
     },
     "soybeans": {
-     "cash": 12.01,
-     "basis": -0.17,
-     "basisCents": -17,
+     "cash": 11.93,
+     "basis": -0.25,
+     "basisCents": -25,
      "period": "spot",
      "commodity": "Soybeans",
      "delivery": "Spot"
     }
    },
-   "pricedAt": "2026-11-20T14:00:45.280Z",
-   "checkedAt": "2026-11-20T14:00:45.280Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Central Commodities||Stanberry|MO",
@@ -71412,24 +71251,7 @@
      "delivery": "Jan 2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.09,
-     "basis": -0.3,
-     "basisCents": -30,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov 2026"
-    },
-    "soybeans": {
-     "cash": 11.83,
-     "basis": -0.35,
-     "basisCents": -35,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -77804,16 +77626,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.72,
-     "basis": -0.45,
-     "basisCents": -45,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -77867,24 +77680,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.87,
-     "basis": -0.51,
-     "basisCents": -51,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.37,
-     "basis": -0.8,
-     "basisCents": -80,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -77938,24 +77734,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.76,
-     "basis": -0.62,
-     "basisCents": -62,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.28,
-     "basis": -0.89,
-     "basisCents": -89,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78009,24 +77788,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.83,
-     "basis": -0.55,
-     "basisCents": -55,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.33,
-     "basis": -0.84,
-     "basisCents": -84,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78080,24 +77842,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.7,
-     "basis": -0.68,
-     "basisCents": -68,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.24,
-     "basis": -0.93,
-     "basisCents": -93,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78151,24 +77896,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.84,
-     "basis": -0.54,
-     "basisCents": -54,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.31,
-     "basis": -0.86,
-     "basisCents": -86,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78213,16 +77941,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.06,
-     "basis": -0.32,
-     "basisCents": -32,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78276,24 +77995,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.51,
-     "basis": -0.87,
-     "basisCents": -87,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.14,
-     "basis": -1.03,
-     "basisCents": -103,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78347,24 +78049,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.6,
-     "basis": -0.78,
-     "basisCents": -78,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.14,
-     "basis": -1.03,
-     "basisCents": -103,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78409,16 +78094,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.13,
-     "basis": -0.25,
-     "basisCents": -25,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78463,16 +78139,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.13,
-     "basis": -0.25,
-     "basisCents": -25,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78526,24 +78193,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.76,
-     "basis": -0.62,
-     "basisCents": -62,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.28,
-     "basis": -0.89,
-     "basisCents": -89,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78597,24 +78247,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.53,
-     "basis": -0.85,
-     "basisCents": -85,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.16,
-     "basis": -1.01,
-     "basisCents": -101,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78668,24 +78301,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.59,
-     "basis": -0.79,
-     "basisCents": -79,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.13,
-     "basis": -1.04,
-     "basisCents": -104,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78730,16 +78346,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.52,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78793,24 +78400,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 3.77,
-     "basis": -0.61,
-     "basisCents": -61,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.26,
-     "basis": -0.91,
-     "basisCents": -91,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78855,16 +78445,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.11,
-     "basis": -0.27,
-     "basisCents": -27,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -78906,16 +78487,7 @@
      "delivery": "06/01/2027"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.87,
-     "basis": -0.3,
-     "basisCents": -30,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -79734,24 +79306,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.35,
-     "basis": -0.82,
-     "basisCents": -82,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.99,
-     "basis": -0.39,
-     "basisCents": -39,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -79810,24 +79365,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.33,
-     "basis": -0.84,
-     "basisCents": -84,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.94,
-     "basis": -0.44,
-     "basisCents": -44,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -79886,24 +79424,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.31,
-     "basis": -0.86,
-     "basisCents": -86,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.99,
-     "basis": -0.39,
-     "basisCents": -39,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -79952,16 +79473,7 @@
      "delivery": "Oct 27."
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.06,
-     "basis": -0.32,
-     "basisCents": -32,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80020,24 +79532,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.92,
-     "basis": -0.46,
-     "basisCents": -46,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80087,16 +79582,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.13,
-     "basis": -0.25,
-     "basisCents": -25,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80155,24 +79641,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.93,
-     "basis": -0.45,
-     "basisCents": -45,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80231,24 +79700,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.17,
-     "basis": -1,
-     "basisCents": -100,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.8,
-     "basis": -0.58,
-     "basisCents": -58,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80307,24 +79759,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.95,
-     "basis": -0.43,
-     "basisCents": -43,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80383,24 +79818,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.98,
-     "basis": -0.4,
-     "basisCents": -40,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80459,24 +79877,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.92,
-     "basis": -0.46,
-     "basisCents": -46,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80535,24 +79936,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.37,
-     "basis": -0.8,
-     "basisCents": -80,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 4.01,
-     "basis": -0.37,
-     "basisCents": -37,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80611,24 +79995,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.29,
-     "basis": -0.88,
-     "basisCents": -88,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.86,
-     "basis": -0.52,
-     "basisCents": -52,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80687,24 +80054,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.35,
-     "basis": -0.82,
-     "basisCents": -82,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.98,
-     "basis": -0.4,
-     "basisCents": -40,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -80763,24 +80113,7 @@
      "delivery": "Dec27"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.38,
-     "basis": -0.79,
-     "basisCents": -79,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "Nov 26"
-    },
-    "corn": {
-     "cash": 3.99,
-     "basis": -0.39,
-     "basisCents": -39,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "Nov26"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -111583,7 +110916,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.38,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -111591,7 +110924,7 @@
      "delivery": "Jul 2027"
     },
     "soybeans": {
-     "cash": 11.67,
+     "cash": 11.72,
      "basis": -0.6,
      "basisCents": -60,
      "period": "2027-07",
@@ -111601,7 +110934,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.12,
+     "cash": 4.14,
      "basis": -0.25,
      "basisCents": -25,
      "period": "2026-11",
@@ -111609,7 +110942,7 @@
      "delivery": "Nov 2026"
     },
     "soybeans": {
-     "cash": 11.42,
+     "cash": 11.48,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -111617,8 +110950,8 @@
      "delivery": "Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T12:40:28.454Z",
-   "checkedAt": "2026-11-20T12:40:28.454Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Landus Cooperative||Beaver|IA",
@@ -113788,14 +113121,14 @@
    "best": {
     "corn": {
      "cash": 4.33,
-     "basis": -0.45,
-     "basisCents": -45,
-     "period": "2027-10",
+     "basis": -0.35,
+     "basisCents": -35,
+     "period": "2027-07",
      "commodity": "Corn",
-     "delivery": "Oct 2027"
+     "delivery": "Jul 2027"
     },
     "soybeans": {
-     "cash": 11.62,
+     "cash": 11.67,
      "basis": -0.65,
      "basisCents": -65,
      "period": "2027-07",
@@ -113805,7 +113138,7 @@
    },
    "now": {
     "corn": {
-     "cash": 3.88,
+     "cash": 3.9,
      "basis": -0.49,
      "basisCents": -49,
      "period": "2026-11",
@@ -113813,7 +113146,7 @@
      "delivery": "Nov 2026"
     },
     "soybeans": {
-     "cash": 11.37,
+     "cash": 11.43,
      "basis": -0.75,
      "basisCents": -75,
      "period": "2026-11",
@@ -113821,8 +113154,8 @@
      "delivery": "Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T12:40:28.454Z",
-   "checkedAt": "2026-11-20T12:40:28.454Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Landus Cooperative||Ralston|IA",
@@ -113857,7 +113190,7 @@
    ],
    "best": {
     "soybeans": {
-     "cash": 11.82,
+     "cash": 11.87,
      "basis": -0.45,
      "basisCents": -45,
      "period": "2027-07",
@@ -113867,7 +113200,7 @@
    },
    "now": {
     "soybeans": {
-     "cash": 11.62,
+     "cash": 11.68,
      "basis": -0.5,
      "basisCents": -50,
      "period": "2026-11",
@@ -113875,8 +113208,8 @@
      "delivery": "Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T12:40:28.454Z",
-   "checkedAt": "2026-11-20T12:40:28.454Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Landus Cooperative||Rippey|IA",
@@ -113912,7 +113245,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 4.37,
+     "cash": 4.38,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2027-07",
@@ -113920,7 +113253,7 @@
      "delivery": "Jul 2027"
     },
     "soybeans": {
-     "cash": 11.67,
+     "cash": 11.72,
      "basis": -0.6,
      "basisCents": -60,
      "period": "2027-07",
@@ -113930,7 +113263,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.07,
+     "cash": 4.09,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -113938,7 +113271,7 @@
      "delivery": "Nov 2026"
     },
     "soybeans": {
-     "cash": 11.42,
+     "cash": 11.48,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -113946,8 +113279,8 @@
      "delivery": "Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T12:40:28.454Z",
-   "checkedAt": "2026-11-20T12:40:28.454Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Landus Cooperative||Rockwell City|IA",
@@ -113991,7 +113324,7 @@
      "delivery": "Oct 2027"
     },
     "soybeans": {
-     "cash": 11.67,
+     "cash": 11.72,
      "basis": -0.6,
      "basisCents": -60,
      "period": "2027-07",
@@ -114001,7 +113334,7 @@
    },
    "now": {
     "corn": {
-     "cash": 4.07,
+     "cash": 4.09,
      "basis": -0.3,
      "basisCents": -30,
      "period": "2026-11",
@@ -114009,7 +113342,7 @@
      "delivery": "Nov 2026"
     },
     "soybeans": {
-     "cash": 11.42,
+     "cash": 11.48,
      "basis": -0.7,
      "basisCents": -70,
      "period": "2026-11",
@@ -114017,8 +113350,8 @@
      "delivery": "Nov 2026"
     }
    },
-   "pricedAt": "2026-11-20T12:40:28.454Z",
-   "checkedAt": "2026-11-20T12:40:28.454Z"
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Landus Cooperative||Rushville|IN",
@@ -119399,9 +118732,26 @@
      "delivery": "Nov 26 Soybeans"
     }
    },
-   "now": {},
-   "pricedAt": "2026-11-20T13:50:52.385Z",
-   "checkedAt": "2026-11-20T13:50:52.385Z"
+   "now": {
+    "corn": {
+     "cash": 3.7,
+     "basis": -0.68,
+     "basisCents": -68,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "Nov 26 Corn"
+    },
+    "soybeans": {
+     "cash": 11.31,
+     "basis": -0.86,
+     "basisCents": -86,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "Nov 26 Soybeans"
+    }
+   },
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Michigan Agricultural Commodities||Blissfield|MI",
@@ -133848,9 +133198,26 @@
      "delivery": "JUNE  2027"
     }
    },
-   "now": {},
-   "pricedAt": "2026-11-20T13:50:52.385Z",
-   "checkedAt": "2026-11-20T13:50:52.385Z"
+   "now": {
+    "corn": {
+     "cash": 3.99,
+     "basis": -0.4,
+     "basisCents": -40,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "NOVEMBER 2026"
+    },
+    "soybeans": {
+     "cash": 11.43,
+     "basis": -0.75,
+     "basisCents": -75,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "NOVEMBER 2026"
+    }
+   },
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Pawnee Co. Cooperative Association||Larned|KS",
@@ -150849,32 +150216,7 @@
      "delivery": "July 2027"
     }
    },
-   "now": {
-    "soybeans": {
-     "cash": 11.7775,
-     "basis": -0.4,
-     "basisCents": -40,
-     "period": "newcrop-2026",
-     "commodity": "Beans",
-     "delivery": "Fall 2026"
-    },
-    "corn": {
-     "cash": 4.0875,
-     "basis": -0.3,
-     "basisCents": -30,
-     "period": "newcrop-2026",
-     "commodity": "Corn",
-     "delivery": "Fall 2026"
-    },
-    "wheat": {
-     "cash": 5.4175,
-     "basis": -0.65,
-     "basisCents": -65,
-     "period": "2027-07",
-     "commodity": "Wheat",
-     "delivery": "July 2027"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:10:34.665Z",
    "checkedAt": "2026-11-20T14:10:34.665Z"
   },
@@ -156266,32 +155608,7 @@
      "delivery": "07/01/2027"
     }
    },
-   "now": {
-    "corn": {
-     "cash": 4.09,
-     "basis": -0.3,
-     "basisCents": -30,
-     "period": "2026-11",
-     "commodity": "Corn",
-     "delivery": "11/01/2026"
-    },
-    "soybeans": {
-     "cash": 11.73,
-     "basis": -0.45,
-     "basisCents": -45,
-     "period": "2026-11",
-     "commodity": "Soybeans",
-     "delivery": "11/01/2026"
-    },
-    "wheat": {
-     "cash": 5.39,
-     "basis": -0.4,
-     "basisCents": -40,
-     "period": "2026-11",
-     "commodity": "Wheat",
-     "delivery": "11/01/2026"
-    }
-   },
+   "now": {},
    "pricedAt": "2026-11-20T14:00:45.280Z",
    "checkedAt": "2026-11-20T14:00:45.280Z"
   },
@@ -162695,7 +162012,7 @@
    ],
    "best": {
     "corn": {
-     "cash": 3.76,
+     "cash": 3.75,
      "basis": -0.63,
      "basisCents": -63,
      "period": "2026-12",
@@ -162703,7 +162020,7 @@
      "delivery": "December"
     },
     "soybeans": {
-     "cash": 11.43,
+     "cash": 11.42,
      "basis": -0.75,
      "basisCents": -75,
      "period": "2027-01",
@@ -162711,9 +162028,26 @@
      "delivery": "January"
     }
    },
-   "now": {},
-   "pricedAt": "2026-11-20T13:50:52.385Z",
-   "checkedAt": "2026-11-20T13:50:52.385Z"
+   "now": {
+    "corn": {
+     "cash": 3.71,
+     "basis": -0.67,
+     "basisCents": -67,
+     "period": "2026-11",
+     "commodity": "Corn",
+     "delivery": "November"
+    },
+    "soybeans": {
+     "cash": 11.32,
+     "basis": -0.85,
+     "basisCents": -85,
+     "period": "2026-11",
+     "commodity": "Soybeans",
+     "delivery": "November"
+    }
+   },
+   "pricedAt": "2026-11-20T14:20:32.636Z",
+   "checkedAt": "2026-11-20T14:20:32.636Z"
   },
   {
    "place": "Whitewater Milling LLC||Whitewater Milling|MN",
