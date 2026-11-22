@@ -1,12 +1,18 @@
 {
- "generated": "2026-11-21T07:12:23Z",
+ "generated": "2026-11-22T07:18:16Z",
  "note": "Licensed grain dealers and warehouses as each state publishes them. Name, city, county and phone \u2014 no street address, so anything mapped from here is a town centroid. A dealer licence is not proof a farmer can sell there.",
  "counts": {
   "businesses": 7117,
   "statesAsked": "all",
   "carriedFromCommitted": 0,
   "licensedButLocatedElsewhere": 32,
-  "incompleteSources": [],
+  "incompleteSources": [
+   {
+    "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
+    "state": "WI",
+    "why": "the live fetch failed (URLError: <urlopen error timed out>) and this run read the committed snapshot fixtures/registry-wi-datcp.xls instead"
+   }
+  ],
   "byState": {
    "AL": 8,
    "AR": 132,
@@ -356,91 +362,91 @@
     "tried": [
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=2",
-      "bytes": 280083,
+      "bytes": 279652,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page=1",
-      "bytes": 280084,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?p=2",
-      "bytes": 280084,
+      "bytes": 279652,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pg=2",
-      "bytes": 280086,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?start=50",
-      "bytes": 280084,
+      "bytes": 279652,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?offset=50",
-      "bytes": 280083,
+      "bytes": 279652,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?limit=1000&offset=25",
-      "bytes": 280082,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?PageNum=2",
-      "bytes": 280083,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?pageNumber=2",
-      "bytes": 280084,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?page_num=2",
-      "bytes": 280082,
+      "bytes": 279654,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?paged=2",
-      "bytes": 280086,
+      "bytes": 279653,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?from=25",
-      "bytes": 280085,
+      "bytes": 279654,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
      },
      {
       "param": "https://agriculture.mo.gov/grains/grainsearch.php?per_page=1000&page=2",
-      "bytes": 280084,
+      "bytes": 279654,
       "bytesDiffer": true,
       "newBusinesses": 0,
       "changed": false
@@ -456,7 +462,7 @@
     {
      "url": "https://agriculture.mo.gov/grains/grainsearch.php",
      "status": 200,
-     "bytes": 280084
+     "bytes": 279653
     }
    ],
    "tables": 1,
@@ -759,10 +765,18 @@
    "kind": "dealer+warehouse",
    "note": "DATCP licensees, xls",
    "route": "xls",
+   "errors": [
+    "URLError: <urlopen error timed out>"
+   ],
+   "usedSnapshot": {
+    "path": "fixtures/registry-wi-datcp.xls",
+    "bytes": 3137536
+   },
+   "INCOMPLETE": "the live fetch failed (URLError: <urlopen error timed out>) and this run read the committed snapshot fixtures/registry-wi-datcp.xls instead",
    "pages": [
     {
      "url": "https://datcp.wi.gov/Documents/LicensedGrainDealersAndWarehouseKeepers.xls",
-     "status": 200,
+     "status": null,
      "bytes": 3137536
     }
    ],
@@ -811,7 +825,9 @@
      "st": "WI",
      "zip": "54747",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     },
     {
      "name": "24/7 Grain Services LLC",
@@ -821,7 +837,9 @@
      "st": "WI",
      "zip": "54805",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     },
     {
      "name": "Ace Ethanol, LLC",
@@ -831,7 +849,9 @@
      "st": "WI",
      "zip": "54768",
      "kind": "dealer+warehouse",
-     "state": "WI"
+     "state": "WI",
+     "via": "snapshot",
+     "snapshot": "fixtures/registry-wi-datcp.xls"
     }
    ],
    "state": "WI"
