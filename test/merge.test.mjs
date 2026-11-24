@@ -789,6 +789,26 @@ test("the current month is Central time: 03:00 UTC on Dec 1 is still November", 
   assert.equal(nearestOpen([R("corn", "2027-01/2027-03", "Corn", 4.6)], NOV20).corn.period, "2027-01/2027-03");
   assert.equal(nearestOpen([R("corn", "2027-02/2027-03", "Corn", 4.6)], NOV20).corn, undefined);
 });
+test("the delivery month is read in Central time too: 20:00 CST on Nov 30 keeps the November row", () => {
+  const LATE = "2026-12-01T02:00:00Z";                       // 8:00 pm Nov 30 in Chicago, already Dec 1 in UTC
+  assert.equal(centralMonth(new Date(LATE)), "2026-11");
+  const rows = [R("corn", "2026-11", "Corn", 4.1), R("corn", "2026-12", "Corn", 4.2),
+    R("soybeans", "spot", "Soybeans", 10.9), R("soybeans", "2026-12", "Soybeans", 11.05)];
+  const got = nearestOpen(rows, LATE);
+  assert.equal(got.corn.period, "2026-11", "November is still the current month: its plain row is `now`, not December's");
+  assert.equal(got.corn.cash, 4.1);
+  assert.equal(got.soybeans.period, "spot", "spot is November, December's row is a month later");
+  assert.equal(deliveryMonth("2026-11", "corn", LATE, null, "2026-11"), "2026-11");
+  assert.equal(deliveryMonth("spot", "corn", LATE, null, "2026-11"), "2026-11");
+  assert.equal(deliveryMonth("newcrop-2026", "corn", LATE, null, "2026-11"), "2026-11", "inside the Sep-Dec window in November");
+  /* without a month passed in, deliveryMonth reads UTC, as before */
+  assert.equal(deliveryMonth("2026-11", "corn", LATE), null);
+  assert.equal(deliveryMonth("2026-11", "corn", LATE, null, "bad"), null, "a malformed month falls back to UTC");
+  /* an hour after midnight Central it is December everywhere: November has closed */
+  const DEC1 = "2026-12-01T07:00:00Z";
+  assert.equal(nearestOpen(rows, DEC1).corn.period, "2026-12");
+  assert.equal(nearestOpen(rows, DEC1).soybeans.cash, 11.05, "spot is December now: one month, the better price wins");
+});
 
 /* ADM Attica IN's own rows as committed Nov 24, 2026 04:17 UTC (a sample of its 26). */
 const NOV24 = "2026-11-24T04:25:59Z";
