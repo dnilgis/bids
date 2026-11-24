@@ -298,9 +298,79 @@ export function deliveryMonth(period, cropName, asOf, row = null) {
 /** Hours a skipped (not asked) board's last good read still counts in `now`. */
 export const HELD_SKIP_H = 6;
 
-export function nearestOpen(bids, asOf = Date.now()) {
+/* `now` IS THE PLAIN CURRENT BID (agsist, Nov 20, 2026). Every agsist page that
+   says "best" or "top" reads `now`, and two kinds of row were landing in it:
+     - A PREMIUM GRADE in the same month as the plain bid. Yoder Grain, Bluffton
+       IN posts "Soybeans" $11.98 and "Plenish Soybean" $13.23 for November; the
+       better price won the tie, so the plain row never reached any consumer and
+       the home page, the Daily and /daily called Plenish the top soybean bid.
+     - A DELIVERY FAR OUT when nothing nearer is posted. Adell Cooperative WI
+       posts only "27 New Crop" (newcrop-2027, Sep 2027), and /cash-bids called
+       its $4.25 the best corn beside current bids of $3.70 to $3.80.
+   So a premium row (SPECIAL_GRADE, the same word list as agsist's
+   components/bid-filter.js) never enters `now`; it goes to `nowSpecial`, the
+   nearest premium row per crop. A row whose delivery month is more than
+   NOW_MAX_MONTHS past the current month never enters `now` either; it goes to
+   `nowLater`. Both are filled only when `side` is passed, and the index carries
+   them only for a place that has one. The index keeps `nowLater` only for a crop
+   with no `now` row (laterOnly): on Nov 24, 2026 the nearest far-out row was on
+   744 of 855 places, almost all beside a current bid for the same crop, and it
+   grew the index by a fifth; a reader that has a current bid reads `now`, and
+   the board's later bids are in `best` and the shard. */
+export const SPECIAL_GRADE = /non[- ]?gmo|nongmo|organic|plenish|\bip\b|identity[- ]?pres|high[- ]?oleic|food[- ]?grade|\bfood\b|waxy|popcorn|conventional|vistive|clear hilum|tofu|natto|\bwhite\b|\bfeed\b|durum|\bsww\b|spring|\bhrs\b|\bdns\b|dark northern|mgex/i;
+export const NOW_MAX_MONTHS = 2;
+export function centralMonth(d) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit" }).formatToParts(d);
+    const y = parts.find((p) => p.type === "year")?.value, m = parts.find((p) => p.type === "month")?.value;
+    if (y && m) return `${y}-${m}`;
+  } catch { /* no time zone data: a fixed offset below */ }
+  const c = new Date(d.getTime() - 6 * 3.6e6);
+  return ym(c.getUTCFullYear(), c.getUTCMonth() + 1);
+}
+const monthsAhead = (from, to) => (+to.slice(0, 4) - +from.slice(0, 4)) * 12 + (+to.slice(5, 7) - +from.slice(5, 7));
+/* The spring and white wheat classes are a class, not a premium, where wheat is
+   kept by class: a "Spring Wheat" board in North Dakota has a plain wheat bid. */
+const WHEAT_CLASS = /spring|\bhrs\b|\bdns\b|dark northern|mgex|\bsww\b|soft white|hard white|white wheat|\bwhite\b|durum/ig;
+export function isPremium(b) {
+  const c = String(b?.commodity ?? "");
+  if (!SPECIAL_GRADE.test(c)) return false;
+  return !(b?.crop === "wheat" && !SPECIAL_GRADE.test(c.replace(WHEAT_CLASS, " ")));
+}
+
+/* `best` per crop, from plain rows only (agsist, Nov 20, 2026: its cards read `best` as the board's
+   own later bid, and ADM Jackson TN's top corn row is white corn, so a yellow-corn card printed a
+   carry to a white-corn price). A premium row's top goes to `bestSpecial`, only for a crop where
+   it is higher than every plain row or the only row. */
+export function bestOf(bids) {
+  const best = {}, bestSpecial = {};
+  for (const b of bids || []) {
+    if (b.cash == null) continue;
+    const tgt = isPremium(b) ? bestSpecial : best, cur = tgt[b.crop];
+    if (!cur || b.cash > cur.cash) {
+      tgt[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
+                      period: b.period, commodity: b.commodity, delivery: b.delivery };
+    }
+  }
+  for (const c of Object.keys(bestSpecial)) if (best[c] && best[c].cash >= bestSpecial[c].cash) delete bestSpecial[c];
+  return { best, bestSpecial };
+}
+
+/* The `nowLater` rows the index keeps: only for a crop with nothing in `now`
+   (Adell Cooperative WI posts only Harvest 2027; ADM Attica IN has November
+   corn, so its February corn stays in the shard). */
+export function laterOnly(now, later) {
   const out = {};
-  const when = new Map();
+  for (const [crop, row] of Object.entries(later || {})) if (!(now && now[crop])) out[crop] = row;
+  return out;
+}
+
+export function nearestOpen(bids, asOf = Date.now(), side = null) {
+  const out = {};
+  const when = new Map(), sideWhen = new Map();
+  const d0 = asOf instanceof Date ? asOf : new Date(asOf ?? Date.now());
+  /* the month in Central time, as agsist reads it (components/bid-filter.js nowMonth) */
+  const curMonth = Number.isNaN(d0.getTime()) ? null : centralMonth(d0);
   for (const b of bids || []) {
     if (b.cash == null || b.period == null || b.periodPast === true) continue;
     /* AN UNCONFIRMED PRICE IS NOT TODAY'S CASH. A board this repo could not
@@ -325,6 +395,22 @@ export function nearestOpen(bids, asOf = Date.now()) {
     if ((b.sourceStatus || "ok") !== "ok" && !heldSkip) continue;
     const m = deliveryMonth(b.period, b.crop, asOf, b);
     if (m == null) continue;
+    /* a range not open yet is judged by its START month, as a single month is (agsist's windowKey):
+       2027-01/2027-03 and 2027-01 are both 2 months past November */
+    const p0 = String(b.period), rs = /^(\d{4}-\d{2})\/\d{4}-\d{2}$/.exec(p0);
+    const fm = rs && curMonth != null && rs[1] > curMonth ? rs[1] : m;
+    const premium = isPremium(b), far = curMonth != null && monthsAhead(curMonth, fm) > NOW_MAX_MONTHS;
+    if (premium || far) {
+      const tgt = side && (premium ? side.special : side.later);
+      if (!tgt) continue;
+      const k = (premium ? "s|" : "l|") + b.crop, sc = tgt[b.crop], sm = sideWhen.get(k);
+      if (!sc || m < sm || (m === sm && b.cash > sc.cash)) {
+        tgt[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
+                        period: b.period, commodity: b.commodity, delivery: b.delivery };
+        sideWhen.set(k, m);
+      }
+      continue;
+    }
     const cur = out[b.crop], cm = when.get(b.crop);
     if (!cur || m < cm || (m === cm && b.cash > cur.cash)) {
       out[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
@@ -1310,18 +1396,13 @@ function main() {
        this whole file exists to avoid. So `best` carries the top cash bid for
        each crop AND the period it is for, and a consumer that needs one period
        reads the shard. */
-    const best = {};
-    for (const b of bids) {
-      if (b.cash == null) continue;
-      const cur = best[b.crop];
-      if (!cur || b.cash > cur.cash) {
-        best[b.crop] = { cash: b.cash, basis: b.basis, basisCents: b.basisCents,
-                         period: b.period, commodity: b.commodity, delivery: b.delivery };
-      }
-    }
+    const { best, bestSpecial } = bestOf(bids);
 
-    /* See nearestOpen() above for why this is not `best`. */
-    const now = nearestOpen(bids, nowMs);
+    /* See nearestOpen() above for why this is not `best`, and why a premium
+       grade or a delivery far out is never in it. */
+    const nowSide = { special: {}, later: {} };
+    const now = nearestOpen(bids, nowMs, nowSide);
+    nowSide.later = laterOnly(now, nowSide.later);
 
     const f = bids[0];
     const slug = shardName(place);
@@ -1354,6 +1435,9 @@ function main() {
       crops: [...new Set(bids.map((b) => b.crop))].sort(),
       periods: [...new Set(bids.map((b) => b.period))].sort(),
       best, now, pricedAt: f.pricedAt, checkedAt: f.checkedAt,
+      ...(Object.keys(bestSpecial).length ? { bestSpecial } : {}),
+      ...(Object.keys(nowSide.special).length ? { nowSpecial: nowSide.special } : {}),
+      ...(Object.keys(nowSide.later).length ? { nowLater: nowSide.later } : {}),
     });
     const info = bids.map((b) => infoOf.get(b.source)).find(Boolean) || null;
     const shard = shardOf(place, bids, town, phone, info, idsOf.get(f.source) ?? { elevId: null, fips: null });
