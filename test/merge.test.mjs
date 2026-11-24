@@ -8,7 +8,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { placeKey, row, keepable, dedupe, subWindow, Tally, shardName, shardOf,
-         isBoardFile, nearestOpen, deliveryMonth, isPremium, SPECIAL_GRADE, NOW_MAX_MONTHS, bestOf, centralMonth } from "../scripts/merge_bids.mjs";
+         isBoardFile, nearestOpen, deliveryMonth, isPremium, SPECIAL_GRADE, NOW_MAX_MONTHS, bestOf, centralMonth,
+         laterOnly } from "../scripts/merge_bids.mjs";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -787,6 +788,29 @@ test("the current month is Central time: 03:00 UTC on Dec 1 is still November", 
   /* a range not open yet is judged by its start, as agsist does: Jan-Mar and Jan agree in November */
   assert.equal(nearestOpen([R("corn", "2027-01/2027-03", "Corn", 4.6)], NOV20).corn.period, "2027-01/2027-03");
   assert.equal(nearestOpen([R("corn", "2027-02/2027-03", "Corn", 4.6)], NOV20).corn, undefined);
+});
+
+/* ADM Attica IN's own rows as committed Nov 24, 2026 04:17 UTC (a sample of its 26). */
+const NOV24 = "2026-11-24T04:25:59Z";
+test("the index keeps nowLater only for a crop with no current bid (ADM Attica IN, Adell Cooperative WI, Nov 24, 2026)", () => {
+  const side = { special: {}, later: {} };
+  const now = nearestOpen([
+    R("corn", "2026-11", "Corn", 4.3475), R("corn", "2027-02", "Corn", 4.445), R("corn", "newcrop-2027", "Corn", 4.44),
+    R("soybeans", "2026-11", "Soybeans", 12.08), R("soybeans", "2027-02", "Soybeans", 12.1775),
+    R("wheat", "2027-06/2027-07", "Wheat (Soft Red Winter)", 5.455), R("wheat", "2027-08", "Wheat (Soft Red Winter)", 5.5925),
+  ], NOV24, side);
+  assert.deepEqual(Object.keys(now).sort(), ["corn", "soybeans"]);
+  assert.deepEqual(Object.keys(side.later).sort(), ["corn", "soybeans", "wheat"], "nearestOpen still fills every crop");
+  const kept = laterOnly(now, side.later);
+  assert.deepEqual(Object.keys(kept), ["wheat"], "November corn and beans are current: their February rows stay in the shard");
+  assert.equal(kept.wheat.period, "2027-06/2027-07");
+  assert.equal(kept.wheat.cash, 5.455);
+  const aSide = { special: {}, later: {} };
+  const aNow = nearestOpen([R("corn", "newcrop-2027", "Corn", 4.27), R("soybeans", "newcrop-2027", "Soybeans", 10.82),
+    R("wheat", "newcrop-2027", "Wheat", 5)], NOV24, aSide);
+  assert.deepEqual(Object.keys(laterOnly(aNow, aSide.later)).sort(), ["corn", "soybeans", "wheat"], "Adell posts nothing current: all three kept");
+  assert.deepEqual(laterOnly({}, {}), {});
+  assert.deepEqual(laterOnly(null, undefined), {});
 });
 
 test("nearestOpen copes with nothing at all", () => {

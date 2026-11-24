@@ -312,7 +312,11 @@ export const HELD_SKIP_H = 6;
    nearest premium row per crop. A row whose delivery month is more than
    NOW_MAX_MONTHS past the current month never enters `now` either; it goes to
    `nowLater`. Both are filled only when `side` is passed, and the index carries
-   them only for a place that has one, so the file barely grows. */
+   them only for a place that has one. The index keeps `nowLater` only for a crop
+   with no `now` row (laterOnly): on Nov 24, 2026 the nearest far-out row was on
+   744 of 855 places, almost all beside a current bid for the same crop, and it
+   grew the index by a fifth; a reader that has a current bid reads `now`, and
+   the board's later bids are in `best` and the shard. */
 export const SPECIAL_GRADE = /non[- ]?gmo|nongmo|organic|plenish|\bip\b|identity[- ]?pres|high[- ]?oleic|food[- ]?grade|\bfood\b|waxy|popcorn|conventional|vistive|clear hilum|tofu|natto|\bwhite\b|\bfeed\b|durum|\bsww\b|spring|\bhrs\b|\bdns\b|dark northern|mgex/i;
 export const NOW_MAX_MONTHS = 2;
 export function centralMonth(d) {
@@ -350,6 +354,15 @@ export function bestOf(bids) {
   }
   for (const c of Object.keys(bestSpecial)) if (best[c] && best[c].cash >= bestSpecial[c].cash) delete bestSpecial[c];
   return { best, bestSpecial };
+}
+
+/* The `nowLater` rows the index keeps: only for a crop with nothing in `now`
+   (Adell Cooperative WI posts only Harvest 2027; ADM Attica IN has November
+   corn, so its February corn stays in the shard). */
+export function laterOnly(now, later) {
+  const out = {};
+  for (const [crop, row] of Object.entries(later || {})) if (!(now && now[crop])) out[crop] = row;
+  return out;
 }
 
 export function nearestOpen(bids, asOf = Date.now(), side = null) {
@@ -1389,6 +1402,7 @@ function main() {
        grade or a delivery far out is never in it. */
     const nowSide = { special: {}, later: {} };
     const now = nearestOpen(bids, nowMs, nowSide);
+    nowSide.later = laterOnly(now, nowSide.later);
 
     const f = bids[0];
     const slug = shardName(place);
