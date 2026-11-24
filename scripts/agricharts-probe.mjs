@@ -393,28 +393,74 @@ const PLATFORM_CONTROL = "https://zzznotarealcoopxyz.mobile.agricharts.com/cash/
    not "will they let us in" -- that is settled -- but "is the number the cash
    board is missing on a page we can read". Same rules: it writes fixtures and
    it does not go red for a page that is not there. */
+/* A DESKTOP HOST IS NAMED APART FROM THE MOBILE ONE. Since 2026-11-20 every
+   *.mobile.agricharts.com host answers 500, and the desktop site of the same
+   co-ops answers the same runner. Its pages are captured under their own
+   names (desktop-agricharts-quotes-<sub>-<page>.html) so the mobile fixtures
+   the parser was written against stay exactly as they were received, and no
+   glob over agricharts-quotes-* or agricharts-* picks them up as one. */
+export function quoteFixtureName(host, name) {
+  const h = new URL(host).host;
+  if (/\.mobile\.agricharts\.com$/.test(h) || /^mobile\./.test(h)) return `agricharts-quotes-${name}.html`;
+  const sub = h.replace(/\.agricharts\.com$/, "").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  return `desktop-agricharts-quotes-${sub}-${name}.html`;
+}
+export const quoteHosts = (s) => String(s ?? "").split(/[\s]+|,(?=https?:)/).filter(Boolean)
+  .map((h) => h.replace(/\/+$/, ""));
+
 async function quotesRun(cfg) {
-  const base = cfg.quotesHost.replace(/\/+$/, "");
+  const hosts = quoteHosts(cfg.quotesHost);
+  if (hosts.length > 1) {
+    for (const h of hosts) await quotesRun({ ...cfg, quotesHost: h });
+    return 0;
+  }
+  /* AN ENTRY WITH A PATH IS ONE PAGE, not a host: the desktop sites do not
+     all carry /markets/futures.php (several answer 404 there), so a page they
+     do carry can be asked for by its full URL and kept under its own name. */
+  const u0 = new URL(hosts[0]);
+  const base = u0.origin;
+  const onePage = u0.pathname !== "/" || u0.search
+    ? [[(u0.pathname + u0.search).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()
+          .slice(0, 60).replace(/-$/, ""),
+        u0.pathname + u0.search]]
+    : null;
+  const desktop = quoteFixtureName(base, "x") !== "agricharts-quotes-x.html";
+  /* The desktop capture asks as the poller asks (the bidreader user-agent),
+     because the point is to learn whether the poller itself will be answered. */
+  const profile = desktop ? PROFILES.bidreader : PROFILES.chrome;
   console.log(`AGRICHARTS QUOTES CAPTURE — ${cfg.only ? cfg.only.length : QUOTE_PAGES.length} `
-    + `page(s) from ${base}`);
+    + `page(s) from ${base}${desktop ? " (desktop site, bidreader user-agent)" : ""}`);
   console.log("These are CBOT's numbers, not the operator's, so one host answers for all 211.\n");
   const wrote = [], missed = [], kept = [];
-  const wanted = cfg.only ? QUOTE_PAGES.filter(([n]) => cfg.only.includes(n)) : QUOTE_PAGES;
+  const wanted = onePage ?? (cfg.only ? QUOTE_PAGES.filter(([n]) => cfg.only.includes(n)) : QUOTE_PAGES);
   for (const [name, path] of wanted) {
-    const file0 = join(cfg.out, `agricharts-quotes-${name}.html`);
+    const file0 = join(cfg.out, quoteFixtureName(base, name));
     const fv0 = fixtureVerdict({ exists: existsSync(file0), refresh: cfg.refresh });
     if (!fv0.write) { kept.push(name); console.log(`   ${name.padEnd(16)} ${fv0.why}`); continue; }
     const url = base + path;
-    const r = await ask(url, PROFILES.chrome, cfg.timeoutMs);
+    const r = await ask(url, profile, cfg.timeoutMs);
     if (!r.ok) { console.log(`   ${name.padEnd(16)} ${r.error}`); missed.push({ name, why: r.error }); continue; }
     const quotes = r.status === 200 && looksLikeQuotes(r.body);
     console.log(`   ${name.padEnd(16)} ${String(r.status).padEnd(4)} ${String(r.bytes).padStart(7)}B `
       + `${String(r.ms).padStart(5)}ms  ${quotes ? "QUOTES" : "no price table"}  ${url}`);
-    if (!quotes) { missed.push({ name, why: `${r.status}, no price table` }); continue; }
-    if (cfg.noFixture) continue;
+    /* A desktop page that answered 200 is kept even when it does not look like
+       the mobile price table: its format is the thing being found out. */
+    const keep = quotes || (desktop && r.status === 200 && r.bytes >= 400);
+    if (!quotes) missed.push({ name, why: `${r.status}, no price table${keep ? " (body kept)" : ""}` });
+    if (!keep || cfg.noFixture) continue;
     mkdirSync(cfg.out, { recursive: true });
     writeFileSync(file0, r.body);
     wrote.push({ file: file0, url, bytes: r.bytes });
+    if (desktop) {
+      const log = join(cfg.out, "desktop-agricharts-quotes-captures.json");
+      let rows = [];
+      try { rows = JSON.parse(readFileSync(log, "utf8")); } catch { rows = []; }
+      rows = rows.filter((x) => x.file !== file0.split("/").pop());
+      rows.push({ file: file0.split("/").pop(), url, status: r.status, bytes: r.bytes,
+                  capturedAt: new Date().toISOString(), userAgent: profile["user-agent"],
+                  looksLikeQuotes: quotes });
+      writeFileSync(log, JSON.stringify(rows, null, 2) + "\n");
+    }
   }
   console.log("");
   if (wrote.length) {

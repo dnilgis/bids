@@ -669,15 +669,33 @@ function sharedFor(platform) {
      the entries are one site written two ways and the first good answer ends
      it. Still clamped to the budget, so seven hung quote pages cannot spend
      more of the pass than there was left. */
-  for (const u of spec.urls) {
-    try {
-      const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
-                                       redirect: "follow" }, fetchDeadline());
-      if (!res.ok) { problems.push(`${u} -> HTTP ${res.status}`); continue; }
-      const body = await res.text();
-      if (!body.length) { problems.push(`${u} -> empty response`); continue; }
-      bodies.push(body);
-    } catch (e) { problems.push(`${u} -> ${e.message}`); }
+  /* THE NEXT SET ONLY WHEN THIS ONE GAVE NOTHING. A spec can name url sets
+     in order (`urls`, then each of `alternates`): the quote feed first, the
+     mobile pages after. Every url of a set is asked; a 200 that is not the
+     expected page (`accepts`: an error page, a login) counts as a failure. If
+     a set yields at least one page the later sets are not asked; if it yields
+     none, what it said is logged and the next set is asked. Only the failures
+     of the set that was used, or of every set when none answered, are
+     problems below. */
+  const sets = [spec.urls, ...(spec.alternates ?? [])];
+  const skipped = [];
+  for (let si = 0; si < sets.length; si++) {
+    const setProblems = [];
+    for (const u of sets[si]) {
+      try {
+        const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
+                                         redirect: "follow" }, fetchDeadline());
+        if (!res.ok) { setProblems.push(`${u} -> HTTP ${res.status}`); continue; }
+        const body = await res.text();
+        if (!body.length) { setProblems.push(`${u} -> empty response`); continue; }
+        if (spec.accepts && !spec.accepts(body)) { setProblems.push(`${u} -> not the expected page`); continue; }
+        bodies.push(body);
+      } catch (e) { setProblems.push(`${u} -> ${e.message}`); }
+    }
+    if (bodies.length || si === sets.length - 1) { problems.push(...skipped, ...setProblems); break; }
+    skipped.push(...setProblems);
+    console.log(`   ${platform}: shared page set ${si + 1} of ${sets.length} gave nothing `
+      + `(${setProblems.slice(0, 2).join("; ")}); asking the next`);
   }
   let ctx = null;
   if (bodies.length) {

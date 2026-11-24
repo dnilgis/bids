@@ -936,9 +936,13 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     const key = spec.urls.join("|");
     if (shared.has(key)) return shared.get(key);
     const bodies = [];
-    for (const u of spec.urls) {
-      const r = await io.get(u, cfg.timeoutMs);
-      if (r.ok && r.status === 200 && r.body) bodies.push(r.body);
+    /* url sets in order, the next only when this one gave nothing, as the poller does */
+    for (const set of [spec.urls, ...(spec.alternates ?? [])]) {
+      for (const u of set) {
+        const r = await io.get(u, cfg.timeoutMs);
+        if (r.ok && r.status === 200 && r.body && (!spec.accepts || spec.accepts(r.body))) bodies.push(r.body);
+      }
+      if (bodies.length) break;
     }
     let ctx = null;
     try { ctx = bodies.length ? spec.build(bodies) : null; } catch { ctx = null; }
