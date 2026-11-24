@@ -319,7 +319,8 @@ export const HELD_SKIP_H = 6;
    them only for a place that has one. The index keeps `nowLater` only for a crop
    with no `now` row (laterOnly): on Nov 24, 2026 the nearest far-out row was on
    744 of 855 places, almost all beside a current bid for the same crop, and
-   keeping it there grew the index by 13.6% (measured); a reader that has a
+   keeping it there grew the index by about 18% (18.0 to 18.5% across six Nov 24
+   snapshots, measured on the shipped file); a reader that has a
    current bid reads `now`, and the board's later bids are in `best` and the shard.
    `nowSpecial` is NOT bounded by NOW_MAX_MONTHS: it is the nearest premium row
    however far out. No reader takes it for the plain current bid (it is labelled
