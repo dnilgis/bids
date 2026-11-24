@@ -419,7 +419,8 @@ async function quotesRun(cfg) {
   const u0 = new URL(hosts[0]);
   const base = u0.origin;
   const onePage = u0.pathname !== "/" || u0.search
-    ? [[(u0.pathname + u0.search).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase(),
+    ? [[(u0.pathname + u0.search).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()
+          .slice(0, 60).replace(/-$/, ""),
         u0.pathname + u0.search]]
     : null;
   const desktop = quoteFixtureName(base, "x") !== "agricharts-quotes-x.html";
