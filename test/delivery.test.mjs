@@ -8,7 +8,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { delivery } from "../lib/delivery.mjs";
 
 const F = JSON.parse(readFileSync(new URL("./fixtures/delivery-labels.json", import.meta.url), "utf8"));
@@ -408,4 +408,60 @@ test("a letter pair is the same pair however it is punctuated", () => {
   assert.equal(delivery("J-J 27", ASOF).key,   null);
   assert.equal(delivery("Jan-Mar 27", ASOF).via, "month-pair", "a spelled-out pair is unchanged");
   assert.equal(delivery("OCT-26", ASOF).via, "month-year", "and a hyphenated year is still a year");
+});
+
+/* THE MONTH IS READ IN CENTRAL TIME. From 18:00 CST (19:00 CDT) on a month's last
+   day UTC is already the next month. Read in UTC, "Nov 2026" at 20:00 CST on Nov 30
+   was flagged past (so the November bid was skipped for December's) and a bare
+   "November" was keyed a year out. */
+const LATE = "2026-12-01T02:00:00Z";                  // 8:00 pm CST, Nov 30
+test("month end: 20:00 CST on Nov 30 is still November", () => {
+  const a = delivery("Nov 2026", LATE);
+  assert.equal(a.key, "2026-11");
+  assert.equal(a.past, false, "the current month is not past");
+  assert.equal(delivery("November", LATE).key, "2026-11", "a bare month is this year's, not a year out");
+  assert.equal(delivery("Dec", LATE).key, "2026-12");
+  assert.equal(delivery("Oct 2026", LATE).past, true, "October is past");
+  assert.equal(delivery("Nov 2026", "2026-12-01T05:59:00Z").past, false, "05:59Z is still 23:59 CST");
+  assert.equal(delivery("Nov 2026", "2026-12-01T06:00:01Z").past, true, "06:00:01Z is December in Chicago");
+});
+test("year end: Dec 31 23:30 CST and Jan 1 00:30 CST", () => {
+  const dec31 = "2027-01-01T05:30:00Z", jan1 = "2027-01-01T06:30:00Z";
+  assert.equal(delivery("Dec", dec31).key, "2026-12", "Dec 31 23:30 CST is still 2026");
+  assert.equal(delivery("Dec 2026", dec31).past, false);
+  assert.equal(delivery("Jan", dec31).key, "2027-01");
+  assert.equal(delivery("Dec 2026", jan1).past, true);
+  assert.equal(delivery("Dec", jan1).key, "2027-12", "Jan 1 00:30 CST is 2027");
+  assert.equal(delivery("Jan", jan1).key, "2027-01");
+});
+test("daylight saving days: the month turns at Central midnight, not at 00:00 UTC", () => {
+  /* Mar 8 2026 is the spring-forward day; Nov 1 2026 the fall-back day. */
+  assert.equal(delivery("Mar 2026", "2026-03-08T07:59:00Z").past, false, "03:59 CDT Mar 8");
+  assert.equal(delivery("Mar", "2026-03-08T07:59:00Z").key, "2026-03");
+  assert.equal(delivery("Feb 2026", "2026-03-01T05:30:00Z").past, false, "Feb 28 23:30 CST");
+  assert.equal(delivery("Feb 2026", "2026-03-01T06:30:00Z").past, true, "Mar 1 00:30 CST");
+  assert.equal(delivery("Mar 2026", "2026-04-01T04:30:00Z").past, false, "Mar 31 23:30 CDT");
+  assert.equal(delivery("Mar 2026", "2026-04-01T05:30:00Z").past, true, "Apr 1 00:30 CDT");
+  assert.equal(delivery("Oct 2026", "2026-11-01T04:30:00Z").past, false, "Oct 31 23:30 CDT");
+  assert.equal(delivery("Oct 2026", "2026-11-01T05:30:00Z").past, true, "Nov 1 00:30 CDT");
+  assert.equal(delivery("Nov 2026", "2026-11-01T07:30:00Z").past, false, "01:30 CST after the fall-back");
+  assert.equal(delivery("Oct", "2026-11-01T04:30:00Z").key, "2026-10");
+  assert.equal(delivery("October", "2026-11-01T05:30:00Z").key, "2027-10", "Nov 1: October is next year");
+});
+test("replay over the committed boards: reading at 20:00 CST on Nov 30 loses no current row", () => {
+  const dir = new URL("../data/", import.meta.url);
+  const noon = "2026-11-30T18:00:00Z";
+  let keyed = 0;
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith(".json")) continue;
+    let j; try { j = JSON.parse(readFileSync(new URL(f, dir), "utf8")); } catch { continue; }
+    for (const b of j.bids || []) {
+      if (typeof b.delivery !== "string") continue;
+      const a = delivery(b.delivery, noon), c = delivery(b.delivery, LATE);
+      if (a.key == null) continue;
+      keyed++;
+      assert.deepEqual([c.key, c.past], [a.key, a.past], `${f}: "${b.delivery}" reads the same at noon and 20:00 CST`);
+    }
+  }
+  assert.ok(keyed > 1000, "the replay read real rows");
 });
