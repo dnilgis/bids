@@ -45,6 +45,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { crop, ppu, plausible, basisCents, basisDollars, PPU_BAND } from "../lib/crop.mjs";
 import { delivery } from "../lib/delivery.mjs";
+import { centralMonth } from "../lib/central.mjs";
 import { feedVerdict, WITHDRAW_H, withdrawHFor, agingStamp } from "../lib/freshness.mjs";
 import { resolveCurrency, countryOfCurrency } from "../lib/currency.mjs";
 import { yardLosers } from "../lib/same-yard.mjs";
@@ -329,15 +330,7 @@ export const HELD_SKIP_H = 6;
    hide a board's only premium row. The premium test comes first for that reason. */
 export const SPECIAL_GRADE = /non[- ]?gmo|nongmo|organic|plenish|\bip\b|identity[- ]?pres|high[- ]?oleic|food[- ]?grade|\bfood\b|waxy|popcorn|conventional|vistive|clear hilum|tofu|natto|\bwhite\b|\bfeed\b|durum|\bsww\b|spring|\bhrs\b|\bdns\b|dark northern|mgex/i;
 export const NOW_MAX_MONTHS = 2;
-export function centralMonth(d) {
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit" }).formatToParts(d);
-    const y = parts.find((p) => p.type === "year")?.value, m = parts.find((p) => p.type === "month")?.value;
-    if (y && m) return `${y}-${m}`;
-  } catch { /* no time zone data: a fixed offset below */ }
-  const c = new Date(d.getTime() - 6 * 3.6e6);
-  return ym(c.getUTCFullYear(), c.getUTCMonth() + 1);
-}
+export { centralMonth };
 const monthsAhead = (from, to) => (+to.slice(0, 4) - +from.slice(0, 4)) * 12 + (+to.slice(5, 7) - +from.slice(5, 7));
 /* The spring and white wheat classes are a class, not a premium, where wheat is
    kept by class: a "Spring Wheat" board in North Dakota has a plain wheat bid. */
