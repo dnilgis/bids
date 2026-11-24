@@ -36,9 +36,7 @@ const read = (f) => readFileSync(join(DIR, f), "utf8");
    of not testing a board. */
 const boards = () => readdirSync(DIR)
   .filter((f) => /^agricharts-(?!quotes|cashgrid)/.test(f)).sort();
-/* the mobile quote pages; the desktop captures (agricharts-quotes-desktop-*)
-   have their own tests in test/agricharts-quote-hosts.test.mjs */
-const quotePages = () => readdirSync(DIR).filter((f) => /^agricharts-quotes-(?!desktop-)/.test(f)).sort();
+const quotePages = () => readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).sort();
 
 /* ── the boards ──────────────────────────────────────────────────────────── */
 

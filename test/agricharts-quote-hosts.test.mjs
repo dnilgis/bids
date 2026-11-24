@@ -19,8 +19,8 @@ import {
 import { SHARED_PAGES } from "../lib/adapters/index.mjs";
 
 const fx = (f) => readFileSync(new URL(`../fixtures/${f}`, import.meta.url), "utf8");
-const FEED = "agricharts-quotes-desktop-www-marketdata-jsquote-php-varname-quotes-symbols-zc-1-zc-2-zc-3.html";
-const EGRAINS = "agricharts-quotes-desktop-ceagrain-markets-fixed-php-page-egrains.html";
+const FEED = "desktop-agricharts-quotes-www-marketdata-jsquote-php-varname-quotes-symbols-zc-1-zc-2-zc-3.html";
+const EGRAINS = "desktop-agricharts-quotes-ceagrain-markets-fixed-php-page-egrains.html";
 const feed = () => fx(FEED);
 
 test("the feed is asked first and the mobile pages last", () => {
@@ -36,7 +36,7 @@ test("the feed URL is exactly the one the desktop futures page loads", () => {
   const src = page.match(/src="(\/\/www\.agricharts\.com\/marketdata\/jsquote\.php[^"]*)"/)[1]
     .replace(/&amp;/g, "&");
   assert.equal("https:" + src, QUOTE_FEED_URL);
-  const log = JSON.parse(fx("agricharts-quotes-desktop-captures.json"));
+  const log = JSON.parse(fx("desktop-agricharts-quotes-captures.json"));
   const row = log.find((r) => r.file === FEED);
   assert.equal(row.url, QUOTE_FEED_URL, "the fixture is the answer to this exact URL");
   assert.equal(row.status, 200);
@@ -46,7 +46,7 @@ test("the feed URL is exactly the one the desktop futures page loads", () => {
 
 test("the desktop pages themselves carry no price table, so the feed is what is read", () => {
   assert.equal(isQuotePage(fx(EGRAINS)), false);
-  assert.equal(isQuotePage(fx("agricharts-quotes-desktop-ceagrain-markets-quotes-php-root-zc.html")), false);
+  assert.equal(isQuotePage(fx("desktop-agricharts-quotes-ceagrain-markets-quotes-php-root-zc.html")), false);
   assert.equal(isQuoteFeed(feed()), true);
   assert.equal(isQuotePage(feed()), true);
 });

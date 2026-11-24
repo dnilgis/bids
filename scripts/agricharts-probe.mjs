@@ -396,13 +396,14 @@ const PLATFORM_CONTROL = "https://zzznotarealcoopxyz.mobile.agricharts.com/cash/
 /* A DESKTOP HOST IS NAMED APART FROM THE MOBILE ONE. Since 2026-11-20 every
    *.mobile.agricharts.com host answers 500, and the desktop site of the same
    co-ops answers the same runner. Its pages are captured under their own
-   names (agricharts-quotes-desktop-<sub>-<page>.html) so the mobile fixtures
-   the parser was written against stay exactly as they were received. */
+   names (desktop-agricharts-quotes-<sub>-<page>.html) so the mobile fixtures
+   the parser was written against stay exactly as they were received, and no
+   glob over agricharts-quotes-* or agricharts-* picks them up as one. */
 export function quoteFixtureName(host, name) {
   const h = new URL(host).host;
   if (/\.mobile\.agricharts\.com$/.test(h) || /^mobile\./.test(h)) return `agricharts-quotes-${name}.html`;
   const sub = h.replace(/\.agricharts\.com$/, "").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  return `agricharts-quotes-desktop-${sub}-${name}.html`;
+  return `desktop-agricharts-quotes-${sub}-${name}.html`;
 }
 export const quoteHosts = (s) => String(s ?? "").split(/[\s]+|,(?=https?:)/).filter(Boolean)
   .map((h) => h.replace(/\/+$/, ""));
@@ -451,7 +452,7 @@ async function quotesRun(cfg) {
     writeFileSync(file0, r.body);
     wrote.push({ file: file0, url, bytes: r.bytes });
     if (desktop) {
-      const log = join(cfg.out, "agricharts-quotes-desktop-captures.json");
+      const log = join(cfg.out, "desktop-agricharts-quotes-captures.json");
       let rows = [];
       try { rows = JSON.parse(readFileSync(log, "utf8")); } catch { rows = []; }
       rows = rows.filter((x) => x.file !== file0.split("/").pop());

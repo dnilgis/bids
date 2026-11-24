@@ -420,10 +420,12 @@ test("the platform is declared, wired and reachable through the registry", () =>
   assert.equal(typeof adapterFor("agricharts-cashgrid"), "function");
 });
 
-test("it shares the same seven quote pages, fetched once", () => {
+test("it shares the same quote sources (the feed, then the seven mobile pages), fetched once", () => {
   const a = SHARED_PAGES["agricharts"], b = SHARED_PAGES["agricharts-cashgrid"];
   assert.deepEqual(b.urls, a.urls);
-  assert.equal(b.urls.length, 7);
+  assert.deepEqual(b.alternates, a.alternates);
+  assert.equal(b.urls.length, 1);
+  assert.equal(b.alternates.at(-1).length, 7);
   assert.ok(b.build([read("agricharts-quotes-corn.html")]).contracts.length > 0);
 });
 

@@ -31,9 +31,7 @@ import { VERIFIED_BY, mergeQuotes, quoteUrls, QUOTE_FEED_URL } from "../lib/adap
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
 const read = (f) => readFileSync(join(DIR, f), "utf8");
-/* the mobile quote pages only; the desktop captures are tested on their own */
-const MOBILE_QUOTES = /^agricharts-quotes-(?!desktop-).*\.html$/;
-const CONTRACTS = mergeQuotes(readdirSync(DIR).filter((f) => MOBILE_QUOTES.test(f)).map(read));
+const CONTRACTS = mergeQuotes(readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).map(read));
 
 /* Two rows in the shape every adapter returns, with no quoted future — which
    is the only situation this whole path is about. */
@@ -210,7 +208,7 @@ test("the shared pages: the quote feed first, then seven absolute URLs on one ho
 
 test("build turns the captured bodies into contracts", () => {
   const ctx = SHARED_PAGES.agricharts.build(
-    readdirSync(DIR).filter((f) => MOBILE_QUOTES.test(f)).map(read));
+    readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).map(read));
   assert.equal(ctx.contracts.filter((c) => c.priced).length, 87);
 });
 
