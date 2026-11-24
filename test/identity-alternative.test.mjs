@@ -27,7 +27,8 @@ import { join } from "node:path";
 import { buildFile, Refused } from "../lib/board.mjs";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { toConfig, PLATFORMS } from "../lib/sources.mjs";
-import { VERIFIED_BY, mergeQuotes, quoteUrls, QUOTE_FEED_URL } from "../lib/adapters/agricharts.mjs";
+import { VERIFIED_BY, mergeQuotes, quoteUrls, QUOTE_FEED_URL, QUOTE_FEED_ROOTS, quoteFeedRootUrl }
+  from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
 const read = (f) => readFileSync(join(DIR, f), "utf8");
@@ -192,9 +193,10 @@ test("every adapter is a declared platform, and every declared platform has an a
 test("the shared pages: the quote feed first, then seven absolute URLs on one host", () => {
   const spec = SHARED_PAGES.agricharts;
   assert.ok(spec, "agricharts must declare the page it cannot fetch for itself");
-  /* The first set is one request to the desktop site's quote feed. */
-  assert.deepEqual(spec.urls, [QUOTE_FEED_URL]);
-  assert.match(spec.urls[0], /^https:\/\/www\.agricharts\.com\/marketdata\/jsquote\.php\?/);
+  /* The first set is the desktop site's quote feed: the strip, then one
+     request per root for rice and the deferred contracts. */
+  assert.deepEqual(spec.urls, [QUOTE_FEED_URL, ...QUOTE_FEED_ROOTS.map(quoteFeedRootUrl)]);
+  for (const u of spec.urls) assert.match(u, /^https:\/\/www\.agricharts\.com\/marketdata\/jsquote\.php\?/);
   /* The fallback is the mobile pages, unchanged. */
   assert.equal(spec.alternates.length, 1);
   const mobile = spec.alternates[0];

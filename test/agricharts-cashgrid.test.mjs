@@ -424,7 +424,9 @@ test("it shares the same quote sources (the feed, then the seven mobile pages), 
   const a = SHARED_PAGES["agricharts"], b = SHARED_PAGES["agricharts-cashgrid"];
   assert.deepEqual(b.urls, a.urls);
   assert.deepEqual(b.alternates, a.alternates);
-  assert.equal(b.urls.length, 1);
+  assert.equal(b.providers, a.providers, "and the same quote providers");
+  /* the strip feed and the four per-root feeds (rice and the deferreds) */
+  assert.equal(b.urls.length, 5);
   assert.equal(b.alternates.at(-1).length, 7);
   assert.ok(b.build([read("agricharts-quotes-corn.html")]).contracts.length > 0);
 });

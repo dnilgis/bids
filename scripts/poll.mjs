@@ -54,6 +54,7 @@ import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak, botCheckM
          botCheckWaiting as waitingOutBotCheck, refusalHolds, refusalWaiting as waitingOutRefusal,
          holdUntilFor, HostHold, isRefusalStatus } from "../lib/breaker.mjs";
 import { adapterFor, optionsFor, withPageContext, SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { readShared, describeQuotes, sharedWarnings } from "../lib/quotes.mjs";
 import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
 import { planLanes, drain } from "../lib/lanes.mjs";
 
@@ -663,53 +664,28 @@ function sharedFor(platform) {
   const key = spec.urls.join("|");
   if (sharedCtx.has(key)) return sharedCtx.get(key);
   const p = (async () => {
-  const bodies = [], problems = [];
-  /* A DEADLINE EACH, NOT ONE BETWEEN THEM. These are seven DIFFERENT pages
-     and every one that answers is wanted -- unlike a source's url list, where
+  /* A DEADLINE EACH, NOT ONE BETWEEN THEM. These are DIFFERENT pages and
+     every one that answers is wanted -- unlike a source's url list, where
      the entries are one site written two ways and the first good answer ends
-     it. Still clamped to the budget, so seven hung quote pages cannot spend
-     more of the pass than there was left. */
-  /* THE NEXT SET ONLY WHEN THIS ONE GAVE NOTHING. A spec can name url sets
-     in order (`urls`, then each of `alternates`): the quote feed first, the
-     mobile pages after. Every url of a set is asked; a 200 that is not the
-     expected page (`accepts`: an error page, a login) counts as a failure. If
-     a set yields at least one page the later sets are not asked; if it yields
-     none, what it said is logged and the next set is asked. Only the failures
-     of the set that was used, or of every set when none answered, are
-     problems below. */
-  const sets = [spec.urls, ...(spec.alternates ?? [])];
-  const skipped = [];
-  for (let si = 0; si < sets.length; si++) {
-    const setProblems = [];
-    for (const u of sets[si]) {
-      try {
-        const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
-                                         redirect: "follow" }, fetchDeadline());
-        if (!res.ok) { setProblems.push(`${u} -> HTTP ${res.status}`); continue; }
-        const body = await res.text();
-        if (!body.length) { setProblems.push(`${u} -> empty response`); continue; }
-        if (spec.accepts && !spec.accepts(body)) { setProblems.push(`${u} -> not the expected page`); continue; }
-        bodies.push(body);
-      } catch (e) { setProblems.push(`${u} -> ${e.message}`); }
-    }
-    if (bodies.length || si === sets.length - 1) { problems.push(...skipped, ...setProblems); break; }
-    skipped.push(...setProblems);
-    console.log(`   ${platform}: shared page set ${si + 1} of ${sets.length} gave nothing `
-      + `(${setProblems.slice(0, 2).join("; ")}); asking the next`);
-  }
-  let ctx = null;
-  if (bodies.length) {
-    try { ctx = spec.build(bodies); }
-    catch (e) { problems.push(`the ${bodies.length} page(s) that answered would not parse: ${e.message}`); }
-  }
+     it. Still clamped to the budget, so hung quote pages cannot spend more of
+     the pass than there was left. */
+  const get = async (u) => {
+    try {
+      const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
+                                       redirect: "follow" }, fetchDeadline());
+      if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+      return { ok: true, body: await res.text() };
+    } catch (e) { return { ok: false, error: e.message }; }
+  };
+  /* THE NEXT SET ONLY WHEN THIS ONE GAVE NOTHING, and for the CBOT quote
+     every provider on its own, combined per contract: lib/quotes.mjs
+     readShared, the one function the poller and both sweeps run. */
+  const { ctx, problems } = await readShared(spec, get, {
+    now: new Date(now), log: (line) => console.log(`   ${platform}: ${line}`) });
+  const said = describeQuotes(ctx?.contracts);
+  if (said) console.log(`   ${platform}: ${said}`);
   if (problems.length)
-    console.error(`::warning title=${platform} shared page(s)::${problems.length} of `
-      + `${spec.urls.length} failed — ${spec.why}. ${problems.slice(0, 4).join("; ")}`
-      + `${ctx ? " The rest were read and the platform continues on those."
-              : spec.optional ? ` Nothing was read; ${platform} publishes on its own printed futures price `
-                + `this pass, without this cross-check.`
-              : " Nothing was read, so every " + platform + " source will refuse this pass rather "
-                + "than publish unchecked."}`);
+    for (const line of sharedWarnings(platform, spec, problems, ctx)) console.error(line);
   else
     console.log(`   ${platform}: read ${spec.urls.length} shared page(s) once for the whole pass `
       + `(${spec.why})`);

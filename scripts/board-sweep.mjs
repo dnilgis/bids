@@ -65,6 +65,7 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { readShared } from "../lib/quotes.mjs";
 import { joinDirectory, slug, phoneOf, operatorSlug } from "./agricharts-sweep.mjs";
 import { validateSource, transportOf } from "../lib/sources.mjs";
 import { capture, redactText } from "../lib/cdp.mjs";
@@ -935,17 +936,16 @@ export async function main(argv = process.argv.slice(2), io = IO) {
     if (!spec) return undefined;
     const key = spec.urls.join("|");
     if (shared.has(key)) return shared.get(key);
-    const bodies = [];
-    /* url sets in order, the next only when this one gave nothing, as the poller does */
-    for (const set of [spec.urls, ...(spec.alternates ?? [])]) {
-      for (const u of set) {
-        const r = await io.get(u, cfg.timeoutMs);
-        if (r.ok && r.status === 200 && r.body && (!spec.accepts || spec.accepts(r.body))) bodies.push(r.body);
-      }
-      if (bodies.length) break;
-    }
+    /* url sets in order, the next only when this one gave nothing, and every
+       quote provider combined per contract: the poller's own reader
+       (lib/quotes.mjs readShared) */
+    const get = async (u) => {
+      const r = await io.get(u, cfg.timeoutMs);
+      return r.ok && r.status === 200 ? { ok: true, body: r.body ?? "" }
+        : { ok: false, error: r.error ?? `HTTP ${r.status}` };
+    };
     let ctx = null;
-    try { ctx = bodies.length ? spec.build(bodies) : null; } catch { ctx = null; }
+    try { ({ ctx } = await readShared(spec, get)); } catch { ctx = null; }
     shared.set(key, ctx);
     return ctx;
   };
