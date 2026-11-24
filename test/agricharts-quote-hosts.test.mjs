@@ -14,9 +14,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   QUOTE_FEED_URL, quoteSources, quoteUrls, isQuotePage, isQuoteFeed, parseQuoteFeed,
-  parseQuotes, readQuotes, mergeQuotes, extract, AgriChartsRefused,
+  parseQuotes, readQuotes, mergeQuotes, extract, AgriChartsRefused, QUOTE_FEED_ROOTS, quoteFeedRootUrl,
 } from "../lib/adapters/agricharts.mjs";
 import { SHARED_PAGES } from "../lib/adapters/index.mjs";
+import { QUOTE_PROVIDERS, readShared, AGSIST_PRICES_URL } from "../lib/quotes.mjs";
 
 const fx = (f) => readFileSync(new URL(`../fixtures/${f}`, import.meta.url), "utf8");
 const FEED = "desktop-agricharts-quotes-www-marketdata-jsquote-php-varname-quotes-symbols-zc-1-zc-2-zc-3.html";
@@ -26,7 +27,8 @@ const feed = () => fx(FEED);
 test("the feed is asked first and the mobile pages last", () => {
   const sets = quoteSources();
   assert.equal(sets.length, 2);
-  assert.deepEqual(sets[0], [QUOTE_FEED_URL]);
+  assert.deepEqual(sets[0], [QUOTE_FEED_URL, ...QUOTE_FEED_ROOTS.map(quoteFeedRootUrl)]);
+  assert.deepEqual(QUOTE_FEED_ROOTS, ["ZR", "ZC", "ZS", "ZW"], "rice first: the strip form carries none");
   assert.deepEqual(sets.at(-1), quoteUrls());
   for (const u of sets.at(-1)) assert.match(new URL(u).host, /\.mobile\.agricharts\.com$/);
 });
@@ -44,6 +46,19 @@ test("the feed URL is exactly the one the desktop futures page loads", () => {
   assert.match(row.userAgent, /agsist-bidreader/, "asked as the poller asks");
 });
 
+test("the per-root feed URL is the one the desktop root page loads, and each was captured", () => {
+  const page = fx("desktop-agricharts-quotes-ceagrain-markets-quotes-php-root-zc.html").replace(/&amp;/g, "&");
+  assert.ok(page.includes(quoteFeedRootUrl("ZC").replace(/^https:/, "")), "quotes.php?root=ZC loads this form");
+  const log = JSON.parse(fx("desktop-agricharts-quotes-captures.json"));
+  for (const root of QUOTE_FEED_ROOTS) {
+    const row = log.find((r) => r.url === quoteFeedRootUrl(root));
+    assert.ok(row, `${root}: captured from the runner`);
+    assert.equal(row.status, 200);
+    assert.match(row.userAgent, /agsist-bidreader/);
+    assert.ok(parseQuoteFeed(fx(row.file)).filter((q) => q.priced && q.root === root).length >= 7, root);
+  }
+});
+
 test("the desktop pages themselves carry no price table, so the feed is what is read", () => {
   assert.equal(isQuotePage(fx(EGRAINS)), false);
   assert.equal(isQuotePage(fx("desktop-agricharts-quotes-ceagrain-markets-quotes-php-root-zc.html")), false);
@@ -52,12 +67,12 @@ test("the desktop pages themselves carry no price table, so the feed is what is 
 });
 
 test("every platform on the CBOT quote reads the same sets and rejects a non-quote page", () => {
-  const specs = Object.entries(SHARED_PAGES).filter(([, s]) =>
-    JSON.stringify(s.urls) === JSON.stringify([QUOTE_FEED_URL]));
+  const specs = Object.entries(SHARED_PAGES).filter(([, s]) => s.urls[0] === QUOTE_FEED_URL);
   assert.ok(specs.length >= 10, `found ${specs.length}`);
   for (const [name, s] of specs) {
     assert.deepEqual([s.urls, ...s.alternates], quoteSources(), name);
     assert.equal(s.accepts, isQuotePage, `${name} would parse any 200`);
+    assert.equal(s.providers, QUOTE_PROVIDERS, `${name} reads the second quote source too`);
   }
 });
 
@@ -75,7 +90,9 @@ test("the feed reads into the same contract shape, in cents", () => {
     { ...by("ZCZ26") },
     { symbol: "ZCZ26", root: "ZC", monthCode: "Z", year: 2026, name: "Corn",
       title: "Corn December 2026", lastCents: 435, lastRaw: "435", priced: true, unit: "bushel",
-      grain: "Corn", notation: "eighths", settled: false, flag: null, changeCents: 0.75, at: "11/24/26" });
+      grain: "Corn", notation: "eighths", settled: false, flag: null, changeCents: 0.75, at: "11/24/26",
+      /* 12:31:45 on the feed's Central clock; the previous session's settlement on its date */
+      tradedAt: "2026-11-24T18:31:45.000Z", settlements: { "2026-11-23": 434.25 }, source: "agricharts-feed" });
   assert.equal(by("ZSF27").lastCents, 1238.25);
   assert.equal(by("ZWZ26").lastCents, 572);
   assert.equal(by("KEZ26").lastCents, 615);
@@ -124,13 +141,52 @@ test("the check is exactly as strict: no quotes still refuses", () => {
   assert.throws(() => extract(board, "u", { contracts: [] }), AgriChartsRefused);
 });
 
-test("the poller and the sweeps ask the next set only when one gave nothing", () => {
+/* THE FALLBACK ORDER, RUN. The poller and the board sweep both hand their own
+   fetch to lib/quotes.mjs readShared, so this runs the order they run, against
+   a fake network: which URLs are asked, in what order, and what comes back. */
+const FEED_SET = quoteSources()[0];
+const run = async (answer) => {
+  const asked = [];
+  const r = await readShared(SHARED_PAGES.agricharts, async (u) => { asked.push(u); return answer(u); },
+    { now: new Date("2026-11-24T18:45:00Z") });
+  return { asked, ...r };
+};
+const ok = (body) => ({ ok: true, body });
+const http500 = { ok: false, error: "HTTP 500" };
+const isMobile = (u) => /\.mobile\.agricharts\.com\//.test(u);
+const isAgsist = (u) => u === AGSIST_PRICES_URL;
+
+test("the poller's order, run: a feed that answers means the mobile pages are never asked", async () => {
+  const { asked, ctx } = await run((u) => (FEED_SET.includes(u) ? ok(feed()) : isAgsist(u) ? http500 : ok("")));
+  assert.deepEqual(asked.filter((u) => !isAgsist(u)), FEED_SET, "every feed url, and nothing else from AgriCharts");
+  assert.ok(asked.some(isAgsist), "the second source is asked on its own, every pass");
+  assert.equal(asked.filter(isMobile).length, 0);
+  assert.ok(ctx.contracts.filter((c) => c.priced).length >= 41);
+});
+
+test("the poller's order, run: a feed that fails sends it to the mobile pages, in order", async () => {
+  const corn = fx("agricharts-quotes-corn.html");
+  const { asked, ctx, problems } = await run((u) => (FEED_SET.includes(u) ? http500
+    : isMobile(u) ? (/root=ZC$/.test(u) ? ok(corn) : http500) : http500));
+  const ac = asked.filter((u) => !isAgsist(u));
+  assert.deepEqual(ac, [...FEED_SET, ...quoteUrls()], "the feed set first, then all seven mobile pages");
+  assert.ok(ctx === null || ctx.contracts.every((c) => !c.priced),
+    "September's mobile capture is stale on a November clock, so nothing is priced");
+  assert.ok(problems.some((p) => /HTTP 500/.test(p)));
+});
+
+test("the poller's order, run: a 200 that is not a quote page is a failure, not a page", async () => {
+  const { asked, ctx } = await run((u) => (isAgsist(u) ? http500 : ok("<html>500 Internal Server Error</html>")));
+  assert.equal(asked.filter(isMobile).length, 7, "it fell through to the mobile pages");
+  assert.equal(ctx, null, "and with nothing readable anywhere there is no context: every board refuses");
+});
+
+test("the poller and the board sweep run that one reader", () => {
   const poll = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
-  assert.match(poll, /const sets = \[spec\.urls, \.\.\.\(spec\.alternates \?\? \[\]\)\]/);
-  assert.match(poll, /spec\.accepts && !spec\.accepts\(body\)/);
-  assert.match(poll, /if \(bodies\.length \|\| si === sets\.length - 1\)/);
+  assert.match(poll, /import \{ readShared, describeQuotes \} from "\.\.\/lib\/quotes\.mjs"/);
+  assert.match(poll, /await readShared\(spec, get,/);
   const sweep = readFileSync(new URL("../scripts/board-sweep.mjs", import.meta.url), "utf8");
-  assert.match(sweep, /\[spec\.urls, \.\.\.\(spec\.alternates \?\? \[\]\)\]/);
+  assert.match(sweep, /await readShared\(spec, get\)/);
   const ac = readFileSync(new URL("../scripts/agricharts-sweep.mjs", import.meta.url), "utf8");
   assert.match(ac, /for \(const set of quoteSources\(\)\)/);
 });
