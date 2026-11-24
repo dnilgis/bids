@@ -404,7 +404,7 @@ export function quoteFixtureName(host, name) {
   const sub = h.replace(/\.agricharts\.com$/, "").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   return `agricharts-quotes-desktop-${sub}-${name}.html`;
 }
-export const quoteHosts = (s) => String(s ?? "").split(/[\s,]+/).filter(Boolean)
+export const quoteHosts = (s) => String(s ?? "").split(/[\s]+|,(?=https?:)/).filter(Boolean)
   .map((h) => h.replace(/\/+$/, ""));
 
 async function quotesRun(cfg) {
@@ -413,7 +413,15 @@ async function quotesRun(cfg) {
     for (const h of hosts) await quotesRun({ ...cfg, quotesHost: h });
     return 0;
   }
-  const base = hosts[0];
+  /* AN ENTRY WITH A PATH IS ONE PAGE, not a host: the desktop sites do not
+     all carry /markets/futures.php (several answer 404 there), so a page they
+     do carry can be asked for by its full URL and kept under its own name. */
+  const u0 = new URL(hosts[0]);
+  const base = u0.origin;
+  const onePage = u0.pathname !== "/" || u0.search
+    ? [[(u0.pathname + u0.search).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase(),
+        u0.pathname + u0.search]]
+    : null;
   const desktop = quoteFixtureName(base, "x") !== "agricharts-quotes-x.html";
   /* The desktop capture asks as the poller asks (the bidreader user-agent),
      because the point is to learn whether the poller itself will be answered. */
@@ -422,7 +430,7 @@ async function quotesRun(cfg) {
     + `page(s) from ${base}${desktop ? " (desktop site, bidreader user-agent)" : ""}`);
   console.log("These are CBOT's numbers, not the operator's, so one host answers for all 211.\n");
   const wrote = [], missed = [], kept = [];
-  const wanted = cfg.only ? QUOTE_PAGES.filter(([n]) => cfg.only.includes(n)) : QUOTE_PAGES;
+  const wanted = onePage ?? (cfg.only ? QUOTE_PAGES.filter(([n]) => cfg.only.includes(n)) : QUOTE_PAGES);
   for (const [name, path] of wanted) {
     const file0 = join(cfg.out, quoteFixtureName(base, name));
     const fv0 = fixtureVerdict({ exists: existsSync(file0), refresh: cfg.refresh });
