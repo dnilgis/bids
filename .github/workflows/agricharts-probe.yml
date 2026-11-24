@@ -38,6 +38,13 @@ on:
         description: "Quote pages ONLY, skipping the board sweep. Not needed to get them — a plain run fetches any that are missing."
         type: boolean
         default: false
+      quotes_host:
+        # Since 2026-11-20 every *.mobile.agricharts.com host answers 500. A
+        # desktop host (https://<coop>.agricharts.com) is captured under
+        # fixtures/agricharts-quotes-desktop-<coop>-*.html, beside the mobile ones.
+        description: "Quote pages only: host(s) to take them from, separated by spaces. Blank uses the default mobile host."
+        required: false
+        default: ""
       refresh:
         # A fixture is frozen evidence: an adapter's tests are written against
         # these bytes, and a specimen that moves under the test means the day it
@@ -97,10 +104,12 @@ jobs:
           PROFILES: ${{ inputs.profiles }}
           QUOTES: ${{ inputs.quotes }}
           REFRESH: ${{ inputs.refresh }}
+          QUOTES_HOST: ${{ inputs.quotes_host }}
         run: |
           set -o pipefail
           ARGS=""
           if [ -n "$PROFILES" ]; then ARGS="--profiles $PROFILES"; fi
+          if [ -n "$QUOTES_HOST" ]; then ARGS="$ARGS --quotes-host $(printf '%s' "$QUOTES_HOST" | tr -s ' \n' ',,')"; fi
           if [ "$REFRESH" = "true" ]; then ARGS="$ARGS --refresh"; fi
           # The quote capture takes no target list and no profiles -- the
           # question of who we say we are is settled, and these are CBOT's
