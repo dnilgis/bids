@@ -8,7 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { placeKey, row, keepable, dedupe, subWindow, Tally, shardName, shardOf,
-         isBoardFile, nearestOpen, deliveryMonth } from "../scripts/merge_bids.mjs";
+         isBoardFile, nearestOpen, deliveryMonth, isPremium, SPECIAL_GRADE, NOW_MAX_MONTHS, bestOf, centralMonth } from "../scripts/merge_bids.mjs";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -453,7 +453,7 @@ test("a window that has closed is never the nearest one", () => {
      could take. */
   const got = nearestOpen([
     B("corn", "2026-08", 9.99, true),
-    B("corn", "2026-12", 5.00, false),
+    B("corn", "2026-11", 5.00, false),
   ], SEPT);
   assert.equal(got.corn.cash, 5.00, "the expired row must not win on price");
 });
@@ -470,7 +470,7 @@ test("a row with no price is not a bid", () => {
 
 test("each crop is answered on its own, and nothing else is invented", () => {
   const got = nearestOpen([
-    B("corn", "2026-12", 5.00), B("soybeans", "2026-11", 13.00),
+    B("corn", "2026-11", 5.00), B("soybeans", "2026-11", 13.00),
   ], SEPT);
   assert.deepEqual(Object.keys(got).sort(), ["corn", "soybeans"]);
 });
@@ -489,25 +489,26 @@ test("a board this pass did not ask keeps its last good read for 6 hours (agsist
   /* "skipped" is a pass that did not ask (pace, a bot check, the pass budget),
      not a failed read. NEW Cooperative answers most passes with a bot check
      and Landus is read 5 boards a pass, so dropping skipped rows emptied them. */
+  /* the later row is November: from mid-September a month 3+ out is never `now` (NOW_MAX_MONTHS) */
   const at = (h) => new Date(Date.parse(SEPT) - h * 3.6e6).toISOString();
   const held = nearestOpen([
     { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped", checkedAt: at(5) },
-    B("corn", "2026-12", 5.00),
+    B("corn", "2026-11", 5.00),
   ], SEPT);
   assert.equal(held.corn.cash, 4.10, "read 5 h ago: still counts");
   const old = nearestOpen([
     { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped", checkedAt: at(7) },
-    B("corn", "2026-12", 5.00),
+    B("corn", "2026-11", 5.00),
   ], SEPT);
   assert.equal(old.corn.cash, 5.00, "read 7 h ago: too old");
   const none = nearestOpen([
     { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "skipped" },
-    B("corn", "2026-12", 5.00),
+    B("corn", "2026-11", 5.00),
   ], SEPT);
   assert.equal(none.corn.cash, 5.00, "no read time: never held");
   const bad = nearestOpen([
     { ...B("corn", "2026-10", 4.10), stale: true, sourceStatus: "refused", checkedAt: at(1) },
-    B("corn", "2026-12", 5.00),
+    B("corn", "2026-11", 5.00),
   ], SEPT);
   assert.equal(bad.corn.cash, 5.00, "a refused board is never held");
 });
@@ -518,14 +519,14 @@ test("a price the board could not confirm this pass is not today's cash", () => 
      stale:true and 268 a sourceStatus that is not ok. */
   const stale = nearestOpen([
     { ...B("corn", "2026-10", 9.99), stale: true },
-    B("corn", "2026-12", 5.00),
+    B("corn", "2026-11", 5.00),
   ], SEPT);
   assert.equal(stale.corn.cash, 5.00, "a stale row must not win on nearness");
 
   for (const st of ["broken", "refused"]) {
     const got = nearestOpen([
       { ...B("corn", "2026-10", 9.99), sourceStatus: st },
-      B("corn", "2026-12", 5.00),
+      B("corn", "2026-11", 5.00),
     ], SEPT);
     assert.equal(got.corn.cash, 5.00, `a ${st} source must not win on nearness`);
   }
@@ -585,11 +586,14 @@ test("May: old crop is today, new crop opens at its window start", () => {
   ], "2026-05-12");
   assert.equal(got.corn.period, "oldcrop-2025");
 
+  /* Nov 20, 2026: in May both are 4+ months out, so neither is `now`; the nearest of them is `nowLater` */
+  const noOldSide = { special: {}, later: {} };
   const noOld = nearestOpen([
     B("corn", "newcrop-2026", 4.40),   // Sep 2026
     B("corn", "2026-12", 4.30),
-  ], "2026-05-12");
-  assert.equal(noOld.corn.period, "newcrop-2026", "Sep beats Dec");
+  ], "2026-05-12", noOldSide);
+  assert.equal(noOld.corn, undefined, "September is 4 months out: not a current bid");
+  assert.equal(noOldSide.later.corn.period, "newcrop-2026", "Sep beats Dec in nowLater");
 
   const fwd = nearestOpen([
     B("corn", "newcrop-2026", 4.40),   // Sep 2026
@@ -709,8 +713,80 @@ test("the gradable \"(YYYY-MM)\" suffix is the futures contract and is NOT read 
 test("a Canadian board is not stale and is not dropped here", () => {
   /* Whether a page can draw CAD is that page's question. The place row carries
      `currency` so it can ask without fetching the shard. */
-  const got = nearestOpen([{ ...B("corn", "2026-12", 5.00), currency: "CAD" }], SEPT);
+  const got = nearestOpen([{ ...B("corn", "2026-11", 5.00), currency: "CAD" }], SEPT);
   assert.equal(got.corn.cash, 5.00);
+});
+
+/* ── `now` IS THE PLAIN CURRENT BID (agsist, Nov 20, 2026) ────────────────
+   The rows below are the boards' own rows from the shards committed Nov 20,
+   2026 16:10 UTC (crop, period, commodity, cash as posted). */
+const NOV20 = "2026-11-20T16:17:13Z";
+const R = (crop, period, commodity, cash) => ({ crop, period, commodity, cash, periodPast: false, basis: null, basisCents: null, delivery: "" });
+test("Yoder Grain, Bluffton IN: the plain November soybeans are `now`, Plenish goes to nowSpecial", () => {
+  const side = { special: {}, later: {} };
+  const got = nearestOpen([
+    R("corn", "2026-11", "Corn", 4.5), R("corn", "2027-01", "Corn", 4.38),
+    R("soybeans", "2026-11", "Soybeans", 11.98), R("soybeans", "2027-01", "Soybeans", 12.08),
+    R("soybeans", "2026-11", "Plenish Soybean", 13.23), R("soybeans", "2027-03/2027-08", "Plenish Soybean", 13.5),
+  ], NOV20, side);
+  assert.equal(got.soybeans.commodity, "Soybeans");
+  assert.equal(got.soybeans.cash, 11.98, "the plain row, not the $1.25 premium in the same month");
+  assert.equal(side.special.soybeans.commodity, "Plenish Soybean");
+  assert.equal(side.special.soybeans.period, "2026-11");
+  assert.equal(nearestOpen([R("soybeans", "2026-11", "Plenish Soybean", 13.23)], NOV20).soybeans, undefined,
+    "a board that posts only the premium has no `now` soybeans");
+});
+test("Adell Cooperative WI: Harvest 2027 is not `now`; it is nowLater", () => {
+  const side = { special: {}, later: {} };
+  const got = nearestOpen([R("corn", "newcrop-2027", "Corn", 4.26), R("soybeans", "newcrop-2027", "Soybeans", 10.76)], NOV20, side);
+  assert.deepEqual(got, {}, "nothing current is posted");
+  assert.equal(side.later.corn.period, "newcrop-2027");
+  assert.equal(side.later.corn.cash, 4.26);
+});
+test("ADM Ledbetter KY: yellow corn is `now`, white corn is nowSpecial; the wheat classes stay plain", () => {
+  const side = { special: {}, later: {} };
+  const got = nearestOpen([R("corn", "2026-11", "Corn", 4.345), R("corn", "2026-11", "Corn (White)", 5.055),
+    R("corn", "2026-12", "Corn", 4.465), R("wheat", "2026-12", "Wheat (Soft Red Winter)", 5.69)], NOV20, side);
+  assert.equal(got.corn.commodity, "Corn");
+  assert.equal(got.corn.cash, 4.345);
+  assert.equal(side.special.corn.commodity, "Corn (White)");
+  assert.equal(got.wheat.cash, 5.69);
+  assert.equal(nearestOpen([R("wheat", "2026-12", "Spring Wheat, HRS 14%", 5.9)], NOV20).wheat.cash, 5.9, "spring wheat is a class, not a premium");
+  assert.equal(nearestOpen([R("wheat", "2026-12", "Organic Spring Wheat", 9.9)], NOV20).wheat, undefined, "organic is a premium in any class");
+  for (const c of ["HCP Corn", "Badger State Ethanol Corn", "Gmo Beans"]) assert.equal(isPremium({ crop: "corn", commodity: c }), false, c);
+  for (const c of ["Ip Soybeans", "Plenish Soybeans", "Non-GMO Soybean", "White Corn", "High Oleic Soybeans", "Food Grade Soybeans"])
+    assert.equal(isPremium({ crop: "soybeans", commodity: c }), true, c);
+});
+/* agsist's line, copied verbatim from components/bid-filter.js (agsist PR #755). With AGSIST_ROOT set to an
+   agsist checkout, the test reads that file and compares the live text instead of this copy. */
+const AGSIST_LINE = String.raw`  var SPECIAL_GRADE = /non[- ]?gmo|nongmo|organic|plenish|\bip\b|identity[- ]?pres|high[- ]?oleic|food[- ]?grade|\bfood\b|waxy|popcorn|conventional|vistive|clear hilum|tofu|natto|\bwhite\b|\bfeed\b|durum|\bsww\b|spring|\bhrs\b|\bdns\b|dark northern|mgex/i;`;
+test("the word list is agsist's (components/bid-filter.js), character for character", () => {
+  const src = process.env.AGSIST_ROOT && existsSync(join(process.env.AGSIST_ROOT, "components/bid-filter.js"))
+    ? readFileSync(join(process.env.AGSIST_ROOT, "components/bid-filter.js"), "utf8") : AGSIST_LINE;
+  const m = /var SPECIAL_GRADE = \/(.*?)\/i;/.exec(src);
+  assert.ok(m, "agsist's bid-filter.js no longer declares SPECIAL_GRADE");
+  assert.equal(SPECIAL_GRADE.source, m[1]);
+  assert.equal(NOW_MAX_MONTHS, 2);
+});
+test("best is the top PLAIN row; a premium top is bestSpecial (ADM Ledbetter KY, Nov 20, 2026)", () => {
+  const { best, bestSpecial } = bestOf([R("corn", "2026-11", "Corn", 4.345), R("corn", "2027-03", "Corn", 4.6),
+    R("corn", "2027-01/2027-03", "Corn (White)", 5.2975), R("soybeans", "2027-03", "Soybeans", 12.4875)]);
+  assert.equal(best.corn.commodity, "Corn");
+  assert.equal(best.corn.cash, 4.6);
+  assert.equal(bestSpecial.corn.commodity, "Corn (White)");
+  assert.equal(bestSpecial.soybeans, undefined, "no premium soybeans");
+  assert.deepEqual(bestOf([R("corn", "2026-11", "White Corn", 5)]).best, {}, "a premium-only board has no plain best");
+});
+test("the current month is Central time: 03:00 UTC on Dec 1 is still November", () => {
+  assert.equal(centralMonth(new Date("2026-12-01T03:00:00Z")), "2026-11");
+  assert.equal(centralMonth(new Date("2026-12-01T07:00:00Z")), "2026-12");
+  const side = { special: {}, later: {} };
+  const got = nearestOpen([R("corn", "2027-02", "Corn", 4.5)], "2026-12-01T03:00:00Z", side);
+  assert.equal(got.corn, undefined, "February is 3 months past November (Central), so it is nowLater");
+  assert.equal(side.later.corn.period, "2027-02");
+  /* a range not open yet is judged by its start, as agsist does: Jan-Mar and Jan agree in November */
+  assert.equal(nearestOpen([R("corn", "2027-01/2027-03", "Corn", 4.6)], NOV20).corn.period, "2027-01/2027-03");
+  assert.equal(nearestOpen([R("corn", "2027-02/2027-03", "Corn", 4.6)], NOV20).corn, undefined);
 });
 
 test("nearestOpen copes with nothing at all", () => {
