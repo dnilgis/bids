@@ -22,7 +22,7 @@ import { ADAPTERS, SHARED_PAGES, adapterFor } from "../lib/adapters/index.mjs";
 import { PLATFORMS, wireOf, transportOf, loadSources, toConfig, validateSource } from "../lib/sources.mjs";
 import { buildFile, isRefusal } from "../lib/board.mjs";
 import { decide } from "../lib/decide.mjs";
-import { quoteUrls } from "../lib/adapters/agricharts.mjs";
+import { quoteUrls, quoteSources } from "../lib/adapters/agricharts.mjs";
 import { plan, sourceFor, registryMatch, existingPortalSources } from "../scripts/portal-sources.mjs";
 import { shardOf } from "../scripts/merge_bids.mjs";
 
@@ -57,8 +57,10 @@ test("agsist-portal is a platform with an adapter, read as JSON over a plain fet
   assert.equal(typeof ADAPTERS["agsist-portal"], "function");
   assert.equal(wireOf("agsist-portal"), "json");
   assert.equal(transportOf("agsist-portal"), "fetch");
-  assert.deepEqual(SHARED_PAGES["agsist-portal"].urls, quoteUrls(),
-    "the same seven quote pages, so the pass fetches them once for every platform");
+  assert.deepEqual([SHARED_PAGES["agsist-portal"].urls, ...SHARED_PAGES["agsist-portal"].alternates],
+    quoteSources(),
+    "the same quote sources, so the pass fetches them once for every platform");
+  assert.deepEqual(SHARED_PAGES["agsist-portal"].alternates.at(-1), quoteUrls());
 });
 
 /* ── a two-elevator feed ───────────────────────────────────────────────── */

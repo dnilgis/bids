@@ -669,34 +669,34 @@ function sharedFor(platform) {
      the entries are one site written two ways and the first good answer ends
      it. Still clamped to the budget, so seven hung quote pages cannot spend
      more of the pass than there was left. */
-  /* A PAGE THAT DID NOT ANSWER IS ASKED ON THE NEXT HOST (spec.mirrors), in
-     order, and the first page that answers is the one kept. A failure is only
-     a problem once every host has failed it; the ones before it are named in
-     the log line so a host going down is still visible. */
-  const fellBack = [];
-  for (const u0 of spec.urls) {
-    const tried = [];
-    for (const u of [u0, ...(spec.mirrors?.(u0) ?? [])]) {
+  /* THE NEXT SET ONLY WHEN THIS ONE GAVE NOTHING. A spec can name url sets
+     in order (`urls`, then each of `alternates`): the quote feed first, the
+     mobile pages after. Every url of a set is asked; a 200 that is not the
+     expected page (`accepts`: an error page, a login) counts as a failure. If
+     a set yields at least one page the later sets are not asked; if it yields
+     none, what it said is logged and the next set is asked. Only the failures
+     of the set that was used, or of every set when none answered, are
+     problems below. */
+  const sets = [spec.urls, ...(spec.alternates ?? [])];
+  const skipped = [];
+  for (let si = 0; si < sets.length; si++) {
+    const setProblems = [];
+    for (const u of sets[si]) {
       try {
         const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
                                          redirect: "follow" }, fetchDeadline());
-        if (!res.ok) { tried.push(`${u} -> HTTP ${res.status}`); continue; }
+        if (!res.ok) { setProblems.push(`${u} -> HTTP ${res.status}`); continue; }
         const body = await res.text();
-        if (!body.length) { tried.push(`${u} -> empty response`); continue; }
-        /* A host that answers 200 with something other than the page (an error
-           page, a login) is a failure of that host, not a body to parse. */
-        if (spec.accepts && !spec.accepts(body)) { tried.push(`${u} -> not the expected page`); continue; }
+        if (!body.length) { setProblems.push(`${u} -> empty response`); continue; }
+        if (spec.accepts && !spec.accepts(body)) { setProblems.push(`${u} -> not the expected page`); continue; }
         bodies.push(body);
-        if (tried.length) fellBack.push(`${tried.join("; ")}; read ${new URL(u).host}`);
-        tried.length = 0;
-        break;
-      } catch (e) { tried.push(`${u} -> ${e.message}`); }
+      } catch (e) { setProblems.push(`${u} -> ${e.message}`); }
     }
-    if (tried.length) problems.push(tried.join("; "));
+    if (bodies.length || si === sets.length - 1) { problems.push(...skipped, ...setProblems); break; }
+    skipped.push(...setProblems);
+    console.log(`   ${platform}: shared page set ${si + 1} of ${sets.length} gave nothing `
+      + `(${setProblems.slice(0, 2).join("; ")}); asking the next`);
   }
-  if (fellBack.length)
-    console.log(`   ${platform}: ${fellBack.length} shared page(s) came from a later host: `
-      + fellBack.slice(0, 2).join(" | "));
   let ctx = null;
   if (bodies.length) {
     try { ctx = spec.build(bodies); }

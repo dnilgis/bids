@@ -24,7 +24,7 @@ import { extract, parseTables, parseCell, contractOf, deliveryLabel, boardDate,
 import { ADAPTERS, SHARED_PAGES, adapterFor } from "../lib/adapters/index.mjs";
 import { PLATFORMS, wireOf, transportOf, loadSources, toConfig } from "../lib/sources.mjs";
 import { buildFile } from "../lib/board.mjs";
-import { quoteUrls } from "../lib/adapters/agricharts.mjs";
+import { quoteUrls, quoteSources } from "../lib/adapters/agricharts.mjs";
 import { readdirSync } from "node:fs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -399,7 +399,9 @@ test("the platform is declared everywhere a platform has to be declared", () => 
 });
 
 test("it shares the CBOT quote pages AgriCharts already fetches, not a second set", () => {
-  assert.deepEqual(SHARED_PAGES.heartland.urls, quoteUrls());
+  assert.deepEqual([SHARED_PAGES.heartland.urls, ...SHARED_PAGES.heartland.alternates], quoteSources());
+  assert.deepEqual(SHARED_PAGES.heartland.alternates, SHARED_PAGES.agricharts.alternates);
+  assert.deepEqual(SHARED_PAGES.heartland.alternates.at(-1), quoteUrls());
   assert.deepEqual(SHARED_PAGES.heartland.urls, SHARED_PAGES.agricharts.urls);
   const bound = adapterFor("heartland", quotes());
   assert.equal(bound(BOARD, URL_).length, 625);

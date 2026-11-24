@@ -32,7 +32,7 @@ import { PLATFORMS, PLATFORM_TRANSPORT, wireOf, transportOf, validateSource, toC
          loadSources, awaitingFirstFile } from "../lib/sources.mjs";
 import { buildFile, isRefusal } from "../lib/board.mjs";
 import { decide } from "../lib/decide.mjs";
-import { quoteUrls } from "../lib/adapters/agricharts.mjs";
+import { quoteUrls, quoteSources } from "../lib/adapters/agricharts.mjs";
 import { parseMessage, textOf, qpDecode, decodeWords } from "../lib/mime.mjs";
 import { Imap, imapDate, quote } from "../lib/imap.mjs";
 import { readMessage, bungeOrigin, run } from "../scripts/email-bids.mjs";
@@ -254,7 +254,8 @@ test("bunge-email is a platform with an adapter, JSON, read from the checkout, o
   assert.equal(wireOf("bunge-email"), "json");
   assert.equal(transportOf("bunge-email"), "fetch", "not a browser platform");
   assert.ok(!("bunge-email" in PLATFORM_TRANSPORT));
-  assert.deepEqual(SHARED_PAGES["bunge-email"].urls, quoteUrls());
+  assert.deepEqual([SHARED_PAGES["bunge-email"].urls, ...SHARED_PAGES["bunge-email"].alternates], quoteSources());
+  assert.deepEqual(SHARED_PAGES["bunge-email"].alternates.at(-1), quoteUrls());
 });
 
 test("the shipped source is valid, enabled, and reads data/email/bunge-ladoga-in.json and nothing else", () => {

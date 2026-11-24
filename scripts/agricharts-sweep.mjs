@@ -43,7 +43,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { FACILITY, SUFFIX } from "../lib/place.mjs";
 import { fileURLToPath } from "node:url";
 import { join, dirname, isAbsolute } from "node:path";
-import { parseBoard, extract, mergeQuotes, quoteUrls, quoteMirrors, isQuotePage, VERIFIED_BY, cellText }
+import { parseBoard, extract, mergeQuotes, quoteUrls, quoteSources, isQuotePage, VERIFIED_BY, cellText }
   from "../lib/adapters/agricharts.mjs";
 import { extract as extractCashgrid } from "../lib/adapters/agricharts-cashgrid.mjs";
 import { VERIFIED_BY as CASHGRID_VERIFIED_BY } from "../lib/adapters/agricharts-cashgrid.mjs";
@@ -818,18 +818,22 @@ export async function main(argv = process.argv.slice(2), io = IO) {
   /* The quote pages first: without them no board can be checked and no manifest
      may be written. Seven requests for the whole sweep. */
   const quoteBodies = [];
-  for (const u0 of quoteUrls()) {
-    /* the next quote host for a page that did not answer, as the poller does */
-    for (const u of [u0, ...quoteMirrors(u0)]) {
+  /* url sets in order (the quote feed, then the mobile pages), the next only
+     when this one gave nothing, as the poller does */
+  let asked = 0;
+  for (const set of quoteSources()) {
+    for (const u of set) {
+      asked++;
       const r = await io.get(u, cfg.timeoutMs);
-      if (r.ok && r.status === 200 && isQuotePage(r.body)) { quoteBodies.push(r.body); break; }
-      console.log(`   quote page failed: ${u} — ${r.error ?? r.status}`);
+      if (r.ok && r.status === 200 && isQuotePage(r.body)) quoteBodies.push(r.body);
+      else console.log(`   quote page failed: ${u} — ${r.error ?? r.status}`);
     }
+    if (quoteBodies.length) break;
   }
   let contracts = [];
   try { contracts = mergeQuotes(quoteBodies); } catch (e) { console.log(`   quotes unreadable: ${e.message}`); }
   const priced = contracts.filter((c) => c.priced).length;
-  console.log(`   ${quoteBodies.length}/${quoteUrls().length} quote page(s), ${priced} priced contract(s)\n`);
+  console.log(`   ${quoteBodies.length}/${asked} quote page(s), ${priced} priced contract(s)\n`);
   if (!priced) {
     console.error("::error title=no CBOT quotes::Without them no board can be checked and no "
       + "manifest may be written. Nothing was changed.");

@@ -27,11 +27,13 @@ import { join } from "node:path";
 import { buildFile, Refused } from "../lib/board.mjs";
 import { adapterFor, ADAPTERS, SHARED_PAGES } from "../lib/adapters/index.mjs";
 import { toConfig, PLATFORMS } from "../lib/sources.mjs";
-import { VERIFIED_BY, mergeQuotes, quoteUrls } from "../lib/adapters/agricharts.mjs";
+import { VERIFIED_BY, mergeQuotes, quoteUrls, QUOTE_FEED_URL } from "../lib/adapters/agricharts.mjs";
 
 const DIR = join(fileURLToPath(new URL("..", import.meta.url)), "fixtures");
 const read = (f) => readFileSync(join(DIR, f), "utf8");
-const CONTRACTS = mergeQuotes(readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).map(read));
+/* the mobile quote pages only; the desktop captures are tested on their own */
+const MOBILE_QUOTES = /^agricharts-quotes-(?!desktop-).*\.html$/;
+const CONTRACTS = mergeQuotes(readdirSync(DIR).filter((f) => MOBILE_QUOTES.test(f)).map(read));
 
 /* Two rows in the shape every adapter returns, with no quoted future — which
    is the only situation this whole path is about. */
@@ -189,20 +191,26 @@ test("every adapter is a declared platform, and every declared platform has an a
       `adapter "${p}" exists and is not in PLATFORMS — every manifest naming it is dropped at load`);
 });
 
-test("the shared pages are seven absolute URLs on one host", () => {
+test("the shared pages: the quote feed first, then seven absolute URLs on one host", () => {
   const spec = SHARED_PAGES.agricharts;
   assert.ok(spec, "agricharts must declare the page it cannot fetch for itself");
-  assert.deepEqual(spec.urls, quoteUrls());
-  assert.equal(spec.urls.length, 7);
-  assert.equal(new Set(spec.urls.map((u) => new URL(u).host)).size, 1,
+  /* The first set is one request to the desktop site's quote feed. */
+  assert.deepEqual(spec.urls, [QUOTE_FEED_URL]);
+  assert.match(spec.urls[0], /^https:\/\/www\.agricharts\.com\/marketdata\/jsquote\.php\?/);
+  /* The fallback is the mobile pages, unchanged. */
+  assert.equal(spec.alternates.length, 1);
+  const mobile = spec.alternates[0];
+  assert.deepEqual(mobile, quoteUrls());
+  assert.equal(mobile.length, 7);
+  assert.equal(new Set(mobile.map((u) => new URL(u).host)).size, 1,
     "one host answers for all 211 sites; more than one is a fetch per co-op waiting to happen");
-  for (const u of spec.urls) assert.match(u, /^https:\/\/[^/]+\/markets\/futures\.php\?/);
+  for (const u of mobile) assert.match(u, /^https:\/\/[^/]+\/markets\/futures\.php\?/);
   assert.ok(spec.why && spec.build, "the poller prints why, and calls build");
 });
 
 test("build turns the captured bodies into contracts", () => {
   const ctx = SHARED_PAGES.agricharts.build(
-    readdirSync(DIR).filter((f) => /^agricharts-quotes-/.test(f)).map(read));
+    readdirSync(DIR).filter((f) => MOBILE_QUOTES.test(f)).map(read));
   assert.equal(ctx.contracts.filter((c) => c.priced).length, 87);
 });
 
