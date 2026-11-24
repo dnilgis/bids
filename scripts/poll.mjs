@@ -669,16 +669,34 @@ function sharedFor(platform) {
      the entries are one site written two ways and the first good answer ends
      it. Still clamped to the budget, so seven hung quote pages cannot spend
      more of the pass than there was left. */
-  for (const u of spec.urls) {
-    try {
-      const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
-                                       redirect: "follow" }, fetchDeadline());
-      if (!res.ok) { problems.push(`${u} -> HTTP ${res.status}`); continue; }
-      const body = await res.text();
-      if (!body.length) { problems.push(`${u} -> empty response`); continue; }
-      bodies.push(body);
-    } catch (e) { problems.push(`${u} -> ${e.message}`); }
+  /* A PAGE THAT DID NOT ANSWER IS ASKED ON THE NEXT HOST (spec.mirrors), in
+     order, and the first page that answers is the one kept. A failure is only
+     a problem once every host has failed it; the ones before it are named in
+     the log line so a host going down is still visible. */
+  const fellBack = [];
+  for (const u0 of spec.urls) {
+    const tried = [];
+    for (const u of [u0, ...(spec.mirrors?.(u0) ?? [])]) {
+      try {
+        const res = await fetchWithin(u, { headers: { "User-Agent": UA, Accept: "text/html" },
+                                         redirect: "follow" }, fetchDeadline());
+        if (!res.ok) { tried.push(`${u} -> HTTP ${res.status}`); continue; }
+        const body = await res.text();
+        if (!body.length) { tried.push(`${u} -> empty response`); continue; }
+        /* A host that answers 200 with something other than the page (an error
+           page, a login) is a failure of that host, not a body to parse. */
+        if (spec.accepts && !spec.accepts(body)) { tried.push(`${u} -> not the expected page`); continue; }
+        bodies.push(body);
+        if (tried.length) fellBack.push(`${tried.join("; ")}; read ${new URL(u).host}`);
+        tried.length = 0;
+        break;
+      } catch (e) { tried.push(`${u} -> ${e.message}`); }
+    }
+    if (tried.length) problems.push(tried.join("; "));
   }
+  if (fellBack.length)
+    console.log(`   ${platform}: ${fellBack.length} shared page(s) came from a later host: `
+      + fellBack.slice(0, 2).join(" | "));
   let ctx = null;
   if (bodies.length) {
     try { ctx = spec.build(bodies); }
