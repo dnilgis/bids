@@ -262,11 +262,15 @@ const CROP_YEAR_START_DEFAULT = 9;
 const ISO_MONTH = /^(\d{4}-\d{2})(-\d{2})?$/;
 const ym = (y, m) => `${y}-${String(m).padStart(2, "0")}`;
 
-export function deliveryMonth(period, cropName, asOf, row = null) {
+/* `curMonth` ("YYYY-MM"): the current month as the caller reckons it. nearestOpen passes the
+   Central month (centralMonth), the month agsist reads; without it the month is read in UTC.
+   The two differ from 18:00 Central (19:00 in summer) on a month's last day: at 20:00 CST on
+   Nov 30 UTC is already December, and a UTC reading dropped the plain November row as closed. */
+export function deliveryMonth(period, cropName, asOf, row = null, curMonth = null) {
   const d = asOf instanceof Date ? asOf : new Date(asOf ?? Date.now());
   if (Number.isNaN(d.getTime())) return null;
-  const cy = d.getUTCFullYear(), cm = d.getUTCMonth() + 1;
-  const cur = ym(cy, cm);
+  const cur = typeof curMonth === "string" && /^\d{4}-\d{2}$/.test(curMonth)
+    ? curMonth : ym(d.getUTCFullYear(), d.getUTCMonth() + 1);
   const p = String(period ?? "");
   let m = null;
   /* A real delivery window on the row wins over any key: its end month, as
@@ -314,9 +318,14 @@ export const HELD_SKIP_H = 6;
    `nowLater`. Both are filled only when `side` is passed, and the index carries
    them only for a place that has one. The index keeps `nowLater` only for a crop
    with no `now` row (laterOnly): on Nov 24, 2026 the nearest far-out row was on
-   744 of 855 places, almost all beside a current bid for the same crop, and it
-   grew the index by a fifth; a reader that has a current bid reads `now`, and
-   the board's later bids are in `best` and the shard. */
+   744 of 855 places, almost all beside a current bid for the same crop, and
+   keeping it there grew the index by 13.6% (measured); a reader that has a
+   current bid reads `now`, and the board's later bids are in `best` and the shard.
+   `nowSpecial` is NOT bounded by NOW_MAX_MONTHS: it is the nearest premium row
+   however far out. No reader takes it for the plain current bid (it is labelled
+   a premium wherever it shows), and premium programs are often contracted months
+   ahead (Yoder Grain's Plenish soybeans run Mar-Aug 2027), so a 2-month cap would
+   hide a board's only premium row. The premium test comes first for that reason. */
 export const SPECIAL_GRADE = /non[- ]?gmo|nongmo|organic|plenish|\bip\b|identity[- ]?pres|high[- ]?oleic|food[- ]?grade|\bfood\b|waxy|popcorn|conventional|vistive|clear hilum|tofu|natto|\bwhite\b|\bfeed\b|durum|\bsww\b|spring|\bhrs\b|\bdns\b|dark northern|mgex/i;
 export const NOW_MAX_MONTHS = 2;
 export function centralMonth(d) {
@@ -393,7 +402,7 @@ export function nearestOpen(bids, asOf = Date.now(), side = null) {
       (() => { const h = (new Date(asOf).getTime() - Date.parse(b.checkedAt)) / 3.6e6; return h >= -0.25 && h <= HELD_SKIP_H; })();
     if (b.stale === true && !heldSkip) continue;
     if ((b.sourceStatus || "ok") !== "ok" && !heldSkip) continue;
-    const m = deliveryMonth(b.period, b.crop, asOf, b);
+    const m = deliveryMonth(b.period, b.crop, asOf, b, curMonth);
     if (m == null) continue;
     /* a range not open yet is judged by its START month, as a single month is (agsist's windowKey):
        2027-01/2027-03 and 2027-01 are both 2 months past November */
