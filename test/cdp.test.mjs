@@ -292,7 +292,10 @@ test("when nothing readable ever arrives, the error says matches were seen", { s
   try {
     await assert.rejects(
       capture({ pageUrl: `${base}/cash-bids/`, target: `${base}/markets/sites/x/cash-bids`, browser, timeoutMs: 6000 }),
-      (e) => /no readable response matching/.test(e.message));
+      /* The prefix alone would pass for "no response matched" too; the
+         count of matches is what this test's name promises. Older Chrome
+         reached it as "no body could be read", Chrome 158 as "came back empty". */
+      (e) => /no readable response matching/.test(e.message) && /1 response\(s\) DID match/.test(e.message));
   } finally { srv.close(); }
 });
 
