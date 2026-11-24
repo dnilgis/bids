@@ -183,8 +183,10 @@ test("the poller's order, run: a 200 that is not a quote page is a failure, not 
 
 test("the poller and the board sweep run that one reader", () => {
   const poll = readFileSync(new URL("../scripts/poll.mjs", import.meta.url), "utf8");
-  assert.match(poll, /import \{ readShared, describeQuotes \} from "\.\.\/lib\/quotes\.mjs"/);
+  assert.match(poll, /import \{ readShared, describeQuotes, sharedWarnings \} from "\.\.\/lib\/quotes\.mjs"/);
   assert.match(poll, /await readShared\(spec, get,/);
+  assert.match(poll, /for \(const line of sharedWarnings\(platform, spec, problems, ctx\)\) console\.error\(line\)/,
+    "its warnings are the lines lib/quotes.mjs sharedWarnings writes (run for real in quote-sources.test.mjs)");
   const sweep = readFileSync(new URL("../scripts/board-sweep.mjs", import.meta.url), "utf8");
   assert.match(sweep, /await readShared\(spec, get\)/);
   const ac = readFileSync(new URL("../scripts/agricharts-sweep.mjs", import.meta.url), "utf8");

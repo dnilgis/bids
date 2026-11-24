@@ -7,6 +7,8 @@
  *
  *   fixtures/agsist-prices-2026-11-20T1516Z.json   the file the 15:17Z pass would have read
  *   fixtures/agsist-prices-2026-11-24T1835Z.json   six minutes before the feed capture below
+ *   fixtures/agsist-prices-2026-11-24T1816Z.json   the rewrite before that one
+ *   fixtures/agsist-prices-2026-11-21T0601Z.json   a weekend file: every entry settled, no close_time
  *   fixtures/desktop-agricharts-quotes-www-marketdata-jsquote-*.html   the AgriCharts feed, 2026-11-24
  *   fixtures/replay-2026-11-20T1517Z-frozen-sources.json   what the 15:17Z pass refused
  *
@@ -18,19 +20,23 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   parseAgsistPrices, isAgsistPrices, combineQuotes, compareQuotes, freshness, readShared,
   agsistScheduleOpen, agsistOpenMinutes, AGSIST_PRICES_URL, QUOTE_MAX_AGE_DAYS, TICK_CENTS,
-  AGSIST_MAX_OPEN_MIN, QUOTE_PROVIDERS, describeQuotes,
+  AGSIST_MAX_OPEN_MIN, AGSIST_MAX_OPEN_MIN_DAY, cbotDaySession, agsistAgeLimit, QUOTE_PROVIDERS,
+  describeQuotes, sharedWarnings,
 } from "../lib/quotes.mjs";
 import {
   parseQuoteFeed, mergeQuotes, quoteSources, fitToContracts, rootsFor, MAX_FIT_CENTS, extract,
   AgriChartsRefused,
 } from "../lib/adapters/agricharts.mjs";
 import { SHARED_PAGES, adapterFor } from "../lib/adapters/index.mjs";
-import { extract as fivestar } from "../lib/adapters/fivestar.mjs";
+import { extract as fivestar, FiveStarRefused } from "../lib/adapters/fivestar.mjs";
+import { extract as stonehedge, StoneHedgeRefused } from "../lib/adapters/stonehedge.mjs";
 
 const fx = (f) => readFileSync(new URL(`../fixtures/${f}`, import.meta.url), "utf8");
 const FIX = readdirSync(new URL("../fixtures/", import.meta.url));
 const AG_1120 = fx("agsist-prices-2026-11-20T1516Z.json");
 const AG_1124 = fx("agsist-prices-2026-11-24T1835Z.json");
+const AG_1124_1816 = fx("agsist-prices-2026-11-24T1816Z.json");
+const AG_WEEKEND = fx("agsist-prices-2026-11-21T0601Z.json");
 const FEED = fx("desktop-agricharts-quotes-www-marketdata-jsquote-php-varname-quotes-symbols-zc-1-zc-2-zc-3.html");
 const ROOT_FEED = (r) => fx(FIX.find((f) => f.includes(`allsymbols-${r}-`)));
 const BOARD = fx("agricharts-cashgrid-tettensgrain.html");     // prices off ZCZ26 and ZCH27
@@ -54,7 +60,9 @@ test("agsist's file reads into the board check's contract shape, dated contracts
   assert.deepEqual({ ...z, settlements: undefined }, {
     symbol: "ZCZ26", root: "ZC", monthCode: "Z", year: 2026, name: "Corn", title: null,
     lastCents: 435, lastRaw: "435", priced: true, unit: "bushel", grain: "Corn", notation: "cents",
-    settled: false, flag: null, changeCents: 0.75, at: "11/24/26", tradedAt: "2026-11-24T18:35:23.000Z",
+    settled: false, flag: null, priceKind: "last", changeCents: 0.75, at: "11/24/26",
+    /* close_time is agsist's fetch clock, kept as fetchedAt and never read as a trade time */
+    tradedAt: null, fetchedAt: "2026-11-24T18:35:23.000Z",
     settlements: undefined, fileWrittenAt: "2026-11-24T18:35:43.000Z", source: "agsist" });
   assert.deepEqual(z.settlements, { "2026-11-19": 439, "2026-11-20": 434.5, "2026-11-23": 434.25 });
   /* the contracts it carries, by root; no rice (only the continuous ZR=F, no month) and no Minneapolis */
@@ -102,12 +110,14 @@ test("the real captures agree on every settlement they share, and that is what i
   assert.equal(c.notes.withheld.length, 0);
   assert.equal(c.notes.confirmed, 24, "24 contracts carried by both, settlement for 2026-11-23 identical");
   assert.equal(c.find((q) => q.symbol === "ZSF27").confirmedBy[0], "agsist");
-  /* The last prints differ by three ticks four minutes apart (1238.25 at 18:31:45Z,
-     1239.00 at 18:35:29Z). Both are right; neither is the same moment, so neither withholds. */
+  /* The prices differ by three ticks: the feed's 1238.25 is a trade at 18:31:45Z;
+     agsist's 1239.00 is what its fetch read at 18:35:29Z (close_time is its fetch
+     clock, not a print). Only their shared settlement is compared, and it agrees. */
   const a = parseQuoteFeed(FEED).find((q) => q.symbol === "ZSF27");
   const b = parseAgsistPrices(AG_1124).find((q) => q.symbol === "ZSF27");
   assert.ok(Math.abs(a.lastCents - b.lastCents) > TICK_CENTS.ZS);
-  assert.equal(compareQuotes(a, b).gap, null);
+  assert.equal(b.tradedAt, null);
+  assert.deepEqual(compareQuotes(a, b), { compared: 1, gap: null });
   /* AgriCharts is first: its quote is the one used wherever it has one */
   assert.equal(c.find((q) => q.symbol === "ZSF27").source, "agricharts-feed");
   assert.match(describeQuotes(c), /41 from agricharts-feed, 2 from agsist; 24 confirmed/);
@@ -137,13 +147,152 @@ test("disagreement: more than one tick on the same settlement withholds that con
   assert.ok(rows.unreconciled.some((u) => /ZCZ26/.test(u.why)));
 });
 
-test("a last trade is compared only when both prints are the same moment", () => {
+test("a last trade is compared only when both prints are the same moment, on two trade clocks", () => {
   const a = parseQuoteFeed(FEED).find((q) => q.symbol === "ZCZ26");
-  const b = { ...parseAgsistPrices(AG_1124).find((q) => q.symbol === "ZCZ26"), settlements: {} };
+  /* a second provider with a real trade clock (agsist has none; see the next test) */
+  const b = { ...a, source: "another-trade-clock", settlements: {} };
   const at = (q, iso, cents) => ({ ...q, tradedAt: iso, lastCents: cents });
   assert.match(compareQuotes(a, at(b, "2026-11-24T18:32:30.000Z", 435.5)).gap, /last trade/);
   assert.equal(compareQuotes(a, at(b, "2026-11-24T18:32:30.000Z", 435.25)).gap, null);
   assert.equal(compareQuotes(a, at(b, "2026-11-24T18:33:00.000Z", 440)).gap, null, "76 s apart is not one moment");
+});
+
+/* agsist's close_time laid onto the feed's own trade clock, contract by
+   contract, to the second: the stamps line up exactly as they did on the
+   real passes where agsist's fetch fell within a minute of a feed trade. */
+const onFeedClock = (body) => {
+  const j = JSON.parse(body);
+  const clock = new Map(parseQuoteFeed(FEED).filter((q) => q.tradedAt).map((q) => [q.symbol, q.tradedAt]));
+  let n = 0;
+  for (const v of Object.values(j.quotes)) {
+    const s = String(v?.ticker ?? "").replace(/\.CBT$/, "");
+    if (clock.has(s)) { v.close_time = clock.get(s).replace(".000Z", "Z"); n++; }
+  }
+  return { body: JSON.stringify(j), n };
+};
+
+test("agsist is compared on settlements only: its fetch clock laid on the feed's trade clock withholds nothing", () => {
+  const now = new Date("2026-11-24T18:45:00Z");
+  const feed = parseQuoteFeed(FEED);
+  for (const [name, body] of [["18:35Z", AG_1124], ["18:16Z", AG_1124_1816]]) {
+    const { body: shifted, n } = onFeedClock(body);
+    assert.ok(n > 20, `${name}: ${n} entries restamped`);
+    const ag = parseAgsistPrices(shifted);
+    assert.ok(ag.every((q) => q.tradedAt === null), "close_time is never read as a trade time");
+    /* prices more than a tick apart on contracts whose stamps now match to the second */
+    const apart = ag.filter((q) => {
+      const f = feed.find((x) => x.symbol === q.symbol);
+      return f && Math.abs(f.lastCents - q.lastCents) > TICK_CENTS[q.root];
+    });
+    assert.ok(apart.length >= 5, `${name}: ${apart.map((q) => q.symbol).join(" ")}`);
+    const c = combineQuotes([{ source: "agricharts", contracts: feed }, { source: "agsist", contracts: ag }], { now });
+    assert.equal(c.notes.withheld.length, 0, `${name}: ${c.notes.withheld.join(" | ")}`);
+    assert.equal(c.notes.confirmed, 24, `${name}: the 2026-11-23 settlements are still compared, and agree`);
+    for (const q of apart) assert.equal(c.find((x) => x.symbol === q.symbol).priced, true, q.symbol);
+  }
+});
+
+/* ---------- a weekend or holiday file ---------- */
+
+test("a weekend file: every entry settled with no close_time, read as that date's settlement", async () => {
+  const j = JSON.parse(AG_WEEKEND);
+  const cbt = Object.values(j.quotes).filter((v) => /\.CBT$/.test(v?.ticker ?? ""));
+  assert.ok(cbt.length > 20 && cbt.every((v) => v.close_kind === "settle" && !("close_time" in v)));
+  const qs = parseAgsistPrices(AG_WEEKEND);
+  assert.equal(qs.length, 27);
+  for (const q of qs) {
+    assert.deepEqual([q.settled, q.priceKind, q.tradedAt, q.at], [true, "settlement", null, "11/20/26"], q.symbol);
+    assert.equal(q.settlements["2026-11-20"], q.lastCents, q.symbol);
+  }
+  const z = qs.find((q) => q.symbol === "ZCZ26");
+  assert.deepEqual([z.lastCents, z.changeCents], [434.5, -4.5]);
+  /* fresh and stale by the existing rules */
+  const at = (now) => freshness(z, new Date(now));
+  assert.equal(at("2026-11-21T18:00:00Z").ok, true, "Saturday noon CT");
+  assert.equal(at("2026-11-23T00:30:00Z").ok, true, "Sunday 18:30 CT, before agsist's job reopens");
+  assert.match(at("2026-11-23T03:00:00Z").why, /minutes of its own schedule ago \(limit 120\)/,
+    "Sunday 21:00 CT with no rewrite since Saturday: the job stopped");
+  assert.match(at("2026-11-25T15:00:00Z").why, /5 days before 2026-11-25/);
+  /* end to end: AgriCharts down on the Saturday, the boards publish on Friday's settlements */
+  const r = await read(net({ ag: () => ({ ok: true, body: AG_WEEKEND }) }), "2026-11-21T18:00:00Z");
+  assert.equal(r.ctx.contracts.filter((q) => q.priced).length, 27);
+  const rows = cashgrid(r.ctx)(BOARD, "u");
+  assert.equal(rows.length, 57);
+  assert.deepEqual([...new Set(rows.map((x) => `${x.futures} ${x.futuresPrice}`))].sort(), ["ZCH27 448.75", "ZCZ26 434.5"]);
+  assert.ok(rows.every((x) => x.quoteSource === "agsist"));
+});
+
+/* ---------- what prices a row, and the row says so ---------- */
+
+test("agsist prices from its settlement for the session when it has one, and every row names its quote source", async () => {
+  const j = JSON.parse(AG_1124);
+  /* one number added: the 2026-11-24 ZCZ26 settlement, 434 (the per-root feed's 's' entry), in agsist's settles */
+  for (const k of keysOf(j, "ZCZ26.CBT")) j.quotes[k].settles["2026-11-24"] = 434;
+  const body = JSON.stringify(j);
+  const z = parseAgsistPrices(body).find((q) => q.symbol === "ZCZ26");
+  assert.deepEqual([z.lastCents, z.settled, z.flag, z.priceKind, z.changeCents], [434, true, "s", "settlement", -0.25]);
+  /* without one for its session, its last price, named as such */
+  const h = parseAgsistPrices(body).find((q) => q.symbol === "ZCH27");
+  assert.deepEqual([h.lastCents, h.settled, h.priceKind], [451, false, "last"]);
+  /* AgriCharts down after the close: the rows are priced off agsist and say so */
+  const r = await read(net({ ag: () => ({ ok: true, body }) }), "2026-11-24T20:40:00Z");
+  const rows = cashgrid(r.ctx)(BOARD, "u");
+  assert.deepEqual([...new Set(rows.map((x) => `${x.futures} ${x.futuresPrice} ${x.quoteSource}`))].sort(),
+    ["ZCH27 451 agsist", "ZCZ26 434 agsist"]);
+  /* both up: the feed prices them, and they say that */
+  const up = (u) => ({ ok: true, body: u.includes("allsymbols") ? ROOT_FEED(u.match(/allsymbols=(\w+)/)[1].toLowerCase()) : FEED });
+  const r2 = await read(net({ ac: up, ag: () => ({ ok: true, body }) }), "2026-11-24T20:40:00Z");
+  assert.ok(cashgrid(r2.ctx)(BOARD, "u").every((x) => x.quoteSource === "agricharts-feed"));
+});
+
+/* ---------- agsist's file age ---------- */
+
+test("agsist's file-age limit: 45 open minutes in the day session, 120 elsewhere", () => {
+  assert.deepEqual([AGSIST_MAX_OPEN_MIN_DAY, AGSIST_MAX_OPEN_MIN], [45, 120]);
+  assert.equal(cbotDaySession(new Date("2026-11-24T14:29:00Z")), false);   // Tue 08:29 CT
+  assert.equal(cbotDaySession(new Date("2026-11-24T14:30:00Z")), true);    // Tue 08:30 CT
+  assert.equal(cbotDaySession(new Date("2026-11-24T19:19:00Z")), true);    // Tue 13:19 CT
+  assert.equal(cbotDaySession(new Date("2026-11-24T19:20:00Z")), false);   // Tue 13:20 CT
+  assert.equal(cbotDaySession(new Date("2026-11-21T16:00:00Z")), false);   // Sat 10:00 CT
+  assert.equal(agsistAgeLimit("2026-11-24T16:00:00Z"), 45);
+  assert.equal(agsistAgeLimit("2026-11-24T08:00:00Z"), 120);
+  const q = (w) => ({ symbol: "ZCZ26", source: "agsist", at: "11/24/26", tradedAt: null, fileWrittenAt: w });
+  /* day session: written 09:00 CT */
+  assert.equal(freshness(q("2026-11-24T15:00:00Z"), new Date("2026-11-24T15:45:00Z")).ok, true);
+  assert.match(freshness(q("2026-11-24T15:00:00Z"), new Date("2026-11-24T15:50:00Z")).why,
+    /50 minutes of its own schedule ago \(limit 45 in the day session\)/);
+  /* the real files: 18:16:47Z read at 18:35Z (the longest day gap measured, 2026-11-18 to 11-24, is 20.1 minutes) */
+  assert.ok(parseAgsistPrices(AG_1124_1816).every((x) => freshness(x, new Date("2026-11-24T18:35:00Z")).ok));
+  /* overnight: written 02:00 CT */
+  assert.equal(freshness(q("2026-11-24T08:00:00Z"), new Date("2026-11-24T09:55:00Z")).ok, true);
+  assert.match(freshness(q("2026-11-24T08:00:00Z"), new Date("2026-11-24T10:05:00Z")).why,
+    /125 minutes of its own schedule ago \(limit 120\)$/);
+});
+
+/* ---------- the run log ---------- */
+
+test("a failed agsist read logs its own warning when AgriCharts is healthy", async () => {
+  const spec = SHARED_PAGES["agricharts-cashgrid"];
+  const up = (u) => ({ ok: true, body: u.includes("allsymbols") ? ROOT_FEED(u.match(/allsymbols=(\w+)/)[1].toLowerCase()) : FEED });
+  const now = "2026-11-24T18:45:00Z";
+  const r = await read(net({ ac: up }), now);
+  assert.ok(r.ctx);
+  const w = sharedWarnings("agricharts-cashgrid", spec, r.problems, r.ctx);
+  assert.equal(w.length, 1);
+  assert.match(w[0], /^::warning title=agricharts-cashgrid second quote source::agsist could not be read \(1 failure\(s\)\): agsist: https:\/\/raw\.githubusercontent\.com\/dnilgis\/agsist\/main\/data\/prices\.json -> HTTP 500\. agricharts was read; quotes come from it alone this pass, without a second-source check\.$/);
+  assert.doesNotMatch(w[0], /shared page\(s\)/);
+  /* AgriCharts down, agsist up: the shared-page warning, as before */
+  const r2 = await read(net({ ag: () => ({ ok: true, body: AG_1124 }) }), now);
+  const w2 = sharedWarnings("agricharts-cashgrid", spec, r2.problems, r2.ctx);
+  assert.equal(w2.length, 1);
+  assert.match(w2[0], /^::warning title=agricharts-cashgrid shared page\(s\)::\d+ failed — .*continues on those\.$/);
+  /* both down: the shared-page warning says every source refuses, and agsist's failure is named beside it */
+  const r3 = await read(net(), now);
+  const w3 = sharedWarnings("agricharts-cashgrid", spec, r3.problems, r3.ctx);
+  assert.equal(w3.length, 2);
+  assert.match(w3[0], /shared page\(s\).*Nothing was read, so every agricharts-cashgrid source will refuse/);
+  assert.match(w3[1], /^::warning title=agricharts-cashgrid second quote source::agsist could not be read \(1 failure\(s\)\): .*HTTP 500\.$/);
+  assert.deepEqual(sharedWarnings("agricharts-cashgrid", spec, [], r.ctx), []);
 });
 
 /* ---------- freshness ---------- */
@@ -164,7 +313,7 @@ test("stale feed guard: a feed whose trade dates stopped is missing, and the sec
   const now = "2026-11-29T15:00:00Z";
   const ag = JSON.parse(AG_1124);
   ag.fetched = "2026-11-29T14:50:00Z";
-  for (const v of Object.values(ag.quotes)) v.close_time = "2026-11-29T14:49:00Z";
+  for (const v of Object.values(ag.quotes)) { v.close_time = "2026-11-29T14:49:00Z"; v.close_date = "2026-11-29"; }
   const r = await read(net({ ac: () => ({ ok: true, body: FEED }), ag: () => ({ ok: true, body: JSON.stringify(ag) }) }), now);
   assert.ok(r.notes.stale.some((s) => /agricharts-feed/.test(s)));
   assert.equal(r.ctx.contracts.find((q) => q.symbol === "ZCZ26").source, "agsist");
@@ -286,7 +435,65 @@ test("fitToContracts hands back the rows it could not check, for every caller", 
     [{ symbol: "ZCZ26", root: "ZC", priced: true, lastCents: 435, grain: "Corn" }]);
   assert.equal(fit.checked, 1);
   assert.deepEqual(fit.unpriced.map((r) => r.commodity), ["Soybeans"]);
-  assert.match(fivestar.toString(), /fit\.unpriced/, "Five Star refuses them too");
+  assert.equal(fit.nearest.get(fit.unpriced[0]), undefined);
+});
+
+/* The quotes these real boards are checked against, as the existing adapter
+   tests build them (test/own-board.test.mjs TONIGHT; test/stonehedge.test.mjs
+   contracts(): the futures the priced StoneHedge boards print, ZW stand-ins). */
+const FIVESTAR_QUOTES = [
+  ["ZCZ26", 499], ["ZCH27", 513.5], ["ZCN27", 524.5], ["ZCZ27", 515.25],
+  ["ZSX26", 1277], ["ZSF27", 1293.25], ["ZSH27", 1303.25], ["ZSN27", 1318], ["ZSX27", 1250],
+].map(([symbol, lastCents]) => ({ symbol, lastCents, priced: true, root: symbol.slice(0, 2),
+  grain: symbol.startsWith("ZC") ? "corn" : "soybeans", source: "agsist" }));
+const SH = (s) => fx(`stonehedge-${s}-component-rendered.html`);
+const SH_URL = "https://stonehedge.stonex.com/component/bids?locs=x";
+const stonehedgeQuotes = () => {
+  const cm = new Map();
+  for (const s of ["agvalley", "cendakcooperative", "mrga", "rivervalleycoop"])
+    for (const r of stonehedge(SH(s), SH_URL)) if (/^[A-Z]{2}[FGHJKMNQUVXZ]\d\d$/.test(r.futures)) cm.set(r.futures, r.futuresPrice);
+  cm.set("ZWZ26", 590); cm.set("ZWN27", 620);
+  return [...cm].map(([symbol, lastCents]) => ({ symbol, root: symbol.slice(0, 2), lastCents, priced: true, source: "agsist" }));
+};
+
+test("Five Star, run: a grain with no priced contract is refused row by row, the rest publish and name their source", () => {
+  const board = fx("fivestar-bids-2026-10-01.html");
+  const full = fivestar(board, "u", { contracts: FIVESTAR_QUOTES });
+  const soy = full.filter((r) => r.commodity === "Soybeans").length;
+  assert.ok(soy > 0);
+  const noZS = fivestar(board, "u", { contracts: FIVESTAR_QUOTES.filter((c) => c.root !== "ZS") });
+  assert.equal(noZS.filter((r) => r.commodity === "Soybeans").length, 0, "no soybean row is stamped as checked");
+  assert.equal(noZS.length, full.length - soy);
+  assert.ok(noZS.unreconciled.filter((u) => /no ZS contract is priced/.test(u.why)).length >= soy);
+  /* a withheld contract counts as no contract */
+  const withheld = FIVESTAR_QUOTES.map((c) => (c.root === "ZS" ? { ...c, priced: false, lastCents: null, withheld: "x" } : c));
+  assert.equal(fivestar(board, "u", { contracts: withheld }).length, full.length - soy);
+  for (const r of noZS) assert.equal(r.quoteSource, "agsist", `${r.raw} names the source it was checked against`);
+  /* and with no priced contract at all, the board refuses */
+  assert.throws(() => fivestar(board, "u", { contracts: withheld.map((c) => ({ ...c, priced: false, lastCents: null })) }),
+    FiveStarRefused);
+});
+
+test("StoneHedge, run: unpriced grains are refused on both the fitted and the named path", () => {
+  const Q = stonehedgeQuotes();
+  /* Milnor prints neither price nor month: fitted */
+  const milnor = stonehedge(SH("milnorgrain"), SH_URL, { contracts: Q });
+  assert.equal(milnor.length, 22);
+  const m2 = stonehedge(SH("milnorgrain"), SH_URL, { contracts: Q.filter((c) => c.root !== "ZS") });
+  assert.equal(m2.length, 16);
+  assert.equal(m2.some((r) => r.commodity === "Soybeans"), false);
+  assert.equal(m2.unreconciled.filter((u) => /no ZS contract is priced/.test(u.why)).length, 6);
+  for (const r of m2) assert.equal(r.quoteSource, "agsist");
+  /* Frontier names its contract month: named */
+  const frontier = stonehedge(SH("frontiercooperative"), SH_URL, { contracts: Q });
+  const hrw = frontier.filter((r) => /HRW/.test(r.commodity)).length;
+  assert.equal(hrw, 15);
+  const f2 = stonehedge(SH("frontiercooperative"), SH_URL, { contracts: Q.filter((c) => c.root !== "KE") });
+  assert.equal(f2.length, frontier.length - hrw);
+  assert.equal(f2.unreconciled.filter((u) => /quote pages do not carry for KE/.test(u.why)).length, hrw);
+  /* a majority unpriced refuses the board: Milnor with corn and soybeans both gone */
+  assert.throws(() => stonehedge(SH("milnorgrain"), SH_URL, { contracts: Q.filter((c) => c.root !== "ZS" && c.root !== "ZC") }),
+    StoneHedgeRefused);
 });
 
 /* ---------- the replay: the real 2026-11-20 15:17Z pass ---------- */

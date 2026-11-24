@@ -54,7 +54,7 @@ import { Breaker, Backoff, Skipped, isSkip, nextStreak, carriesStreak, botCheckM
          botCheckWaiting as waitingOutBotCheck, refusalHolds, refusalWaiting as waitingOutRefusal,
          holdUntilFor, HostHold, isRefusalStatus } from "../lib/breaker.mjs";
 import { adapterFor, optionsFor, withPageContext, SHARED_PAGES } from "../lib/adapters/index.mjs";
-import { readShared, describeQuotes } from "../lib/quotes.mjs";
+import { readShared, describeQuotes, sharedWarnings } from "../lib/quotes.mjs";
 import { WITHDRAW_H, withdrawHFor } from "../lib/freshness.mjs";
 import { planLanes, drain } from "../lib/lanes.mjs";
 
@@ -685,13 +685,7 @@ function sharedFor(platform) {
   const said = describeQuotes(ctx?.contracts);
   if (said) console.log(`   ${platform}: ${said}`);
   if (problems.length)
-    console.error(`::warning title=${platform} shared page(s)::${problems.length} failed — `
-      + `${spec.why}. ${problems.slice(0, 4).join("; ")}`
-      + `${ctx ? " The rest were read and the platform continues on those."
-              : spec.optional ? ` Nothing was read; ${platform} publishes on its own printed futures price `
-                + `this pass, without this cross-check.`
-              : " Nothing was read, so every " + platform + " source will refuse this pass rather "
-                + "than publish unchecked."}`);
+    for (const line of sharedWarnings(platform, spec, problems, ctx)) console.error(line);
   else
     console.log(`   ${platform}: read ${spec.urls.length} shared page(s) once for the whole pass `
       + `(${spec.why})`);
