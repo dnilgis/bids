@@ -878,6 +878,9 @@ async function readOne(s) {
     if (built.observedAt) r.observedAt = built.observedAt; else delete r.observedAt;
     /* The board's own posted day ("Cash bids for ..."), where it prints one. */
     if (built.boardDate) r.boardDate = built.boardDate;
+    /* Which CBOT quote source priced or checked the rows published, counted
+       per source ({ "agricharts-feed": 12 }); lib/board.mjs buildFile. */
+    if (built.quoteSources) r.quoteSources = built.quoteSources;
     if (pasted) r.observedAt = pasted.at;
     r.rows = verdict.file.count;
     /* WHAT THIS ELEVATOR IS ACTUALLY BUYING. The whole point of the reader, so
